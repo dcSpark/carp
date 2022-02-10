@@ -8,7 +8,7 @@ Sync a postgres database with the cardano blockchain using [Oura](https://github
 
 ### Running
 
-**TODO**
+`cargo run`
 
 ### Migrations
 
@@ -20,6 +20,9 @@ There is an alias configured for convenience.
 
 ## Crates
 
-- **entity** contains the SeaORM models
-- **migration** contains the database migrations
-- **src** contains the application code
+- **entity**
+  - contains the SeaORM models
+- **migration**
+  - contains the database migrations
+- **src**
+  - contains the application code

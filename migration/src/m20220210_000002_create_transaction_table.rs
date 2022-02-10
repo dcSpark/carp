@@ -1,12 +1,12 @@
 use sea_schema::migration::prelude::*;
 
-use entity::block::*;
+use entity::transaction::*;
 
 pub struct Migration;
 
 impl MigrationName for Migration {
     fn name(&self) -> &str {
-        "m20220210_000001_create_block_table"
+        "m20220210_000002_create_transaction_table"
     }
 }
 
@@ -25,13 +25,11 @@ impl MigrationTrait for Migration {
                             .auto_increment()
                             .primary_key(),
                     )
-                    .col(ColumnDef::new(Column::Era).integer().not_null())
                     .col(ColumnDef::new(Column::Hash).binary().not_null())
-                    .col(ColumnDef::new(Column::AbsSlotNumber).integer().not_null())
-                    .col(ColumnDef::new(Column::Height).integer().not_null())
-                    .col(ColumnDef::new(Column::Epoch).integer().not_null())
-                    .col(ColumnDef::new(Column::Slot).integer().not_null())
+                    .col(ColumnDef::new(Column::BlockId).integer().not_null())
+                    .col(ColumnDef::new(Column::TxIndex).integer().not_null())
                     .col(ColumnDef::new(Column::Payload).binary().not_null())
+                    .col(ColumnDef::new(Column::IsValid).boolean().not_null())
                     .to_owned(),
             )
             .await
