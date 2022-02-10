@@ -1,5 +1,7 @@
-use oura_postgres_sink::blocks_table::prelude::{Block, BlockModel};
-use sea_orm::{prelude::*, Database};
+use entity::{
+    prelude::{Block, BlockModel},
+    sea_orm::{prelude::*, Database},
+};
 
 // DATABASE_URL=postgresql://root:root@localhost:5432/azul
 

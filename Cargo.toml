@@ -1,12 +1,14 @@
+[workspace]
+members = [".", "entity", "migration"]
+
 [package]
 name = "oura-postgres-sink"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 anyhow = "1.0.53"
-sea-orm = { version = "0.6.0", features = ["runtime-tokio-rustls", "sqlx-postgres", "macros"], default-features = false }
 serde = "1.0.136"
 tokio = { version = "1.16.1", features = ["full"] }
+entity = { path = "entity" }
+migration = { path = "migration" }
