@@ -1,13 +1,12 @@
 use sea_schema::migration::prelude::*;
 
-use entity::prelude::{Block, BlockColumn};
-use entity::transaction::*;
+use entity::stake_credential::*;
 
 pub struct Migration;
 
 impl MigrationName for Migration {
     fn name(&self) -> &str {
-        "m20220210_000002_create_transaction_table"
+        "m20220211_000001_create_stake_credential_table"
     }
 }
 
@@ -26,22 +25,7 @@ impl MigrationTrait for Migration {
                             .auto_increment()
                             .primary_key(),
                     )
-                    .col(
-                        ColumnDef::new(Column::Hash)
-                            .binary()
-                            .not_null()
-                            .unique_key(),
-                    )
-                    .col(ColumnDef::new(Column::BlockId).integer().not_null())
-                    .foreign_key(
-                        ForeignKey::create()
-                            .name("fk-transaction-block_id")
-                            .from(Entity, Column::BlockId)
-                            .to(Block, BlockColumn::Id),
-                    )
-                    .col(ColumnDef::new(Column::TxIndex).integer().not_null())
-                    .col(ColumnDef::new(Column::Payload).binary().not_null())
-                    .col(ColumnDef::new(Column::IsValid).boolean().not_null())
+                    .col(ColumnDef::new(Column::Credential).binary().not_null())
                     .to_owned(),
             )
             .await

@@ -21,6 +21,8 @@ pub enum Relation {
         to = "super::block::Column::Id"
     )]
     Block,
+    #[sea_orm(has_many = "super::tx_credential::Entity")]
+    TxCredential,
 }
 
 // TODO: figure out why this isn't automatically handle by the macros above
