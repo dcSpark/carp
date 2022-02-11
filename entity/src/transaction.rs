@@ -21,6 +21,10 @@ pub enum Relation {
         to = "super::block::Column::Id"
     )]
     Block,
+    #[sea_orm(has_many = "super::transaction_input::Entity")]
+    TransactionInput,
+    #[sea_orm(has_many = "super::transaction_output::Entity")]
+    TransactionOutput,
     #[sea_orm(has_many = "super::tx_credential::Entity")]
     TxCredential,
 }

@@ -2,7 +2,7 @@
 members = [".", "entity", "migration"]
 
 [package]
-name = "oura-postgres-sink"
+name = "db-sink"
 version = "0.1.0"
 edition = "2021"
 
