@@ -2,7 +2,7 @@
 members = [".", "entity", "migration"]
 
 [package]
-name = "db-sink"
+name = "oura-postgres-sink"
 version = "0.1.0"
 edition = "2021"
 
@@ -12,3 +12,5 @@ serde = "1.0.136"
 tokio = { version = "1.16.1", features = ["full"] }
 entity = { path = "entity" }
 migration = { path = "migration" }
+oura = { git = "https://github.com/txpipe/oura", branch = "main" }
+hex = "0.4.3"
