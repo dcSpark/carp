@@ -25,7 +25,7 @@ async fn main() -> anyhow::Result<()> {
     // For rollbacks
     let blocks: Vec<BlockModel> = Block::find()
         .order_by_desc(BlockColumn::Id)
-        .limit(20)
+        .limit(2160)
         .all(&conn)
         .await?;
 
@@ -80,10 +80,9 @@ async fn main() -> anyhow::Result<()> {
             let block = BlockActiveModel {
                 era: Set(0),
                 hash: Set(hash),
-                abs_slot_number: Set(0),
-                height: Set(0),
+                height: Set(block_record.number),
                 epoch: Set(0),
-                slot: Set(block_record.slot as i32),
+                slot: Set(block_record.slot),
                 payload: Set(payload),
                 ..Default::default()
             };
