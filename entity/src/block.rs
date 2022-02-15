@@ -8,9 +8,9 @@ pub struct Model {
     pub id: i32,
     pub era: i32,
     pub hash: Vec<u8>,
-    pub height: u64,
+    pub height: i32,
     pub epoch: i32,
-    pub slot: u64,
+    pub slot: i32,
     pub payload: Vec<u8>,
 }
 

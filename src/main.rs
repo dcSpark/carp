@@ -56,7 +56,11 @@ async fn main() -> anyhow::Result<()> {
 
     let source_setup = WithUtils::new(source_config, utils);
 
-    let check = Predicate::VariantIn(vec![String::from("Transaction"), String::from("BlockEnd")]);
+    let check = Predicate::VariantIn(vec![
+        String::from("Transaction"),
+        String::from("BlockEnd"),
+        String::from("Rollback"),
+    ]);
 
     let filter_setup = selection::Config { check };
 
@@ -71,27 +75,49 @@ async fn main() -> anyhow::Result<()> {
     loop {
         let event = filter_rx.recv()?;
 
-        if let EventData::BlockEnd(block_record) = &event.data {
-            println!("received block: {}", block_record.hash);
+        match &event.data {
+            EventData::BlockEnd(block_record) => {
+                println!("received block: {}", block_record.hash);
 
-            let hash = hex::decode(&block_record.hash)?;
-            let payload = hex::decode(block_record.cbor_hex.as_ref().unwrap())?;
+                let hash = hex::decode(&block_record.hash)?;
+                let payload = hex::decode(block_record.cbor_hex.as_ref().unwrap())?;
 
-            let block = BlockActiveModel {
-                era: Set(0),
-                hash: Set(hash),
-                height: Set(block_record.number),
-                epoch: Set(0),
-                slot: Set(block_record.slot),
-                payload: Set(payload),
-                ..Default::default()
-            };
+                let block = BlockActiveModel {
+                    era: Set(0),
+                    hash: Set(hash),
+                    height: Set(block_record.number as i32),
+                    epoch: Set(0),
+                    slot: Set(block_record.slot as i32),
+                    payload: Set(payload),
+                    ..Default::default()
+                };
 
-            let block = block.insert(&conn).await?;
+                let block = block.insert(&conn).await?;
 
-            let hash = hex::encode(block.hash);
+                let hash = hex::encode(block.hash);
 
-            println!("inserted block: {}", hash);
+                println!("inserted block: {}", hash);
+            }
+            EventData::RollBack {
+                block_hash,
+                block_slot,
+            } => {
+                println!(
+                    "rollback received - slot: {}, hash: {}",
+                    block_slot, block_hash
+                );
+
+                Block::delete_many()
+                    .filter(BlockColumn::Slot.gt(*block_slot))
+                    .exec(&conn)
+                    .await?;
+
+                println!(
+                    "rollback complete - slot: {}, hash: {}",
+                    block_slot, block_hash
+                );
+            }
+            _ => (),
         }
     }
 }
