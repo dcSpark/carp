@@ -14,8 +14,9 @@ use pallas::ledger::primitives::{
 
 use entity::{
     prelude::{
-        Block, BlockActiveModel, BlockColumn, StakeCredentialActiveModel, TransactionActiveModel,
-        TransactionModel, TxCredentialActiveModel,
+        AddressActiveModel, Block, BlockActiveModel, BlockColumn, StakeCredentialActiveModel,
+        TransactionActiveModel, TransactionModel, TransactionOutputActiveModel,
+        TxCredentialActiveModel,
     },
     sea_orm::{prelude::*, DatabaseTransaction, Set, TransactionTrait},
 };
@@ -94,6 +95,45 @@ impl<'a> Config<'a> {
                                             for component in tx_body.iter() {
                                                 insert_certificates(&transaction, component, txn)
                                                     .await?;
+                                            }
+
+                                            for component in tx_body.iter() {
+                                                match component {
+                                                    TransactionBodyComponent::Inputs(inputs) => {
+                                                        tracing::debug!("INPUTS: {}", inputs.len());
+                                                    }
+                                                    TransactionBodyComponent::Outputs(outputs) => {
+                                                        for (idx, output) in
+                                                            outputs.iter().enumerate()
+                                                        {
+                                                            let address = AddressActiveModel {
+                                                                payload: Set(output
+                                                                    .address
+                                                                    .to_vec()),
+                                                                ..Default::default()
+                                                            };
+
+                                                            let address =
+                                                                address.insert(txn).await?;
+
+                                                            let tx_output =
+                                                                TransactionOutputActiveModel {
+                                                                    payload: Set(vec![]),
+                                                                    address_id: Set(address.id),
+                                                                    tx_id: Set(transaction.id),
+                                                                    output_index: Set(idx as i32),
+                                                                    ..Default::default()
+                                                                };
+
+                                                            tx_output.save(txn).await?;
+                                                        }
+                                                        tracing::debug!(
+                                                            "OUTPUTS: {}",
+                                                            outputs.len()
+                                                        );
+                                                    }
+                                                    _ => (),
+                                                }
                                             }
                                         }
                                     }

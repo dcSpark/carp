@@ -27,7 +27,7 @@ async fn main() -> anyhow::Result<()> {
     let conn = Database::connect("postgresql://root:root@localhost:5432/cardano").await?;
 
     // For rollbacks
-    let mut blocks: Vec<PointArg> = Block::find()
+    let mut points: Vec<PointArg> = Block::find()
         .order_by_desc(BlockColumn::Id)
         .limit(2160)
         .all(&conn)
@@ -36,8 +36,8 @@ async fn main() -> anyhow::Result<()> {
         .map(|block| PointArg(block.slot as u64, hex::encode(&block.hash)))
         .collect();
 
-    if blocks.is_empty() {
-        blocks = vec![PointArg(0, "GENESIS HASH".to_string())];
+    if points.is_empty() {
+        points = vec![PointArg(0, "GENESIS HASH".to_string())];
     }
 
     let magic = MagicArg::from_str("testnet").map_err(|_| anyhow!("magic arg failed"))?;
@@ -88,8 +88,6 @@ async fn main() -> anyhow::Result<()> {
     let sink_setup = postgres_sink::Config { conn: &conn };
 
     sink_setup.bootstrap(filter_rx).await?;
-
-    println!("should not print");
 
     filter_handle.join().map_err(|_| anyhow!(""))?;
     source_handle.join().map_err(|_| anyhow!(""))?;
