@@ -5,12 +5,12 @@ use oura::{
     filters::selection::{self, Predicate},
     mapper,
     pipelining::{FilterProvider, SourceProvider},
-    sources::{n2n, AddressArg, BearerKind, MagicArg},
+    sources::{n2n, AddressArg, BearerKind, MagicArg, PointArg},
     utils::{ChainWellKnownInfo, Utils, WithUtils},
 };
 
 use entity::{
-    prelude::{Block, BlockColumn, BlockModel},
+    prelude::{Block, BlockColumn},
     sea_orm::{prelude::*, Database, QueryOrder, QuerySelect},
 };
 
@@ -18,15 +18,27 @@ mod postgres_sink;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .with_test_writer()
+        .init();
+
     // TODO: use an environment variable before going to production
     let conn = Database::connect("postgresql://root:root@localhost:5432/cardano").await?;
 
     // For rollbacks
-    let blocks: Vec<BlockModel> = Block::find()
+    let mut blocks: Vec<PointArg> = Block::find()
         .order_by_desc(BlockColumn::Id)
         .limit(2160)
         .all(&conn)
-        .await?;
+        .await?
+        .iter()
+        .map(|block| PointArg(block.slot as u64, hex::encode(&block.hash)))
+        .collect();
+
+    if blocks.is_empty() {
+        blocks = vec![PointArg(0, "GENESIS HASH".to_string())];
+    }
 
     let magic = MagicArg::from_str("testnet").map_err(|_| anyhow!("magic arg failed"))?;
 
@@ -52,13 +64,14 @@ async fn main() -> anyhow::Result<()> {
         well_known: None,
         mapper,
         since: None,
+        min_depth: 0,
     };
 
     let source_setup = WithUtils::new(source_config, utils);
 
     let check = Predicate::VariantIn(vec![
         String::from("Transaction"),
-        String::from("BlockEnd"),
+        String::from("Block"),
         String::from("Rollback"),
     ]);
 
@@ -75,6 +88,8 @@ async fn main() -> anyhow::Result<()> {
     let sink_setup = postgres_sink::Config { conn: &conn };
 
     sink_setup.bootstrap(filter_rx).await?;
+
+    println!("should not print");
 
     filter_handle.join().map_err(|_| anyhow!(""))?;
     source_handle.join().map_err(|_| anyhow!(""))?;

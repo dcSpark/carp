@@ -12,5 +12,8 @@ serde = "1.0.136"
 tokio = { version = "1.16.1", features = ["full"] }
 entity = { path = "entity" }
 migration = { path = "migration" }
-oura = { git = "https://github.com/txpipe/oura", branch = "main" }
+oura = { path = "../../txpipe/oura" }
+pallas = { path = "../../txpipe/pallas/pallas" }
 hex = "0.4.3"
+tracing-subscriber = "0.3.9"
+tracing = "0.1.31"

@@ -27,9 +27,9 @@ impl MigrationTrait for Migration {
                     )
                     .col(ColumnDef::new(Column::Era).integer().not_null())
                     .col(ColumnDef::new(Column::Hash).binary().not_null())
-                    .col(ColumnDef::new(Column::Height).integer().not_null())
+                    .col(ColumnDef::new(Column::Height).big_integer().not_null())
                     .col(ColumnDef::new(Column::Epoch).integer().not_null())
-                    .col(ColumnDef::new(Column::Slot).integer().not_null())
+                    .col(ColumnDef::new(Column::Slot).big_integer().not_null())
                     .col(ColumnDef::new(Column::Payload).binary().not_null())
                     .to_owned(),
             )
