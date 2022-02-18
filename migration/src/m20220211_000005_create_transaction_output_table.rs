@@ -32,14 +32,16 @@ impl MigrationTrait for Migration {
                         ForeignKey::create()
                             .name("fk-transaction_output-address_id")
                             .from(Entity, Column::AddressId)
-                            .to(Address, AddressColumn::Id),
+                            .to(Address, AddressColumn::Id)
+                            .on_delete(ForeignKeyAction::Cascade),
                     )
                     .col(ColumnDef::new(Column::TxId).integer().not_null())
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk-transaction_output-tx_id")
                             .from(Entity, Column::TxId)
-                            .to(Transaction, TransactionColumn::Id),
+                            .to(Transaction, TransactionColumn::Id)
+                            .on_delete(ForeignKeyAction::Cascade),
                     )
                     .col(ColumnDef::new(Column::OutputIndex).integer().not_null())
                     .to_owned(),

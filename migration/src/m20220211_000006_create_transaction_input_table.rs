@@ -31,14 +31,16 @@ impl MigrationTrait for Migration {
                         ForeignKey::create()
                             .name("fk-transaction_input-utxo_id")
                             .from(Entity, Column::UtxoId)
-                            .to(TransactionOutput, TransactionOutputColumn::Id),
+                            .to(TransactionOutput, TransactionOutputColumn::Id)
+                            .on_delete(ForeignKeyAction::Cascade),
                     )
                     .col(ColumnDef::new(Column::TxId).integer().not_null())
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk-transaction_input-tx_id")
                             .from(Entity, Column::TxId)
-                            .to(Transaction, TransactionColumn::Id),
+                            .to(Transaction, TransactionColumn::Id)
+                            .on_delete(ForeignKeyAction::Cascade),
                     )
                     .col(ColumnDef::new(Column::InputIndex).integer().not_null())
                     .to_owned(),

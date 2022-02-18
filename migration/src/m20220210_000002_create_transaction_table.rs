@@ -32,7 +32,8 @@ impl MigrationTrait for Migration {
                         ForeignKey::create()
                             .name("fk-transaction-block_id")
                             .from(Entity, Column::BlockId)
-                            .to(Block, BlockColumn::Id),
+                            .to(Block, BlockColumn::Id)
+                            .on_delete(ForeignKeyAction::Cascade),
                     )
                     .col(ColumnDef::new(Column::TxIndex).integer().not_null())
                     .col(ColumnDef::new(Column::Payload).binary().not_null())
