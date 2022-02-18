@@ -12,10 +12,8 @@ use oura::{
 
 use entity::{
     prelude::{Block, BlockActiveModel, BlockColumn, BlockModel},
-    sea_orm::{prelude::*, Database, QueryOrder, QuerySelect, Set},
+    sea_orm::{prelude::*, Database, QueryOrder, QuerySelect, Set, TransactionTrait},
 };
-
-// DATABASE_URL=postgresql://root:root@localhost:5432/azul
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -43,6 +41,7 @@ async fn main() -> anyhow::Result<()> {
         ..Default::default()
     };
 
+    #[allow(deprecated)]
     let source_config = n2n::Config {
         address: AddressArg(
             BearerKind::Tcp,
@@ -64,60 +63,72 @@ async fn main() -> anyhow::Result<()> {
 
     let filter_setup = selection::Config { check };
 
-    let (_, source_rx) = source_setup
+    let (source_handle, source_rx) = source_setup
         .bootstrap()
         .map_err(|_| anyhow!("failed to bootstrap source"))?;
 
-    let (_, filter_rx) = filter_setup
+    let (filter_handle, filter_rx) = filter_setup
         .bootstrap(source_rx)
         .map_err(|_| anyhow!("failed to bootstrap source"))?;
 
-    loop {
-        let event = filter_rx.recv()?;
+    let sink_handle = tokio::spawn(async move {
+        loop {
+            let event = filter_rx.recv()?;
 
-        match &event.data {
-            EventData::BlockEnd(block_record) => {
-                println!("received block: {}", block_record.hash);
+            let data = event.data.clone();
 
-                let hash = hex::decode(&block_record.hash)?;
-                let payload = hex::decode(block_record.cbor_hex.as_ref().unwrap())?;
+            match data {
+                EventData::Block(block_record) => {
+                    let hash = hex::decode(&block_record.hash)?;
+                    let payload = hex::decode(block_record.cbor_hex.as_ref().unwrap())?;
 
-                let block = BlockActiveModel {
-                    era: Set(0),
-                    hash: Set(hash),
-                    height: Set(block_record.number as i32),
-                    epoch: Set(0),
-                    slot: Set(block_record.slot as i32),
-                    payload: Set(payload),
-                    ..Default::default()
-                };
+                    conn.transaction::<_, (), DbErr>(|txn| {
+                        Box::pin(async move {
+                            let block = BlockActiveModel {
+                                era: Set(0),
+                                hash: Set(hash),
+                                height: Set(block_record.number as i32),
+                                epoch: Set(0),
+                                slot: Set(block_record.slot as i32),
+                                payload: Set(payload),
+                                ..Default::default()
+                            };
 
-                let block = block.insert(&conn).await?;
+                            block.save(txn).await?;
 
-                let hash = hex::encode(block.hash);
-
-                println!("inserted block: {}", hash);
-            }
-            EventData::RollBack {
-                block_hash,
-                block_slot,
-            } => {
-                println!(
-                    "rollback received - slot: {}, hash: {}",
-                    block_slot, block_hash
-                );
-
-                Block::delete_many()
-                    .filter(BlockColumn::Slot.gt(*block_slot))
-                    .exec(&conn)
+                            Ok(())
+                        })
+                    })
                     .await?;
 
-                println!(
-                    "rollback complete - slot: {}, hash: {}",
-                    block_slot, block_hash
-                );
+                    println!(
+                        "inserted block    - slot: {}, hash: {}",
+                        block_record.slot, block_record.hash
+                    );
+                }
+                EventData::RollBack {
+                    block_hash,
+                    block_slot,
+                } => {
+                    Block::delete_many()
+                        .filter(BlockColumn::Slot.gte(block_slot))
+                        .exec(&conn)
+                        .await?;
+
+                    println!(
+                        "rollback complete - slot: {}, hash: {}",
+                        block_slot, block_hash
+                    );
+                }
+                _ => (),
             }
-            _ => (),
         }
-    }
+
+        #[allow(unreachable_code)]
+        Ok::<(), _>(())
+    });
+
+    source_handle.join().map_err(|_| anyhow!(""))?;
+    filter_handle.join().map_err(|_| anyhow!(""))?;
+    sink_handle.await.map_err(|_| anyhow!(""))?
 }
