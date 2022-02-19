@@ -31,6 +31,12 @@ pub async fn get_latest_points(conn: &DatabaseConnection) -> anyhow::Result<Vec<
     Ok(points)
 }
 
+// mainnet start point:
+// Some(PointArg(
+//     0,
+//     "f0f7892b5c333cffc4b3c4344de48af4cc63f55e44936196f365a9ef2244134f".to_string(),
+// ))
+
 pub fn oura_bootstrap(
     _points: Vec<PointArg>,
 ) -> anyhow::Result<(Vec<JoinHandle<()>>, StageReceiver)> {

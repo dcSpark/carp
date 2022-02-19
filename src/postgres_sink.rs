@@ -2,23 +2,19 @@ use std::ops::Deref;
 
 use anyhow::anyhow;
 use oura::{
-    model::{Era, EventData},
+    model::{BlockRecord, Era, EventData},
     pipelining::StageReceiver,
 };
 use pallas::ledger::primitives::{
-    alonzo::{
-        self, crypto, Certificate, StakeCredential, TransactionBody, TransactionBodyComponent,
-    },
+    alonzo::{self, crypto, Certificate, TransactionBody, TransactionBodyComponent},
     byron, Fragment,
 };
 
 use entity::{
-    prelude::{
-        AddressActiveModel, Block, BlockActiveModel, BlockColumn, StakeCredentialActiveModel,
-        TransactionActiveModel, TransactionModel, TransactionOutputActiveModel,
-        TxCredentialActiveModel,
+    prelude::*,
+    sea_orm::{
+        prelude::*, ColumnTrait, DatabaseTransaction, JoinType, QuerySelect, Set, TransactionTrait,
     },
-    sea_orm::{prelude::*, DatabaseTransaction, Set, TransactionTrait},
 };
 use migration::DbErr;
 
@@ -41,134 +37,142 @@ impl<'a> Config<'a> {
 
             match data {
                 EventData::Block(block_record) => {
-                    let hash = hex::decode(&block_record.hash)?;
-                    let payload = hex::decode(block_record.cbor_hex.as_ref().unwrap())?;
-
-                    let (multi_block, era) = block_with_era(block_record.era, &payload)?;
-
                     self.conn
-                        .transaction::<_, (), DbErr>(|txn| {
-                            Box::pin(async move {
-                                let block = BlockActiveModel {
-                                    era: Set(era),
-                                    hash: Set(hash),
-                                    height: Set(block_record.number as i64),
-                                    epoch: Set(0),
-                                    slot: Set(block_record.slot as i64),
-                                    payload: Set(payload),
-                                    ..Default::default()
-                                };
-
-                                let block = block.insert(txn).await?;
-
-                                match multi_block {
-                                    MultiEraBlock::Byron(byron_block) => {
-                                        match byron_block.deref() {
-                                            byron::Block::MainBlock(_main_block) => {}
-                                            byron::Block::EbBlock(_main_block) => {}
-                                        }
-                                    }
-                                    MultiEraBlock::Compatible(alonzo_block) => {
-                                        for (idx, tx_body) in alonzo_block
-                                            .deref()
-                                            .transaction_bodies
-                                            .iter()
-                                            .enumerate()
-                                        {
-                                            let tx_hash =
-                                                crypto::hash_transaction(tx_body).to_vec();
-
-                                            let payload = TransactionBody::encode_fragment(tx_body)
-                                                .expect("should not fail");
-
-                                            let transaction = TransactionActiveModel {
-                                                hash: Set(tx_hash),
-                                                block_id: Set(block.id),
-                                                tx_index: Set(idx as i32),
-                                                payload: Set(payload),
-                                                is_valid: Set(false),
-                                                ..Default::default()
-                                            };
-
-                                            let transaction = transaction.insert(txn).await?;
-
-                                            for component in tx_body.iter() {
-                                                insert_certificates(&transaction, component, txn)
-                                                    .await?;
-                                            }
-
-                                            for component in tx_body.iter() {
-                                                match component {
-                                                    TransactionBodyComponent::Inputs(inputs) => {
-                                                        tracing::debug!("INPUTS: {}", inputs.len());
-                                                    }
-                                                    TransactionBodyComponent::Outputs(outputs) => {
-                                                        for (idx, output) in
-                                                            outputs.iter().enumerate()
-                                                        {
-                                                            let address = AddressActiveModel {
-                                                                payload: Set(output
-                                                                    .address
-                                                                    .to_vec()),
-                                                                ..Default::default()
-                                                            };
-
-                                                            let address =
-                                                                address.insert(txn).await?;
-
-                                                            let tx_output =
-                                                                TransactionOutputActiveModel {
-                                                                    payload: Set(vec![]),
-                                                                    address_id: Set(address.id),
-                                                                    tx_id: Set(transaction.id),
-                                                                    output_index: Set(idx as i32),
-                                                                    ..Default::default()
-                                                                };
-
-                                                            tx_output.save(txn).await?;
-                                                        }
-                                                        tracing::debug!(
-                                                            "OUTPUTS: {}",
-                                                            outputs.len()
-                                                        );
-                                                    }
-                                                    _ => (),
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                Ok(())
-                            })
-                        })
+                        .transaction::<_, (), DbErr>(|txn| Box::pin(insert(block_record, txn)))
                         .await?;
-
-                    tracing::info!(
-                        "inserted block    - slot: {}, hash: {}",
-                        block_record.slot,
-                        block_record.hash
-                    );
                 }
-                EventData::RollBack {
-                    block_hash,
-                    block_slot,
-                } => {
+                EventData::RollBack { block_slot, .. } => {
                     Block::delete_many()
-                        .filter(BlockColumn::Slot.gte(block_slot))
+                        .filter(BlockColumn::Slot.gt(block_slot))
                         .exec(self.conn)
                         .await?;
-
-                    tracing::info!(
-                        "rollback complete - slot: {}, hash: {}",
-                        block_slot,
-                        block_hash
-                    );
                 }
                 _ => (),
             }
         }
     }
+}
+
+async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<(), DbErr> {
+    let hash = hex::decode(&block_record.hash).unwrap();
+    let payload = hex::decode(block_record.cbor_hex.as_ref().unwrap()).unwrap();
+
+    let (multi_block, era) = block_with_era(block_record.era.unwrap(), &payload).unwrap();
+
+    let block = BlockActiveModel {
+        era: Set(era),
+        hash: Set(hash),
+        height: Set(block_record.number as i64),
+        epoch: Set(0),
+        slot: Set(block_record.slot as i64),
+        payload: Set(payload),
+        ..Default::default()
+    };
+
+    let block = block.insert(txn).await?;
+
+    match multi_block {
+        MultiEraBlock::Byron(byron_block) => match byron_block.deref() {
+            byron::Block::MainBlock(_main_block) => {}
+            byron::Block::EbBlock(_main_block) => {}
+        },
+        MultiEraBlock::Compatible(alonzo_block) => {
+            for (idx, tx_body) in alonzo_block.deref().transaction_bodies.iter().enumerate() {
+                let tx_hash = crypto::hash_transaction(tx_body).to_vec();
+
+                let payload = TransactionBody::encode_fragment(tx_body).unwrap();
+
+                let mut is_valid = true;
+
+                if let Some(ref invalid_txs) = alonzo_block.invalid_transactions {
+                    is_valid = invalid_txs.iter().any(|i| *i as usize == idx)
+                }
+
+                let transaction = TransactionActiveModel {
+                    hash: Set(tx_hash),
+                    block_id: Set(block.id),
+                    tx_index: Set(idx as i32),
+                    payload: Set(payload),
+                    is_valid: Set(is_valid),
+                    ..Default::default()
+                };
+
+                let transaction = transaction.insert(txn).await?;
+
+                for component in tx_body.iter() {
+                    insert_certificates(&transaction, component, txn).await?;
+                }
+
+                for component in tx_body.iter() {
+                    match component {
+                        TransactionBodyComponent::Inputs(inputs) if is_valid => {
+                            for (idx, input) in inputs.iter().enumerate() {
+                                insert_input(&transaction, idx as i32, input, txn).await?;
+                            }
+                        }
+                        TransactionBodyComponent::Collateral(inputs) if !is_valid => {
+                            for (idx, input) in inputs.iter().enumerate() {
+                                insert_input(&transaction, idx as i32, input, txn).await?;
+                            }
+                        }
+                        TransactionBodyComponent::Outputs(outputs) => {
+                            for (idx, output) in outputs.iter().enumerate() {
+                                let address = AddressActiveModel {
+                                    payload: Set(output.address.to_vec()),
+                                    ..Default::default()
+                                };
+
+                                let address = address.insert(txn).await?;
+
+                                let tx_output = TransactionOutputActiveModel {
+                                    payload: Set(vec![]),
+                                    address_id: Set(address.id),
+                                    tx_id: Set(transaction.id),
+                                    output_index: Set(idx as i32),
+                                    ..Default::default()
+                                };
+
+                                tx_output.save(txn).await?;
+                            }
+                        }
+                        _ => (),
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
+async fn insert_input(
+    tx: &TransactionModel,
+    idx: i32,
+    input: &alonzo::TransactionInput,
+    txn: &DatabaseTransaction,
+) -> Result<(), DbErr> {
+    let tx_output = TransactionOutput::find()
+        .filter(TransactionOutputColumn::OutputIndex.eq(input.index))
+        .join(
+            JoinType::LeftJoin,
+            TransactionOutputRelation::Transaction.def(),
+        )
+        .filter(TransactionColumn::Hash.eq(input.transaction_id.to_vec()))
+        .one(txn)
+        .await?;
+
+    let tx_output = tx_output.unwrap();
+
+    let tx_input = TransactionInputActiveModel {
+        utxo_id: Set(tx_output.id),
+        tx_id: Set(tx.id),
+        input_index: Set(idx),
+        ..Default::default()
+    };
+
+    tx_input.save(txn).await?;
+
+    Ok(())
 }
 
 async fn insert_certificates(
@@ -180,13 +184,13 @@ async fn insert_certificates(
         for cert in certs.iter() {
             match cert {
                 Certificate::StakeDelegation(credential, _) => {
-                    insert_credential(tx, credential, txn).await?;
+                    insert_credential(tx, credential, txn, 0).await?;
                 }
                 Certificate::StakeRegistration(credential) => {
-                    insert_credential(tx, credential, txn).await?;
+                    insert_credential(tx, credential, txn, 1).await?;
                 }
                 Certificate::StakeDeregistration(credential) => {
-                    insert_credential(tx, credential, txn).await?;
+                    insert_credential(tx, credential, txn, 2).await?;
                 }
                 _ => (),
             }
@@ -198,27 +202,43 @@ async fn insert_certificates(
 
 async fn insert_credential(
     tx: &TransactionModel,
-    credential: &StakeCredential,
+    credential: &alonzo::StakeCredential,
     txn: &DatabaseTransaction,
+    relation: i32,
 ) -> Result<(), DbErr> {
-    let credential = credential.encode_fragment().expect("should not fail");
+    let credential = credential.encode_fragment().unwrap();
 
-    let stake_credential = StakeCredentialActiveModel {
-        credential: Set(credential),
-        ..Default::default()
-    };
+    let sc = StakeCredential::find()
+        .filter(StakeCredentialColumn::Credential.eq(credential.clone()))
+        .one(txn)
+        .await?;
 
-    let stake_credential = stake_credential.insert(txn).await?;
+    if let Some(stake_credential) = sc {
+        let tx_credential = TxCredentialActiveModel {
+            credential_id: Set(stake_credential.id),
+            tx_id: Set(tx.id),
+            relation: Set(relation),
+            ..Default::default()
+        };
 
-    let tx_credential = TxCredentialActiveModel {
-        credential_id: Set(stake_credential.id),
-        tx_id: Set(tx.id),
-        // TODO: what should this be?
-        relation: Set(0),
-        ..Default::default()
-    };
+        tx_credential.save(txn).await?;
+    } else {
+        let stake_credential = StakeCredentialActiveModel {
+            credential: Set(credential),
+            ..Default::default()
+        };
 
-    tx_credential.save(txn).await?;
+        let stake_credential = stake_credential.insert(txn).await?;
+
+        let tx_credential = TxCredentialActiveModel {
+            credential_id: Set(stake_credential.id),
+            tx_id: Set(tx.id),
+            relation: Set(relation),
+            ..Default::default()
+        };
+
+        tx_credential.save(txn).await?;
+    }
 
     Ok(())
 }

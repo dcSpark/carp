@@ -25,7 +25,12 @@ impl MigrationTrait for Migration {
                             .auto_increment()
                             .primary_key(),
                     )
-                    .col(ColumnDef::new(Column::Credential).binary().not_null())
+                    .col(
+                        ColumnDef::new(Column::Credential)
+                            .binary()
+                            .not_null()
+                            .unique_key(),
+                    )
                     .to_owned(),
             )
             .await

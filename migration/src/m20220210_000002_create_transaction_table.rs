@@ -26,7 +26,12 @@ impl MigrationTrait for Migration {
                             .auto_increment()
                             .primary_key(),
                     )
-                    .col(ColumnDef::new(Column::Hash).binary().not_null())
+                    .col(
+                        ColumnDef::new(Column::Hash)
+                            .binary()
+                            .not_null()
+                            .unique_key(),
+                    )
                     .col(ColumnDef::new(Column::BlockId).integer().not_null())
                     .foreign_key(
                         ForeignKey::create()
