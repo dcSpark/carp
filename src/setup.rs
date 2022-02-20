@@ -45,7 +45,7 @@ pub fn oura_bootstrap(
     let well_known = ChainWellKnownInfo::try_from_magic(*magic)
         .map_err(|_| anyhow!("chain well known info failed"))?;
 
-    let utils = Arc::new(Utils::new(well_known, None));
+    let utils = Arc::new(Utils::new(well_known));
 
     let mapper = mapper::Config {
         include_block_end_events: true,

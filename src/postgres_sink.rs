@@ -57,7 +57,7 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
     let hash = hex::decode(&block_record.hash).unwrap();
     let payload = hex::decode(block_record.cbor_hex.as_ref().unwrap()).unwrap();
 
-    let (multi_block, era) = block_with_era(block_record.era.unwrap(), &payload).unwrap();
+    let (multi_block, era) = block_with_era(block_record.era, &payload).unwrap();
 
     let block = BlockActiveModel {
         era: Set(era),
