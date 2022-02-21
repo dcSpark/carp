@@ -1266,7 +1266,7 @@ dependencies = [
 [[package]]
 name = "oura"
 version = "1.1.0"
-source = "git+https://github.com/txpipe/oura?branch=main#c34d80e9f5d70144520f20bed5ff342c1b0cb638"
+source = "git+https://github.com/txpipe/oura?branch=main#7bf56711bbdfbf68a25ff9db799e553c0fb286db"
 dependencies = [
  "bech32 0.8.1",
  "clap 3.0.14",

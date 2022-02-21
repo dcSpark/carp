@@ -38,7 +38,7 @@ pub async fn get_latest_points(conn: &DatabaseConnection) -> anyhow::Result<Vec<
 // ))
 
 pub fn oura_bootstrap(
-    _points: Vec<PointArg>,
+    points: Vec<PointArg>,
 ) -> anyhow::Result<(Vec<JoinHandle<()>>, StageReceiver)> {
     let magic = MagicArg::from_str("testnet").map_err(|_| anyhow!("magic arg failed"))?;
 
@@ -65,6 +65,7 @@ pub fn oura_bootstrap(
         mapper,
         since: None,
         min_depth: 0,
+        intersections: Some(points),
     };
 
     let source_setup = WithUtils::new(source_config, utils);
