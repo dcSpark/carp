@@ -40,6 +40,15 @@ pub async fn get_latest_points(conn: &DatabaseConnection) -> anyhow::Result<Vec<
 pub fn oura_bootstrap(
     points: Vec<PointArg>,
 ) -> anyhow::Result<(Vec<JoinHandle<()>>, StageReceiver)> {
+    let intersections = if !points.is_empty() {
+        Some(points)
+    } else {
+        Some(vec![PointArg(
+            0,
+            "f0f7892b5c333cffc4b3c4344de48af4cc63f55e44936196f365a9ef2244134f".to_string(),
+        )])
+    };
+
     let magic = MagicArg::from_str("testnet").map_err(|_| anyhow!("magic arg failed"))?;
 
     let well_known = ChainWellKnownInfo::try_from_magic(*magic)
@@ -65,7 +74,7 @@ pub fn oura_bootstrap(
         mapper,
         since: None,
         min_depth: 0,
-        intersections: Some(points),
+        intersections,
     };
 
     let source_setup = WithUtils::new(source_config, utils);
