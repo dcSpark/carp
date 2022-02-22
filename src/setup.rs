@@ -47,7 +47,6 @@ pub fn oura_bootstrap(
     let utils = Arc::new(Utils::new(well_known));
 
     let mapper = mapper::Config {
-        include_block_end_events: true,
         include_transaction_details: true,
         include_block_cbor: true,
         ..Default::default()

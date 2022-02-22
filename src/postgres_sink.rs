@@ -31,18 +31,38 @@ enum MultiEraBlock {
     Compatible(Box<alonzo::Block>),
 }
 
+#[derive(Copy, Clone)]
 enum TxCredentialRelation {
-    Delegation,
+    StakeDelegation,
     StakeRegistration,
     StakeDeregistration,
+    Input,
+    Output,
+}
+
+#[derive(Copy, Clone)]
+enum AddressCredentialRelation {
+    PaymentKey,
+    StakeKey,
 }
 
 impl From<TxCredentialRelation> for i32 {
     fn from(item: TxCredentialRelation) -> Self {
         match item {
-            TxCredentialRelation::Delegation => 0,
+            TxCredentialRelation::StakeDelegation => 0,
             TxCredentialRelation::StakeRegistration => 1,
             TxCredentialRelation::StakeDeregistration => 2,
+            TxCredentialRelation::Input => 3,
+            TxCredentialRelation::Output => 4,
+        }
+    }
+}
+
+impl From<AddressCredentialRelation> for i32 {
+    fn from(item: AddressCredentialRelation) -> Self {
+        match item {
+            AddressCredentialRelation::PaymentKey => 0,
+            AddressCredentialRelation::StakeKey => 1,
         }
     }
 }
@@ -103,14 +123,12 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
 
                     let tx_payload = tx_body.encode_fragment().unwrap();
 
-                    let is_valid = true;
-
                     let transaction = TransactionActiveModel {
                         hash: Set(tx_hash),
                         block_id: Set(block.id),
                         tx_index: Set(idx as i32),
                         payload: Set(tx_payload),
-                        is_valid: Set(is_valid),
+                        is_valid: Set(true),
                         ..Default::default()
                     };
 
@@ -233,72 +251,81 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
                         }
                         TransactionBodyComponent::Outputs(outputs) => {
                             for (idx, output) in outputs.iter().enumerate() {
+                                use cardano_serialization_lib::address::Address;
+
                                 let address = insert_address(output.address.to_vec(), txn).await?;
 
-                                let addr = cardano_serialization_lib::address::Address::from_bytes(
-                                    output.address.to_vec(),
-                                )
-                                .unwrap();
+                                let addr = Address::from_bytes(output.address.to_vec()).unwrap();
+
+                                let tx_relation = TxCredentialRelation::Output;
+                                let address_relation = AddressCredentialRelation::PaymentKey;
 
                                 if let Some(base_addr) = BaseAddress::from_address(&addr) {
+                                    // Payment Key
                                     let payload = base_addr.payment_cred().to_bytes();
 
-                                    let stake_credential =
-                                        insert_credential(&transaction, payload, txn, 3).await?;
+                                    insert_address_credential(
+                                        payload,
+                                        &transaction,
+                                        &address,
+                                        tx_relation.into(),
+                                        address_relation.into(),
+                                        txn,
+                                    )
+                                    .await?;
 
-                                    let address_credential = AddressCredentialActiveModel {
-                                        credential_id: Set(stake_credential.id),
-                                        address_id: Set(address.id),
-                                        relation: Set(3),
-                                        ..Default::default()
-                                    };
+                                    // Stake Key
+                                    let payload = base_addr.stake_cred().to_bytes();
 
-                                    address_credential.save(txn).await?;
+                                    let address_relation = AddressCredentialRelation::StakeKey;
+
+                                    insert_address_credential(
+                                        payload,
+                                        &transaction,
+                                        &address,
+                                        tx_relation.into(),
+                                        address_relation.into(),
+                                        txn,
+                                    )
+                                    .await?;
                                 } else if let Some(ptr_addr) = PointerAddress::from_address(&addr) {
                                     let payload = ptr_addr.payment_cred().to_bytes();
 
-                                    let stake_credential =
-                                        insert_credential(&transaction, payload, txn, 4).await?;
-
-                                    let address_credential = AddressCredentialActiveModel {
-                                        credential_id: Set(stake_credential.id),
-                                        address_id: Set(address.id),
-                                        relation: Set(4),
-                                        ..Default::default()
-                                    };
-
-                                    address_credential.save(txn).await?;
+                                    insert_address_credential(
+                                        payload,
+                                        &transaction,
+                                        &address,
+                                        tx_relation.into(),
+                                        address_relation.into(),
+                                        txn,
+                                    )
+                                    .await?;
                                 } else if let Some(enterprise_addr) =
                                     EnterpriseAddress::from_address(&addr)
                                 {
                                     let payload = enterprise_addr.payment_cred().to_bytes();
 
-                                    let stake_credential =
-                                        insert_credential(&transaction, payload, txn, 5).await?;
-
-                                    let address_credential = AddressCredentialActiveModel {
-                                        credential_id: Set(stake_credential.id),
-                                        address_id: Set(address.id),
-                                        relation: Set(5),
-                                        ..Default::default()
-                                    };
-
-                                    address_credential.save(txn).await?;
+                                    insert_address_credential(
+                                        payload,
+                                        &transaction,
+                                        &address,
+                                        tx_relation.into(),
+                                        address_relation.into(),
+                                        txn,
+                                    )
+                                    .await?;
                                 } else if let Some(reward_addr) = RewardAddress::from_address(&addr)
                                 {
                                     let payload = reward_addr.payment_cred().to_bytes();
-
-                                    let stake_credential =
-                                        insert_credential(&transaction, payload, txn, 6).await?;
-
-                                    let address_credential = AddressCredentialActiveModel {
-                                        credential_id: Set(stake_credential.id),
-                                        address_id: Set(address.id),
-                                        relation: Set(6),
-                                        ..Default::default()
-                                    };
-
-                                    address_credential.save(txn).await?;
+                                    insert_address_credential(
+                                        payload,
+                                        &transaction,
+                                        &address,
+                                        tx_relation.into(),
+                                        address_relation.into(),
+                                        txn,
+                                    )
+                                    .await?;
                                 };
 
                                 let tx_output = TransactionOutputActiveModel {
@@ -345,6 +372,28 @@ async fn insert_address(
     }
 }
 
+async fn insert_address_credential(
+    payload: Vec<u8>,
+    tx: &TransactionModel,
+    address: &AddressModel,
+    tx_relation: i32,
+    address_relation: i32,
+    txn: &DatabaseTransaction,
+) -> Result<(), DbErr> {
+    let stake_credential = insert_credential(tx, payload, txn, tx_relation).await?;
+
+    let address_credential = AddressCredentialActiveModel {
+        credential_id: Set(stake_credential.id),
+        address_id: Set(address.id),
+        relation: Set(address_relation),
+        ..Default::default()
+    };
+
+    address_credential.save(txn).await?;
+
+    Ok(())
+}
+
 async fn insert_input(
     tx: &TransactionModel,
     idx: i32,
@@ -385,7 +434,7 @@ async fn insert_certificates(
         for cert in certs.iter() {
             let (credential, relation) = match cert {
                 Certificate::StakeDelegation(credential, _) => {
-                    (credential, TxCredentialRelation::Delegation)
+                    (credential, TxCredentialRelation::StakeDelegation)
                 }
                 Certificate::StakeRegistration(credential) => {
                     (credential, TxCredentialRelation::StakeRegistration)
