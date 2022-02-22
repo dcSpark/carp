@@ -7,10 +7,7 @@ mod setup;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::DEBUG)
-        .with_test_writer()
-        .init();
+    tracing_subscriber::fmt().with_test_writer().init();
 
     // TODO: use an environment variable before going to production
     let conn = Database::connect("postgresql://root:root@localhost:5432/cardano").await?;
