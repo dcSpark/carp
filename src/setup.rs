@@ -15,7 +15,7 @@ use entity::{
 };
 
 pub async fn get_latest_points(conn: &DatabaseConnection) -> anyhow::Result<Vec<PointArg>> {
-    let mut points: Vec<PointArg> = Block::find()
+    let points: Vec<PointArg> = Block::find()
         .order_by_desc(BlockColumn::Id)
         .limit(2160)
         .all(conn)
@@ -24,18 +24,8 @@ pub async fn get_latest_points(conn: &DatabaseConnection) -> anyhow::Result<Vec<
         .map(|block| PointArg(block.slot as u64, hex::encode(&block.hash)))
         .collect();
 
-    if points.is_empty() {
-        points = vec![PointArg(0, "GENESIS HASH".to_string())];
-    }
-
     Ok(points)
 }
-
-// mainnet start point:
-// Some(PointArg(
-//     0,
-//     "f0f7892b5c333cffc4b3c4344de48af4cc63f55e44936196f365a9ef2244134f".to_string(),
-// ))
 
 pub fn oura_bootstrap(
     points: Vec<PointArg>,
@@ -49,7 +39,7 @@ pub fn oura_bootstrap(
         )])
     };
 
-    let magic = MagicArg::from_str("testnet").map_err(|_| anyhow!("magic arg failed"))?;
+    let magic = MagicArg::from_str("mainnet").map_err(|_| anyhow!("magic arg failed"))?;
 
     let well_known = ChainWellKnownInfo::try_from_magic(*magic)
         .map_err(|_| anyhow!("chain well known info failed"))?;
@@ -67,7 +57,7 @@ pub fn oura_bootstrap(
     let source_config = n2n::Config {
         address: AddressArg(
             BearerKind::Tcp,
-            "relays-new.cardano-testnet.iohkdev.io:3001".to_string(),
+            "relays-new.cardano-mainnet.iohk.io:3001".to_string(),
         ),
         magic: Some(magic),
         well_known: None,

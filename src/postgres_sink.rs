@@ -5,9 +5,13 @@ use oura::{
     model::{BlockRecord, Era, EventData},
     pipelining::StageReceiver,
 };
-use pallas::ledger::primitives::{
-    alonzo::{self, crypto, Certificate, TransactionBody, TransactionBodyComponent},
-    byron, Fragment,
+use pallas::{
+    crypto::hash::{Hash, Hasher},
+    ledger::primitives::{
+        alonzo::{self, Certificate, TransactionBody, TransactionBodyComponent},
+        byron::{self, TxIn, TxPayload},
+        Fragment,
+    },
 };
 
 use entity::{
@@ -73,12 +77,61 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
 
     match multi_block {
         MultiEraBlock::Byron(byron_block) => match byron_block.deref() {
-            byron::Block::MainBlock(_main_block) => {}
-            byron::Block::EbBlock(_main_block) => {}
+            byron::Block::EbBlock(_) => (),
+            byron::Block::MainBlock(main_block) => {
+                for (idx, tx_body) in main_block.body.tx_payload.iter().enumerate() {
+                    let tx_hash = Hasher::<256>::hash_cbor(tx_body).to_vec();
+
+                    let payload = TxPayload::encode_fragment(tx_body).unwrap();
+
+                    let is_valid = true;
+
+                    let transaction = TransactionActiveModel {
+                        hash: Set(tx_hash),
+                        block_id: Set(block.id),
+                        tx_index: Set(idx as i32),
+                        payload: Set(payload),
+                        is_valid: Set(is_valid),
+                        ..Default::default()
+                    };
+
+                    let transaction = transaction.insert(txn).await?;
+
+                    for (idx, input) in tx_body.transaction.inputs.iter().enumerate() {
+                        let (tx_hash, index) = match input {
+                            TxIn::Variant0(wrapped) => wrapped.deref(),
+                            TxIn::Other(index, tx_hash) => {
+                                todo!("handle TxIn::Other({:?}, {:?})", index, tx_hash)
+                            }
+                        };
+
+                        insert_input(&transaction, idx as i32, *index as u64, tx_hash, txn).await?;
+                    }
+
+                    for (idx, output) in tx_body.transaction.outputs.iter().enumerate() {
+                        let address = AddressActiveModel {
+                            payload: Set(output.address.encode_fragment().unwrap()),
+                            ..Default::default()
+                        };
+
+                        let address = address.insert(txn).await?;
+
+                        let tx_output = TransactionOutputActiveModel {
+                            payload: Set(output.encode_fragment().unwrap()),
+                            address_id: Set(address.id),
+                            tx_id: Set(transaction.id),
+                            output_index: Set(idx as i32),
+                            ..Default::default()
+                        };
+
+                        tx_output.save(txn).await?;
+                    }
+                }
+            }
         },
         MultiEraBlock::Compatible(alonzo_block) => {
             for (idx, tx_body) in alonzo_block.deref().transaction_bodies.iter().enumerate() {
-                let tx_hash = crypto::hash_transaction(tx_body).to_vec();
+                let tx_hash = alonzo::crypto::hash_transaction(tx_body).to_vec();
 
                 let payload = TransactionBody::encode_fragment(tx_body).unwrap();
 
@@ -107,12 +160,26 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
                     match component {
                         TransactionBodyComponent::Inputs(inputs) if is_valid => {
                             for (idx, input) in inputs.iter().enumerate() {
-                                insert_input(&transaction, idx as i32, input, txn).await?;
+                                insert_input(
+                                    &transaction,
+                                    idx as i32,
+                                    input.index,
+                                    &input.transaction_id,
+                                    txn,
+                                )
+                                .await?;
                             }
                         }
                         TransactionBodyComponent::Collateral(inputs) if !is_valid => {
                             for (idx, input) in inputs.iter().enumerate() {
-                                insert_input(&transaction, idx as i32, input, txn).await?;
+                                insert_input(
+                                    &transaction,
+                                    idx as i32,
+                                    input.index,
+                                    &input.transaction_id,
+                                    txn,
+                                )
+                                .await?;
                             }
                         }
                         TransactionBodyComponent::Outputs(outputs) => {
@@ -125,7 +192,7 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
                                 let address = address.insert(txn).await?;
 
                                 let tx_output = TransactionOutputActiveModel {
-                                    payload: Set(vec![]),
+                                    payload: Set(output.encode_fragment().unwrap()),
                                     address_id: Set(address.id),
                                     tx_id: Set(transaction.id),
                                     output_index: Set(idx as i32),
@@ -148,16 +215,17 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
 async fn insert_input(
     tx: &TransactionModel,
     idx: i32,
-    input: &alonzo::TransactionInput,
+    index: u64,
+    tx_hash: &Hash<32>,
     txn: &DatabaseTransaction,
 ) -> Result<(), DbErr> {
     let tx_output = TransactionOutput::find()
-        .filter(TransactionOutputColumn::OutputIndex.eq(input.index))
+        .filter(TransactionOutputColumn::OutputIndex.eq(index))
         .join(
             JoinType::LeftJoin,
             TransactionOutputRelation::Transaction.def(),
         )
-        .filter(TransactionColumn::Hash.eq(input.transaction_id.to_vec()))
+        .filter(TransactionColumn::Hash.eq(tx_hash.to_vec()))
         .one(txn)
         .await?;
 
