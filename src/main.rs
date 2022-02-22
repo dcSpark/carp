@@ -4,6 +4,7 @@ use entity::sea_orm::Database;
 
 mod postgres_sink;
 mod setup;
+mod types;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
