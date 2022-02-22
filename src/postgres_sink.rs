@@ -31,6 +31,22 @@ enum MultiEraBlock {
     Compatible(Box<alonzo::Block>),
 }
 
+enum TxCredentialRelation {
+    Delegation,
+    StakeRegistration,
+    StakeDeregistration,
+}
+
+impl From<TxCredentialRelation> for i32 {
+    fn from(item: TxCredentialRelation) -> Self {
+        match item {
+            TxCredentialRelation::Delegation => 0,
+            TxCredentialRelation::StakeRegistration => 1,
+            TxCredentialRelation::StakeDeregistration => 2,
+        }
+    }
+}
+
 pub struct Config<'a> {
     pub conn: &'a DatabaseConnection,
 }
@@ -367,21 +383,22 @@ async fn insert_certificates(
 ) -> Result<(), DbErr> {
     if let TransactionBodyComponent::Certificates(certs) = component {
         for cert in certs.iter() {
-            match cert {
+            let (credential, relation) = match cert {
                 Certificate::StakeDelegation(credential, _) => {
-                    let credential = credential.encode_fragment().unwrap();
-                    insert_credential(tx, credential, txn, 0).await?;
+                    (credential, TxCredentialRelation::Delegation)
                 }
                 Certificate::StakeRegistration(credential) => {
-                    let credential = credential.encode_fragment().unwrap();
-                    insert_credential(tx, credential, txn, 1).await?;
+                    (credential, TxCredentialRelation::StakeRegistration)
                 }
                 Certificate::StakeDeregistration(credential) => {
-                    let credential = credential.encode_fragment().unwrap();
-                    insert_credential(tx, credential, txn, 2).await?;
+                    (credential, TxCredentialRelation::StakeDeregistration)
                 }
-                _ => (),
-            }
+                _ => continue,
+            };
+
+            let credential = credential.encode_fragment().unwrap();
+
+            insert_credential(tx, credential, txn, relation.into()).await?;
         }
     }
 
