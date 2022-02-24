@@ -93,17 +93,6 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
 
                     let transaction = transaction.insert(txn).await?;
 
-                    for (idx, input) in tx_body.transaction.inputs.iter().enumerate() {
-                        let (tx_hash, index) = match input {
-                            TxIn::Variant0(wrapped) => wrapped.deref(),
-                            TxIn::Other(index, tx_hash) => {
-                                todo!("handle TxIn::Other({:?}, {:?})", index, tx_hash)
-                            }
-                        };
-
-                        insert_input(&transaction, idx as i32, *index as u64, tx_hash, txn).await?;
-                    }
-
                     for (idx, output) in tx_body.transaction.outputs.iter().enumerate() {
                         let address_payload = output.address.encode_fragment().unwrap();
 
@@ -113,11 +102,22 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
                             payload: Set(output.encode_fragment().unwrap()),
                             address_id: Set(address.id),
                             tx_id: Set(transaction.id),
-                            output_index: Set(idx as i32),
+                            output_index: Set(idx as i64),
                             ..Default::default()
                         };
 
                         tx_output.save(txn).await?;
+                    }
+
+                    for (idx, input) in tx_body.transaction.inputs.iter().enumerate() {
+                        let (tx_hash, index) = match input {
+                            TxIn::Variant0(wrapped) => wrapped.deref(),
+                            TxIn::Other(index, tx_hash) => {
+                                todo!("handle TxIn::Other({:?}, {:?})", index, tx_hash)
+                            }
+                        };
+
+                        insert_input(&transaction, idx as i32, *index as u64, tx_hash, txn).await?;
                     }
                 }
             }
@@ -184,30 +184,6 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
 
                 for component in tx_body.iter() {
                     match component {
-                        TransactionBodyComponent::Inputs(inputs) if is_valid => {
-                            for (idx, input) in inputs.iter().enumerate() {
-                                insert_input(
-                                    &transaction,
-                                    idx as i32,
-                                    input.index,
-                                    &input.transaction_id,
-                                    txn,
-                                )
-                                .await?;
-                            }
-                        }
-                        TransactionBodyComponent::Collateral(inputs) if !is_valid => {
-                            for (idx, input) in inputs.iter().enumerate() {
-                                insert_input(
-                                    &transaction,
-                                    idx as i32,
-                                    input.index,
-                                    &input.transaction_id,
-                                    txn,
-                                )
-                                .await?;
-                            }
-                        }
                         TransactionBodyComponent::Outputs(outputs) => {
                             for (idx, output) in outputs.iter().enumerate() {
                                 use cardano_serialization_lib::address::Address;
@@ -291,13 +267,38 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
                                     payload: Set(output.encode_fragment().unwrap()),
                                     address_id: Set(address.id),
                                     tx_id: Set(transaction.id),
-                                    output_index: Set(idx as i32),
+                                    output_index: Set(idx as i64),
                                     ..Default::default()
                                 };
 
                                 tx_output.save(txn).await?;
                             }
                         }
+                        TransactionBodyComponent::Inputs(inputs) if is_valid => {
+                            for (idx, input) in inputs.iter().enumerate() {
+                                insert_input(
+                                    &transaction,
+                                    idx as i32,
+                                    input.index,
+                                    &input.transaction_id,
+                                    txn,
+                                )
+                                .await?;
+                            }
+                        }
+                        TransactionBodyComponent::Collateral(inputs) if !is_valid => {
+                            for (idx, input) in inputs.iter().enumerate() {
+                                insert_input(
+                                    &transaction,
+                                    idx as i32,
+                                    input.index,
+                                    &input.transaction_id,
+                                    txn,
+                                )
+                                .await?;
+                            }
+                        }
+
                         _ => (),
                     }
                 }
@@ -361,11 +362,11 @@ async fn insert_input(
     txn: &DatabaseTransaction,
 ) -> Result<(), DbErr> {
     let tx_output = TransactionOutput::find()
-        .filter(TransactionOutputColumn::OutputIndex.eq(index))
         .join(
-            JoinType::LeftJoin,
+            JoinType::InnerJoin,
             TransactionOutputRelation::Transaction.def(),
         )
+        .filter(TransactionOutputColumn::OutputIndex.eq(index))
         .filter(TransactionColumn::Hash.eq(tx_hash.to_vec()))
         .one(txn)
         .await?;

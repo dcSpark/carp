@@ -17,7 +17,7 @@ use entity::{
 pub async fn get_latest_points(conn: &DatabaseConnection) -> anyhow::Result<Vec<PointArg>> {
     let points: Vec<PointArg> = Block::find()
         .order_by_desc(BlockColumn::Id)
-        .limit(2160)
+        .limit(1)
         .all(conn)
         .await?
         .iter()

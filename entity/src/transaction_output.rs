@@ -9,7 +9,7 @@ pub struct Model {
     pub payload: Vec<u8>,
     pub address_id: i32,
     pub tx_id: i32,
-    pub output_index: i32,
+    pub output_index: i64,
 }
 
 #[derive(Copy, Clone, Debug, DeriveRelation, EnumIter)]

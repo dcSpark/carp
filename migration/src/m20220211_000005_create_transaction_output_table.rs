@@ -43,7 +43,7 @@ impl MigrationTrait for Migration {
                             .to(Transaction, TransactionColumn::Id)
                             .on_delete(ForeignKeyAction::Cascade),
                     )
-                    .col(ColumnDef::new(Column::OutputIndex).integer().not_null())
+                    .col(ColumnDef::new(Column::OutputIndex).big_integer().not_null())
                     .to_owned(),
             )
             .await
