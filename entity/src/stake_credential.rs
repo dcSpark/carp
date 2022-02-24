@@ -18,4 +18,11 @@ pub enum Relation {
     AddressCredential,
 }
 
+// TODO: figure out why this isn't automatically handle by the macros above
+impl Related<super::address_credential::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::AddressCredential.def()
+    }
+}
+
 impl ActiveModelBehavior for ActiveModel {}

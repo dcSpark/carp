@@ -17,7 +17,7 @@ use pallas::{
     },
 };
 
-use crate::types::{AddressCredentialRelation, MultiEraBlock, TxCredentialRelation};
+use crate::types::{AddressCredentialRelationValue, MultiEraBlock, TxCredentialRelationValue};
 use entity::{
     prelude::*,
     sea_orm::{
@@ -192,8 +192,8 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
 
                                 let addr = Address::from_bytes(output.address.to_vec()).unwrap();
 
-                                let tx_relation = TxCredentialRelation::Output;
-                                let address_relation = AddressCredentialRelation::PaymentKey;
+                                let tx_relation = TxCredentialRelationValue::Output;
+                                let address_relation = AddressCredentialRelationValue::PaymentKey;
 
                                 if let Some(base_addr) = BaseAddress::from_address(&addr) {
                                     // Payment Key
@@ -212,7 +212,7 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
                                     // Stake Key
                                     let payload = base_addr.stake_cred().to_bytes();
 
-                                    let address_relation = AddressCredentialRelation::StakeKey;
+                                    let address_relation = AddressCredentialRelationValue::StakeKey;
 
                                     insert_address_credential(
                                         payload,
@@ -362,16 +362,40 @@ async fn insert_input(
     txn: &DatabaseTransaction,
 ) -> Result<(), DbErr> {
     let tx_output = TransactionOutput::find()
-        .join(
-            JoinType::InnerJoin,
-            TransactionOutputRelation::Transaction.def(),
-        )
+        .inner_join(Transaction)
         .filter(TransactionOutputColumn::OutputIndex.eq(index))
         .filter(TransactionColumn::Hash.eq(tx_hash.to_vec()))
         .one(txn)
         .await?;
 
     let tx_output = tx_output.unwrap();
+
+    let stake_credentials = StakeCredential::find()
+        .inner_join(AddressCredential)
+        .join(
+            JoinType::InnerJoin,
+            AddressRelation::AddressCredential.def(),
+        )
+        .join(
+            JoinType::InnerJoin,
+            TransactionOutputRelation::Address.def(),
+        )
+        .filter(TransactionOutputColumn::Id.eq(tx_output.id))
+        .all(txn)
+        .await?;
+
+    let relation = TxCredentialRelationValue::Input;
+
+    for stake_credential in stake_credentials {
+        let tx_credential = TxCredentialActiveModel {
+            credential_id: Set(stake_credential.id),
+            tx_id: Set(tx.id),
+            relation: Set(relation.into()),
+            ..Default::default()
+        };
+
+        tx_credential.save(txn).await?;
+    }
 
     let tx_input = TransactionInputActiveModel {
         utxo_id: Set(tx_output.id),
@@ -394,13 +418,13 @@ async fn insert_certificates(
         for cert in certs.iter() {
             let (credential, relation) = match cert {
                 Certificate::StakeDelegation(credential, _) => {
-                    (credential, TxCredentialRelation::StakeDelegation)
+                    (credential, TxCredentialRelationValue::StakeDelegation)
                 }
                 Certificate::StakeRegistration(credential) => {
-                    (credential, TxCredentialRelation::StakeRegistration)
+                    (credential, TxCredentialRelationValue::StakeRegistration)
                 }
                 Certificate::StakeDeregistration(credential) => {
-                    (credential, TxCredentialRelation::StakeDeregistration)
+                    (credential, TxCredentialRelationValue::StakeDeregistration)
                 }
                 _ => continue,
             };

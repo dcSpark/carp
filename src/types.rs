@@ -7,7 +7,7 @@ pub enum MultiEraBlock {
 }
 
 #[derive(Copy, Clone)]
-pub enum TxCredentialRelation {
+pub enum TxCredentialRelationValue {
     StakeDelegation,
     StakeRegistration,
     StakeDeregistration,
@@ -16,28 +16,28 @@ pub enum TxCredentialRelation {
 }
 
 #[derive(Copy, Clone)]
-pub enum AddressCredentialRelation {
+pub enum AddressCredentialRelationValue {
     PaymentKey,
     StakeKey,
 }
 
-impl From<TxCredentialRelation> for i32 {
-    fn from(item: TxCredentialRelation) -> Self {
+impl From<TxCredentialRelationValue> for i32 {
+    fn from(item: TxCredentialRelationValue) -> Self {
         match item {
-            TxCredentialRelation::StakeDelegation => 0,
-            TxCredentialRelation::StakeRegistration => 1,
-            TxCredentialRelation::StakeDeregistration => 2,
-            TxCredentialRelation::Input => 3,
-            TxCredentialRelation::Output => 4,
+            TxCredentialRelationValue::StakeDelegation => 0,
+            TxCredentialRelationValue::StakeRegistration => 1,
+            TxCredentialRelationValue::StakeDeregistration => 2,
+            TxCredentialRelationValue::Input => 3,
+            TxCredentialRelationValue::Output => 4,
         }
     }
 }
 
-impl From<AddressCredentialRelation> for i32 {
-    fn from(item: AddressCredentialRelation) -> Self {
+impl From<AddressCredentialRelationValue> for i32 {
+    fn from(item: AddressCredentialRelationValue) -> Self {
         match item {
-            AddressCredentialRelation::PaymentKey => 0,
-            AddressCredentialRelation::StakeKey => 1,
+            AddressCredentialRelationValue::PaymentKey => 0,
+            AddressCredentialRelationValue::StakeKey => 1,
         }
     }
 }
