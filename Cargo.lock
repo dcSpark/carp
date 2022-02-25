@@ -260,7 +260,7 @@ version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "33b8de67cc41132507eeece2584804efcb15f85ba516e34c944b7667f480397a"
 dependencies = [
- "heck",
+ "heck 0.3.3",
  "proc-macro-error",
  "proc-macro2",
  "quote",
@@ -881,6 +881,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "heck"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2540771e65fc8cb83cd6e8a237f70c319bd5c29f78ed1084ba5d50eeac86f7f9"
+
+[[package]]
 name = "hermit-abi"
 version = "0.1.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1266,7 +1272,7 @@ dependencies = [
 [[package]]
 name = "oura"
 version = "1.1.0"
-source = "git+https://github.com/txpipe/oura?branch=main#7bf56711bbdfbf68a25ff9db799e553c0fb286db"
+source = "git+https://github.com/txpipe/oura?branch=main#c706fb263e5e5271738f3503a357a8f542875651"
 dependencies = [
  "bech32 0.8.1",
  "clap 3.0.14",
@@ -1329,9 +1335,9 @@ dependencies = [
 
 [[package]]
 name = "pallas"
-version = "0.5.0-alpha.4"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "52cc6b08654e47e3638827beef5042ebb45758df7e5c9144ab70b0e727dc7b05"
+checksum = "05851f9052fa9f8cb82f17eca09731ee06fd7e71ced4410c1ba34fb1188f08fc"
 dependencies = [
  "pallas-crypto",
  "pallas-miniprotocols",
@@ -1341,9 +1347,9 @@ dependencies = [
 
 [[package]]
 name = "pallas-crypto"
-version = "0.5.0-alpha.4"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1e9fe452dbace6731f6f594101c90f7a4e4c30046ef68902b4454b90a91396c"
+checksum = "26b3d6c207cdaf012a1216dade8e0dcd4fd3c2a1ac67502a317b3d515183b087"
 dependencies = [
  "cryptoxide",
  "hex",
@@ -1354,9 +1360,9 @@ dependencies = [
 
 [[package]]
 name = "pallas-miniprotocols"
-version = "0.5.0-alpha.4"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ddf5eaeee177899c9f52c3e402af25ba5c5de7209d118a11c25fcd22dcfe77f"
+checksum = "ffb9c03313216a8d2df8aa9d028213c4b5ea73751b4bcb202989657927a38db5"
 dependencies = [
  "hex",
  "itertools",
@@ -1368,9 +1374,9 @@ dependencies = [
 
 [[package]]
 name = "pallas-multiplexer"
-version = "0.5.0-alpha.4"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9865b80f9b38df397508590cc65d8955f2a6e863004ab5ee54d342998bc857cc"
+checksum = "4c2e716075627be053d360049c715e204567721612a0220b2e52c015b8270579"
 dependencies = [
  "byteorder",
  "hex",
@@ -1379,9 +1385,9 @@ dependencies = [
 
 [[package]]
 name = "pallas-primitives"
-version = "0.5.0-alpha.4"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "640f101dc3970007cee7526aa7d1c29ce0582ab15cf787d01dff849fb38a0731"
+checksum = "27d58c43453f292c1ee81b8969ba4d560b7e6b29eeb40f603613fabb7404b0d3"
 dependencies = [
  "base58",
  "hex",
@@ -1773,7 +1779,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c199fa8630b1e195d7aef24ce8944af8f4ced67c4eccffd8926453b59f2565a1"
 dependencies = [
  "bae",
- "heck",
+ "heck 0.3.3",
  "proc-macro2",
  "quote",
  "syn",
@@ -1798,7 +1804,7 @@ version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "34cdc022b4f606353fe5dc85b09713a04e433323b70163e81513b141c6ae6eb5"
 dependencies = [
- "heck",
+ "heck 0.3.3",
  "proc-macro2",
  "quote",
  "syn",
@@ -1829,7 +1835,7 @@ version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "56821b7076f5096b8f726e2791ad255a99c82498e08ec477a65a96c461ff1927"
 dependencies = [
- "heck",
+ "heck 0.3.3",
  "proc-macro2",
  "quote",
  "syn",
@@ -1850,7 +1856,7 @@ version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "69b4397b825df6ccf1e98bcdabef3bbcfc47ff5853983467850eeab878384f21"
 dependencies = [
- "heck",
+ "heck 0.3.3",
  "proc-macro2",
  "quote",
  "rustversion",
@@ -1879,9 +1885,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.78"
+version = "1.0.79"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d23c1ba4cf0efd44be32017709280b32d1cea5c3f1275c3b6d9e8bc54f758085"
+checksum = "8e8d9fa5c3b304765ce1fd9c4c8a3de2c8db365a5b91be52f186efc675681d95"
 dependencies = [
  "indexmap",
  "itoa",
@@ -2067,7 +2073,7 @@ checksum = "38e45140529cf1f90a5e1c2e561500ca345821a1c513652c8f486bbf07407cc8"
 dependencies = [
  "dotenv",
  "either",
- "heck",
+ "heck 0.3.3",
  "once_cell",
  "proc-macro2",
  "quote",
@@ -2132,11 +2138,11 @@ checksum = "cae14b91c7d11c9a851d3fbc80a963198998c2a64eec840477fa92d8ce9b70bb"
 
 [[package]]
 name = "strum_macros"
-version = "0.23.1"
+version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5bb0dc7ee9c15cea6199cde9a127fa16a4c5819af85395457ad72d68edc85a38"
+checksum = "6878079b17446e4d3eba6192bb0a2950d5b14f0ed8424b852310e5a94345d0ef"
 dependencies = [
- "heck",
+ "heck 0.4.0",
  "proc-macro2",
  "quote",
  "rustversion",
