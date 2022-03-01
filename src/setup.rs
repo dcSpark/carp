@@ -29,6 +29,8 @@ pub async fn get_latest_points(conn: &DatabaseConnection) -> anyhow::Result<Vec<
 
 pub fn oura_bootstrap(
     points: Vec<PointArg>,
+    network: &str,
+    socket: String,
 ) -> anyhow::Result<(Vec<JoinHandle<()>>, StageReceiver)> {
     let intersect = if !points.is_empty() {
         Some(IntersectArg::Fallbacks(points))
@@ -36,7 +38,7 @@ pub fn oura_bootstrap(
         Some(IntersectArg::Origin)
     };
 
-    let magic = MagicArg::from_str("mainnet").map_err(|_| anyhow!("magic arg failed"))?;
+    let magic = MagicArg::from_str(network).map_err(|_| anyhow!("magic arg failed"))?;
 
     let well_known = ChainWellKnownInfo::try_from_magic(*magic)
         .map_err(|_| anyhow!("chain well known info failed"))?;
@@ -51,10 +53,7 @@ pub fn oura_bootstrap(
 
     #[allow(deprecated)]
     let source_config = n2n::Config {
-        address: AddressArg(
-            BearerKind::Tcp,
-            "relays-new.cardano-mainnet.iohk.io:3001".to_string(),
-        ),
+        address: AddressArg(BearerKind::Tcp, socket),
         magic: Some(magic),
         well_known: None,
         mapper,
