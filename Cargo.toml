@@ -6,6 +6,9 @@ name = "oura-postgres-sink"
 version = "0.1.0"
 edition = "2021"
 
+[profile.release]
+strip = true
+
 [dependencies]
 anyhow = "1.0.53"
 serde = "1.0.136"
@@ -19,3 +22,7 @@ tracing-subscriber = "0.3.9"
 tracing = "0.1.31"
 cardano-serialization-lib = "10.0.4"
 dotenv = "0.15.0"
+serde_json = "1.0.79"
+base64 = "0.13.0"
+minicbor = { version = "0.14.1", features = ["std", "half"] }
+cryptoxide = "0.4.2"
