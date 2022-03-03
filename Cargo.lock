@@ -321,6 +321,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "bs58"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "771fe0050b883fcc3ea2359b1a96bcfbc090b7116eae7c3c512c7a083fdf23d3"
+
+[[package]]
 name = "bumpalo"
 version = "3.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1102,15 +1108,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "minicbor"
-version = "0.14.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0d882813266da97748692bd700903a19bd0a179f25d2a144d383df4cddd24a18"
-dependencies = [
- "half",
-]
-
-[[package]]
 name = "minicbor-derive"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1291,7 +1288,7 @@ dependencies = [
  "hex",
  "log",
  "merge",
- "minicbor 0.13.2",
+ "minicbor",
  "net2",
  "pallas",
  "prometheus_exporter",
@@ -1307,13 +1304,12 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "base64",
+ "bs58",
  "cardano-serialization-lib",
- "cryptoxide",
  "dotenv",
  "entity",
  "hex",
  "migration",
- "minicbor 0.14.1",
  "oura",
  "pallas",
  "serde",
@@ -1367,7 +1363,7 @@ checksum = "26b3d6c207cdaf012a1216dade8e0dcd4fd3c2a1ac67502a317b3d515183b087"
 dependencies = [
  "cryptoxide",
  "hex",
- "minicbor 0.13.2",
+ "minicbor",
  "rand_core 0.6.3",
  "thiserror",
 ]
@@ -1381,7 +1377,7 @@ dependencies = [
  "hex",
  "itertools",
  "log",
- "minicbor 0.13.2",
+ "minicbor",
  "net2",
  "pallas-multiplexer",
 ]
@@ -1406,7 +1402,7 @@ dependencies = [
  "base58",
  "hex",
  "log",
- "minicbor 0.13.2",
+ "minicbor",
  "minicbor-derive",
  "pallas-crypto",
 ]

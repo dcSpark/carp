@@ -24,5 +24,4 @@ cardano-serialization-lib = "10.0.4"
 dotenv = "0.15.0"
 serde_json = "1.0.79"
 base64 = "0.13.0"
-minicbor = { version = "0.14.1", features = ["std", "half"] }
-cryptoxide = "0.4.2"
+bs58 = "0.4.0"
