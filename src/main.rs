@@ -22,6 +22,10 @@ async fn main() -> anyhow::Result<()> {
     // For rollbacks
     let points = setup::get_latest_points(&conn).await?;
 
+    if points.is_empty() {
+        setup::insert_genesis(&conn, &network).await?;
+    }
+
     let (handles, input) = setup::oura_bootstrap(points, &network, socket)?;
 
     let sink_setup = postgres_sink::Config { conn: &conn };

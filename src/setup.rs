@@ -1,6 +1,7 @@
 use std::{str::FromStr, sync::Arc, thread::JoinHandle};
 
 use anyhow::anyhow;
+
 use oura::{
     filters::selection::{self, Predicate},
     mapper,
@@ -10,9 +11,14 @@ use oura::{
 };
 
 use entity::{
-    prelude::{Block, BlockColumn},
-    sea_orm::{DatabaseConnection, EntityTrait, QueryOrder, QuerySelect},
+    prelude::{
+        AddressActiveModel, Block, BlockActiveModel, BlockColumn, TransactionActiveModel,
+        TransactionOutputActiveModel,
+    },
+    sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, QueryOrder, QuerySelect, Set},
 };
+
+use crate::types::GenesisFile;
 
 pub async fn get_latest_points(conn: &DatabaseConnection) -> anyhow::Result<Vec<PointArg>> {
     let points: Vec<PointArg> = Block::find()
@@ -37,6 +43,8 @@ pub fn oura_bootstrap(
     } else {
         Some(IntersectArg::Origin)
     };
+
+    println!("{:?}", intersect);
 
     let magic = MagicArg::from_str(network).map_err(|_| anyhow!("magic arg failed"))?;
 
@@ -83,4 +91,72 @@ pub fn oura_bootstrap(
     handles.push(filter_handle);
 
     Ok((handles, filter_rx))
+}
+
+const GENESIS_MAINNET: &str = include_str!("../genesis/mainnet.json");
+const GENESIS_TESTNET: &str = include_str!("../genesis/testnet.json");
+
+pub async fn insert_genesis(conn: &DatabaseConnection, network: &str) -> anyhow::Result<()> {
+    let genesis_str = match network {
+        "mainnet" => GENESIS_MAINNET,
+        "testnet" => GENESIS_TESTNET,
+        rest => {
+            return Err(anyhow!(
+                "{} is invalid. NETWORK must be either mainnet or testnet",
+                rest
+            ))
+        }
+    };
+
+    let genesis: GenesisFile = serde_json::from_str(genesis_str)?;
+
+    tracing::info!("Parsed Genesis File and Beginning Hydration");
+
+    let block = BlockActiveModel {
+        era: Set(0),
+        hash: Set(vec![]),
+        height: Set(0),
+        epoch: Set(0),
+        slot: Set(0),
+        payload: Set(vec![]),
+        ..Default::default()
+    };
+
+    let block = block.insert(conn).await?;
+
+    for data in genesis {
+        let hash = hex::decode(data.hash)?;
+
+        let transaction = TransactionActiveModel {
+            block_id: Set(block.id),
+            hash: Set(hash),
+            is_valid: Set(true),
+            payload: Set(vec![]),
+            tx_index: Set(0),
+            ..Default::default()
+        };
+
+        let transaction = transaction.insert(conn).await?;
+
+        let payload = bs58::decode(data.address).into_vec()?;
+
+        let address = AddressActiveModel {
+            payload: Set(payload),
+            ..Default::default()
+        };
+
+        let address = address.insert(conn).await?;
+
+        let tx_output = TransactionOutputActiveModel {
+            address_id: Set(address.id),
+            tx_id: Set(transaction.id),
+            payload: Set(vec![]),
+            output_index: Set(0),
+            ..Default::default()
+        };
+
+        tx_output.save(conn).await?;
+    }
+
+    Ok(())
 }

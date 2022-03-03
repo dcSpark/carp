@@ -1,3 +1,5 @@
+use serde::Deserialize;
+
 use pallas::ledger::primitives::{alonzo, byron};
 
 #[derive(Debug)]
@@ -40,4 +42,13 @@ impl From<AddressCredentialRelationValue> for i32 {
             AddressCredentialRelationValue::StakeKey => 1,
         }
     }
+}
+
+pub type GenesisFile = Vec<GenesisData>;
+
+#[derive(Debug, Deserialize)]
+pub struct GenesisData {
+    pub hash: String,
+    pub index: u64,
+    pub address: String,
 }

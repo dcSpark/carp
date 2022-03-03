@@ -162,7 +162,7 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
                 let mut is_valid = true;
 
                 if let Some(ref invalid_txs) = alonzo_block.invalid_transactions {
-                    is_valid = invalid_txs.iter().any(|i| *i as usize == idx)
+                    is_valid = !invalid_txs.iter().any(|i| *i as usize == idx)
                 }
 
                 temp_tx.set_is_valid(is_valid);
