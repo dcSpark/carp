@@ -67,7 +67,6 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
         height: Set(block_record.number as i64),
         epoch: Set(0),
         slot: Set(block_record.slot as i64),
-        payload: Set(block_payload),
         ..Default::default()
     };
 

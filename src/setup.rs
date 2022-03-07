@@ -118,7 +118,6 @@ pub async fn insert_genesis(conn: &DatabaseConnection, network: &str) -> anyhow:
         height: Set(0),
         epoch: Set(0),
         slot: Set(0),
-        payload: Set(vec![]),
         ..Default::default()
     };
 

@@ -13,7 +13,6 @@ pub struct Model {
     pub epoch: i32,
     #[sea_orm(column_type = "BigInteger")]
     pub slot: i64,
-    pub payload: Vec<u8>,
 }
 
 #[derive(Copy, Clone, Debug, DeriveRelation, EnumIter)]
