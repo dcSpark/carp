@@ -4,12 +4,13 @@ use anyhow::anyhow;
 use cardano_serialization_lib::address::{
     BaseAddress, EnterpriseAddress, PointerAddress, RewardAddress,
 };
+use cryptoxide::blake2b::Blake2b;
 use oura::{
     model::{BlockRecord, Era, EventData},
     pipelining::StageReceiver,
 };
 use pallas::{
-    crypto::hash::{Hash, Hasher},
+    crypto::hash::Hash,
     ledger::primitives::{
         alonzo::{self, Certificate, TransactionBodyComponent},
         byron::{self, TxIn},
@@ -55,6 +56,12 @@ impl<'a> Config<'a> {
     }
 }
 
+fn blake2b256(data: &[u8]) -> [u8; 32] {
+    let mut out = [0; 32];
+    Blake2b::blake2b(&mut out, data, &[]);
+    out
+}
+
 async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<(), DbErr> {
     let hash = hex::decode(&block_record.hash).unwrap();
     let block_payload = hex::decode(block_record.cbor_hex.as_ref().unwrap()).unwrap();
@@ -77,12 +84,12 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
             byron::Block::EbBlock(_) => (),
             byron::Block::MainBlock(main_block) => {
                 for (idx, tx_body) in main_block.body.tx_payload.iter().enumerate() {
-                    let tx_hash = Hasher::<256>::hash_cbor(tx_body).to_vec();
+                    let tx_hash = blake2b256(&tx_body.transaction.encode_fragment().expect(""));
 
                     let tx_payload = tx_body.encode_fragment().unwrap();
 
                     let transaction = TransactionActiveModel {
-                        hash: Set(tx_hash),
+                        hash: Set(tx_hash.to_vec()),
                         block_id: Set(block.id),
                         tx_index: Set(idx as i32),
                         payload: Set(tx_payload),
@@ -373,11 +380,11 @@ async fn insert_input(
         .inner_join(AddressCredential)
         .join(
             JoinType::InnerJoin,
-            AddressRelation::AddressCredential.def(),
+            AddressCredentialRelation::Address.def(),
         )
         .join(
             JoinType::InnerJoin,
-            TransactionOutputRelation::Address.def(),
+            AddressRelation::TransactionOutput.def(),
         )
         .filter(TransactionOutputColumn::Id.eq(tx_output.id))
         .all(txn)

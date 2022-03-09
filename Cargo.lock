@@ -51,12 +51,6 @@ checksum = "94a45b455c14666b85fc40a019e8ab9eb75e3a124e05494f5397122bc9eb06e0"
 
 [[package]]
 name = "arrayvec"
-version = "0.5.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "23b62fc65de8e4e7f52534fb52b0f3ed04746ae267519eef2a83941e8085068b"
-
-[[package]]
-name = "arrayvec"
 version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8da52d66c7071e2e3fa2a1e5c6d088fec47b593032b254f5e980de8ea54454d6"
@@ -438,9 +432,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "3.1.3"
+version = "3.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "86f8c0e2a6b902acc18214e24a6935cdaf8a8e34231913d4404dcaee659f65a1"
+checksum = "d8c93436c21e4698bacadf42917db28b23017027a4deccb35dbe47a7e7840123"
 dependencies = [
  "atty",
  "bitflags",
@@ -448,7 +442,7 @@ dependencies = [
  "os_str_bytes",
  "strsim 0.10.0",
  "termcolor",
- "textwrap 0.14.2",
+ "textwrap 0.15.0",
 ]
 
 [[package]]
@@ -480,12 +474,14 @@ dependencies = [
 
 [[package]]
 name = "config"
-version = "0.11.0"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b1b9d958c2b1368a663f05538fc1b5975adce1e19f435acceae987aceeeb369"
+checksum = "54ad70579325f1a38ea4c13412b82241c5900700a69785d73e2736bd65a33f86"
 dependencies = [
+ "async-trait",
  "lazy_static",
- "nom 5.1.2",
+ "nom",
+ "pathdiff",
  "serde",
  "toml",
 ]
@@ -993,19 +989,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
-name = "lexical-core"
-version = "0.7.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6607c62aa161d23d17a9072cc5da0be67cdfc89d3afb1e8d9c842bebc2525ffe"
-dependencies = [
- "arrayvec 0.5.2",
- "bitflags",
- "cfg-if 1.0.0",
- "ryu",
- "static_assertions",
-]
-
-[[package]]
 name = "libc"
 version = "0.2.117"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1100,18 +1083,18 @@ dependencies = [
 
 [[package]]
 name = "minicbor"
-version = "0.13.2"
+version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "124d887cb82f0b1469bdac3d1b65764a381eed1a54fdab0070e5772b13114521"
+checksum = "0d882813266da97748692bd700903a19bd0a179f25d2a144d383df4cddd24a18"
 dependencies = [
  "half",
 ]
 
 [[package]]
 name = "minicbor-derive"
-version = "0.8.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "58f79d5d3fb4f93c77ef7b97065fb65efe6abe670795ad8bc5be9c0e12005290"
+checksum = "03c32aff53852dc6dd3817559d603734e4f7a65411702953238aafdcb3a7fd47"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1155,17 +1138,6 @@ dependencies = [
  "cfg-if 0.1.10",
  "libc",
  "winapi",
-]
-
-[[package]]
-name = "nom"
-version = "5.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ffb4262d26ed83a1c0a33a38fe2bb15797329c85770da05e6b828ddb782627af"
-dependencies = [
- "lexical-core",
- "memchr",
- "version_check",
 ]
 
 [[package]]
@@ -1277,11 +1249,11 @@ dependencies = [
 
 [[package]]
 name = "oura"
-version = "1.1.0"
-source = "git+https://github.com/txpipe/oura?branch=main#c706fb263e5e5271738f3503a357a8f542875651"
+version = "1.2.1"
+source = "git+https://github.com/txpipe/oura?branch=main#88bdc483615f9d41256ba96b36ede81e0740fdaf"
 dependencies = [
  "bech32 0.8.1",
- "clap 3.1.3",
+ "clap 3.1.6",
  "config",
  "crossterm",
  "env_logger",
@@ -1306,6 +1278,7 @@ dependencies = [
  "base64",
  "bs58",
  "cardano-serialization-lib",
+ "cryptoxide",
  "dotenv",
  "entity",
  "hex",
@@ -1345,9 +1318,9 @@ dependencies = [
 
 [[package]]
 name = "pallas"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05851f9052fa9f8cb82f17eca09731ee06fd7e71ced4410c1ba34fb1188f08fc"
+checksum = "686c2b5d4c4b3f4126888d2e03a9e68aa3c552ffb0831c8866d12870bf034318"
 dependencies = [
  "pallas-crypto",
  "pallas-miniprotocols",
@@ -1357,9 +1330,9 @@ dependencies = [
 
 [[package]]
 name = "pallas-crypto"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "26b3d6c207cdaf012a1216dade8e0dcd4fd3c2a1ac67502a317b3d515183b087"
+checksum = "04cdde829997dee2deb4926af3ec742161b737b04525d5a1b52e0613938b026f"
 dependencies = [
  "cryptoxide",
  "hex",
@@ -1370,9 +1343,9 @@ dependencies = [
 
 [[package]]
 name = "pallas-miniprotocols"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ffb9c03313216a8d2df8aa9d028213c4b5ea73751b4bcb202989657927a38db5"
+checksum = "7b7e37371b877146b0ad5d6a588a65f37eaf7409ec490487c33b368d6beb01a3"
 dependencies = [
  "hex",
  "itertools",
@@ -1384,9 +1357,9 @@ dependencies = [
 
 [[package]]
 name = "pallas-multiplexer"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c2e716075627be053d360049c715e204567721612a0220b2e52c015b8270579"
+checksum = "99ef34b849418628e93d234061200518275ff5a7d7580eb168b618eca2ed579e"
 dependencies = [
  "byteorder",
  "hex",
@@ -1395,9 +1368,9 @@ dependencies = [
 
 [[package]]
 name = "pallas-primitives"
-version = "0.5.0"
+version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "27d58c43453f292c1ee81b8969ba4d560b7e6b29eeb40f603613fabb7404b0d3"
+checksum = "d7aec3c75fb7743b3a16e036318d5b62f4d823c5ee945e4db645d5fdf9f1ce87"
 dependencies = [
  "base58",
  "hex",
@@ -1460,6 +1433,12 @@ dependencies = [
  "smallvec",
  "windows-sys",
 ]
+
+[[package]]
+name = "pathdiff"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8835116a5c179084a830efb3adc117ab007512b535bc1a21c991d3b32a6b44dd"
 
 [[package]]
 name = "percent-encoding"
@@ -1711,7 +1690,7 @@ version = "1.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4214023b1223d02a4aad9f0bb9828317634a56530870a2eaf7200a99c0c10f68"
 dependencies = [
- "arrayvec 0.7.2",
+ "arrayvec",
  "num-traits",
  "serde",
 ]
@@ -2005,7 +1984,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4b7922be017ee70900be125523f38bdd644f4f06a1b16e8fa5a8ee8c34bffd4"
 dependencies = [
  "itertools",
- "nom 7.1.0",
+ "nom",
  "unicode_categories",
 ]
 
@@ -2113,12 +2092,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
 
 [[package]]
-name = "static_assertions"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
-
-[[package]]
 name = "stringprep"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2142,9 +2115,9 @@ checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 
 [[package]]
 name = "strum"
-version = "0.23.0"
+version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cae14b91c7d11c9a851d3fbc80a963198998c2a64eec840477fa92d8ce9b70bb"
+checksum = "e96acfc1b70604b8b2f1ffa4c57e59176c7dbb05d556c71ecd2f5498a1dee7f8"
 
 [[package]]
 name = "strum_macros"
@@ -2196,9 +2169,9 @@ dependencies = [
 
 [[package]]
 name = "textwrap"
-version = "0.14.2"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0066c8d12af8b5acd21e00547c3797fde4e8677254a7ee429176ccebbe93dd80"
+checksum = "b1141d4d61095b28419e22cb0bbf02755f5e54e0526f97f1e3d1d160e60885fb"
 
 [[package]]
 name = "thiserror"

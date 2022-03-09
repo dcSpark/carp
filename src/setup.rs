@@ -6,7 +6,7 @@ use oura::{
     filters::selection::{self, Predicate},
     mapper,
     pipelining::{FilterProvider, SourceProvider, StageReceiver},
-    sources::{n2n, AddressArg, BearerKind, IntersectArg, MagicArg, PointArg},
+    sources::{n2c, AddressArg, BearerKind, IntersectArg, MagicArg, PointArg},
     utils::{ChainWellKnownInfo, Utils, WithUtils},
 };
 
@@ -44,8 +44,6 @@ pub fn oura_bootstrap(
         Some(IntersectArg::Origin)
     };
 
-    println!("{:?}", intersect);
-
     let magic = MagicArg::from_str(network).map_err(|_| anyhow!("magic arg failed"))?;
 
     let well_known = ChainWellKnownInfo::try_from_magic(*magic)
@@ -60,8 +58,8 @@ pub fn oura_bootstrap(
     };
 
     #[allow(deprecated)]
-    let source_config = n2n::Config {
-        address: AddressArg(BearerKind::Tcp, socket),
+    let source_config = n2c::Config {
+        address: AddressArg(BearerKind::Unix, socket),
         magic: Some(magic),
         well_known: None,
         mapper,
@@ -78,9 +76,10 @@ pub fn oura_bootstrap(
 
     let mut handles = Vec::new();
 
-    let (source_handle, source_rx) = source_setup
-        .bootstrap()
-        .map_err(|_| anyhow!("failed to bootstrap source"))?;
+    let (source_handle, source_rx) = source_setup.bootstrap().map_err(|e| {
+        eprintln!("{}", e);
+        anyhow!("failed to bootstrap source")
+    })?;
 
     handles.push(source_handle);
 
