@@ -100,9 +100,9 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
                     let transaction = transaction.insert(txn).await?;
 
                     for (idx, output) in tx_body.transaction.outputs.iter().enumerate() {
-                        let address_payload = output.address.encode_fragment().unwrap();
+                        let mut address_payload = output.address.encode_fragment().unwrap();
 
-                        let address = insert_address(address_payload, txn).await?;
+                        let address = insert_address(&mut address_payload, txn).await?;
 
                         let tx_output = TransactionOutputActiveModel {
                             payload: Set(output.encode_fragment().unwrap()),
@@ -194,7 +194,8 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
                             for (idx, output) in outputs.iter().enumerate() {
                                 use cardano_serialization_lib::address::Address;
 
-                                let address = insert_address(output.address.to_vec(), txn).await?;
+                                let address =
+                                    insert_address(&mut output.address.to_vec(), txn).await?;
 
                                 let addr = Address::from_bytes(output.address.to_vec()).unwrap();
 
@@ -316,9 +317,11 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
 }
 
 async fn insert_address(
-    payload: Vec<u8>,
+    payload: &mut Vec<u8>,
     txn: &DatabaseTransaction,
 ) -> Result<AddressModel, DbErr> {
+    payload.truncate(2704);
+
     let addr = Address::find()
         .filter(AddressColumn::Payload.eq(payload.clone()))
         .one(txn)
@@ -328,7 +331,7 @@ async fn insert_address(
         Ok(addr)
     } else {
         let address = AddressActiveModel {
-            payload: Set(payload),
+            payload: Set(payload.clone()),
             ..Default::default()
         };
 
