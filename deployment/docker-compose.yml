@@ -1,0 +1,78 @@
+version: "3.5"
+
+services:
+  postgres:
+    restart: unless-stopped
+    image: postgres:13.6 # 14.2, 13.6, 12.10, 11.15 # replace with correct major version on existing installations, no alpine
+    environment:
+      - POSTGRES_LOGGING=true
+      - POSTGRES_DB_FILE=/run/secrets/postgres_db
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
+      - POSTGRES_USER_FILE=/run/secrets/postgres_user
+    secrets:
+      - postgres_password
+      - postgres_user
+      - postgres_db
+    volumes:
+      - ./${NETWORK:-testnet}/postgres-data:/var/lib/postgresql/data
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
+    ports:
+      - "5432:5432"
+
+  cardano-node:
+    restart: unless-stopped
+    image: inputoutput/cardano-node:1.34.1
+    environment:
+      - NETWORK=${NETWORK:-testnet}
+    volumes:
+      - ./${NETWORK:-testnet}/node-db:/data/db
+      - ./${NETWORK:-testnet}/node-ipc:/ipc
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
+
+  oura-postgres-sink:
+    restart: unless-stopped
+
+    build:
+      context: ../
+      dockerfile: Dockerfile
+      target: oura-postgres-sink
+      args:
+        - APP=/app
+    environment:
+      - DATABASE_URL=postgresql://root:root@postgres:5432/cardano # TODO: get user/pass/db from secrets
+      - NETWORK=${NETWORK:-testnet}
+      - SOCKET=/app/node-ipc/node.socket
+    volumes:
+      - ./${NETWORK:-testnet}/node-ipc:/app/node-ipc:rw
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        /app/migration up ;
+        /app/oura-postgres-sink ;
+    depends_on:
+      - postgres
+      - cardano-node
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "10"
+
+
+secrets:
+  postgres_db:
+    file: ./config/secrets/${NETWORK:-testnet}/postgres_db
+  postgres_password:
+    file: ./config/secrets/${NETWORK:-testnet}/postgres_password
+  postgres_user:
+    file: ./config/secrets/${NETWORK:-testnet}/postgres_user
