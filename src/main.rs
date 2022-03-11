@@ -11,7 +11,7 @@ mod types;
 async fn main() -> anyhow::Result<()> {
     // tracing_subscriber::fmt().with_test_writer().init();
 
-    dotenv()?;
+    dotenv().ok();
 
     let url = std::env::var("DATABASE_URL")?;
     let network = std::env::var("NETWORK")?;
