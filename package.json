@@ -1,0 +1,23 @@
+{
+  "name": "oura-postgres-api",
+  "version": "1.0.0",
+  "description": "API for a Oura Postgres instance",
+  "type": "module",
+  "main": "app/index.js",
+  "scripts": {
+    "start": "node app/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dcSpark/oura-postgres-sink.git"
+  },
+  "author": "https://github.com/dcSpark",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dcSpark/oura-postgres-sink/issues"
+  },
+  "homepage": "https://github.com/dcSpark/oura-postgres-sink#readme",
+  "dependencies": {
+    "express": "^4.17.3"
+  }
+}
