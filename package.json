@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/dcSpark/oura-postgres-sink#readme",
   "dependencies": {
-    "express": "^4.17.3"
+    "express": "^4.17.3",
+    "pg": "^8.7.3"
   }
 }
