@@ -1249,8 +1249,9 @@ dependencies = [
 
 [[package]]
 name = "oura"
-version = "1.2.1"
-source = "git+https://github.com/txpipe/oura?branch=main#88bdc483615f9d41256ba96b36ede81e0740fdaf"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5ab10bb51fe403544d4179c2378559584ed3ef333e66f0e8440bcf15eccdabe1"
 dependencies = [
  "bech32 0.8.1",
  "clap 3.1.6",
@@ -2115,9 +2116,9 @@ checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 
 [[package]]
 name = "strum"
-version = "0.24.0"
+version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e96acfc1b70604b8b2f1ffa4c57e59176c7dbb05d556c71ecd2f5498a1dee7f8"
+checksum = "cae14b91c7d11c9a851d3fbc80a963198998c2a64eec840477fa92d8ce9b70bb"
 
 [[package]]
 name = "strum_macros"
