@@ -8,23 +8,26 @@ const server = async () => {
   const app = express();
 
   app.get("/transactions-history-for-addresses", (req, res) => {
-    await db.query(
+    const queryResult = await db.query(
       `
-      SELECT "Transaction".id,
-        "Transaction".payload,
-        "Transaction".hash,
-        "Transaction".tx_index,
-        "Transaction".is_valid,
-        "Block".height
-      FROM "StakeCredential"
-      INNER JOIN "TxCredentialRelation" ON "TxCredentialRelation".credential_id = "StakeCredential".id
-      INNER JOIN "Transaction" ON "TxCredentialRelation".tx_id = "Transaction".id
-      INNER JOIN "Block" ON "Transaction".block_id = "Block".id
-      WHERE "StakeCredential".credential IN $1
-      ORDER BY "Block".height DESC,
-        "Transaction".tx_index ASC;
+      with t as (
+        SELECT "Transaction".id,
+          "Transaction".payload,
+          "Transaction".hash,
+          "Transaction".tx_index,
+          "Transaction".is_valid,
+          "Block".height
+        FROM "StakeCredential"
+        INNER JOIN "TxCredentialRelation" ON "TxCredentialRelation".credential_id = "StakeCredential".id
+        INNER JOIN "Transaction" ON "TxCredentialRelation".tx_id = "Transaction".id
+        INNER JOIN "Block" ON "Transaction".block_id = "Block".id
+        WHERE "StakeCredential".credential IN $1
+        ORDER BY "Block".height DESC,
+          "Transaction".tx_index ASC;
+      )
+      select json_agg(t)
     `,
-      [req.body.addresses]
+      [req.query.addresses]
     );
   });
 
