@@ -1,5 +1,6 @@
 use anyhow::anyhow;
 use dotenv::dotenv;
+use std::fs;
 
 use entity::sea_orm::Database;
 
@@ -13,9 +14,22 @@ async fn main() -> anyhow::Result<()> {
 
     dotenv().ok();
 
-    let url = std::env::var("DATABASE_URL")?;
     let network = std::env::var("NETWORK")?;
     let socket = std::env::var("SOCKET")?;
+
+    let postgres_host = std::env::var("POSTGRES_HOST")?;
+    let postgres_port = std::env::var("POSTGRES_PORT")?;
+    let postgres_db = std::env::var("POSTGRES_DB")?;
+
+    let postgres_user_file = std::env::var("POSTGRES_USER_FILE")?;
+    let postgres_password_file = std::env::var("POSTGRES_PASSWORD_FILE")?;
+
+    let postgres_user = fs::read_to_string(postgres_user_file)
+        .expect("Cannot read POSTGRES_USER_FILE");
+    let postgres_password = fs::read_to_string(postgres_password_file)
+        .expect("Cannot read POSTGRES_PASSWORD_FILE");
+
+    let url = format!("postgresql://{postgres_user}:{postgres_password}@{postgres_host}:{postgres_port}/{postgres_db}");
 
     let conn = Database::connect(&url).await?;
 
