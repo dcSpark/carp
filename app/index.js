@@ -28,7 +28,7 @@ const server = async () => {
         INNER JOIN "Transaction" ON "TxCredentialRelation".tx_id = "Transaction".id
         INNER JOIN "Block" ON "Transaction".block_id = "Block".id
         WHERE "StakeCredential".credential = ANY ($1)
-        ORDER BY "Block".height DESC,
+        ORDER BY "Block".height ASC,
           "Transaction".tx_index ASC
       )
       select json_agg(t)
