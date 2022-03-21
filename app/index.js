@@ -8,6 +8,12 @@ const server = async () => {
   const app = express();
 
   app.get("/transactions-history-for-addresses", async (req, res) => {
+    if (!req.query.addresses) {
+      res.status(400).json({ message: "addresses is required in query" });
+
+      return;
+    }
+
     const queryResult = await db.query(
       `
       with t as (
@@ -31,16 +37,38 @@ const server = async () => {
       [req.query.addresses]
     );
 
-    const data = queryResult.rows
-      .map(({ json_agg }) => json_agg)
-      .filter((d) => d);
-
-    res.status(200).json({ data });
+    res.status(200).json({ data: queryResult.rows[0].json_agg || [] });
   });
 
   app.get("/check-addresses-in-use", (req, res) => {});
 
-  app.get("/utxos-for-transactions", (req, res) => {});
+  app.get("/utxos-for-transactions", async (req, res) => {
+    if (!req.query.transactions) {
+      res.status(400).json({ message: "transactions is required in query" });
+
+      return;
+    }
+
+    const queryResult = await db.query(
+      `
+      with t as (
+        SELECT "TransactionOutput".id,
+          "TransactionOutput".payload,
+          "TransactionOutput".address_id,
+          "TransactionOutput".tx_id,
+          "TransactionOutput".output_index
+        FROM "TransactionOutput"
+        INNER JOIN "Transaction" ON "Transaction".id = "TransactionOutput".tx_id
+        WHERE "Transaction".hash = ANY ($1)
+      )
+      select json_agg(t)
+      from t
+    `,
+      [req.query.transactions]
+    );
+
+    res.status(200).json({ data: queryResult.rows[0].json_agg || [] });
+  });
 
   app.get("/best-block", async (req, res) => {
     const queryResult = await db.query(
