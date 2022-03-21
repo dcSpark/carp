@@ -6,13 +6,12 @@ services:
     image: postgres:13.6 # 14.2, 13.6, 12.10, 11.15 # replace with correct major version on existing installations, no alpine
     environment:
       - POSTGRES_LOGGING=true
-      - POSTGRES_DB_FILE=/run/secrets/postgres_db
+      - POSTGRES_DB=cardano
       - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
       - POSTGRES_USER_FILE=/run/secrets/postgres_user
     secrets:
       - postgres_password
       - postgres_user
-      - postgres_db
     volumes:
       - ./${NETWORK:-testnet}/postgres-data:/var/lib/postgresql/data
 
@@ -48,9 +47,16 @@ services:
       args:
         - APP=/app
     environment:
-      - DATABASE_URL=postgresql://root:root@postgres:5432/cardano # TODO: get user/pass/db from secrets
       - NETWORK=${NETWORK:-testnet}
       - SOCKET=/app/node-ipc/node.socket
+      - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_DB=${POSTGRES_DB:-cardano}
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
+      - POSTGRES_USER_FILE=/run/secrets/postgres_user
+    secrets:
+      - postgres_password
+      - postgres_user
     volumes:
       - ./${NETWORK:-testnet}/node-ipc:/app/node-ipc:rw
     entrypoint:
@@ -70,8 +76,6 @@ services:
 
 
 secrets:
-  postgres_db:
-    file: ./config/secrets/${NETWORK:-testnet}/postgres_db
   postgres_password:
     file: ./config/secrets/${NETWORK:-testnet}/postgres_password
   postgres_user:
