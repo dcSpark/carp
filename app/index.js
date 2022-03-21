@@ -7,7 +7,7 @@ const server = async () => {
 
   const app = express();
 
-  app.get("/transactions-history-for-addresses", (req, res) => {
+  app.get("/transactions-history-for-addresses", async (req, res) => {
     const queryResult = await db.query(
       `
       with t as (
@@ -21,14 +21,21 @@ const server = async () => {
         INNER JOIN "TxCredentialRelation" ON "TxCredentialRelation".credential_id = "StakeCredential".id
         INNER JOIN "Transaction" ON "TxCredentialRelation".tx_id = "Transaction".id
         INNER JOIN "Block" ON "Transaction".block_id = "Block".id
-        WHERE "StakeCredential".credential IN $1
+        WHERE "StakeCredential".credential = ANY ($1)
         ORDER BY "Block".height DESC,
-          "Transaction".tx_index ASC;
+          "Transaction".tx_index ASC
       )
       select json_agg(t)
+      from t
     `,
       [req.query.addresses]
     );
+
+    const data = queryResult.rows
+      .map(({ json_agg }) => json_agg)
+      .filter((d) => d);
+
+    res.status(200).json({ data });
   });
 
   app.get("/check-addresses-in-use", (req, res) => {});
@@ -37,7 +44,9 @@ const server = async () => {
 
   app.get("/best-block", (req, res) => {});
 
-  app.listen(3000);
+  app.listen(4000, () => {
+    console.log("Server running on http://localhost:4000 🚀");
+  });
 };
 
 server();
