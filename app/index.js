@@ -42,7 +42,13 @@ const server = async () => {
 
   app.get("/utxos-for-transactions", (req, res) => {});
 
-  app.get("/best-block", (req, res) => {});
+  app.get("/best-block", async (req, res) => {
+    const queryResult = await db.query(
+      'select id,height,hash from "Block" order by height desc LIMIT 1'
+    );
+
+    res.status(200).json({ data: queryResult.rows[0] });
+  });
 
   app.listen(4000, () => {
     console.log("Server running on http://localhost:4000 🚀");
