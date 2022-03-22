@@ -30,6 +30,7 @@ const server = async () => {
         WHERE "StakeCredential".credential = ANY ($1)
         ORDER BY "Block".height ASC,
           "Transaction".tx_index ASC
+        LIMIT 100
       )
       select json_agg(t)
       from t
