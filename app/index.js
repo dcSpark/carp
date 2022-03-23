@@ -41,7 +41,21 @@ const server = async () => {
     res.status(200).json({ data: queryResult.rows[0].json_agg || [] });
   });
 
-  app.get("/check-addresses-in-use", (req, res) => {});
+  app.get("/check-addresses-in-use", (req, res) => {
+    const queryResult = await db.query(
+      `
+      SELECT "StakeCredential".credential
+      FROM "StakeCredential"
+      INNER JOIN "TxCredentialRelation" ON "TxCredentialRelation".credential_id = "StakeCredential".id
+      INNER JOIN "Transaction" ON "TxCredentialRelation".tx_id = "Transaction".id
+      WHERE "StakeCredential".credential = ANY ($1)
+      WHERE COUNT(DISTINCT "Transaction".id) > 0
+      `,
+      [req.query.addresses]
+    );
+
+    res.status(200).json({ data: queryResult.rows || [] });
+  });
 
   app.get("/utxos-for-transactions", async (req, res) => {
     if (!req.query.transactions) {
