@@ -12,7 +12,7 @@
     "url": "git+https://github.com/dcSpark/oura-postgres-sink.git"
   },
   "author": "https://github.com/dcSpark",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/dcSpark/oura-postgres-sink/issues"
   },

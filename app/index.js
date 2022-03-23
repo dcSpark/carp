@@ -49,7 +49,6 @@ const server = async () => {
       INNER JOIN "TxCredentialRelation" ON "TxCredentialRelation".credential_id = "StakeCredential".id
       INNER JOIN "Transaction" ON "TxCredentialRelation".tx_id = "Transaction".id
       WHERE "StakeCredential".credential = ANY ($1)
-      WHERE COUNT(DISTINCT "Transaction".id) > 0
       `,
       [req.query.addresses]
     );
