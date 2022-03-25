@@ -347,7 +347,7 @@ checksum = "c1db59621ec70f09c5e9b597b220c7a2b43611f4710dc03ceb8748637775692c"
 [[package]]
 name = "cardano-serialization-lib"
 version = "10.0.4"
-source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?branch=develop#92a9e3527dd1fff926287edad1ec2c62745bfc3f"
+source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?branch=pre-alonzo-block-and-protocolversion-fix#8ebb772b9bc41e40a7d67f3409f8161d58d1db0f"
 dependencies = [
  "bech32 0.7.3",
  "cbor_event",
