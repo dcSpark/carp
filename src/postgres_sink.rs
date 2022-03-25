@@ -139,13 +139,15 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
                 let tx_hash = alonzo::crypto::hash_transaction(tx_body).to_vec();
 
                 let body_payload = tx_body.encode_fragment().unwrap();
-                let body =
-                    &cardano_serialization_lib::TransactionBody::from_bytes(body_payload).unwrap();
+                let body = &cardano_serialization_lib::TransactionBody::from_bytes(body_payload)
+                    .map_err(|e| panic!("{:?}{:?}", e, block_record.cbor_hex))
+                    .unwrap();
 
                 let witness_set_payload = tx_witness_set.encode_fragment().unwrap();
                 let witness_set = &cardano_serialization_lib::TransactionWitnessSet::from_bytes(
                     witness_set_payload,
                 )
+                .map_err(|e| panic!("{:?}{:?}", e, block_record.cbor_hex))
                 .unwrap();
 
                 let aux_data = alonzo_block
@@ -159,6 +161,7 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
                     cardano_serialization_lib::metadata::AuxiliaryData::from_bytes(
                         auxiliary_data_payload,
                     )
+                    .map_err(|e| panic!("{:?}{:?}", e, block_record.cbor_hex))
                     .unwrap()
                 });
 
@@ -197,7 +200,9 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
                                 let address =
                                     insert_address(&mut output.address.to_vec(), txn).await?;
 
-                                let addr = Address::from_bytes(output.address.to_vec()).unwrap();
+                                let addr = Address::from_bytes(output.address.to_vec())
+                                    .map_err(|e| panic!("{:?}{:?}", e, block_record.cbor_hex))
+                                    .unwrap();
 
                                 let tx_relation = TxCredentialRelationValue::Output;
                                 let address_relation = AddressCredentialRelationValue::PaymentKey;
