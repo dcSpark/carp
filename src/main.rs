@@ -14,15 +14,15 @@ async fn main() -> anyhow::Result<()> {
 
     dotenv().ok();
 
-    let network = std::env::var("NETWORK")?;
-    let socket = std::env::var("SOCKET")?;
+    let network = std::env::var("NETWORK").expect("env NETWORK not found");
+    let socket = std::env::var("SOCKET").expect("env SOCKET not found");
 
-    let postgres_host = std::env::var("POSTGRES_HOST")?;
-    let postgres_port = std::env::var("POSTGRES_PORT")?;
-    let postgres_db = std::env::var("POSTGRES_DB")?;
+    let postgres_host = std::env::var("POSTGRES_HOST").expect("env POSTGRES_HOST not found");
+    let postgres_port = std::env::var("POSTGRES_PORT").expect("env POSTGRES_PORT not found");
+    let postgres_db = std::env::var("POSTGRES_DB").expect("env POSTGRES_DB not found");
 
-    let postgres_user_file = std::env::var("POSTGRES_USER_FILE")?;
-    let postgres_password_file = std::env::var("POSTGRES_PASSWORD_FILE")?;
+    let postgres_user_file = std::env::var("POSTGRES_USER_FILE").expect("env POSTGRES_USER_FILE not found");
+    let postgres_password_file = std::env::var("POSTGRES_PASSWORD_FILE").expect("env POSTGRES_PASSWORD_FILE not found");
 
     let postgres_user = fs::read_to_string(postgres_user_file)
         .expect("Cannot read POSTGRES_USER_FILE");
