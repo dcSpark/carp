@@ -66,6 +66,7 @@ pub fn oura_bootstrap(
         since: None,
         min_depth: 0,
         intersect,
+        retry_policy: None,
     };
 
     let source_setup = WithUtils::new(source_config, utils);
@@ -85,7 +86,7 @@ pub fn oura_bootstrap(
 
     let (filter_handle, filter_rx) = filter_setup
         .bootstrap(source_rx)
-        .map_err(|_| anyhow!("failed to bootstrap source"))?;
+        .map_err(|_| anyhow!("failed to bootstrap filter"))?;
 
     handles.push(filter_handle);
 
