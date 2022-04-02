@@ -35,13 +35,14 @@ pub async fn get_latest_points(conn: &DatabaseConnection) -> anyhow::Result<Vec<
 
 pub fn oura_bootstrap(
     points: Vec<PointArg>,
+    genesis_hash: &str,
     network: &str,
     socket: String,
 ) -> anyhow::Result<(Vec<JoinHandle<()>>, StageReceiver)> {
     // we need a special intersection type when bootstrapping from genesis
-    let intersect = match points.len() {
-        0 => Err(anyhow!("Missing intersection point for bootstrapping")),
-        1 => Ok(IntersectArg::Origin),
+    let intersect = match points.last() {
+        None => Err(anyhow!("Missing intersection point for bootstrapping")),
+        Some(point) if point.1 == genesis_hash => Ok(IntersectArg::Origin),
         _ => Ok(IntersectArg::Fallbacks(points))
     }?;
 
@@ -79,10 +80,14 @@ pub fn oura_bootstrap(
 
     let mut handles = Vec::new();
 
+    tracing::info!("{}", "Attempting to connect to node...");
+
     let (source_handle, source_rx) = source_setup.bootstrap().map_err(|e| {
-        eprintln!("{}", e);
+        tracing::error!("{}", e);
         anyhow!("failed to bootstrap source")
     })?;
+
+    tracing::info!("{}", "Connection to node established");
 
     handles.push(source_handle);
 
@@ -98,7 +103,19 @@ pub fn oura_bootstrap(
 const GENESIS_MAINNET: &str = include_str!("../genesis/mainnet.json");
 const GENESIS_TESTNET: &str = include_str!("../genesis/testnet.json");
 
-pub async fn insert_genesis(conn: &DatabaseConnection, network: &str) -> anyhow::Result<()> {
+pub fn get_genesis_hash(network: &str) -> anyhow::Result<&str> {
+    // TODO: avoid hard-coding these and instead pull from genesis file
+    // https://github.com/dcSpark/oura-postgres-sink/issues/8
+    match network {
+        "mainnet" => Ok("5f20df933584822601f9e3f8c024eb5eb252fe8cefb24d1317dc3d432e940ebb"),
+        "testnet" => Ok("96fceff972c2c06bd3bb5243c39215333be6d56aaf4823073dca31afe5038471"),
+        rest => Err(anyhow!(
+            "{} is invalid. NETWORK must be either mainnet or testnet",
+            rest
+        ))
+    }
+}
+pub async fn insert_genesis(conn: &DatabaseConnection, genesis_hash: &str, network: &str) -> anyhow::Result<()> {
     let genesis_str = match network {
         "mainnet" => GENESIS_MAINNET,
         "testnet" => GENESIS_TESTNET,
@@ -116,7 +133,7 @@ pub async fn insert_genesis(conn: &DatabaseConnection, network: &str) -> anyhow:
 
     let block = BlockActiveModel {
         era: Set(0),
-        hash: Set(vec![]),
+        hash: Set(hex::decode(genesis_hash)?),
         height: Set(0),
         epoch: Set(0),
         slot: Set(0),
@@ -126,13 +143,15 @@ pub async fn insert_genesis(conn: &DatabaseConnection, network: &str) -> anyhow:
     let block = block.insert(conn).await?;
 
     for data in genesis {
-        let hash = hex::decode(data.hash)?;
+        let tx_hash = hex::decode(data.hash)?;
 
         let transaction = TransactionActiveModel {
             block_id: Set(block.id),
-            hash: Set(hash),
+            hash: Set(tx_hash),
             is_valid: Set(true),
+            // TODO: payload
             payload: Set(vec![]),
+            // TODO: index
             tx_index: Set(0),
             ..Default::default()
         };
@@ -151,8 +170,9 @@ pub async fn insert_genesis(conn: &DatabaseConnection, network: &str) -> anyhow:
         let tx_output = TransactionOutputActiveModel {
             address_id: Set(address.id),
             tx_id: Set(transaction.id),
+            // TODO: payload
             payload: Set(vec![]),
-            output_index: Set(0),
+            output_index: Set(data.index.try_into().unwrap()),
             ..Default::default()
         };
 

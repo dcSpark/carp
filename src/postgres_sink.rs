@@ -33,6 +33,10 @@ pub struct Config<'a> {
 
 impl<'a> Config<'a> {
     pub async fn bootstrap(&self, input: StageReceiver) -> anyhow::Result<()> {
+        tracing::info!("{}", "Starting to process blocks");
+
+        let mut last_epoch: i128 = -1;
+        let mut epoch_start_time = std::time::Instant::now();
         loop {
             let event = input.recv()?;
 
@@ -40,16 +44,27 @@ impl<'a> Config<'a> {
 
             match data {
                 EventData::Block(block_record) => {
+                    match block_record.epoch {
+                        Some(epoch) if epoch as i128 > last_epoch => {
+                            tracing::info!("Finished processing epoch {} after {:?}", epoch, epoch_start_time.elapsed());
+                            epoch_start_time = std::time::Instant::now();
+
+                            tracing::info!("Starting epoch {} at block #{} ({})", epoch, block_record.number, block_record.hash);
+                            last_epoch = epoch as i128;
+                        },
+                        _ => (),
+                    };
                     self.conn
                         .transaction::<_, (), DbErr>(|txn| Box::pin(insert(block_record, txn)))
                         .await?;
-                }
+                },
                 EventData::RollBack { block_slot, .. } => {
                     Block::delete_many()
                         .filter(BlockColumn::Slot.gt(block_slot))
                         .exec(self.conn)
                         .await?;
-                }
+                    tracing::info!("Rollback to slot {}", block_slot - 1); 
+                },
                 _ => (),
             }
         }
@@ -81,6 +96,8 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
 
     match multi_block {
         MultiEraBlock::Byron(byron_block) => match byron_block.deref() {
+            // Byron era had Epoch-boundary blocks for calculating stake distribution changes
+            // they don't contain any txs, so we can just ignore them
             byron::Block::EbBlock(_) => (),
             byron::Block::MainBlock(main_block) => {
                 for (idx, tx_body) in main_block.body.tx_payload.iter().enumerate() {
