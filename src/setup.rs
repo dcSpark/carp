@@ -38,11 +38,12 @@ pub fn oura_bootstrap(
     network: &str,
     socket: String,
 ) -> anyhow::Result<(Vec<JoinHandle<()>>, StageReceiver)> {
-    let intersect = if !points.is_empty() {
-        Some(IntersectArg::Fallbacks(points))
-    } else {
-        Some(IntersectArg::Origin)
-    };
+    // we need a special intersection type when bootstrapping from genesis
+    let intersect = match points.len() {
+        0 => Err(anyhow!("Missing intersection point for bootstrapping")),
+        1 => Ok(IntersectArg::Origin),
+        _ => Ok(IntersectArg::Fallbacks(points))
+    }?;
 
     let magic = MagicArg::from_str(network).map_err(|_| anyhow!("magic arg failed"))?;
 
@@ -66,7 +67,7 @@ pub fn oura_bootstrap(
         mapper,
         since: None,
         min_depth: 0,
-        intersect,
+        intersect: Some(intersect),
         retry_policy: None,
     };
 

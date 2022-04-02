@@ -34,11 +34,14 @@ async fn main() -> anyhow::Result<()> {
     let conn = Database::connect(&url).await?;
 
     // For rollbacks
-    let points = setup::get_latest_points(&conn).await?;
-
-    if points.is_empty() {
-        setup::insert_genesis(&conn, &network).await?;
-    }
+    let points = match setup::get_latest_points(&conn).await? { 
+        points if points.len() == 0 => {
+            // insert genesis then fetch points again
+            setup::insert_genesis(&conn, &network).await?;
+            setup::get_latest_points(&conn).await?
+        },
+        points => points,
+    };
 
     let (handles, input) = setup::oura_bootstrap(points, &network, socket)?;
 
