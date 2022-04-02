@@ -60,6 +60,7 @@ pub fn oura_bootstrap(
     #[allow(deprecated)]
     let source_config = n2c::Config {
         address: AddressArg(BearerKind::Unix, socket),
+        // address: AddressArg(BearerKind::Tcp, socket),
         magic: Some(magic),
         well_known: None,
         mapper,
