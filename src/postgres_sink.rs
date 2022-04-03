@@ -41,6 +41,7 @@ struct PerfAggregator {
     certificate_insert: Duration,
     collateral_insert: Duration,
     block_fetch: Duration,
+    rollback: Duration,
     overhead: Duration,
 }
 impl PerfAggregator {
@@ -53,6 +54,7 @@ impl PerfAggregator {
             certificate_insert: Duration::new(0, 0),
             collateral_insert: Duration::new(0, 0),
             block_fetch: Duration::new(0, 0),
+            rollback: Duration::new(0, 0),
             overhead: Duration::new(0, 0),
         }
     }
@@ -63,7 +65,8 @@ impl PerfAggregator {
             + self.transaction_output_insert
             + self.certificate_insert
             + self.collateral_insert
-            + self.block_fetch;
+            + self.block_fetch
+            + self.rollback;
         self.overhead = *total_duration - non_duration_sum
     }
 }
@@ -81,6 +84,7 @@ impl std::ops::Add for PerfAggregator {
             certificate_insert: self.certificate_insert + other.certificate_insert,
             collateral_insert: self.collateral_insert + other.collateral_insert,
             block_fetch: self.block_fetch + other.block_fetch,
+            rollback: self.rollback + other.rollback,
             overhead: self.overhead + other.overhead,
         }
     }
@@ -139,14 +143,16 @@ impl<'a> Config<'a> {
                         .await?;
                 }
                 EventData::RollBack { block_slot, .. } => {
+                    match block_slot {
+                        0 => tracing::info!("Rolling back to genesis"),
+                        _ => tracing::info!("Rolling back to slot {}", block_slot - 1),
+                    };
+                    let rollback_start = std::time::Instant::now();
                     Block::delete_many()
                         .filter(BlockColumn::Slot.gt(block_slot))
                         .exec(self.conn)
                         .await?;
-                    match block_slot {
-                        0 => tracing::info!("Rollback to genesis"),
-                        _ => tracing::info!("Rollback to slot {}", block_slot - 1),
-                    }
+                    perf_aggregator.rollback += rollback_start.elapsed();
                 }
                 _ => (),
             }
