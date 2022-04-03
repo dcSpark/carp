@@ -45,6 +45,26 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Column::InputIndex).integer().not_null())
                     .to_owned(),
             )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .table(Entity)
+                    .name("index-transaction_input-transaction_output")
+                    .col(Column::UtxoId)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .table(Entity)
+                    .name("index-transaction_input-transaction")
+                    .col(Column::TxId)
+                    .to_owned(),
+            )
             .await
     }
 

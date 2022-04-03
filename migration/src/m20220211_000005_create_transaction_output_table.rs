@@ -32,8 +32,7 @@ impl MigrationTrait for Migration {
                         ForeignKey::create()
                             .name("fk-transaction_output-address_id")
                             .from(Entity, Column::AddressId)
-                            .to(Address, AddressColumn::Id)
-                            .on_delete(ForeignKeyAction::Cascade),
+                            .to(Address, AddressColumn::Id),
                     )
                     .col(ColumnDef::new(Column::TxId).integer().not_null())
                     .foreign_key(
@@ -44,6 +43,26 @@ impl MigrationTrait for Migration {
                             .on_delete(ForeignKeyAction::Cascade),
                     )
                     .col(ColumnDef::new(Column::OutputIndex).big_integer().not_null())
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .table(Entity)
+                    .name("index-transaction_output-address")
+                    .col(Column::AddressId)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .table(Entity)
+                    .name("index-transaction_output-transaction")
+                    .col(Column::TxId)
                     .to_owned(),
             )
             .await

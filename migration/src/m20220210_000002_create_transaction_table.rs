@@ -45,6 +45,16 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Column::IsValid).boolean().not_null())
                     .to_owned(),
             )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .table(Entity)
+                    .name("index-transaction-block")
+                    .col(Column::BlockId)
+                    .to_owned(),
+            )
             .await
     }
 
