@@ -26,9 +26,65 @@ use entity::{
     },
 };
 use migration::DbErr;
+use std::time::Duration;
 
 pub struct Config<'a> {
     pub conn: &'a DatabaseConnection,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+struct PerfAggregator {
+    block_insertion: Duration,
+    transaction_insert: Duration,
+    transaction_input_insert: Duration,
+    transaction_output_insert: Duration,
+    certificate_insert: Duration,
+    collateral_insert: Duration,
+    overhead: Duration,
+}
+impl PerfAggregator {
+    pub fn new() -> Self {
+        Self {
+            block_insertion: Duration::new(0, 0),
+            transaction_insert: Duration::new(0, 0),
+            transaction_input_insert: Duration::new(0, 0),
+            transaction_output_insert: Duration::new(0, 0),
+            certificate_insert: Duration::new(0, 0),
+            collateral_insert: Duration::new(0, 0),
+            overhead: Duration::new(0, 0),
+        }
+    }
+    pub fn set_overhead(&mut self, total_duration: &Duration) {
+        let non_duration_sum = self.block_insertion
+            + self.transaction_insert
+            + self.transaction_input_insert
+            + self.transaction_output_insert
+            + self.certificate_insert
+            + self.collateral_insert;
+        self.overhead = *total_duration - non_duration_sum
+    }
+}
+impl std::ops::Add for PerfAggregator {
+    type Output = PerfAggregator;
+
+    fn add(self, other: Self) -> Self {
+        Self {
+            block_insertion: self.block_insertion + other.block_insertion,
+            transaction_insert: self.transaction_insert + other.transaction_insert,
+            transaction_input_insert: self.transaction_input_insert
+                + other.transaction_input_insert,
+            transaction_output_insert: self.transaction_output_insert
+                + other.transaction_output_insert,
+            certificate_insert: self.certificate_insert + other.certificate_insert,
+            collateral_insert: self.collateral_insert + other.collateral_insert,
+            overhead: self.collateral_insert + other.overhead,
+        }
+    }
+}
+impl std::ops::AddAssign for PerfAggregator {
+    fn add_assign(&mut self, other: Self) {
+        *self = *self + other
+    }
 }
 
 impl<'a> Config<'a> {
@@ -37,6 +93,8 @@ impl<'a> Config<'a> {
 
         let mut last_epoch: i128 = -1;
         let mut epoch_start_time = std::time::Instant::now();
+        let mut perf_aggregator = PerfAggregator::new();
+
         loop {
             let event = input.recv()?;
 
@@ -46,12 +104,16 @@ impl<'a> Config<'a> {
                 EventData::Block(block_record) => {
                     match block_record.epoch {
                         Some(epoch) if epoch as i128 > last_epoch => {
+                            let epoch_duration = epoch_start_time.elapsed();
                             tracing::info!(
                                 "Finished processing epoch {} after {:?}",
                                 epoch,
-                                epoch_start_time.elapsed()
+                                epoch_duration
                             );
+                            perf_aggregator.set_overhead(&epoch_duration);
+                            tracing::trace!("Epoch part-wise time spent:\n{:#?}", perf_aggregator);
                             epoch_start_time = std::time::Instant::now();
+                            perf_aggregator = PerfAggregator::new();
 
                             tracing::info!(
                                 "Starting epoch {} at block #{} ({})",
@@ -63,8 +125,11 @@ impl<'a> Config<'a> {
                         }
                         _ => (),
                     };
-                    self.conn
-                        .transaction::<_, (), DbErr>(|txn| Box::pin(insert(block_record, txn)))
+                    perf_aggregator += self
+                        .conn
+                        .transaction::<_, PerfAggregator, DbErr>(|txn| {
+                            Box::pin(insert(block_record, txn))
+                        })
                         .await?;
                 }
                 EventData::RollBack { block_slot, .. } => {
@@ -86,9 +151,15 @@ fn blake2b256(data: &[u8]) -> [u8; 32] {
     out
 }
 
-async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<(), DbErr> {
+async fn insert(
+    block_record: BlockRecord,
+    txn: &DatabaseTransaction,
+) -> Result<PerfAggregator, DbErr> {
     let hash = hex::decode(&block_record.hash).unwrap();
     let block_payload = hex::decode(block_record.cbor_hex.as_ref().unwrap()).unwrap();
+
+    let mut perf_aggregator = PerfAggregator::new();
+    let mut time_counter = std::time::Instant::now();
 
     let (multi_block, era) = block_with_era(block_record.era, &block_payload).unwrap();
 
@@ -102,6 +173,9 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
     };
 
     let block = block.insert(txn).await?;
+
+    perf_aggregator.block_insertion += time_counter.elapsed();
+    time_counter = std::time::Instant::now();
 
     match multi_block {
         MultiEraBlock::Byron(byron_block) => match byron_block.deref() {
@@ -125,6 +199,9 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
 
                     let transaction = transaction.insert(txn).await?;
 
+                    perf_aggregator.transaction_insert += time_counter.elapsed();
+                    time_counter = std::time::Instant::now();
+
                     for (idx, output) in tx_body.transaction.outputs.iter().enumerate() {
                         let mut address_payload = output.address.encode_fragment().unwrap();
 
@@ -141,6 +218,9 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
                         tx_output.save(txn).await?;
                     }
 
+                    perf_aggregator.transaction_output_insert += time_counter.elapsed();
+                    time_counter = std::time::Instant::now();
+
                     for (idx, input) in tx_body.transaction.inputs.iter().enumerate() {
                         let (tx_hash, index) = match input {
                             TxIn::Variant0(wrapped) => wrapped.deref(),
@@ -151,6 +231,9 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
 
                         insert_input(&transaction, idx as i32, *index as u64, tx_hash, txn).await?;
                     }
+
+                    perf_aggregator.transaction_input_insert += time_counter.elapsed();
+                    time_counter = std::time::Instant::now();
                 }
             }
         },
@@ -213,9 +296,15 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
 
                 let transaction = transaction.insert(txn).await?;
 
+                perf_aggregator.transaction_insert += time_counter.elapsed();
+                time_counter = std::time::Instant::now();
+
                 for component in tx_body.iter() {
                     insert_certificates(&transaction, component, txn).await?;
                 }
+
+                perf_aggregator.certificate_insert += time_counter.elapsed();
+                time_counter = std::time::Instant::now();
 
                 for component in tx_body.iter() {
                     match component {
@@ -311,6 +400,8 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
 
                                 tx_output.save(txn).await?;
                             }
+                            perf_aggregator.transaction_output_insert += time_counter.elapsed();
+                            time_counter = std::time::Instant::now();
                         }
                         TransactionBodyComponent::Inputs(inputs) if is_valid => {
                             for (idx, input) in inputs.iter().enumerate() {
@@ -323,6 +414,8 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
                                 )
                                 .await?;
                             }
+                            perf_aggregator.transaction_input_insert += time_counter.elapsed();
+                            time_counter = std::time::Instant::now();
                         }
                         TransactionBodyComponent::Collateral(inputs) if !is_valid => {
                             for (idx, input) in inputs.iter().enumerate() {
@@ -335,6 +428,8 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
                                 )
                                 .await?;
                             }
+                            perf_aggregator.collateral_insert += time_counter.elapsed();
+                            time_counter = std::time::Instant::now();
                         }
 
                         _ => (),
@@ -344,7 +439,7 @@ async fn insert(block_record: BlockRecord, txn: &DatabaseTransaction) -> Result<
         }
     }
 
-    Ok(())
+    Ok(perf_aggregator)
 }
 
 async fn insert_address(
@@ -414,6 +509,7 @@ async fn insert_input(
     tx_hash: &Hash<32>,
     txn: &DatabaseTransaction,
 ) -> Result<(), DbErr> {
+    // 1) Get the UTXO this input is spending
     let tx_output = TransactionOutput::find()
         .inner_join(Transaction)
         .filter(TransactionOutputColumn::OutputIndex.eq(index))
@@ -423,6 +519,7 @@ async fn insert_input(
 
     let tx_output = tx_output.unwrap();
 
+    // 2) Get the stake credential for the UTXO being spent
     let stake_credentials = StakeCredential::find()
         .inner_join(AddressCredential)
         .join(
@@ -437,8 +534,8 @@ async fn insert_input(
         .all(txn)
         .await?;
 
+    // 3) Associate the stake credential to this transaction
     let relation = TxCredentialRelationValue::Input;
-
     for stake_credential in stake_credentials {
         let tx_credential = TxCredentialActiveModel {
             credential_id: Set(stake_credential.id),
@@ -450,6 +547,7 @@ async fn insert_input(
         tx_credential.save(txn).await?;
     }
 
+    // 4) Add input itself
     let tx_input = TransactionInputActiveModel {
         utxo_id: Set(tx_output.id),
         tx_id: Set(tx.id),
