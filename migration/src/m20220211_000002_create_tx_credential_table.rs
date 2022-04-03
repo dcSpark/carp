@@ -35,8 +35,7 @@ impl MigrationTrait for Migration {
                         ForeignKey::create()
                             .name("fk-tx_credential-credential_id")
                             .from(Entity, Column::CredentialId)
-                            .to(StakeCredential, StakeCredentialColumn::Id)
-                            .on_delete(ForeignKeyAction::Cascade),
+                            .to(StakeCredential, StakeCredentialColumn::Id),
                     )
                     .col(ColumnDef::new(Column::TxId).big_integer().not_null())
                     .foreign_key(

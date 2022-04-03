@@ -31,8 +31,7 @@ impl MigrationTrait for Migration {
                         ForeignKey::create()
                             .name("fk-transaction_input-utxo_id")
                             .from(Entity, Column::UtxoId)
-                            .to(TransactionOutput, TransactionOutputColumn::Id)
-                            .on_delete(ForeignKeyAction::Cascade),
+                            .to(TransactionOutput, TransactionOutputColumn::Id),
                     )
                     .col(ColumnDef::new(Column::TxId).big_integer().not_null())
                     .foreign_key(

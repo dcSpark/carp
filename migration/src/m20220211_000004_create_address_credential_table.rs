@@ -31,8 +31,7 @@ impl MigrationTrait for Migration {
                         ForeignKey::create()
                             .name("fk-address_credential-address_id")
                             .from(Entity, Column::AddressId)
-                            .to(Address, AddressColumn::Id)
-                            .on_delete(ForeignKeyAction::Cascade),
+                            .to(Address, AddressColumn::Id),
                     )
                     .col(
                         ColumnDef::new(Column::CredentialId)
@@ -43,8 +42,7 @@ impl MigrationTrait for Migration {
                         ForeignKey::create()
                             .name("fk-address_credential-credential_id")
                             .from(Entity, Column::CredentialId)
-                            .to(StakeCredential, StakeCredentialColumn::Id)
-                            .on_delete(ForeignKeyAction::Cascade),
+                            .to(StakeCredential, StakeCredentialColumn::Id),
                     )
                     .col(ColumnDef::new(Column::Relation).integer().not_null())
                     .to_owned(),
