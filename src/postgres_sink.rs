@@ -40,6 +40,7 @@ struct PerfAggregator {
     transaction_output_insert: Duration,
     certificate_insert: Duration,
     collateral_insert: Duration,
+    block_fetch: Duration,
     overhead: Duration,
 }
 impl PerfAggregator {
@@ -51,6 +52,7 @@ impl PerfAggregator {
             transaction_output_insert: Duration::new(0, 0),
             certificate_insert: Duration::new(0, 0),
             collateral_insert: Duration::new(0, 0),
+            block_fetch: Duration::new(0, 0),
             overhead: Duration::new(0, 0),
         }
     }
@@ -60,7 +62,8 @@ impl PerfAggregator {
             + self.transaction_input_insert
             + self.transaction_output_insert
             + self.certificate_insert
-            + self.collateral_insert;
+            + self.collateral_insert
+            + self.block_fetch;
         self.overhead = *total_duration - non_duration_sum
     }
 }
@@ -77,7 +80,8 @@ impl std::ops::Add for PerfAggregator {
                 + other.transaction_output_insert,
             certificate_insert: self.certificate_insert + other.certificate_insert,
             collateral_insert: self.collateral_insert + other.collateral_insert,
-            overhead: self.collateral_insert + other.overhead,
+            block_fetch: self.block_fetch + other.block_fetch,
+            overhead: self.overhead + other.overhead,
         }
     }
 }
@@ -96,7 +100,9 @@ impl<'a> Config<'a> {
         let mut perf_aggregator = PerfAggregator::new();
 
         loop {
+            let event_fetch_start = std::time::Instant::now();
             let event = input.recv()?;
+            perf_aggregator.block_fetch += event_fetch_start.elapsed();
 
             let data = event.data.clone();
 
