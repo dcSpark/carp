@@ -34,6 +34,7 @@ pub struct Config<'a> {
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 struct PerfAggregator {
+    block_parse: Duration,
     block_insertion: Duration,
     transaction_insert: Duration,
     transaction_input_insert: Duration,
@@ -47,6 +48,7 @@ struct PerfAggregator {
 impl PerfAggregator {
     pub fn new() -> Self {
         Self {
+            block_parse: Duration::new(0, 0),
             block_insertion: Duration::new(0, 0),
             transaction_insert: Duration::new(0, 0),
             transaction_input_insert: Duration::new(0, 0),
@@ -59,7 +61,8 @@ impl PerfAggregator {
         }
     }
     pub fn set_overhead(&mut self, total_duration: &Duration) {
-        let non_duration_sum = self.block_insertion
+        let non_duration_sum = self.block_parse
+            + self.block_insertion
             + self.transaction_insert
             + self.transaction_input_insert
             + self.transaction_output_insert
@@ -75,6 +78,7 @@ impl std::ops::Add for PerfAggregator {
 
     fn add(self, other: Self) -> Self {
         Self {
+            block_parse: self.block_parse + other.block_parse,
             block_insertion: self.block_insertion + other.block_insertion,
             transaction_insert: self.transaction_insert + other.transaction_insert,
             transaction_input_insert: self.transaction_input_insert
@@ -170,11 +174,14 @@ async fn insert(
     block_record: BlockRecord,
     txn: &DatabaseTransaction,
 ) -> Result<PerfAggregator, DbErr> {
+    let mut perf_aggregator = PerfAggregator::new();
+    let mut time_counter = std::time::Instant::now();
+
     let hash = hex::decode(&block_record.hash).unwrap();
     let block_payload = hex::decode(block_record.cbor_hex.as_ref().unwrap()).unwrap();
 
-    let mut perf_aggregator = PerfAggregator::new();
-    let mut time_counter = std::time::Instant::now();
+    perf_aggregator.block_parse += time_counter.elapsed();
+    time_counter = std::time::Instant::now();
 
     let (multi_block, era) = block_with_era(block_record.era, &block_payload).unwrap();
 
