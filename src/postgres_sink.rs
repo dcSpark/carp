@@ -188,9 +188,9 @@ async fn insert(
     let block = BlockActiveModel {
         era: Set(era),
         hash: Set(hash),
-        height: Set(block_record.number as i64),
+        height: Set(block_record.number as i32),
         epoch: Set(0),
-        slot: Set(block_record.slot as i64),
+        slot: Set(block_record.slot as i32),
         ..Default::default()
     };
 
@@ -233,7 +233,7 @@ async fn insert(
                             payload: Set(output.encode_fragment().unwrap()),
                             address_id: Set(address.id),
                             tx_id: Set(transaction.id),
-                            output_index: Set(idx as i64),
+                            output_index: Set(idx as i32),
                             ..Default::default()
                         };
 
@@ -416,7 +416,7 @@ async fn insert(
                                     payload: Set(output.encode_fragment().unwrap()),
                                     address_id: Set(address.id),
                                     tx_id: Set(transaction.id),
-                                    output_index: Set(idx as i64),
+                                    output_index: Set(idx as i32),
                                     ..Default::default()
                                 };
 

@@ -4,12 +4,12 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Deserialize, Serialize)]
 #[sea_orm(table_name = "Transaction")]
 pub struct Model {
-    #[sea_orm(primary_key)]
-    pub id: i32,
+    #[sea_orm(primary_key, column_type = "BigInteger")]
+    pub id: i64,
     #[sea_orm(unique)]
     pub hash: Vec<u8>,
     pub block_id: i32,
-    pub tx_index: i32,
+    pub tx_index: i32, // index in block
     pub payload: Vec<u8>,
     pub is_valid: bool,
 }

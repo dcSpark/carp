@@ -4,11 +4,13 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Deserialize, Serialize)]
 #[sea_orm(table_name = "TransactionInput")]
 pub struct Model {
-    #[sea_orm(primary_key)]
-    pub id: i32,
-    pub utxo_id: i32,
-    pub tx_id: i32,
-    pub input_index: i32,
+    #[sea_orm(primary_key, column_type = "BigInteger")]
+    pub id: i64,
+    #[sea_orm(column_type = "BigInteger")]
+    pub utxo_id: i64,
+    #[sea_orm(column_type = "BigInteger")]
+    pub tx_id: i64,
+    pub input_index: i32, // index inside transaction
 }
 
 #[derive(Copy, Clone, Debug, DeriveRelation, EnumIter)]

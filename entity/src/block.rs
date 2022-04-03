@@ -8,11 +8,9 @@ pub struct Model {
     pub id: i32,
     pub era: i32,
     pub hash: Vec<u8>,
-    #[sea_orm(column_type = "BigInteger")]
-    pub height: i64,
+    pub height: i32,
     pub epoch: i32,
-    #[sea_orm(column_type = "BigInteger")]
-    pub slot: i64,
+    pub slot: i32,
 }
 
 #[derive(Copy, Clone, Debug, DeriveRelation, EnumIter)]

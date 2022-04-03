@@ -21,12 +21,16 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(
                         ColumnDef::new(Column::Id)
-                            .integer()
+                            .big_integer()
                             .not_null()
                             .auto_increment()
                             .primary_key(),
                     )
-                    .col(ColumnDef::new(Column::CredentialId).integer().not_null())
+                    .col(
+                        ColumnDef::new(Column::CredentialId)
+                            .big_integer()
+                            .not_null(),
+                    )
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk-tx_credential-credential_id")
@@ -34,7 +38,7 @@ impl MigrationTrait for Migration {
                             .to(StakeCredential, StakeCredentialColumn::Id)
                             .on_delete(ForeignKeyAction::Cascade),
                     )
-                    .col(ColumnDef::new(Column::TxId).integer().not_null())
+                    .col(ColumnDef::new(Column::TxId).big_integer().not_null())
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk-tx_credential-tx_id")
