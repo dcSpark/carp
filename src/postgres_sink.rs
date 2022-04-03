@@ -137,7 +137,10 @@ impl<'a> Config<'a> {
                         .filter(BlockColumn::Slot.gt(block_slot))
                         .exec(self.conn)
                         .await?;
-                    tracing::info!("Rollback to slot {}", block_slot - 1);
+                    match block_slot {
+                        0 => tracing::info!("Rollback to genesis"),
+                        _ => tracing::info!("Rollback to slot {}", block_slot - 1),
+                    }
                 }
                 _ => (),
             }

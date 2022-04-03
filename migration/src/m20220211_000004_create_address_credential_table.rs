@@ -45,6 +45,26 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Column::Relation).integer().not_null())
                     .to_owned(),
             )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .table(Entity)
+                    .name("index-address_credential-address")
+                    .col(Column::AddressId)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .table(Entity)
+                    .name("index-address_credential-stake_credential")
+                    .col(Column::CredentialId)
+                    .to_owned(),
+            )
             .await
     }
 

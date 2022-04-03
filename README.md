@@ -24,7 +24,7 @@ Note: steps assume mainnet
 1) `\q`
 1) Modify the env variables in `.env` if needed (ex: connecting to local node instead of remote)
 1) Run the env file (`set -a; . .env; set +a`) 
-1) `cargo migrate up`
+1) `cargo migrate up` (you can debug migration by adding a `-v` at the end of the command)
 1) `cargo run`
 
 ### Migrations
