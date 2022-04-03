@@ -46,25 +46,34 @@ impl<'a> Config<'a> {
                 EventData::Block(block_record) => {
                     match block_record.epoch {
                         Some(epoch) if epoch as i128 > last_epoch => {
-                            tracing::info!("Finished processing epoch {} after {:?}", epoch, epoch_start_time.elapsed());
+                            tracing::info!(
+                                "Finished processing epoch {} after {:?}",
+                                epoch,
+                                epoch_start_time.elapsed()
+                            );
                             epoch_start_time = std::time::Instant::now();
 
-                            tracing::info!("Starting epoch {} at block #{} ({})", epoch, block_record.number, block_record.hash);
+                            tracing::info!(
+                                "Starting epoch {} at block #{} ({})",
+                                epoch,
+                                block_record.number,
+                                block_record.hash
+                            );
                             last_epoch = epoch as i128;
-                        },
+                        }
                         _ => (),
                     };
                     self.conn
                         .transaction::<_, (), DbErr>(|txn| Box::pin(insert(block_record, txn)))
                         .await?;
-                },
+                }
                 EventData::RollBack { block_slot, .. } => {
                     Block::delete_many()
                         .filter(BlockColumn::Slot.gt(block_slot))
                         .exec(self.conn)
                         .await?;
-                    tracing::info!("Rollback to slot {}", block_slot - 1); 
-                },
+                    tracing::info!("Rollback to slot {}", block_slot - 1);
+                }
                 _ => (),
             }
         }
@@ -342,7 +351,21 @@ async fn insert_address(
     payload: &mut Vec<u8>,
     txn: &DatabaseTransaction,
 ) -> Result<AddressModel, DbErr> {
-    payload.truncate(2704);
+    // During the Byron era of Cardano,
+    // Addresses had a feature where you could add extra metadata in them
+    // The amount of metadata you could insert was not capped
+    // So some addresses got generated which are really large
+    // However, Postgres btree v4 has a maximum size of 2704 for an index
+    // Since these addresses can't be spent anyway, we just truncate them
+    // theoretically, we could truncate at 2704, but we truncate at 500
+    // reasons:
+    // 1) Postgres has shrunk the limit in the past, so they may do it again
+    // 2) Use of the INCLUDE in creating an index can increase its size
+    //    So best to leave some extra room incase this is useful someday
+    // 3) It's not great to hard-code a postgresql-specific limitation
+    // 4) 500 seems more obviously human than 2704 so maybe easier if somebody sees it
+    // 5) Storing up to 2704 bytes is a waste of space since they aren't used for anything
+    payload.truncate(500);
 
     let addr = Address::find()
         .filter(AddressColumn::Payload.eq(payload.clone()))
@@ -358,7 +381,6 @@ async fn insert_address(
         };
 
         let address = address.insert(txn).await?;
-
         Ok(address)
     }
 }
