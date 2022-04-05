@@ -7,7 +7,6 @@ Sync a postgres database with the cardano blockchain using [Oura](https://github
 **Note**: This project is primarily made for post-Shelley era queries. Although Byron-era transactions will be recorded in the DB, the Typescript API is not particularly written to handle Byron-era wallet management.
 
 ## Usage
-
 ### Running
 
 #### Setup DB
@@ -34,6 +33,12 @@ There is an alias configured for convenience.
 - `cargo migrate up`
 - `cargo migrate down`
 - `cargo migrate help`
+
+### Web Server
+
+Once you've built and run the project, you can of course run any SQL query you want.
+
+However, if you want some queries useful for light wallets and similar applications, you can check out the `webserver` folder.
 
 ## Crates
 

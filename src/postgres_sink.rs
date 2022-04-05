@@ -215,7 +215,7 @@ async fn insert(
                         block_id: Set(block.id),
                         tx_index: Set(idx as i32),
                         payload: Set(tx_payload),
-                        is_valid: Set(true),
+                        is_valid: Set(true), // TODO
                         ..Default::default()
                     };
 

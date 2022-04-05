@@ -5,7 +5,8 @@
   "type": "module",
   "main": "app/index.js",
   "scripts": {
-    "start": "node app/index.js"
+    "start": "node app/index.js",
+    "pg_dump": "pg_dump -s $POSTGRES_DB > bin/schema.sql && npx prisma db pull"
   },
   "repository": {
     "type": "git",
@@ -18,7 +19,16 @@
   },
   "homepage": "https://github.com/dcSpark/oura-postgres-sink#readme",
   "dependencies": {
+    "body-parser": "^1.20.0",
     "express": "^4.17.3",
-    "pg": "^8.7.3"
+    "pg": "^8.7.3",
+    "tsoa": "^3.14.1"
+  },
+  "devDependencies": {
+    "@types/body-parser": "^1.19.2",
+    "@types/express": "^4.17.13",
+    "@types/node": "^17.0.23",
+    "prisma": "^3.11.1",
+    "typescript": "^4.6.3"
   }
 }
