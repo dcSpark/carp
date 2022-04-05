@@ -5,10 +5,8 @@ use serde::{Deserialize, Serialize};
 #[sea_orm(table_name = "TxCredentialRelation")]
 pub struct Model {
     #[sea_orm(primary_key, column_type = "BigInteger")]
-    pub id: i64,
-    #[sea_orm(column_type = "BigInteger")]
     pub credential_id: i64,
-    #[sea_orm(column_type = "BigInteger")]
+    #[sea_orm(primary_key, column_type = "BigInteger")]
     pub tx_id: i64,
     pub relation: i32,
 }

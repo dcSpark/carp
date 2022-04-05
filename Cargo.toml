@@ -19,7 +19,7 @@ pallas = "0.6.0"
 hex = "0.4.3"
 tracing-subscriber = "0.3.9"
 tracing = "0.1.31"
-cardano-serialization-lib = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "develop" }
+cardano-multiplatform-lib = "0.1.0"
 dotenv = "0.15.0"
 serde_json = "1.0.79"
 base64 = "0.13.0"

@@ -20,13 +20,6 @@ impl MigrationTrait for Migration {
                     .table(Entity)
                     .if_not_exists()
                     .col(
-                        ColumnDef::new(Column::Id)
-                            .big_integer()
-                            .not_null()
-                            .auto_increment()
-                            .primary_key(),
-                    )
-                    .col(
                         ColumnDef::new(Column::CredentialId)
                             .big_integer()
                             .not_null(),
@@ -46,26 +39,13 @@ impl MigrationTrait for Migration {
                             .on_delete(ForeignKeyAction::Cascade),
                     )
                     .col(ColumnDef::new(Column::Relation).integer().not_null())
-                    .to_owned(),
-            )
-            .await?;
-
-        manager
-            .create_index(
-                Index::create()
-                    .table(Entity)
-                    .name("index-tx_credential-stake_credential")
-                    .col(Column::CredentialId)
-                    .to_owned(),
-            )
-            .await?;
-
-        manager
-            .create_index(
-                Index::create()
-                    .table(Entity)
-                    .name("index-tx_credential-transaction")
-                    .col(Column::TxId)
+                    .primary_key(
+                        Index::create()
+                            .table(Entity)
+                            .name("tx_credential-pk")
+                            .col(Column::TxId)
+                            .col(Column::CredentialId),
+                    )
                     .to_owned(),
             )
             .await
