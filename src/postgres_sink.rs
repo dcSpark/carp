@@ -440,6 +440,8 @@ async fn insert(
                             time_counter = std::time::Instant::now();
                         }
                         TransactionBodyComponent::Collateral(inputs) if !is_valid => {
+                            // note: we consider collateral as just another kind of input instead of a separate table
+                            // you can use the is_valid field to know what kind of input it actually is
                             for (idx, input) in inputs.iter().enumerate() {
                                 insert_input(
                                     &transaction,
@@ -525,15 +527,15 @@ async fn insert_address_credential(
 
 async fn insert_input(
     tx: &TransactionModel,
-    idx: i32,
-    index: u64,
+    index_in_input: i32,
+    index_in_output: u64,
     tx_hash: &Hash<32>,
     txn: &DatabaseTransaction,
 ) -> Result<(), DbErr> {
     // 1) Get the UTXO this input is spending
     let tx_output = TransactionOutput::find()
         .inner_join(Transaction)
-        .filter(TransactionOutputColumn::OutputIndex.eq(index))
+        .filter(TransactionOutputColumn::OutputIndex.eq(index_in_output))
         .filter(TransactionColumn::Hash.eq(tx_hash.to_vec()))
         .one(txn)
         .await?;
@@ -580,7 +582,7 @@ async fn insert_input(
     let tx_input = TransactionInputActiveModel {
         utxo_id: Set(tx_output.id),
         tx_id: Set(tx.id),
-        input_index: Set(idx),
+        input_index: Set(index_in_input),
         ..Default::default()
     };
 
