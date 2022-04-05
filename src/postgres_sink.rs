@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
 use anyhow::anyhow;
-use cardano_serialization_lib::address::{
+use cardano_multiplatform_lib::address::{
     BaseAddress, EnterpriseAddress, PointerAddress, RewardAddress,
 };
 use cryptoxide::blake2b::Blake2b;
@@ -270,12 +270,12 @@ async fn insert(
                 let tx_hash = alonzo::crypto::hash_transaction(tx_body).to_vec();
 
                 let body_payload = tx_body.encode_fragment().unwrap();
-                let body = &cardano_serialization_lib::TransactionBody::from_bytes(body_payload)
+                let body = &cardano_multiplatform_lib::TransactionBody::from_bytes(body_payload)
                     .map_err(|e| panic!("{:?}{:?}", e, block_record.cbor_hex))
                     .unwrap();
 
                 let witness_set_payload = tx_witness_set.encode_fragment().unwrap();
-                let witness_set = &cardano_serialization_lib::TransactionWitnessSet::from_bytes(
+                let witness_set = &cardano_multiplatform_lib::TransactionWitnessSet::from_bytes(
                     witness_set_payload,
                 )
                 .map_err(|e| panic!("{:?}{:?}", e, block_record.cbor_hex))
@@ -289,7 +289,7 @@ async fn insert(
                 let auxiliary_data = aux_data.map(|(_, a)| {
                     let auxiliary_data_payload = a.encode_fragment().unwrap();
 
-                    cardano_serialization_lib::metadata::AuxiliaryData::from_bytes(
+                    cardano_multiplatform_lib::metadata::AuxiliaryData::from_bytes(
                         auxiliary_data_payload,
                     )
                     .map_err(|e| panic!("{:?}{:?}", e, block_record.cbor_hex))
@@ -297,7 +297,7 @@ async fn insert(
                 });
 
                 let mut temp_tx =
-                    cardano_serialization_lib::Transaction::new(body, witness_set, auxiliary_data);
+                    cardano_multiplatform_lib::Transaction::new(body, witness_set, auxiliary_data);
 
                 let mut is_valid = true;
 
@@ -332,7 +332,7 @@ async fn insert(
                     match component {
                         TransactionBodyComponent::Outputs(outputs) => {
                             for (idx, output) in outputs.iter().enumerate() {
-                                use cardano_serialization_lib::address::Address;
+                                use cardano_multiplatform_lib::address::Address;
 
                                 let address =
                                     insert_address(&mut output.address.to_vec(), txn).await?;
@@ -516,7 +516,6 @@ async fn insert_address_credential(
         credential_id: Set(stake_credential.id),
         address_id: Set(address.id),
         relation: Set(address_relation),
-        ..Default::default()
     };
 
     address_credential.save(txn).await?;
@@ -541,32 +540,40 @@ async fn insert_input(
 
     let tx_output = tx_output.unwrap();
 
-    // 2) Get the stake credential for the UTXO being spent
-    let stake_credentials = StakeCredential::find()
-        .inner_join(AddressCredential)
-        .join(
-            JoinType::InnerJoin,
-            AddressCredentialRelation::Address.def(),
-        )
-        .join(
-            JoinType::InnerJoin,
-            AddressRelation::TransactionOutput.def(),
-        )
-        .filter(TransactionOutputColumn::Id.eq(tx_output.id))
-        .all(txn)
-        .await?;
+    let is_byron = match cardano_multiplatform_lib::TransactionOutput::from_bytes(tx_output.payload)
+    {
+        Ok(parsed_output) => parsed_output.address().as_byron().is_none(),
+        // TODO: remove this once we've parsed the genesis block correctly instead of inserting dummy data
+        Err(_) => true,
+    };
+    // Byron addresses don't contain stake credentials, so we can skip them
+    if is_byron {
+        // 2) Get the stake credential for the UTXO being spent
+        let stake_credentials = StakeCredential::find()
+            .inner_join(AddressCredential)
+            .join(
+                JoinType::InnerJoin,
+                AddressCredentialRelation::Address.def(),
+            )
+            .join(
+                JoinType::InnerJoin,
+                AddressRelation::TransactionOutput.def(),
+            )
+            .filter(TransactionOutputColumn::Id.eq(tx_output.id))
+            .all(txn)
+            .await?;
 
-    // 3) Associate the stake credential to this transaction
-    let relation = TxCredentialRelationValue::Input;
-    for stake_credential in stake_credentials {
-        let tx_credential = TxCredentialActiveModel {
-            credential_id: Set(stake_credential.id),
-            tx_id: Set(tx.id),
-            relation: Set(relation.into()),
-            ..Default::default()
-        };
+        // 3) Associate the stake credential to this transaction
+        let relation = TxCredentialRelationValue::Input;
+        for stake_credential in stake_credentials {
+            let tx_credential = TxCredentialActiveModel {
+                credential_id: Set(stake_credential.id),
+                tx_id: Set(tx.id),
+                relation: Set(relation.into()),
+            };
 
-        tx_credential.save(txn).await?;
+            tx_credential.save(txn).await?;
+        }
     }
 
     // 4) Add input itself
@@ -627,7 +634,6 @@ async fn insert_credential(
             credential_id: Set(stake_credential.id),
             tx_id: Set(tx.id),
             relation: Set(relation),
-            ..Default::default()
         };
 
         tx_credential.save(txn).await?;
@@ -645,7 +651,6 @@ async fn insert_credential(
             credential_id: Set(stake_credential.id),
             tx_id: Set(tx.id),
             relation: Set(relation),
-            ..Default::default()
         };
 
         tx_credential.save(txn).await?;

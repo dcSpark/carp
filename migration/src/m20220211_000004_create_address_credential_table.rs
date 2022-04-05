@@ -19,13 +19,6 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Entity)
                     .if_not_exists()
-                    .col(
-                        ColumnDef::new(Column::Id)
-                            .big_integer()
-                            .not_null()
-                            .auto_increment()
-                            .primary_key(),
-                    )
                     .col(ColumnDef::new(Column::AddressId).big_integer().not_null())
                     .foreign_key(
                         ForeignKey::create()
@@ -45,26 +38,29 @@ impl MigrationTrait for Migration {
                             .to(StakeCredential, StakeCredentialColumn::Id),
                     )
                     .col(ColumnDef::new(Column::Relation).integer().not_null())
+                    .primary_key(
+                        Index::create()
+                            .table(Entity)
+                            .name("address_credential-pk")
+                            .col(Column::AddressId)
+                            .col(Column::CredentialId),
+                    )
                     .to_owned(),
             )
             .await?;
 
+        // although the pk is <address, credential>,
+        // we also need to ensure the grouping of all 3 is unique
+        // we don't make the triple the PK because joins usually only specify 2/3 keys
         manager
             .create_index(
                 Index::create()
                     .table(Entity)
                     .name("index-address_credential-address")
                     .col(Column::AddressId)
-                    .to_owned(),
-            )
-            .await?;
-
-        manager
-            .create_index(
-                Index::create()
-                    .table(Entity)
-                    .name("index-address_credential-stake_credential")
                     .col(Column::CredentialId)
+                    .col(Column::Relation)
+                    .unique()
                     .to_owned(),
             )
             .await
