@@ -7,11 +7,9 @@ services:
     environment:
       - POSTGRES_LOGGING=true
       - POSTGRES_DB=cardano
-      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
-      - POSTGRES_USER_FILE=/run/secrets/postgres_user
+      - PGPASSFILE=/run/secrets/.pgpass
     secrets:
-      - postgres_password
-      - postgres_user
+      - pgpass
     volumes:
       - ./${NETWORK:-testnet}/postgres-data:/var/lib/postgresql/data
 
@@ -49,14 +47,9 @@ services:
     environment:
       - NETWORK=${NETWORK:-testnet}
       - SOCKET=/app/node-ipc/node.socket
-      - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
-      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
-      - POSTGRES_DB=${POSTGRES_DB:-cardano}
-      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
-      - POSTGRES_USER_FILE=/run/secrets/postgres_user
+      - PGPASSFILE=/run/secrets/.pgpass
     secrets:
-      - postgres_password
-      - postgres_user
+      - pgpass
     volumes:
       - ./${NETWORK:-testnet}/node-ipc:/app/node-ipc:rw
     entrypoint:
@@ -76,7 +69,6 @@ services:
 
 
 secrets:
-  postgres_password:
-    file: ./config/secrets/${NETWORK:-testnet}/postgres_password
-  postgres_user:
-    file: ./config/secrets/${NETWORK:-testnet}/postgres_user
+  pgpass:
+    file: ./config/secrets/${NETWORK:-testnet}/.pgpass
+

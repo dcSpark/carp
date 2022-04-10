@@ -17,14 +17,19 @@ Note: steps assume mainnet
 
 1) `sudo -u postgres createdb oura_postgres_mainnet`
 1) `sudo -u postgres createuser oura`
-1) `sudo -u postgres psql`
-1) `\password oura`
-1) Add your username & password to `secrets/db-password` and `secrets/db-user`
-1) `\q`
+1) `sudo -u postgres psql -c "\password oura"`
+1) Add your database name & user password to `secrets/.pgpass`
 1) Modify the env variables in `.env` if needed (ex: connecting to local node instead of remote)
-1) Run the env file (`set -a; . .env; set +a`) 
+1) Run the env file (`set -a; . .env; set +a`) - note you will have to re-run this command every time you reopen your shell
+1) Run `export HBA_PATH=$(sudo -u postgres psql -c "show hba_file;" | sed -n '3p' | xargs echo -n)`
+1) Run `sudo -E sh -c 'echo "local $POSTGRES_DB $PGUSER md5" >> $HBA_PATH'`
+1) Run `sudo -u postgres psql -c "SELECT pg_reload_conf();"`
 1) `cargo migrate up` (you can debug migration by adding a `-v` at the end of the command)
 1) `cargo run`
+
+psql -h localhost -U oura -d oura_postgres_mainnet -c "SELECT 5"
+psql -U oura -d oura_postgres_mainnet -c "SELECT 5"
+psql "postgresql://localhost:5432/oura_postgres_mainnet" -c "SELECT 5"
 
 ### Migrations
 

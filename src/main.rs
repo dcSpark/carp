@@ -1,6 +1,5 @@
 use anyhow::anyhow;
 use dotenv::dotenv;
-use std::fs;
 
 use entity::sea_orm::Database;
 use tracing_subscriber::prelude::*;
@@ -38,17 +37,8 @@ async fn main() -> anyhow::Result<()> {
     let postgres_port = std::env::var("POSTGRES_PORT").expect("env POSTGRES_PORT not found");
     let postgres_db = std::env::var("POSTGRES_DB").expect("env POSTGRES_DB not found");
 
-    let postgres_user_file =
-        std::env::var("POSTGRES_USER_FILE").expect("env POSTGRES_USER_FILE not found");
-    let postgres_password_file =
-        std::env::var("POSTGRES_PASSWORD_FILE").expect("env POSTGRES_PASSWORD_FILE not found");
-
-    let postgres_user =
-        fs::read_to_string(postgres_user_file).expect("Cannot read POSTGRES_USER_FILE");
-    let postgres_password =
-        fs::read_to_string(postgres_password_file).expect("Cannot read POSTGRES_PASSWORD_FILE");
-
-    let url = format!("postgresql://{postgres_user}:{postgres_password}@{postgres_host}:{postgres_port}/{postgres_db}");
+    let url = format!("postgresql://{postgres_host}:{postgres_port}/{postgres_db}");
+    println!("{}", url);
 
     tracing::info!("{}", "Connecting to database...");
     let conn = Database::connect(&url).await?;
