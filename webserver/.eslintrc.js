@@ -1,10 +1,12 @@
 module.exports = {
     "root": true,
+    parser: '@typescript-eslint/parser',
     "parserOptions": {
         "ecmaVersion": 2020,
         "tsconfigRootDir": __dirname,
-        "project": ["./tsconfig.typecheck.json"],
-        "sourceType": "module"
+        "project": "./tsconfig.typecheck.json",
+        "sourceType": "module",
+        tsconfigRootDir: __dirname,
     },
     "env": {
         "es2020": true,
@@ -71,23 +73,6 @@ module.exports = {
         'no-lonely-if': 'off',
         'no-multiple-empty-lines': 'off',
         'no-multi-spaces': 'off',
-        'no-restricted-imports': [
-            'error',
-            {
-            paths: [
-                {
-                name: 'react-router-dom',
-                importNames: ['useLocation', 'useHistory'],
-                message: 'Use hookts.ts instead',
-                },
-                {
-                name: 'react-redux',
-                importNames: ['useDispatch', 'useSelector'],
-                message: 'Use hookts.ts instead',
-                },
-            ],
-            },
-        ],
         'no-restricted-globals': 'off',
         'no-restricted-syntax': 'off',
         'no-return-await': 'off',
@@ -100,23 +85,6 @@ module.exports = {
         'promise/always-return': 2,
         'promise/catch-or-return': 2,
         'promise/no-native': 0,
-        'react/button-has-type': 1,
-        'react/destructuring-assignment': 0,
-        'react/no-array-index-key': 1,
-        'react/jsx-no-bind': 'off',
-        'react/jsx-filename-extension': ['error', { extensions: ['.js', '.jsx', '.ts', '.tsx'] }],
-        'react/jsx-closing-bracket-location': 1,
-        'react/jsx-one-expression-per-line': 'off',
-        'react/jsx-wrap-multilines': 'off',
-        'react/prefer-stateless-function': 'off',
-        'react/no-unused-prop-types': 'off',
-        'react/prop-types': 0,
-        'react/require-default-props': 0,
-        'react/sort-comp': 0,
-        'react/static-property-placement': ['warn', 'static public field'],
-        'react/state-in-constructor': ['warn', 'never'],
-        'react/jsx-props-no-spreading': 0,
-        'react/jsx-curly-newline': 0,
         'class-methods-use-this': 0,
         'no-continue': 0,
         'no-duplicate-imports': 0,
@@ -142,14 +110,11 @@ module.exports = {
         'arrow-body-style': 0,
         'key-spacing': 1,
         'no-empty-function': 1,
-        'max-len': 1,
         'no-useless-escape': 1,
         'prefer-const': 'off', // causes issues with let statements followed by block or try-catch
-        'object-curly-spacing': 1,
         'spaced-comment': 1,
         quotes: ['error', 'single', { avoidEscape: true, allowTemplateLiterals: true }],
         'import/imports-first': 1,
-        'react/jsx-indent': 1,
         'global-require': 'off',
         'no-await-in-loop': 0,
         'no-unused-expressions': 0,
@@ -165,4 +130,7 @@ module.exports = {
     },
     plugins: ['@typescript-eslint', 'import', 'promise', 'prettier'],
     ignorePatterns: ['.eslintrc.js'],
+    globals: {
+        nameof: true,
+    },
 }
