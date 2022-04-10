@@ -33,15 +33,10 @@ async fn main() -> anyhow::Result<()> {
     let network = std::env::var("NETWORK").expect("env NETWORK not found");
     let socket = std::env::var("SOCKET").expect("env SOCKET not found");
 
-    let postgres_host = std::env::var("POSTGRES_HOST").expect("env POSTGRES_HOST not found");
-    let postgres_port = std::env::var("POSTGRES_PORT").expect("env POSTGRES_PORT not found");
-    let postgres_db = std::env::var("POSTGRES_DB").expect("env POSTGRES_DB not found");
-
-    let url = format!("postgresql://{postgres_host}:{postgres_port}/{postgres_db}");
-    println!("{}", url);
+    let postgres_url = std::env::var("DATABASE_URL").expect("env DATABASE_URL not found");
 
     tracing::info!("{}", "Connecting to database...");
-    let conn = Database::connect(&url).await?;
+    let conn = Database::connect(&postgres_url).await?;
 
     tracing::info!("{}", "Getting the latest block synced from DB");
 
