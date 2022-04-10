@@ -6,29 +6,17 @@ exports.RegisterRoutes = void 0;
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 const runtime_1 = require("@tsoa/runtime");
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-const FooController_1 = require("./../app/controllers/FooController");
+const TransactionController_1 = require("./../app/controllers/TransactionController");
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 const models = {
-    "User": {
-        "dataType": "refObject",
-        "properties": {
-            "id": { "dataType": "double", "required": true },
-            "email": { "dataType": "string", "required": true },
-            "name": { "dataType": "string", "required": true },
-            "status": { "dataType": "union", "subSchemas": [{ "dataType": "enum", "enums": ["Happy"] }, { "dataType": "enum", "enums": ["Sad"] }] },
-            "phoneNumbers": { "dataType": "array", "array": { "dataType": "string" }, "required": true },
-        },
-        "additionalProperties": false,
+    "Address": {
+        "dataType": "refAlias",
+        "type": { "dataType": "string", "validators": {} },
     },
     // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-    "Pick_User.email-or-name-or-phoneNumbers_": {
+    "TransactionHistoryRequest": {
         "dataType": "refAlias",
-        "type": { "dataType": "nestedObjectLiteral", "nestedProperties": { "email": { "dataType": "string", "required": true }, "name": { "dataType": "string", "required": true }, "phoneNumbers": { "dataType": "array", "array": { "dataType": "string" }, "required": true } }, "validators": {} },
-    },
-    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-    "UserCreationParams": {
-        "dataType": "refAlias",
-        "type": { "ref": "Pick_User.email-or-name-or-phoneNumbers_", "validators": {} },
+        "type": { "dataType": "nestedObjectLiteral", "nestedProperties": { "untilBlock": { "dataType": "string", "required": true }, "after": { "dataType": "nestedObjectLiteral", "nestedProperties": { "tx": { "dataType": "string", "required": true }, "block": { "dataType": "string", "required": true } } }, "addresses": { "dataType": "array", "array": { "dataType": "refAlias", "ref": "Address" }, "required": true } }, "validators": {} },
     },
     // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 };
@@ -39,34 +27,17 @@ function RegisterRoutes(app) {
     //  NOTE: If you do not see routes for all of your controllers in this file, then you might not have informed tsoa of where to look
     //      Please look into the "controllerPathGlobs" config option described in the readme: https://github.com/lukeautry/tsoa
     // ###########################################################################################################
-    app.get('/users/:userId', function UsersController_getUser(request, response, next) {
+    app.post('/transactions', function TransactionController_txHistoryForAddresses(request, response, next) {
         const args = {
-            userId: { "in": "path", "name": "userId", "required": true, "dataType": "double" },
-            name: { "in": "query", "name": "name", "dataType": "string" },
+            requestBody: { "in": "body", "name": "requestBody", "required": true, "ref": "TransactionHistoryRequest" },
+            errorResponse: { "in": "res", "name": "404", "required": true, "dataType": "nestedObjectLiteral", "nestedProperties": { "reason": { "dataType": "string", "required": true } } },
         };
         // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
         let validatedArgs = [];
         try {
             validatedArgs = getValidatedArgs(args, request, response);
-            const controller = new FooController_1.UsersController();
-            const promise = controller.getUser.apply(controller, validatedArgs);
-            promiseHandler(controller, promise, response, undefined, next);
-        }
-        catch (err) {
-            return next(err);
-        }
-    });
-    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-    app.post('/users', function UsersController_createUser(request, response, next) {
-        const args = {
-            requestBody: { "in": "body", "name": "requestBody", "required": true, "ref": "UserCreationParams" },
-        };
-        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-        let validatedArgs = [];
-        try {
-            validatedArgs = getValidatedArgs(args, request, response);
-            const controller = new FooController_1.UsersController();
-            const promise = controller.createUser.apply(controller, validatedArgs);
+            const controller = new TransactionController_1.TransactionController();
+            const promise = controller.txHistoryForAddresses.apply(controller, validatedArgs);
             promiseHandler(controller, promise, response, undefined, next);
         }
         catch (err) {

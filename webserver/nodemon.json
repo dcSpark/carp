@@ -1,5 +1,5 @@
 {
-  "exec": "ts-node app/server.ts",
+  "exec": "NODE_ENV=development ts-node app/server.ts",
   "watch": ["app"],
   "ext": "ts"
 }

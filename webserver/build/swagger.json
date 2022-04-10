@@ -6,88 +6,46 @@
 		"requestBodies": {},
 		"responses": {},
 		"schemas": {
-			"User": {
-				"properties": {
-					"id": {
-						"type": "number",
-						"format": "double"
-					},
-					"email": {
-						"type": "string"
-					},
-					"name": {
-						"type": "string"
-					},
-					"status": {
-						"type": "string",
-						"enum": [
-							"Happy",
-							"Sad"
-						]
-					},
-					"phoneNumbers": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array"
-					}
-				},
-				"required": [
-					"id",
-					"email",
-					"name",
-					"phoneNumbers"
-				],
-				"type": "object",
-				"additionalProperties": false
+			"Address": {
+				"type": "string",
+				"description": "Supported types:\n- byron addresses (Ae2, Dd, etc.)\n- bech32 address (addr / addr_test / stake / stake_test)\n- payment keys (addr_vkh)"
 			},
-			"ValidateErrorJSON": {
+			"TransactionHistoryRequest": {
 				"properties": {
-					"message": {
+					"untilBlock": {
 						"type": "string",
-						"enum": [
-							"Validation failed"
+						"description": "block hash - inclusive"
+					},
+					"after": {
+						"properties": {
+							"tx": {
+								"type": "string",
+								"description": "tx hash"
+							},
+							"block": {
+								"type": "string",
+								"description": "block hash"
+							}
+						},
+						"required": [
+							"tx",
+							"block"
 						],
-						"nullable": false
+						"type": "object",
+						"description": "omitting \"after\" means you query starting from the genesis block"
 					},
-					"details": {
-						"properties": {},
-						"additionalProperties": {},
-						"type": "object"
-					}
-				},
-				"required": [
-					"message",
-					"details"
-				],
-				"type": "object",
-				"additionalProperties": false
-			},
-			"Pick_User.email-or-name-or-phoneNumbers_": {
-				"properties": {
-					"email": {
-						"type": "string"
-					},
-					"name": {
-						"type": "string"
-					},
-					"phoneNumbers": {
+					"addresses": {
 						"items": {
-							"type": "string"
+							"$ref": "#/components/schemas/Address"
 						},
 						"type": "array"
 					}
 				},
 				"required": [
-					"email",
-					"name",
-					"phoneNumbers"
+					"untilBlock",
+					"addresses"
 				],
-				"type": "object",
-				"description": "From T, pick a set of properties whose keys are in the union K"
-			},
-			"UserCreationParams": {
-				"$ref": "#/components/schemas/Pick_User.email-or-name-or-phoneNumbers_"
+				"type": "object"
 			}
 		},
 		"securitySchemes": {}
@@ -105,59 +63,38 @@
 	},
 	"openapi": "3.0.0",
 	"paths": {
-		"/users/{userId}": {
-			"get": {
-				"operationId": "GetUser",
+		"/transactions": {
+			"post": {
+				"operationId": "TxHistoryForAddresses",
 				"responses": {
-					"201": {
+					"200": {
 						"description": "Created",
 						"content": {
 							"application/json": {
 								"schema": {
-									"$ref": "#/components/schemas/User"
+									"type": "number",
+									"format": "double"
 								}
 							}
 						}
 					},
-					"422": {
-						"description": "Validation Failed",
+					"404": {
+						"description": "",
 						"content": {
 							"application/json": {
 								"schema": {
-									"$ref": "#/components/schemas/ValidateErrorJSON"
+									"properties": {
+										"reason": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"reason"
+									],
+									"type": "object"
 								}
 							}
 						}
-					}
-				},
-				"security": [],
-				"parameters": [
-					{
-						"in": "path",
-						"name": "userId",
-						"required": true,
-						"schema": {
-							"format": "double",
-							"type": "number"
-						}
-					},
-					{
-						"in": "query",
-						"name": "name",
-						"required": false,
-						"schema": {
-							"type": "string"
-						}
-					}
-				]
-			}
-		},
-		"/users": {
-			"post": {
-				"operationId": "CreateUser",
-				"responses": {
-					"201": {
-						"description": "Created"
 					}
 				},
 				"security": [],
@@ -167,7 +104,7 @@
 					"content": {
 						"application/json": {
 							"schema": {
-								"$ref": "#/components/schemas/UserCreationParams"
+								"$ref": "#/components/schemas/TransactionHistoryRequest"
 							}
 						}
 					}

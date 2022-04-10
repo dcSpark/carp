@@ -12,37 +12,25 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UsersController = void 0;
+exports.TransactionController = void 0;
 const tsoa_1 = require("tsoa");
-const FooService_1 = require("../services/FooService");
-let UsersController = class UsersController extends tsoa_1.Controller {
-    async getUser(userId, name) {
-        return new FooService_1.UsersService().get(userId, name);
-    }
-    async createUser(requestBody) {
-        this.setStatus(201); // set return status 201
-        new FooService_1.UsersService().create(requestBody);
-        return;
+const TransactionHistoryService_1 = require("../services/TransactionHistoryService");
+const http_status_codes_1 = require("http-status-codes");
+let TransactionController = class TransactionController extends tsoa_1.Controller {
+    async txHistoryForAddresses(requestBody, errorResponse) {
+        return await (0, TransactionHistoryService_1.countTxs)();
     }
 };
 __decorate([
-    (0, tsoa_1.Get)('{userId}'),
-    __param(0, (0, tsoa_1.Path)()),
-    __param(1, (0, tsoa_1.Query)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, String]),
-    __metadata("design:returntype", Promise)
-], UsersController.prototype, "getUser", null);
-__decorate([
-    (0, tsoa_1.SuccessResponse)('201', 'Created') // Custom success response
-    ,
+    (0, tsoa_1.SuccessResponse)(`${http_status_codes_1.StatusCodes.OK}`, 'Created'),
     (0, tsoa_1.Post)(),
     __param(0, (0, tsoa_1.Body)()),
+    __param(1, (0, tsoa_1.Res)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, Function]),
     __metadata("design:returntype", Promise)
-], UsersController.prototype, "createUser", null);
-UsersController = __decorate([
-    (0, tsoa_1.Route)('users')
-], UsersController);
-exports.UsersController = UsersController;
+], TransactionController.prototype, "txHistoryForAddresses", null);
+TransactionController = __decorate([
+    (0, tsoa_1.Route)('transactions')
+], TransactionController);
+exports.TransactionController = TransactionController;
