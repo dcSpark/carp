@@ -21,7 +21,7 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
--- Name: Address; Type: TABLE; Schema: public; Owner: oura
+-- Name: Address; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."Address" (
@@ -30,45 +30,19 @@ CREATE TABLE public."Address" (
 );
 
 
-ALTER TABLE public."Address" OWNER TO oura;
-
 --
--- Name: AddressCredentialRelation; Type: TABLE; Schema: public; Owner: oura
+-- Name: AddressCredentialRelation; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."AddressCredentialRelation" (
-    id bigint NOT NULL,
     address_id bigint NOT NULL,
     credential_id bigint NOT NULL,
     relation integer NOT NULL
 );
 
 
-ALTER TABLE public."AddressCredentialRelation" OWNER TO oura;
-
 --
--- Name: AddressCredentialRelation_id_seq; Type: SEQUENCE; Schema: public; Owner: oura
---
-
-CREATE SEQUENCE public."AddressCredentialRelation_id_seq"
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE public."AddressCredentialRelation_id_seq" OWNER TO oura;
-
---
--- Name: AddressCredentialRelation_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: oura
---
-
-ALTER SEQUENCE public."AddressCredentialRelation_id_seq" OWNED BY public."AddressCredentialRelation".id;
-
-
---
--- Name: Address_id_seq; Type: SEQUENCE; Schema: public; Owner: oura
+-- Name: Address_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
 CREATE SEQUENCE public."Address_id_seq"
@@ -79,17 +53,15 @@ CREATE SEQUENCE public."Address_id_seq"
     CACHE 1;
 
 
-ALTER TABLE public."Address_id_seq" OWNER TO oura;
-
 --
--- Name: Address_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: oura
+-- Name: Address_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public."Address_id_seq" OWNED BY public."Address".id;
 
 
 --
--- Name: Block; Type: TABLE; Schema: public; Owner: oura
+-- Name: Block; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."Block" (
@@ -102,10 +74,8 @@ CREATE TABLE public."Block" (
 );
 
 
-ALTER TABLE public."Block" OWNER TO oura;
-
 --
--- Name: Block_id_seq; Type: SEQUENCE; Schema: public; Owner: oura
+-- Name: Block_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
 CREATE SEQUENCE public."Block_id_seq"
@@ -117,17 +87,15 @@ CREATE SEQUENCE public."Block_id_seq"
     CACHE 1;
 
 
-ALTER TABLE public."Block_id_seq" OWNER TO oura;
-
 --
--- Name: Block_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: oura
+-- Name: Block_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public."Block_id_seq" OWNED BY public."Block".id;
 
 
 --
--- Name: StakeCredential; Type: TABLE; Schema: public; Owner: oura
+-- Name: StakeCredential; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."StakeCredential" (
@@ -136,10 +104,8 @@ CREATE TABLE public."StakeCredential" (
 );
 
 
-ALTER TABLE public."StakeCredential" OWNER TO oura;
-
 --
--- Name: StakeCredential_id_seq; Type: SEQUENCE; Schema: public; Owner: oura
+-- Name: StakeCredential_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
 CREATE SEQUENCE public."StakeCredential_id_seq"
@@ -150,17 +116,15 @@ CREATE SEQUENCE public."StakeCredential_id_seq"
     CACHE 1;
 
 
-ALTER TABLE public."StakeCredential_id_seq" OWNER TO oura;
-
 --
--- Name: StakeCredential_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: oura
+-- Name: StakeCredential_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public."StakeCredential_id_seq" OWNED BY public."StakeCredential".id;
 
 
 --
--- Name: Transaction; Type: TABLE; Schema: public; Owner: oura
+-- Name: Transaction; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."Transaction" (
@@ -173,10 +137,8 @@ CREATE TABLE public."Transaction" (
 );
 
 
-ALTER TABLE public."Transaction" OWNER TO oura;
-
 --
--- Name: TransactionInput; Type: TABLE; Schema: public; Owner: oura
+-- Name: TransactionInput; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."TransactionInput" (
@@ -187,10 +149,8 @@ CREATE TABLE public."TransactionInput" (
 );
 
 
-ALTER TABLE public."TransactionInput" OWNER TO oura;
-
 --
--- Name: TransactionInput_id_seq; Type: SEQUENCE; Schema: public; Owner: oura
+-- Name: TransactionInput_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
 CREATE SEQUENCE public."TransactionInput_id_seq"
@@ -201,17 +161,15 @@ CREATE SEQUENCE public."TransactionInput_id_seq"
     CACHE 1;
 
 
-ALTER TABLE public."TransactionInput_id_seq" OWNER TO oura;
-
 --
--- Name: TransactionInput_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: oura
+-- Name: TransactionInput_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public."TransactionInput_id_seq" OWNED BY public."TransactionInput".id;
 
 
 --
--- Name: TransactionOutput; Type: TABLE; Schema: public; Owner: oura
+-- Name: TransactionOutput; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."TransactionOutput" (
@@ -223,10 +181,8 @@ CREATE TABLE public."TransactionOutput" (
 );
 
 
-ALTER TABLE public."TransactionOutput" OWNER TO oura;
-
 --
--- Name: TransactionOutput_id_seq; Type: SEQUENCE; Schema: public; Owner: oura
+-- Name: TransactionOutput_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
 CREATE SEQUENCE public."TransactionOutput_id_seq"
@@ -237,17 +193,15 @@ CREATE SEQUENCE public."TransactionOutput_id_seq"
     CACHE 1;
 
 
-ALTER TABLE public."TransactionOutput_id_seq" OWNER TO oura;
-
 --
--- Name: TransactionOutput_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: oura
+-- Name: TransactionOutput_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public."TransactionOutput_id_seq" OWNED BY public."TransactionOutput".id;
 
 
 --
--- Name: Transaction_id_seq; Type: SEQUENCE; Schema: public; Owner: oura
+-- Name: Transaction_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
 CREATE SEQUENCE public."Transaction_id_seq"
@@ -258,52 +212,26 @@ CREATE SEQUENCE public."Transaction_id_seq"
     CACHE 1;
 
 
-ALTER TABLE public."Transaction_id_seq" OWNER TO oura;
-
 --
--- Name: Transaction_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: oura
+-- Name: Transaction_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public."Transaction_id_seq" OWNED BY public."Transaction".id;
 
 
 --
--- Name: TxCredentialRelation; Type: TABLE; Schema: public; Owner: oura
+-- Name: TxCredentialRelation; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."TxCredentialRelation" (
-    id bigint NOT NULL,
     credential_id bigint NOT NULL,
     tx_id bigint NOT NULL,
     relation integer NOT NULL
 );
 
 
-ALTER TABLE public."TxCredentialRelation" OWNER TO oura;
-
 --
--- Name: TxCredentialRelation_id_seq; Type: SEQUENCE; Schema: public; Owner: oura
---
-
-CREATE SEQUENCE public."TxCredentialRelation_id_seq"
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE public."TxCredentialRelation_id_seq" OWNER TO oura;
-
---
--- Name: TxCredentialRelation_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: oura
---
-
-ALTER SEQUENCE public."TxCredentialRelation_id_seq" OWNED BY public."TxCredentialRelation".id;
-
-
---
--- Name: seaql_migrations; Type: TABLE; Schema: public; Owner: oura
+-- Name: seaql_migrations; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.seaql_migrations (
@@ -312,74 +240,50 @@ CREATE TABLE public.seaql_migrations (
 );
 
 
-ALTER TABLE public.seaql_migrations OWNER TO oura;
-
 --
--- Name: Address id; Type: DEFAULT; Schema: public; Owner: oura
+-- Name: Address id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."Address" ALTER COLUMN id SET DEFAULT nextval('public."Address_id_seq"'::regclass);
 
 
 --
--- Name: AddressCredentialRelation id; Type: DEFAULT; Schema: public; Owner: oura
---
-
-ALTER TABLE ONLY public."AddressCredentialRelation" ALTER COLUMN id SET DEFAULT nextval('public."AddressCredentialRelation_id_seq"'::regclass);
-
-
---
--- Name: Block id; Type: DEFAULT; Schema: public; Owner: oura
+-- Name: Block id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."Block" ALTER COLUMN id SET DEFAULT nextval('public."Block_id_seq"'::regclass);
 
 
 --
--- Name: StakeCredential id; Type: DEFAULT; Schema: public; Owner: oura
+-- Name: StakeCredential id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."StakeCredential" ALTER COLUMN id SET DEFAULT nextval('public."StakeCredential_id_seq"'::regclass);
 
 
 --
--- Name: Transaction id; Type: DEFAULT; Schema: public; Owner: oura
+-- Name: Transaction id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."Transaction" ALTER COLUMN id SET DEFAULT nextval('public."Transaction_id_seq"'::regclass);
 
 
 --
--- Name: TransactionInput id; Type: DEFAULT; Schema: public; Owner: oura
+-- Name: TransactionInput id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."TransactionInput" ALTER COLUMN id SET DEFAULT nextval('public."TransactionInput_id_seq"'::regclass);
 
 
 --
--- Name: TransactionOutput id; Type: DEFAULT; Schema: public; Owner: oura
+-- Name: TransactionOutput id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."TransactionOutput" ALTER COLUMN id SET DEFAULT nextval('public."TransactionOutput_id_seq"'::regclass);
 
 
 --
--- Name: TxCredentialRelation id; Type: DEFAULT; Schema: public; Owner: oura
---
-
-ALTER TABLE ONLY public."TxCredentialRelation" ALTER COLUMN id SET DEFAULT nextval('public."TxCredentialRelation_id_seq"'::regclass);
-
-
---
--- Name: AddressCredentialRelation AddressCredentialRelation_pkey; Type: CONSTRAINT; Schema: public; Owner: oura
---
-
-ALTER TABLE ONLY public."AddressCredentialRelation"
-    ADD CONSTRAINT "AddressCredentialRelation_pkey" PRIMARY KEY (id);
-
-
---
--- Name: Address Address_payload_key; Type: CONSTRAINT; Schema: public; Owner: oura
+-- Name: Address Address_payload_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."Address"
@@ -387,7 +291,7 @@ ALTER TABLE ONLY public."Address"
 
 
 --
--- Name: Address Address_pkey; Type: CONSTRAINT; Schema: public; Owner: oura
+-- Name: Address Address_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."Address"
@@ -395,7 +299,7 @@ ALTER TABLE ONLY public."Address"
 
 
 --
--- Name: Block Block_pkey; Type: CONSTRAINT; Schema: public; Owner: oura
+-- Name: Block Block_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."Block"
@@ -403,7 +307,7 @@ ALTER TABLE ONLY public."Block"
 
 
 --
--- Name: StakeCredential StakeCredential_credential_key; Type: CONSTRAINT; Schema: public; Owner: oura
+-- Name: StakeCredential StakeCredential_credential_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."StakeCredential"
@@ -411,7 +315,7 @@ ALTER TABLE ONLY public."StakeCredential"
 
 
 --
--- Name: StakeCredential StakeCredential_pkey; Type: CONSTRAINT; Schema: public; Owner: oura
+-- Name: StakeCredential StakeCredential_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."StakeCredential"
@@ -419,7 +323,7 @@ ALTER TABLE ONLY public."StakeCredential"
 
 
 --
--- Name: TransactionInput TransactionInput_pkey; Type: CONSTRAINT; Schema: public; Owner: oura
+-- Name: TransactionInput TransactionInput_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."TransactionInput"
@@ -427,7 +331,7 @@ ALTER TABLE ONLY public."TransactionInput"
 
 
 --
--- Name: TransactionOutput TransactionOutput_pkey; Type: CONSTRAINT; Schema: public; Owner: oura
+-- Name: TransactionOutput TransactionOutput_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."TransactionOutput"
@@ -435,7 +339,7 @@ ALTER TABLE ONLY public."TransactionOutput"
 
 
 --
--- Name: Transaction Transaction_hash_key; Type: CONSTRAINT; Schema: public; Owner: oura
+-- Name: Transaction Transaction_hash_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."Transaction"
@@ -443,7 +347,7 @@ ALTER TABLE ONLY public."Transaction"
 
 
 --
--- Name: Transaction Transaction_pkey; Type: CONSTRAINT; Schema: public; Owner: oura
+-- Name: Transaction Transaction_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."Transaction"
@@ -451,15 +355,15 @@ ALTER TABLE ONLY public."Transaction"
 
 
 --
--- Name: TxCredentialRelation TxCredentialRelation_pkey; Type: CONSTRAINT; Schema: public; Owner: oura
+-- Name: AddressCredentialRelation address_credential-pk; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public."TxCredentialRelation"
-    ADD CONSTRAINT "TxCredentialRelation_pkey" PRIMARY KEY (id);
+ALTER TABLE ONLY public."AddressCredentialRelation"
+    ADD CONSTRAINT "address_credential-pk" PRIMARY KEY (address_id, credential_id);
 
 
 --
--- Name: seaql_migrations seaql_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: oura
+-- Name: seaql_migrations seaql_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.seaql_migrations
@@ -467,86 +371,73 @@ ALTER TABLE ONLY public.seaql_migrations
 
 
 --
--- Name: index-address_credential-address; Type: INDEX; Schema: public; Owner: oura
+-- Name: TxCredentialRelation tx_credential-pk; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-CREATE INDEX "index-address_credential-address" ON public."AddressCredentialRelation" USING btree (address_id);
-
-
---
--- Name: index-address_credential-stake_credential; Type: INDEX; Schema: public; Owner: oura
---
-
-CREATE INDEX "index-address_credential-stake_credential" ON public."AddressCredentialRelation" USING btree (credential_id);
+ALTER TABLE ONLY public."TxCredentialRelation"
+    ADD CONSTRAINT "tx_credential-pk" PRIMARY KEY (tx_id, credential_id);
 
 
 --
--- Name: index-transaction-block; Type: INDEX; Schema: public; Owner: oura
+-- Name: index-address_credential-address; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX "index-address_credential-address" ON public."AddressCredentialRelation" USING btree (address_id, credential_id, relation);
+
+
+--
+-- Name: index-transaction-block; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "index-transaction-block" ON public."Transaction" USING btree (block_id);
 
 
 --
--- Name: index-transaction_input-transaction; Type: INDEX; Schema: public; Owner: oura
+-- Name: index-transaction_input-transaction; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "index-transaction_input-transaction" ON public."TransactionInput" USING btree (tx_id);
 
 
 --
--- Name: index-transaction_input-transaction_output; Type: INDEX; Schema: public; Owner: oura
+-- Name: index-transaction_input-transaction_output; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "index-transaction_input-transaction_output" ON public."TransactionInput" USING btree (utxo_id);
 
 
 --
--- Name: index-transaction_output-address; Type: INDEX; Schema: public; Owner: oura
+-- Name: index-transaction_output-address; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "index-transaction_output-address" ON public."TransactionOutput" USING btree (address_id);
 
 
 --
--- Name: index-transaction_output-transaction; Type: INDEX; Schema: public; Owner: oura
+-- Name: index-transaction_output-transaction; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "index-transaction_output-transaction" ON public."TransactionOutput" USING btree (tx_id);
 
 
 --
--- Name: index-tx_credential-stake_credential; Type: INDEX; Schema: public; Owner: oura
---
-
-CREATE INDEX "index-tx_credential-stake_credential" ON public."TxCredentialRelation" USING btree (credential_id);
-
-
---
--- Name: index-tx_credential-transaction; Type: INDEX; Schema: public; Owner: oura
---
-
-CREATE INDEX "index-tx_credential-transaction" ON public."TxCredentialRelation" USING btree (tx_id);
-
-
---
--- Name: AddressCredentialRelation fk-address_credential-address_id; Type: FK CONSTRAINT; Schema: public; Owner: oura
+-- Name: AddressCredentialRelation fk-address_credential-address_id; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."AddressCredentialRelation"
-    ADD CONSTRAINT "fk-address_credential-address_id" FOREIGN KEY (address_id) REFERENCES public."Address"(id) ON DELETE CASCADE;
+    ADD CONSTRAINT "fk-address_credential-address_id" FOREIGN KEY (address_id) REFERENCES public."Address"(id);
 
 
 --
--- Name: AddressCredentialRelation fk-address_credential-credential_id; Type: FK CONSTRAINT; Schema: public; Owner: oura
+-- Name: AddressCredentialRelation fk-address_credential-credential_id; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."AddressCredentialRelation"
-    ADD CONSTRAINT "fk-address_credential-credential_id" FOREIGN KEY (credential_id) REFERENCES public."StakeCredential"(id) ON DELETE CASCADE;
+    ADD CONSTRAINT "fk-address_credential-credential_id" FOREIGN KEY (credential_id) REFERENCES public."StakeCredential"(id);
 
 
 --
--- Name: Transaction fk-transaction-block_id; Type: FK CONSTRAINT; Schema: public; Owner: oura
+-- Name: Transaction fk-transaction-block_id; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."Transaction"
@@ -554,7 +445,7 @@ ALTER TABLE ONLY public."Transaction"
 
 
 --
--- Name: TransactionInput fk-transaction_input-tx_id; Type: FK CONSTRAINT; Schema: public; Owner: oura
+-- Name: TransactionInput fk-transaction_input-tx_id; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."TransactionInput"
@@ -562,15 +453,15 @@ ALTER TABLE ONLY public."TransactionInput"
 
 
 --
--- Name: TransactionInput fk-transaction_input-utxo_id; Type: FK CONSTRAINT; Schema: public; Owner: oura
+-- Name: TransactionInput fk-transaction_input-utxo_id; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."TransactionInput"
-    ADD CONSTRAINT "fk-transaction_input-utxo_id" FOREIGN KEY (utxo_id) REFERENCES public."TransactionOutput"(id) ON DELETE CASCADE;
+    ADD CONSTRAINT "fk-transaction_input-utxo_id" FOREIGN KEY (utxo_id) REFERENCES public."TransactionOutput"(id);
 
 
 --
--- Name: TransactionOutput fk-transaction_output-address_id; Type: FK CONSTRAINT; Schema: public; Owner: oura
+-- Name: TransactionOutput fk-transaction_output-address_id; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."TransactionOutput"
@@ -578,7 +469,7 @@ ALTER TABLE ONLY public."TransactionOutput"
 
 
 --
--- Name: TransactionOutput fk-transaction_output-tx_id; Type: FK CONSTRAINT; Schema: public; Owner: oura
+-- Name: TransactionOutput fk-transaction_output-tx_id; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."TransactionOutput"
@@ -586,15 +477,15 @@ ALTER TABLE ONLY public."TransactionOutput"
 
 
 --
--- Name: TxCredentialRelation fk-tx_credential-credential_id; Type: FK CONSTRAINT; Schema: public; Owner: oura
+-- Name: TxCredentialRelation fk-tx_credential-credential_id; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."TxCredentialRelation"
-    ADD CONSTRAINT "fk-tx_credential-credential_id" FOREIGN KEY (credential_id) REFERENCES public."StakeCredential"(id) ON DELETE CASCADE;
+    ADD CONSTRAINT "fk-tx_credential-credential_id" FOREIGN KEY (credential_id) REFERENCES public."StakeCredential"(id);
 
 
 --
--- Name: TxCredentialRelation fk-tx_credential-tx_id; Type: FK CONSTRAINT; Schema: public; Owner: oura
+-- Name: TxCredentialRelation fk-tx_credential-tx_id; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."TxCredentialRelation"

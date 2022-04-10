@@ -1,100 +1,118 @@
-import express from "express";
-import pg from "pg";
+import express from 'express';
+import pg from 'pg';
+import { PrismaClient } from '@prisma/client';
 
-const server = async () => {
-  const db = new pg.Client(process.env.DATABASE_URL);
-  await db.connect();
+const prisma = new PrismaClient();
 
-  const app = express();
+async function main() {
+  const numTxs = await prisma.transaction.count();
 
-  app.get("/transactions-history-for-addresses", async (req, res) => {
-    if (!req.query.addresses) {
-      res.status(400).json({ message: "addresses is required in query" });
+  console.log(numTxs);
+}
 
-      return;
-    }
+main()
+  .catch(e => {
+    throw e;
+  })
 
-    const queryResult = await db.query(
-      `
-      with t as (
-        SELECT "Transaction".id,
-          "Transaction".payload,
-          "Transaction".hash,
-          "Transaction".tx_index,
-          "Transaction".is_valid,
-          "Block".height
-        FROM "StakeCredential"
-        INNER JOIN "TxCredentialRelation" ON "TxCredentialRelation".credential_id = "StakeCredential".id
-        INNER JOIN "Transaction" ON "TxCredentialRelation".tx_id = "Transaction".id
-        INNER JOIN "Block" ON "Transaction".block_id = "Block".id
-        WHERE "StakeCredential".credential = ANY ($1)
-        ORDER BY "Block".height ASC,
-          "Transaction".tx_index ASC
-        LIMIT 100
-      )
-      select json_agg(t)
-      from t
-    `,
-      [req.query.addresses]
-    );
-
-    res.status(200).json({ data: queryResult.rows[0].json_agg || [] });
+  .finally(async () => {
+    await prisma.$disconnect();
   });
 
-  app.get("/check-addresses-in-use", (req, res) => {
-    const queryResult = await db.query(
-      `
-      SELECT "StakeCredential".credential
-      FROM "StakeCredential"
-      INNER JOIN "TxCredentialRelation" ON "TxCredentialRelation".credential_id = "StakeCredential".id
-      INNER JOIN "Transaction" ON "TxCredentialRelation".tx_id = "Transaction".id
-      WHERE "StakeCredential".credential = ANY ($1)
-      `,
-      [req.query.addresses]
-    );
+// const server = async () => {
+//   const db = new pg.Client(process.env.DATABASE_URL);
+//   await db.connect();
 
-    res.status(200).json({ data: queryResult.rows || [] });
-  });
+//   const app = express();
 
-  app.get("/utxos-for-transactions", async (req, res) => {
-    if (!req.query.transactions) {
-      res.status(400).json({ message: "transactions is required in query" });
+//   app.get('/transactions-history-for-addresses', async (req, res) => {
+//     if (!req.query.addresses) {
+//       res.status(400).json({ message: 'addresses is required in query' });
 
-      return;
-    }
+//       return;
+//     }
 
-    const queryResult = await db.query(
-      `
-      with t as (
-        SELECT "TransactionOutput".id,
-          "TransactionOutput".payload,
-          "TransactionOutput".address_id,
-          "TransactionOutput".tx_id,
-          "TransactionOutput".output_index
-        FROM "TransactionOutput"
-        INNER JOIN "Transaction" ON "Transaction".id = "TransactionOutput".tx_id
-        WHERE "Transaction".hash = ANY ($1)
-      )
-      select json_agg(t)
-      from t
-    `,
-      [req.query.transactions]
-    );
+//     const queryResult = await db.query(
+//       `
+//       with t as (
+//         SELECT "Transaction".id,
+//           "Transaction".payload,
+//           "Transaction".hash,
+//           "Transaction".tx_index,
+//           "Transaction".is_valid,
+//           "Block".height
+//         FROM "StakeCredential"
+//         INNER JOIN "TxCredentialRelation" ON "TxCredentialRelation".credential_id = "StakeCredential".id
+//         INNER JOIN "Transaction" ON "TxCredentialRelation".tx_id = "Transaction".id
+//         INNER JOIN "Block" ON "Transaction".block_id = "Block".id
+//         WHERE "StakeCredential".credential = ANY ($1)
+//         ORDER BY "Block".height ASC,
+//           "Transaction".tx_index ASC
+//         LIMIT 100
+//       )
+//       select json_agg(t)
+//       from t
+//     `,
+//       [req.query.addresses]
+//     );
 
-    res.status(200).json({ data: queryResult.rows[0].json_agg || [] });
-  });
+//     res.status(200).json({ data: queryResult.rows[0].json_agg || [] });
+//   });
 
-  app.get("/best-block", async (req, res) => {
-    const queryResult = await db.query(
-      'select id,height,hash from "Block" order by height desc LIMIT 1'
-    );
+//   app.get('/check-addresses-in-use', async (req, res) => {
+//     const queryResult = await db.query(
+//       `
+//       SELECT "StakeCredential".credential
+//       FROM "StakeCredential"
+//       INNER JOIN "TxCredentialRelation" ON "TxCredentialRelation".credential_id = "StakeCredential".id
+//       INNER JOIN "Transaction" ON "TxCredentialRelation".tx_id = "Transaction".id
+//       WHERE "StakeCredential".credential = ANY ($1)
+//       `,
+//       [req.query.addresses]
+//     );
 
-    res.status(200).json({ data: queryResult.rows[0] });
-  });
+//     res.status(200).json({ data: queryResult.rows || [] });
+//   });
 
-  app.listen(4000, () => {
-    console.log("Server running on http://localhost:4000 🚀");
-  });
-};
+//   app.get('/utxos-for-transactions', async (req, res) => {
+//     if (!req.query.transactions) {
+//       res.status(400).json({ message: 'transactions is required in query' });
 
-server();
+//       return;
+//     }
+
+//     const queryResult = await db.query(
+//       `
+//       with t as (
+//         SELECT "TransactionOutput".id,
+//           "TransactionOutput".payload,
+//           "TransactionOutput".address_id,
+//           "TransactionOutput".tx_id,
+//           "TransactionOutput".output_index
+//         FROM "TransactionOutput"
+//         INNER JOIN "Transaction" ON "Transaction".id = "TransactionOutput".tx_id
+//         WHERE "Transaction".hash = ANY ($1)
+//       )
+//       select json_agg(t)
+//       from t
+//     `,
+//       [req.query.transactions]
+//     );
+
+//     res.status(200).json({ data: queryResult.rows[0].json_agg || [] });
+//   });
+
+//   app.get('/best-block', async (req, res) => {
+//     const queryResult = await db.query(
+//       'select id,height,hash from "Block" order by height desc LIMIT 1'
+//     );
+
+//     res.status(200).json({ data: queryResult.rows[0] });
+//   });
+
+//   app.listen(4000, () => {
+//     console.log('Server running on http://localhost:4000 🚀');
+//   });
+// };
+
+// server();
