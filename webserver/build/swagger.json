@@ -1,0 +1,187 @@
+{
+	"components": {
+		"examples": {},
+		"headers": {},
+		"parameters": {},
+		"requestBodies": {},
+		"responses": {},
+		"schemas": {
+			"TransactionHistoryResponse": {
+				"properties": {
+					"transactions": {
+						"items": {
+							"properties": {
+								"transaction": {
+									"type": "string",
+									"description": "cbor-encoded transaction"
+								},
+								"block": {
+									"properties": {
+										"is_valid": {
+											"type": "boolean"
+										},
+										"tx_ordinal": {
+											"type": "number",
+											"format": "double",
+											"description": "index of tx in block"
+										},
+										"era": {
+											"type": "number",
+											"format": "double",
+											"description": "Era of block this transaction was submitted in"
+										},
+										"slot": {
+											"type": "number",
+											"format": "double"
+										},
+										"epoch": {
+											"type": "number",
+											"format": "double",
+											"description": "timestamp with timezone"
+										},
+										"hash": {
+											"type": "string"
+										},
+										"num": {
+											"type": "number",
+											"format": "double"
+										}
+									},
+									"required": [
+										"is_valid",
+										"tx_ordinal",
+										"era",
+										"slot",
+										"epoch",
+										"hash",
+										"num"
+									],
+									"type": "object",
+									"nullable": true
+								}
+							},
+							"required": [
+								"transaction",
+								"block"
+							],
+							"type": "object"
+						},
+						"type": "array"
+					}
+				},
+				"required": [
+					"transactions"
+				],
+				"type": "object"
+			},
+			"Address": {
+				"type": "string",
+				"description": "Supported types:\n- byron addresses (Ae2, Dd, etc.)\n- bech32 address (addr / addr_test / stake / stake_test)\n- payment keys (addr_vkh)"
+			},
+			"TransactionHistoryRequest": {
+				"properties": {
+					"untilBlock": {
+						"type": "string",
+						"description": "block hash - inclusive"
+					},
+					"after": {
+						"properties": {
+							"tx": {
+								"type": "string",
+								"description": "tx hash"
+							},
+							"block": {
+								"type": "string",
+								"description": "block hash"
+							}
+						},
+						"required": [
+							"tx",
+							"block"
+						],
+						"type": "object",
+						"description": "omitting \"after\" means you query starting from the genesis block"
+					},
+					"addresses": {
+						"items": {
+							"$ref": "#/components/schemas/Address"
+						},
+						"type": "array"
+					}
+				},
+				"required": [
+					"untilBlock",
+					"addresses"
+				],
+				"type": "object"
+			}
+		},
+		"securitySchemes": {}
+	},
+	"info": {
+		"title": "oura-postgres-api",
+		"version": "1.0.0",
+		"description": "API for a Oura Postgres instance",
+		"license": {
+			"name": "MIT"
+		},
+		"contact": {
+			"name": "https://github.com/dcSpark"
+		}
+	},
+	"openapi": "3.0.0",
+	"paths": {
+		"/transactions": {
+			"post": {
+				"operationId": "TxHistoryForAddresses",
+				"responses": {
+					"200": {
+						"description": "Created",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/TransactionHistoryResponse"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"reason": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"reason"
+									],
+									"type": "object"
+								}
+							}
+						}
+					}
+				},
+				"security": [],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/TransactionHistoryRequest"
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"servers": [
+		{
+			"url": "/"
+		}
+	]
+}

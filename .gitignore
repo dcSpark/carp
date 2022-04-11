@@ -2,3 +2,4 @@
 *.session.sql
 .vscode/
 secrets/
+node_modules/
