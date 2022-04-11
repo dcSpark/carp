@@ -18,7 +18,9 @@ const TransactionHistoryService_1 = require("../services/TransactionHistoryServi
 const http_status_codes_1 = require("http-status-codes");
 let TransactionController = class TransactionController extends tsoa_1.Controller {
     async txHistoryForAddresses(requestBody, errorResponse) {
-        return await (0, TransactionHistoryService_1.countTxs)();
+        return await (0, TransactionHistoryService_1.countTxs)(
+        // TODO: this is not what the real logic should be
+        requestBody.addresses.map(addr => Buffer.from(addr, 'hex')));
     }
 };
 __decorate([

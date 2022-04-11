@@ -12,8 +12,11 @@ export class TransactionController extends Controller {
     @Body()
     requestBody: TransactionHistoryRequest,
     @Res()
-    errorResponse: TsoaResponse<404, { reason: string }>
-  ): Promise<number> {
-    return await countTxs();
+    errorResponse: TsoaResponse<404 /* TODO: change */, { reason: string }>
+  ): Promise<TransactionHistoryResponse> {
+    return await countTxs(
+      // TODO: this is not what the real logic should be
+      requestBody.addresses.map(addr => Buffer.from(addr, 'hex'))
+    );
   }
 }

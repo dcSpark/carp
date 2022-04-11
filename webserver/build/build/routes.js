@@ -9,6 +9,11 @@ const runtime_1 = require("@tsoa/runtime");
 const TransactionController_1 = require("./../app/controllers/TransactionController");
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 const models = {
+    "TransactionHistoryResponse": {
+        "dataType": "refAlias",
+        "type": { "dataType": "nestedObjectLiteral", "nestedProperties": { "transactions": { "dataType": "array", "array": { "dataType": "nestedObjectLiteral", "nestedProperties": { "transaction": { "dataType": "string", "required": true }, "block": { "dataType": "union", "subSchemas": [{ "dataType": "enum", "enums": [null] }, { "dataType": "nestedObjectLiteral", "nestedProperties": { "is_valid": { "dataType": "boolean", "required": true }, "tx_ordinal": { "dataType": "double", "required": true }, "era": { "dataType": "double", "required": true }, "slot": { "dataType": "double", "required": true }, "epoch": { "dataType": "double", "required": true }, "hash": { "dataType": "string", "required": true }, "num": { "dataType": "double", "required": true } } }], "required": true } } }, "required": true } }, "validators": {} },
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
     "Address": {
         "dataType": "refAlias",
         "type": { "dataType": "string", "validators": {} },

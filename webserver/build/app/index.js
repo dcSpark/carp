@@ -15,8 +15,7 @@ exports.app.use(body_parser_1.default.urlencoded({
 }));
 exports.app.use(body_parser_1.default.json());
 exports.app.use('/docs', swagger_ui_express_1.default.serve, async (_req, res) => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    return res.send(swagger_ui_express_1.default.generateHTML((0, SwaggerSingleton_1.default)()));
+    return res.send(swagger_ui_express_1.default.generateHTML(await (0, SwaggerSingleton_1.default)()));
 });
 // app.use(function notFoundHandler(_req, res: ExResponse) {
 //   res.status(404).send({

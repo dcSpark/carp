@@ -17,10 +17,10 @@ export type TransactionHistoryRequest = {
 export type TransactionHistoryResponse = {
   transactions: {
     block: null | {
-      num: string;
+      num: number;
       hash: string;
       /** timestamp with timezone */
-      time: string;
+      // time: string;
       epoch: number;
       slot: number;
       /** Era of block this transaction was submitted in */
