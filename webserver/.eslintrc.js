@@ -129,7 +129,7 @@ module.exports = {
         ],
     },
     plugins: ['@typescript-eslint', 'import', 'promise', 'prettier'],
-    ignorePatterns: ['.eslintrc.js'],
+    ignorePatterns: ['.eslintrc.js', '**/*.queries.ts'],
     globals: {
         nameof: true,
     },
