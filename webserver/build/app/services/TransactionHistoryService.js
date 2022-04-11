@@ -4,7 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.countTxs = void 0;
-const PrismaSingleton_1 = __importDefault(require("./PrismaSingleton"));
+const historyForAddresses_queries_1 = require("../models/historyForAddresses.queries");
+const PgPoolSingleton_1 = __importDefault(require("./PgPoolSingleton"));
 // with t as (
 //         SELECT "Transaction".id,
 //           "Transaction".payload,
@@ -24,120 +25,15 @@ const PrismaSingleton_1 = __importDefault(require("./PrismaSingleton"));
 //       select json_agg(t)
 //       from t
 async function countTxs(stakeCredentials) {
-    // await prisma.$queryRaw`SELECT * FROM User`;
-    // const foo = await prisma.transaction.findMany({
-    //   select: {
-    //     id: true,
-    //     payload: true,
-    //     hash: true,
-    //     tx_index: true,
-    //     is_valid: true,
-    //     Block: {
-    //       select: {
-    //         height: true,
-    //       },
-    //     },
-    //   },
-    //   orderBy: [
-    //     {
-    //       Block: {
-    //         height: 'asc',
-    //       },
-    //     },
-    //     {
-    //       tx_index: 'asc',
-    //     },
-    //   ],
-    // });
-    // const foo2 = await prisma.block.findMany({
-    //   select: {
-    //     height: true,
-    //     Transaction: {
-    //       select: {
-    //         id: true,
-    //         payload: true,
-    //         hash: true,
-    //         tx_index: true,
-    //         is_valid: true,
-    //       },
-    //     },
-    //   },
-    //   orderBy: [
-    //     {
-    //       height: 'asc',
-    //     },
-    //     {
-    //       Transaction: {
-    //         tx_index: 'asc',
-    //       },
-    //     },
-    //   ],
-    // });
-    // const foo = await prisma.transaction.findMany({
-    //   include: {
-    //     Block: true,
-    //   },
-    //   orderBy: [
-    //     {
-    //       Block: {
-    //         height: 'asc',
-    //       },
-    //     },
-    //     {
-    //       tx_index: 'asc',
-    //     },
-    //   ],
-    // });
-    const txInfo = await PrismaSingleton_1.default.transaction.findMany({
-        select: {
-            id: true,
-            payload: true,
-            hash: true,
-            tx_index: true,
-            is_valid: true,
-            Block: {
-                select: {
-                    height: true,
-                    hash: true,
-                    epoch: true,
-                    slot: true,
-                    era: true,
-                },
-            },
-        },
-        where: {
-            TxCredentialRelation: {
-                every: {
-                    StakeCredential: {
-                        is: {
-                            credential: {
-                                in: stakeCredentials,
-                            },
-                        },
-                    },
-                },
-            },
-        },
-        orderBy: [
-            {
-                Block: {
-                    height: 'asc',
-                },
-            },
-            {
-                tx_index: 'asc',
-            },
-        ],
-        take: 100,
-    });
+    const txs = await historyForAddresses_queries_1.historyForAddresses.run(undefined, PgPoolSingleton_1.default);
     return {
-        transactions: txInfo.map(entry => ({
+        transactions: txs.map(entry => ({
             block: {
-                num: entry.Block.height,
-                hash: entry.Block.hash.toString('hex'),
-                epoch: entry.Block.epoch,
-                slot: entry.Block.slot,
-                era: entry.Block.era,
+                // num: entry.Block.height,
+                // hash: entry.Block.hash.toString('hex'),
+                // epoch: entry.Block.epoch,
+                // slot: entry.Block.slot,
+                // era: entry.Block.era,
                 tx_ordinal: entry.tx_index,
                 is_valid: entry.is_valid,
             },
