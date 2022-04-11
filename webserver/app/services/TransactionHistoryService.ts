@@ -1,5 +1,6 @@
+import { historyForAddresses } from '../models/historyForAddresses.queries';
 import type { TransactionHistoryResponse } from '../models/TransactionHistory';
-import prisma from './PrismaSingleton';
+import pool from './PgPoolSingleton';
 
 // with t as (
 //         SELECT "Transaction".id,
@@ -20,124 +21,22 @@ import prisma from './PrismaSingleton';
 //       select json_agg(t)
 //       from t
 export async function countTxs(stakeCredentials: Buffer[]): Promise<TransactionHistoryResponse> {
-  // await prisma.$queryRaw`SELECT * FROM User`;
-  // const foo = await prisma.transaction.findMany({
-  //   select: {
-  //     id: true,
-  //     payload: true,
-  //     hash: true,
-  //     tx_index: true,
-  //     is_valid: true,
-  //     Block: {
-  //       select: {
-  //         height: true,
-  //       },
-  //     },
-  //   },
-  //   orderBy: [
-  //     {
-  //       Block: {
-  //         height: 'asc',
-  //       },
-  //     },
-  //     {
-  //       tx_index: 'asc',
-  //     },
-  //   ],
-  // });
-  // const foo2 = await prisma.block.findMany({
-  //   select: {
-  //     height: true,
-  //     Transaction: {
-  //       select: {
-  //         id: true,
-  //         payload: true,
-  //         hash: true,
-  //         tx_index: true,
-  //         is_valid: true,
-  //       },
-  //     },
-  //   },
-  //   orderBy: [
-  //     {
-  //       height: 'asc',
-  //     },
-  //     {
-  //       Transaction: {
-  //         tx_index: 'asc',
-  //       },
-  //     },
-  //   ],
-  // });
-  // const foo = await prisma.transaction.findMany({
-  //   include: {
-  //     Block: true,
-  //   },
-  //   orderBy: [
-  //     {
-  //       Block: {
-  //         height: 'asc',
-  //       },
-  //     },
-  //     {
-  //       tx_index: 'asc',
-  //     },
-  //   ],
-  // });
-  const txInfo = await prisma.transaction.findMany({
-    select: {
-      id: true,
-      payload: true,
-      hash: true,
-      tx_index: true,
-      is_valid: true,
-      Block: {
-        select: {
-          height: true,
-          hash: true,
-          epoch: true,
-          slot: true,
-          era: true,
-        },
-      },
-    },
-    where: {
-      TxCredentialRelation: {
-        every: {
-          StakeCredential: {
-            is: {
-              credential: {
-                in: stakeCredentials,
-              },
-            },
-          },
-        },
-      },
-    },
-    orderBy: [
-      {
-        Block: {
-          height: 'asc',
-        },
-      },
-      {
-        tx_index: 'asc',
-      },
-    ],
-    take: 100,
-  });
+  const txs = await historyForAddresses.run(undefined, pool);
   return {
-    transactions: txInfo.map(entry => ({
-      block: {
-        num: entry.Block.height,
-        hash: entry.Block.hash.toString('hex'),
-        epoch: entry.Block.epoch,
-        slot: entry.Block.slot,
-        era: entry.Block.era,
-        tx_ordinal: entry.tx_index,
-        is_valid: entry.is_valid,
-      },
-      transaction: entry.payload.toString('hex'),
-    })),
+    transactions: txs.map(
+      entry =>
+        ({
+          block: {
+            // num: entry.Block.height,
+            // hash: entry.Block.hash.toString('hex'),
+            // epoch: entry.Block.epoch,
+            // slot: entry.Block.slot,
+            // era: entry.Block.era,
+            tx_ordinal: entry.tx_index,
+            is_valid: entry.is_valid,
+          },
+          transaction: entry.payload.toString('hex'),
+        } as any)
+    ),
   };
 }
