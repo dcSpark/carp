@@ -1,5 +1,7 @@
 import type { TransactionHistoryResponse } from '../models/TransactionHistory';
-import prisma from './PrismaSingleton';
+import * as db from 'zapatos/db';
+import type * as s from 'zapatos/schema';
+import type { Pool } from 'pg';
 
 // with t as (
 //         SELECT "Transaction".id,
@@ -19,125 +21,21 @@ import prisma from './PrismaSingleton';
 //       )
 //       select json_agg(t)
 //       from t
-export async function countTxs(stakeCredentials: Buffer[]): Promise<TransactionHistoryResponse> {
-  // await prisma.$queryRaw`SELECT * FROM User`;
-  // const foo = await prisma.transaction.findMany({
-  //   select: {
-  //     id: true,
-  //     payload: true,
-  //     hash: true,
-  //     tx_index: true,
-  //     is_valid: true,
-  //     Block: {
-  //       select: {
-  //         height: true,
-  //       },
-  //     },
-  //   },
-  //   orderBy: [
-  //     {
-  //       Block: {
-  //         height: 'asc',
-  //       },
-  //     },
-  //     {
-  //       tx_index: 'asc',
-  //     },
-  //   ],
-  // });
-  // const foo2 = await prisma.block.findMany({
-  //   select: {
-  //     height: true,
-  //     Transaction: {
-  //       select: {
-  //         id: true,
-  //         payload: true,
-  //         hash: true,
-  //         tx_index: true,
-  //         is_valid: true,
-  //       },
-  //     },
-  //   },
-  //   orderBy: [
-  //     {
-  //       height: 'asc',
-  //     },
-  //     {
-  //       Transaction: {
-  //         tx_index: 'asc',
-  //       },
-  //     },
-  //   ],
-  // });
-  // const foo = await prisma.transaction.findMany({
-  //   include: {
-  //     Block: true,
-  //   },
-  //   orderBy: [
-  //     {
-  //       Block: {
-  //         height: 'asc',
-  //       },
-  //     },
-  //     {
-  //       tx_index: 'asc',
-  //     },
-  //   ],
-  // });
-  const txInfo = await prisma.transaction.findMany({
-    select: {
-      id: true,
-      payload: true,
-      hash: true,
-      tx_index: true,
-      is_valid: true,
-      Block: {
-        select: {
-          height: true,
-          hash: true,
-          epoch: true,
-          slot: true,
-          era: true,
-        },
-      },
-    },
-    where: {
-      TxCredentialRelation: {
-        every: {
-          StakeCredential: {
-            is: {
-              credential: {
-                in: stakeCredentials,
-              },
-            },
-          },
-        },
-      },
-    },
-    orderBy: [
+export async function countTxs(
+  pool: Pool,
+  stakeCredentials: Buffer[]
+): Promise<TransactionHistoryResponse> {
+  const tranasctions = await db.sql<
+    s.Transaction.SQL,
+    s.Transaction.Selectable[]
+  >`SELECT ${'Transaction'}${'id'} FROM ${'Transaction'}`.run(pool);
+
+  return {
+    transactions: [
       {
-        Block: {
-          height: 'asc',
-        },
-      },
-      {
-        tx_index: 'asc',
+        block: null,
+        transaction: '',
       },
     ],
-    take: 100,
-  });
-  return {
-    transactions: txInfo.map(entry => ({
-      block: {
-        num: entry.Block.height,
-        hash: entry.Block.hash.toString('hex'),
-        epoch: entry.Block.epoch,
-        slot: entry.Block.slot,
-        era: entry.Block.era,
-        tx_ordinal: entry.tx_index,
-        is_valid: entry.is_valid,
-      },
-      transaction: entry.payload.toString('hex'),
-    })),
   };
 }

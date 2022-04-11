@@ -10,7 +10,7 @@
     "dev": "yarn build && concurrently \"nodemon -x tsoa spec-and-routes\" \"nodemon\"",
     "build": "tsoa spec-and-routes && tsc --outDir build --experimentalDecorators",
     "start": "NODE_ENV=production node build/app/server.js",
-    "parse-db": "pg_dump --no-owner --schema-only -d $DATABASE_URL > bin/schema.sql && npx prisma db pull && npx prisma generate",
+    "parse-db": "pg_dump --no-owner --schema-only -d $DATABASE_URL > bin/schema.sql && npx zapatos",
     "prettier": "prettier --write \"**/*.tsx\""
   },
   "repository": {
@@ -32,7 +32,8 @@
     "pg": "8.7.3",
     "swagger-ui-express": "4.3.0",
     "tsoa": "3.14.1",
-    "typescript-is": "git+https://github.com/dcSpark/typescript-is-bin.git"
+    "typescript-is": "git+https://github.com/dcSpark/typescript-is-bin.git",
+    "zapatos": "^5.0.2"
   },
   "devDependencies": {
     "@types/body-parser": "1.19.2",

@@ -1,10 +1,30 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.countTxs = void 0;
-const PrismaSingleton_1 = __importDefault(require("./PrismaSingleton"));
+const db = __importStar(require("zapatos/db"));
 // with t as (
 //         SELECT "Transaction".id,
 //           "Transaction".payload,
@@ -23,126 +43,15 @@ const PrismaSingleton_1 = __importDefault(require("./PrismaSingleton"));
 //       )
 //       select json_agg(t)
 //       from t
-async function countTxs(stakeCredentials) {
-    // await prisma.$queryRaw`SELECT * FROM User`;
-    // const foo = await prisma.transaction.findMany({
-    //   select: {
-    //     id: true,
-    //     payload: true,
-    //     hash: true,
-    //     tx_index: true,
-    //     is_valid: true,
-    //     Block: {
-    //       select: {
-    //         height: true,
-    //       },
-    //     },
-    //   },
-    //   orderBy: [
-    //     {
-    //       Block: {
-    //         height: 'asc',
-    //       },
-    //     },
-    //     {
-    //       tx_index: 'asc',
-    //     },
-    //   ],
-    // });
-    // const foo2 = await prisma.block.findMany({
-    //   select: {
-    //     height: true,
-    //     Transaction: {
-    //       select: {
-    //         id: true,
-    //         payload: true,
-    //         hash: true,
-    //         tx_index: true,
-    //         is_valid: true,
-    //       },
-    //     },
-    //   },
-    //   orderBy: [
-    //     {
-    //       height: 'asc',
-    //     },
-    //     {
-    //       Transaction: {
-    //         tx_index: 'asc',
-    //       },
-    //     },
-    //   ],
-    // });
-    // const foo = await prisma.transaction.findMany({
-    //   include: {
-    //     Block: true,
-    //   },
-    //   orderBy: [
-    //     {
-    //       Block: {
-    //         height: 'asc',
-    //       },
-    //     },
-    //     {
-    //       tx_index: 'asc',
-    //     },
-    //   ],
-    // });
-    const txInfo = await PrismaSingleton_1.default.transaction.findMany({
-        select: {
-            id: true,
-            payload: true,
-            hash: true,
-            tx_index: true,
-            is_valid: true,
-            Block: {
-                select: {
-                    height: true,
-                    hash: true,
-                    epoch: true,
-                    slot: true,
-                    era: true,
-                },
-            },
-        },
-        where: {
-            TxCredentialRelation: {
-                every: {
-                    StakeCredential: {
-                        is: {
-                            credential: {
-                                in: stakeCredentials,
-                            },
-                        },
-                    },
-                },
-            },
-        },
-        orderBy: [
+async function countTxs(pool, stakeCredentials) {
+    const tranasctions = await db.sql `SELECT ${'Transaction'}${'id'} FROM ${'Transaction'}`.run(pool);
+    return {
+        transactions: [
             {
-                Block: {
-                    height: 'asc',
-                },
-            },
-            {
-                tx_index: 'asc',
+                block: null,
+                transaction: '',
             },
         ],
-        take: 100,
-    });
-    return {
-        transactions: txInfo.map(entry => ({
-            block: {
-                num: entry.Block.height,
-                hash: entry.Block.hash.toString('hex'),
-                epoch: entry.Block.epoch,
-                slot: entry.Block.slot,
-                era: entry.Block.era,
-                tx_ordinal: entry.tx_index,
-                is_valid: entry.is_valid,
-            },
-            transaction: entry.payload.toString('hex'),
-        })),
     };
 }
 exports.countTxs = countTxs;

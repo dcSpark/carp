@@ -11,14 +11,18 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TransactionController = void 0;
 const tsoa_1 = require("tsoa");
 const TransactionHistoryService_1 = require("../services/TransactionHistoryService");
 const http_status_codes_1 = require("http-status-codes");
+const PgPoolSingleton_1 = __importDefault(require("../services/PgPoolSingleton"));
 let TransactionController = class TransactionController extends tsoa_1.Controller {
     async txHistoryForAddresses(requestBody, errorResponse) {
-        return await (0, TransactionHistoryService_1.countTxs)(
+        return await (0, TransactionHistoryService_1.countTxs)(PgPoolSingleton_1.default, 
         // TODO: this is not what the real logic should be
         requestBody.addresses.map(addr => Buffer.from(addr, 'hex')));
     }
