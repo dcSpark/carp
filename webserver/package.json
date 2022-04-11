@@ -7,7 +7,7 @@
     "eslint": "eslint app",
     "test": "jest --config=jest.config.ts",
     "typecheck": "tsc --project tsconfig.typecheck.json",
-    "dev": "yarn build && concurrently \"nodemon -x tsoa spec-and-routes\" \"npx pgtyped -w --uri $DATABASE_URL -c config.json\" \"nodemon\"",
+    "dev": "npx pgtyped --uri -c config.json && yarn build && concurrently \"nodemon -x tsoa spec-and-routes\" \"npx pgtyped -w -c config.json\" \"nodemon\"",
     "build": "tsoa spec-and-routes && tsc --outDir build --experimentalDecorators",
     "start": "NODE_ENV=production node build/app/server.js",
     "parse-db": "pg_dump --no-owner --schema-only -d $DATABASE_URL > bin/schema.sql && npx prisma db pull && npx prisma generate",
