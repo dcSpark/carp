@@ -8,6 +8,7 @@ pub struct Model {
     pub credential_id: i64,
     #[sea_orm(primary_key, column_type = "BigInteger")]
     pub tx_id: i64,
+    #[sea_orm(primary_key)]
     pub relation: i32,
 }
 

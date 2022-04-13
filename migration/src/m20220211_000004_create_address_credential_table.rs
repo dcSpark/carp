@@ -38,29 +38,19 @@ impl MigrationTrait for Migration {
                             .to(StakeCredential, StakeCredentialColumn::Id),
                     )
                     .col(ColumnDef::new(Column::Relation).integer().not_null())
+                    // Note: the 3-tuple is the primary key
+                    // The order of the key here matters since it affects how the generated index performs
+                    // https://stackoverflow.com/a/11352543
+                    // Since all queries that include this table will include joins on <address_id, credential_id>
+                    // the performance should still be good
                     .primary_key(
                         Index::create()
                             .table(Entity)
                             .name("address_credential-pk")
                             .col(Column::AddressId)
-                            .col(Column::CredentialId),
+                            .col(Column::CredentialId)
+                            .col(Column::Relation),
                     )
-                    .to_owned(),
-            )
-            .await?;
-
-        // although the pk is <address, credential>,
-        // we also need to ensure the grouping of all 3 is unique
-        // we don't make the triple the PK because joins usually only specify 2/3 keys
-        manager
-            .create_index(
-                Index::create()
-                    .table(Entity)
-                    .name("index-address_credential-address")
-                    .col(Column::AddressId)
-                    .col(Column::CredentialId)
-                    .col(Column::Relation)
-                    .unique()
                     .to_owned(),
             )
             .await

@@ -23,6 +23,9 @@ use entity::{
     prelude::*,
     sea_orm::{
         prelude::*, ColumnTrait, DatabaseTransaction, JoinType, QuerySelect, Set, TransactionTrait,
+        sea_query::{
+            OnConflict
+        },
     },
 };
 use migration::DbErr;
@@ -215,7 +218,7 @@ async fn insert(
                         block_id: Set(block.id),
                         tx_index: Set(idx as i32),
                         payload: Set(tx_payload),
-                        is_valid: Set(true), // TODO
+                        is_valid: Set(true), // always true in Byron
                         ..Default::default()
                     };
 
@@ -508,7 +511,7 @@ async fn insert_address_credential(
     payload: Vec<u8>,
     tx: &TransactionModel,
     address: &AddressModel,
-    tx_relation: i32,
+    tx_relation: TxCredentialRelationValue,
     address_relation: i32,
     txn: &DatabaseTransaction,
 ) -> Result<(), DbErr> {
@@ -520,7 +523,30 @@ async fn insert_address_credential(
         relation: Set(address_relation),
     };
 
-    address_credential.save(txn).await?;
+    let on_conflict = OnConflict::columns([AddressCredentialColumn::AddressId, AddressCredentialColumn::CredentialId, AddressCredentialColumn::Relation])
+        .do_nothing()
+        .to_owned();
+    address_credential.insert_or(txn, &on_conflict).await?;
+
+    Ok(())
+}
+
+async fn insert_tx_credential(
+    stake_credential: &StakeCredentialModel,
+    tx: &TransactionModel,
+    relation: TxCredentialRelationValue,
+    txn: &DatabaseTransaction,
+) -> Result<(), DbErr> {
+    let tx_credential = TxCredentialActiveModel {
+        credential_id: Set(stake_credential.id),
+        tx_id: Set(tx.id),
+        relation: Set(relation.into()),
+    };
+
+    let on_conflict = OnConflict::columns([TxCredentialColumn::CredentialId, TxCredentialColumn::TxId, TxCredentialColumn::Relation])
+        .do_nothing()
+        .to_owned();
+    tx_credential.insert_or(txn, &on_conflict).await?;
 
     Ok(())
 }
@@ -568,13 +594,12 @@ async fn insert_input(
         // 3) Associate the stake credential to this transaction
         let relation = TxCredentialRelationValue::Input;
         for stake_credential in stake_credentials {
-            let tx_credential = TxCredentialActiveModel {
-                credential_id: Set(stake_credential.id),
-                tx_id: Set(tx.id),
-                relation: Set(relation.into()),
-            };
-
-            tx_credential.save(txn).await?;
+            insert_tx_credential(
+                &stake_credential,
+                &tx,
+                relation,
+                txn
+            ).await?;
         }
     }
 
@@ -624,7 +649,7 @@ async fn insert_credential(
     tx: &TransactionModel,
     credential: Vec<u8>,
     txn: &DatabaseTransaction,
-    relation: i32,
+    relation: TxCredentialRelationValue,
 ) -> Result<StakeCredentialModel, DbErr> {
     let sc = StakeCredential::find()
         .filter(StakeCredentialColumn::Credential.eq(credential.clone()))
@@ -632,13 +657,12 @@ async fn insert_credential(
         .await?;
 
     if let Some(stake_credential) = sc {
-        let tx_credential = TxCredentialActiveModel {
-            credential_id: Set(stake_credential.id),
-            tx_id: Set(tx.id),
-            relation: Set(relation),
-        };
-
-        tx_credential.save(txn).await?;
+        insert_tx_credential(
+            &stake_credential,
+            &tx,
+            relation,
+            txn
+        ).await?;
 
         Ok(stake_credential)
     } else {
@@ -649,13 +673,12 @@ async fn insert_credential(
 
         let stake_credential = stake_credential.insert(txn).await?;
 
-        let tx_credential = TxCredentialActiveModel {
-            credential_id: Set(stake_credential.id),
-            tx_id: Set(tx.id),
-            relation: Set(relation),
-        };
-
-        tx_credential.save(txn).await?;
+        insert_tx_credential(
+            &stake_credential,
+            &tx,
+            relation,
+            txn
+        ).await?;
 
         Ok(stake_credential)
     }
