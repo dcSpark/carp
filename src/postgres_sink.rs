@@ -570,12 +570,12 @@ async fn insert_input(
 
     let is_byron = match cardano_multiplatform_lib::TransactionOutput::from_bytes(tx_output.payload)
     {
-        Ok(parsed_output) => parsed_output.address().as_byron().is_none(),
+        Ok(parsed_output) => parsed_output.address().as_byron().is_some(),
         // TODO: remove this once we've parsed the genesis block correctly instead of inserting dummy data
         Err(_) => true,
     };
     // Byron addresses don't contain stake credentials, so we can skip them
-    if is_byron {
+    if !is_byron {
         // 2) Get the stake credential for the UTXO being spent
         let stake_credentials = StakeCredential::find()
             .inner_join(AddressCredential)
