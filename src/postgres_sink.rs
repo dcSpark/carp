@@ -43,6 +43,7 @@ struct PerfAggregator {
     certificate_insert: Duration,
     collateral_insert: Duration,
     withdrawal_insert: Duration,
+    required_signer_insert: Duration,
     block_fetch: Duration,
     rollback: Duration,
     overhead: Duration,
@@ -58,6 +59,7 @@ impl PerfAggregator {
             certificate_insert: Duration::new(0, 0),
             collateral_insert: Duration::new(0, 0),
             withdrawal_insert: Duration::new(0, 0),
+            required_signer_insert: Duration::new(0, 0),
             block_fetch: Duration::new(0, 0),
             rollback: Duration::new(0, 0),
             overhead: Duration::new(0, 0),
@@ -72,6 +74,7 @@ impl PerfAggregator {
             + self.certificate_insert
             + self.collateral_insert
             + self.withdrawal_insert
+            + self.required_signer_insert
             + self.block_fetch
             + self.rollback;
         self.overhead = *total_duration - non_duration_sum
@@ -92,6 +95,7 @@ impl std::ops::Add for PerfAggregator {
             certificate_insert: self.certificate_insert + other.certificate_insert,
             collateral_insert: self.collateral_insert + other.collateral_insert,
             withdrawal_insert: self.withdrawal_insert + other.withdrawal_insert,
+            required_signer_insert: self.required_signer_insert + other.required_signer_insert,
             block_fetch: self.block_fetch + other.block_fetch,
             rollback: self.rollback + other.rollback,
             overhead: self.overhead + other.overhead,
@@ -474,6 +478,20 @@ async fn insert(
                             perf_aggregator.withdrawal_insert += time_counter.elapsed();
                             time_counter = std::time::Instant::now();
                         }
+                        TransactionBodyComponent::RequiredSigners(key_hashes) => {
+                            for &signer in key_hashes.iter() {
+                                let owner_credential = pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(signer).encode_fragment().unwrap();
+                                insert_credential(
+                                    &transaction,
+                                    owner_credential,
+                                    txn,
+                                    TxCredentialRelationValue::RequiredSigner.into(),
+                                )
+                                .await?;
+                            }
+                            perf_aggregator.required_signer_insert += time_counter.elapsed();
+                            time_counter = std::time::Instant::now();
+                        }
                         _ => (),
                     }
                 }
@@ -661,6 +679,7 @@ async fn insert_certificates(
                     insert_credential(tx, operator_credential, txn, TxCredentialRelationValue::PoolOperator.into()).await?;
 
                     let reward_addr = RewardAddress::from_address(&cardano_multiplatform_lib::address::Address::from_bytes(reward_account.to_vec()).unwrap()).unwrap();
+                    // TODO: handle reward script address
                     let reward_key_hash: [u8; 28] = reward_addr.payment_cred().to_keyhash().unwrap().to_bytes().try_into().unwrap();
                     let reward_credential = pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(Hash::<28>::from(reward_key_hash)).encode_fragment().unwrap();
                     insert_credential(tx, reward_credential, txn, TxCredentialRelationValue::PoolReward.into()).await?;
