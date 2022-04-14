@@ -15,6 +15,15 @@ pub enum TxCredentialRelationValue {
     StakeDeregistration,
     Input,
     Output,
+    DelegationTarget,
+    PoolOwner,
+    PoolOperator,
+    PoolReward,
+    MirRecipient,
+    Withdrawal,
+    RequiredSigner,
+    // TODO: unknown -- shows up in witness, but not for any known reason
+    // TODO: native script / mint (in witness)
 }
 
 #[derive(Copy, Clone)]
@@ -31,6 +40,13 @@ impl From<TxCredentialRelationValue> for i32 {
             TxCredentialRelationValue::StakeDeregistration => 2,
             TxCredentialRelationValue::Input => 3,
             TxCredentialRelationValue::Output => 4,
+            TxCredentialRelationValue::DelegationTarget => 5,
+            TxCredentialRelationValue::PoolOwner => 6,
+            TxCredentialRelationValue::PoolOperator => 7,
+            TxCredentialRelationValue::PoolReward => 8,
+            TxCredentialRelationValue::MirRecipient => 9,
+            TxCredentialRelationValue::Withdrawal => 10,
+            TxCredentialRelationValue::RequiredSigner => 11,
         }
     }
 }

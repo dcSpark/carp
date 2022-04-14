@@ -22,10 +22,8 @@ use crate::types::{AddressCredentialRelationValue, MultiEraBlock, TxCredentialRe
 use entity::{
     prelude::*,
     sea_orm::{
-        prelude::*, ColumnTrait, DatabaseTransaction, JoinType, QuerySelect, Set, TransactionTrait,
-        sea_query::{
-            OnConflict
-        },
+        prelude::*, sea_query::OnConflict, ColumnTrait, DatabaseTransaction, JoinType, QuerySelect,
+        Set, TransactionTrait,
     },
 };
 use migration::DbErr;
@@ -523,9 +521,13 @@ async fn insert_address_credential(
         relation: Set(address_relation),
     };
 
-    let on_conflict = OnConflict::columns([AddressCredentialColumn::AddressId, AddressCredentialColumn::CredentialId, AddressCredentialColumn::Relation])
-        .do_nothing()
-        .to_owned();
+    let on_conflict = OnConflict::columns([
+        AddressCredentialColumn::AddressId,
+        AddressCredentialColumn::CredentialId,
+        AddressCredentialColumn::Relation,
+    ])
+    .do_nothing()
+    .to_owned();
     address_credential.insert_or(txn, &on_conflict).await?;
 
     Ok(())
@@ -543,9 +545,13 @@ async fn insert_tx_credential(
         relation: Set(relation.into()),
     };
 
-    let on_conflict = OnConflict::columns([TxCredentialColumn::CredentialId, TxCredentialColumn::TxId, TxCredentialColumn::Relation])
-        .do_nothing()
-        .to_owned();
+    let on_conflict = OnConflict::columns([
+        TxCredentialColumn::CredentialId,
+        TxCredentialColumn::TxId,
+        TxCredentialColumn::Relation,
+    ])
+    .do_nothing()
+    .to_owned();
     tx_credential.insert_or(txn, &on_conflict).await?;
 
     Ok(())
@@ -591,15 +597,10 @@ async fn insert_input(
             .all(txn)
             .await?;
 
-        // 3) Associate the stake credential to this transaction
+        // 3) Associate the stake credentials to this transaction
         let relation = TxCredentialRelationValue::Input;
         for stake_credential in stake_credentials {
-            insert_tx_credential(
-                &stake_credential,
-                &tx,
-                relation,
-                txn
-            ).await?;
+            insert_tx_credential(&stake_credential, &tx, relation, txn).await?;
         }
     }
 
@@ -623,22 +624,54 @@ async fn insert_certificates(
 ) -> Result<(), DbErr> {
     if let TransactionBodyComponent::Certificates(certs) = component {
         for cert in certs.iter() {
-            let (credential, relation) = match cert {
+            match cert {
                 Certificate::StakeDelegation(credential, _) => {
-                    (credential, TxCredentialRelationValue::StakeDelegation)
+                    let credential = credential.encode_fragment().unwrap();
+                    insert_credential(tx, credential, txn, TxCredentialRelationValue::StakeDelegation.into()).await?;
+                    // TODO: Add delegation target as well? Probably should hide behind a flag for performance
                 }
                 Certificate::StakeRegistration(credential) => {
-                    (credential, TxCredentialRelationValue::StakeRegistration)
+                    let credential = credential.encode_fragment().unwrap();
+                    insert_credential(tx, credential, txn, TxCredentialRelationValue::StakeRegistration.into()).await?;
                 }
                 Certificate::StakeDeregistration(credential) => {
-                    (credential, TxCredentialRelationValue::StakeDeregistration)
+                    let credential = credential.encode_fragment().unwrap();
+                    insert_credential(tx, credential, txn, TxCredentialRelationValue::StakeDeregistration.into()).await?;
                 }
-                _ => continue,
+                Certificate::PoolRegistration { operator, pool_owners, reward_account, .. } => {
+                    let operator_credential = pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(operator.clone())
+                    .encode_fragment().unwrap();
+                    insert_credential(tx, operator_credential, txn, TxCredentialRelationValue::PoolOperator.into()).await?;
+
+                    let reward_addr = RewardAddress::from_address(&cardano_multiplatform_lib::address::Address::from_bytes(reward_account.to_vec()).unwrap()).unwrap();
+                    let reward_key_hash: [u8; 28] = reward_addr.payment_cred().to_keyhash().unwrap().to_bytes().try_into().unwrap();
+                    let reward_credential = pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(Hash::<28>::from(reward_key_hash)).encode_fragment().unwrap();
+                    insert_credential(tx, reward_credential, txn, TxCredentialRelationValue::PoolReward.into()).await?;
+
+                    for &owner in pool_owners.iter() {
+                        let owner_credential = pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(owner).encode_fragment().unwrap();
+                        insert_credential(tx, owner_credential, txn, TxCredentialRelationValue::PoolOperator.into()).await?;
+                    };
+                }
+                Certificate::PoolRetirement(key_hash, _) => {
+                    let operator_credential = pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(key_hash.clone()).encode_fragment().unwrap();
+                    insert_credential(tx, operator_credential, txn, TxCredentialRelationValue::PoolOperator.into()).await?;
+                }
+                Certificate::GenesisKeyDelegation(_, _, _) => {
+                    // genesis keys aren't stake credentials
+                }
+                Certificate::MoveInstantaneousRewardsCert(mir) => {
+                    match &mir.target {
+                        pallas::ledger::primitives::alonzo::InstantaneousRewardTarget::StakeCredentials(credential_pairs) => {
+                            for pair in credential_pairs.deref() {
+                                let credential = pair.0.encode_fragment().unwrap();
+                                insert_credential(tx, credential, txn, TxCredentialRelationValue::MirRecipient.into()).await?;
+                            }
+                        },
+                        _ => {},
+                    }
+                }
             };
-
-            let credential = credential.encode_fragment().unwrap();
-
-            insert_credential(tx, credential, txn, relation.into()).await?;
         }
     }
 
@@ -657,12 +690,7 @@ async fn insert_credential(
         .await?;
 
     if let Some(stake_credential) = sc {
-        insert_tx_credential(
-            &stake_credential,
-            &tx,
-            relation,
-            txn
-        ).await?;
+        insert_tx_credential(&stake_credential, &tx, relation, txn).await?;
 
         Ok(stake_credential)
     } else {
@@ -673,12 +701,7 @@ async fn insert_credential(
 
         let stake_credential = stake_credential.insert(txn).await?;
 
-        insert_tx_credential(
-            &stake_credential,
-            &tx,
-            relation,
-            txn
-        ).await?;
+        insert_tx_credential(&stake_credential, &tx, relation, txn).await?;
 
         Ok(stake_credential)
     }
