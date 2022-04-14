@@ -679,10 +679,14 @@ async fn insert_certificates(
                     insert_credential(tx, operator_credential, txn, TxCredentialRelationValue::PoolOperator.into()).await?;
 
                     let reward_addr = RewardAddress::from_address(&cardano_multiplatform_lib::address::Address::from_bytes(reward_account.to_vec()).unwrap()).unwrap();
-                    // TODO: handle reward script address
                     let reward_key_hash: [u8; 28] = reward_addr.payment_cred().to_keyhash().unwrap().to_bytes().try_into().unwrap();
-                    let reward_credential = pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(Hash::<28>::from(reward_key_hash)).encode_fragment().unwrap();
-                    insert_credential(tx, reward_credential, txn, TxCredentialRelationValue::PoolReward.into()).await?;
+                    match &reward_addr.payment_cred().kind() {
+                        cardano_multiplatform_lib::address::StakeCredKind::Key => {
+                            let reward_credential = pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(Hash::<28>::from(reward_key_hash)).encode_fragment().unwrap();
+                            insert_credential(tx, reward_credential, txn, TxCredentialRelationValue::PoolReward.into()).await?;
+                        },
+                        _ => {},
+                    };
 
                     for &owner in pool_owners.iter() {
                         let owner_credential = pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(owner).encode_fragment().unwrap();
