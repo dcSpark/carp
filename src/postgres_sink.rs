@@ -302,7 +302,18 @@ async fn insert(
                     cardano_multiplatform_lib::metadata::AuxiliaryData::from_bytes(
                         auxiliary_data_payload,
                     )
-                    .map_err(|e| panic!("{:?}{:?}", e, block_record.cbor_hex))
+                    .map_err(|e| {
+                        panic!(
+                            "{:?}\n{:?}\n{:?}",
+                            e,
+                            hex::encode(a.encode_fragment().unwrap()),
+                            cardano_multiplatform_lib::Block::from_bytes(
+                                hex::decode(block_record.cbor_hex.clone().unwrap()).unwrap(),
+                            )
+                            .map(|block| block.to_json())
+                            .map_err(|_err| block_record.cbor_hex.clone().unwrap()),
+                        )
+                    })
                     .unwrap()
                 });
 
