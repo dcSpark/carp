@@ -256,6 +256,7 @@ async fn insert(
                         let (tx_hash, index) = match input {
                             TxIn::Variant0(wrapped) => wrapped.deref(),
                             TxIn::Other(index, tx_hash) => {
+                                // Note: Oura uses "other" to future proof itself against changes in the binary spec
                                 todo!("handle TxIn::Other({:?}, {:?})", index, tx_hash)
                             }
                         };
