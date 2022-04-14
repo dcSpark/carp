@@ -22,6 +22,7 @@ pub enum TxCredentialRelationValue {
     MirRecipient,
     Withdrawal,
     RequiredSigner,
+    // TODO: unused input. Ex: collateral input when collateral isn't consumed
     // TODO: unknown -- shows up in witness, but not for any known reason
     // TODO: native script / mint (in witness)
 }

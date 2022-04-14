@@ -42,6 +42,7 @@ struct PerfAggregator {
     transaction_output_insert: Duration,
     certificate_insert: Duration,
     collateral_insert: Duration,
+    withdrawal_insert: Duration,
     block_fetch: Duration,
     rollback: Duration,
     overhead: Duration,
@@ -56,6 +57,7 @@ impl PerfAggregator {
             transaction_output_insert: Duration::new(0, 0),
             certificate_insert: Duration::new(0, 0),
             collateral_insert: Duration::new(0, 0),
+            withdrawal_insert: Duration::new(0, 0),
             block_fetch: Duration::new(0, 0),
             rollback: Duration::new(0, 0),
             overhead: Duration::new(0, 0),
@@ -69,6 +71,7 @@ impl PerfAggregator {
             + self.transaction_output_insert
             + self.certificate_insert
             + self.collateral_insert
+            + self.withdrawal_insert
             + self.block_fetch
             + self.rollback;
         self.overhead = *total_duration - non_duration_sum
@@ -88,6 +91,7 @@ impl std::ops::Add for PerfAggregator {
                 + other.transaction_output_insert,
             certificate_insert: self.certificate_insert + other.certificate_insert,
             collateral_insert: self.collateral_insert + other.collateral_insert,
+            withdrawal_insert: self.withdrawal_insert + other.withdrawal_insert,
             block_fetch: self.block_fetch + other.block_fetch,
             rollback: self.rollback + other.rollback,
             overhead: self.overhead + other.overhead,
@@ -456,7 +460,20 @@ async fn insert(
                             perf_aggregator.collateral_insert += time_counter.elapsed();
                             time_counter = std::time::Instant::now();
                         }
-
+                        TransactionBodyComponent::Withdrawals(withdrawal_pairs) => {
+                            for pair in withdrawal_pairs.deref() {
+                                let credential = pair.0.encode_fragment().unwrap();
+                                insert_credential(
+                                    &transaction,
+                                    credential,
+                                    txn,
+                                    TxCredentialRelationValue::Withdrawal.into(),
+                                )
+                                .await?;
+                            }
+                            perf_aggregator.withdrawal_insert += time_counter.elapsed();
+                            time_counter = std::time::Instant::now();
+                        }
                         _ => (),
                     }
                 }
