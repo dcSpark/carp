@@ -40,12 +40,15 @@ impl<'a> Config<'a> {
                     match block_record.epoch {
                         Some(epoch) if epoch as i128 > last_epoch => {
                             let epoch_duration = epoch_start_time.elapsed();
-                            tracing::info!(
-                                "Finished processing epoch {} after {:?}",
-                                epoch,
-                                epoch_duration
-                            );
                             perf_aggregator.set_overhead(&epoch_duration);
+
+                            tracing::info!(
+                                "Finished processing epoch {} after {:?} (+${:?})",
+                                epoch,
+                                epoch_duration.checked_sub(perf_aggregator.block_fetch),
+                                perf_aggregator.block_fetch
+                            );
+
                             tracing::trace!("Epoch part-wise time spent:\n{:#?}", perf_aggregator);
                             epoch_start_time = std::time::Instant::now();
                             perf_aggregator = PerfAggregator::new();
