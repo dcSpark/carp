@@ -1,11 +1,10 @@
+use crate::perf_aggregator::PerfAggregator;
 use crate::relation_map::RelationMap;
-use crate::{perf_aggregator::PerfAggregator, types::TxCredentialRelationValue};
 use cryptoxide::blake2b::Blake2b;
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction, Set},
 };
-use futures::future::join_all;
 use pallas::ledger::primitives::{
     byron::{self, TxIn, TxOut},
     Fragment,
@@ -46,33 +45,16 @@ pub async fn process_byron_block(
                 perf_aggregator.transaction_insert += time_counter.elapsed();
                 *time_counter = std::time::Instant::now();
 
-                join_all(
-                    tx_body
-                        .transaction
-                        .outputs
-                        .iter()
-                        .enumerate()
-                        .map(|(idx, output)| insert_byron_output(txn, &transaction, output, idx)),
-                )
-                .await;
+                for (idx, output) in tx_body.transaction.outputs.iter().enumerate() {
+                    insert_byron_output(txn, &transaction, output, idx).await?;
+                }
 
                 perf_aggregator.transaction_output_insert += time_counter.elapsed();
                 *time_counter = std::time::Instant::now();
 
-                let input_stake_cred_results = join_all(
-                    tx_body
-                        .transaction
-                        .inputs
-                        .iter()
-                        .enumerate()
-                        .map(|(idx, input)| insert_byron_input(txn, &transaction, input, idx)),
-                )
-                .await;
-                for results in input_stake_cred_results {
-                    for stake_cred in &results? {
-                        vkey_relation_map
-                            .add_relation(stake_cred, TxCredentialRelationValue::Input);
-                    }
+                for (idx, input) in tx_body.transaction.inputs.iter().enumerate() {
+                    insert_byron_input(&mut vkey_relation_map, txn, &transaction, input, idx)
+                        .await?;
                 }
 
                 perf_aggregator.transaction_input_insert += time_counter.elapsed();
@@ -108,11 +90,12 @@ async fn insert_byron_output(
 }
 
 async fn insert_byron_input(
+    vkey_relation_map: &mut RelationMap,
     txn: &DatabaseTransaction,
     transaction: &TransactionModel,
     input: &TxIn,
     idx: usize,
-) -> Result<Vec<entity::stake_credential::Model>, DbErr> {
+) -> Result<(), DbErr> {
     let (tx_hash, index) = match input {
         TxIn::Variant0(wrapped) => wrapped.deref(),
         TxIn::Other(index, tx_hash) => {
@@ -121,7 +104,17 @@ async fn insert_byron_input(
         }
     };
 
-    crate::era_common::insert_input(&transaction, idx as i32, *index as u64, tx_hash, txn).await
+    crate::era_common::insert_input(
+        vkey_relation_map,
+        &transaction,
+        idx as i32,
+        *index as u64,
+        tx_hash,
+        txn,
+    )
+    .await?;
+
+    Ok(())
 }
 
 fn blake2b256(data: &[u8]) -> [u8; 32] {
