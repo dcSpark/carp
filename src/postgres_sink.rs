@@ -887,12 +887,28 @@ async fn insert_stake_credential(
     txn: &DatabaseTransaction,
     tx_relation: TxCredentialRelationValue,
 ) -> Result<StakeCredentialModel, DbErr> {
-    let sc = StakeCredential::find()
-        .filter(StakeCredentialColumn::Credential.eq(credential.clone()))
-        .one(txn)
-        .await?;
+    // we may have already looked up this credential inside this transaction
+    // so try and pull it from our local info before querying the DB
+    let staking_credential = match vkey_relation_map
+        .0
+        .entry(RelationMap::bytes_to_pallas(&credential))
+    {
+        std::collections::btree_map::Entry::Occupied(entry) => {
+            let val = entry.get();
+            Some(StakeCredentialModel {
+                id: val.credential_id,
+                credential: credential.clone(),
+            })
+        }
+        std::collections::btree_map::Entry::Vacant(_) => {
+            StakeCredential::find()
+                .filter(StakeCredentialColumn::Credential.eq(credential.clone()))
+                .one(txn)
+                .await?
+        }
+    };
 
-    if let Some(stake_credential) = sc {
+    if let Some(stake_credential) = staking_credential {
         vkey_relation_map.add_relation(&stake_credential, tx_relation);
 
         Ok(stake_credential)

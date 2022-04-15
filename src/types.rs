@@ -11,6 +11,7 @@ pub enum MultiEraBlock {
 #[derive(Copy, Clone)]
 pub enum TxCredentialRelationValue {
     Witness, // appears in the witness of the tx
+    // TODO: differentiate being part of input&output as staking key from payment key
     Input,
     Output,
     StakeDeregistration,
