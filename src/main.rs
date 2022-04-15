@@ -5,6 +5,7 @@ use entity::sea_orm::Database;
 use tracing_subscriber::prelude::*;
 
 mod postgres_sink;
+mod relation_map;
 mod setup;
 mod types;
 

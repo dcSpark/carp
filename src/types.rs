@@ -10,11 +10,12 @@ pub enum MultiEraBlock {
 
 #[derive(Copy, Clone)]
 pub enum TxCredentialRelationValue {
-    StakeDelegation,
-    StakeRegistration,
-    StakeDeregistration,
+    Witness, // appears in the witness of the tx
     Input,
     Output,
+    StakeDeregistration,
+    StakeDelegation,
+    StakeRegistration,
     DelegationTarget,
     PoolOwner,
     PoolOperator,
@@ -23,7 +24,6 @@ pub enum TxCredentialRelationValue {
     Withdrawal,
     RequiredSigner,
     // TODO: unused input. Ex: collateral input when collateral isn't consumed
-    // TODO: unknown -- shows up in witness, but not for any known reason
     // TODO: native script / mint (in witness)
 }
 
@@ -36,18 +36,19 @@ pub enum AddressCredentialRelationValue {
 impl From<TxCredentialRelationValue> for i32 {
     fn from(item: TxCredentialRelationValue) -> Self {
         match item {
-            TxCredentialRelationValue::StakeDelegation => 0,
-            TxCredentialRelationValue::StakeRegistration => 1,
-            TxCredentialRelationValue::StakeDeregistration => 2,
-            TxCredentialRelationValue::Input => 3,
-            TxCredentialRelationValue::Output => 4,
-            TxCredentialRelationValue::DelegationTarget => 5,
-            TxCredentialRelationValue::PoolOwner => 6,
-            TxCredentialRelationValue::PoolOperator => 7,
-            TxCredentialRelationValue::PoolReward => 8,
-            TxCredentialRelationValue::MirRecipient => 9,
-            TxCredentialRelationValue::Withdrawal => 10,
-            TxCredentialRelationValue::RequiredSigner => 11,
+            TxCredentialRelationValue::Witness => 0b1,
+            TxCredentialRelationValue::Input => 0b10,
+            TxCredentialRelationValue::Output => 0b100,
+            TxCredentialRelationValue::StakeDeregistration => 0b1000,
+            TxCredentialRelationValue::StakeDelegation => 0b10000,
+            TxCredentialRelationValue::StakeRegistration => 0b100000,
+            TxCredentialRelationValue::DelegationTarget => 0b1000000,
+            TxCredentialRelationValue::PoolOwner => 0b10000000,
+            TxCredentialRelationValue::PoolOperator => 0b100000000,
+            TxCredentialRelationValue::PoolReward => 0b1000000000,
+            TxCredentialRelationValue::MirRecipient => 0b10000000000,
+            TxCredentialRelationValue::Withdrawal => 0b100000000000,
+            TxCredentialRelationValue::RequiredSigner => 0b1000000000000,
         }
     }
 }

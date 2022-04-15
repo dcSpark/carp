@@ -1,8 +1,9 @@
 use std::ops::Deref;
 
 use anyhow::anyhow;
-use cardano_multiplatform_lib::address::{
-    BaseAddress, EnterpriseAddress, PointerAddress, RewardAddress,
+use cardano_multiplatform_lib::{
+    address::{BaseAddress, EnterpriseAddress, PointerAddress, RewardAddress},
+    utils::ScriptHashNamespace,
 };
 use cryptoxide::blake2b::Blake2b;
 use oura::{
@@ -14,11 +15,15 @@ use pallas::{
     ledger::primitives::{
         alonzo::{self, Certificate, TransactionBodyComponent},
         byron::{self, TxIn},
+        utils::MaybeIndefArray,
         Fragment,
     },
 };
 
-use crate::types::{AddressCredentialRelationValue, MultiEraBlock, TxCredentialRelationValue};
+use crate::{
+    relation_map::RelationMap,
+    types::{AddressCredentialRelationValue, MultiEraBlock, TxCredentialRelationValue},
+};
 use entity::{
     prelude::*,
     sea_orm::{
@@ -44,6 +49,7 @@ struct PerfAggregator {
     collateral_insert: Duration,
     withdrawal_insert: Duration,
     required_signer_insert: Duration,
+    witness_insert: Duration,
     block_fetch: Duration,
     rollback: Duration,
     overhead: Duration,
@@ -60,6 +66,7 @@ impl PerfAggregator {
             collateral_insert: Duration::new(0, 0),
             withdrawal_insert: Duration::new(0, 0),
             required_signer_insert: Duration::new(0, 0),
+            witness_insert: Duration::new(0, 0),
             block_fetch: Duration::new(0, 0),
             rollback: Duration::new(0, 0),
             overhead: Duration::new(0, 0),
@@ -75,6 +82,7 @@ impl PerfAggregator {
             + self.collateral_insert
             + self.withdrawal_insert
             + self.required_signer_insert
+            + self.witness_insert
             + self.block_fetch
             + self.rollback;
         self.overhead = *total_duration - non_duration_sum
@@ -96,6 +104,7 @@ impl std::ops::Add for PerfAggregator {
             collateral_insert: self.collateral_insert + other.collateral_insert,
             withdrawal_insert: self.withdrawal_insert + other.withdrawal_insert,
             required_signer_insert: self.required_signer_insert + other.required_signer_insert,
+            witness_insert: self.witness_insert + other.witness_insert,
             block_fetch: self.block_fetch + other.block_fetch,
             rollback: self.rollback + other.rollback,
             overhead: self.overhead + other.overhead,
@@ -230,6 +239,9 @@ async fn insert(
 
                     let transaction = transaction.insert(txn).await?;
 
+                    // unused for Byron
+                    let mut vkey_relation_map = RelationMap::default();
+
                     perf_aggregator.transaction_insert += time_counter.elapsed();
                     time_counter = std::time::Instant::now();
 
@@ -261,7 +273,15 @@ async fn insert(
                             }
                         };
 
-                        insert_input(&transaction, idx as i32, *index as u64, tx_hash, txn).await?;
+                        insert_input(
+                            &mut vkey_relation_map,
+                            &transaction,
+                            idx as i32,
+                            *index as u64,
+                            tx_hash,
+                            txn,
+                        )
+                        .await?;
                     }
 
                     perf_aggregator.transaction_input_insert += time_counter.elapsed();
@@ -288,7 +308,7 @@ async fn insert(
                 let witness_set = &cardano_multiplatform_lib::TransactionWitnessSet::from_bytes(
                     witness_set_payload,
                 )
-                .map_err(|e| panic!("{:?}{:?}", e, block_record.cbor_hex))
+                .map_err(|e| panic!("{:?}\nBlock cbor: {:?}", e, block_record.cbor_hex))
                 .unwrap();
 
                 let aux_data = alonzo_block
@@ -342,15 +362,19 @@ async fn insert(
                 perf_aggregator.transaction_insert += time_counter.elapsed();
                 time_counter = std::time::Instant::now();
 
-                for component in tx_body.iter() {
-                    insert_certificates(&transaction, component, txn).await?;
-                }
+                let mut vkey_relation_map = RelationMap::default();
+                insert_witness(&mut vkey_relation_map, &witness_set, txn).await?;
 
-                perf_aggregator.certificate_insert += time_counter.elapsed();
+                perf_aggregator.witness_insert += time_counter.elapsed();
                 time_counter = std::time::Instant::now();
 
                 for component in tx_body.iter() {
                     match component {
+                        TransactionBodyComponent::Certificates(certs) => {
+                            insert_certificates(&mut vkey_relation_map, &certs, txn).await?;
+                            perf_aggregator.certificate_insert += time_counter.elapsed();
+                            time_counter = std::time::Instant::now();
+                        }
                         TransactionBodyComponent::Outputs(outputs) => {
                             for (idx, output) in outputs.iter().enumerate() {
                                 use cardano_multiplatform_lib::address::Address;
@@ -370,8 +394,8 @@ async fn insert(
                                     let payload = base_addr.payment_cred().to_bytes();
 
                                     insert_address_credential(
+                                        &mut vkey_relation_map,
                                         payload,
-                                        &transaction,
                                         &address,
                                         tx_relation.into(),
                                         address_relation.into(),
@@ -385,8 +409,8 @@ async fn insert(
                                     let address_relation = AddressCredentialRelationValue::StakeKey;
 
                                     insert_address_credential(
+                                        &mut vkey_relation_map,
                                         payload,
-                                        &transaction,
                                         &address,
                                         tx_relation.into(),
                                         address_relation.into(),
@@ -397,8 +421,8 @@ async fn insert(
                                     let payload = ptr_addr.payment_cred().to_bytes();
 
                                     insert_address_credential(
+                                        &mut vkey_relation_map,
                                         payload,
-                                        &transaction,
                                         &address,
                                         tx_relation.into(),
                                         address_relation.into(),
@@ -411,8 +435,8 @@ async fn insert(
                                     let payload = enterprise_addr.payment_cred().to_bytes();
 
                                     insert_address_credential(
+                                        &mut vkey_relation_map,
                                         payload,
-                                        &transaction,
                                         &address,
                                         tx_relation.into(),
                                         address_relation.into(),
@@ -423,8 +447,8 @@ async fn insert(
                                 {
                                     let payload = reward_addr.payment_cred().to_bytes();
                                     insert_address_credential(
+                                        &mut vkey_relation_map,
                                         payload,
-                                        &transaction,
                                         &address,
                                         tx_relation.into(),
                                         address_relation.into(),
@@ -449,6 +473,7 @@ async fn insert(
                         TransactionBodyComponent::Inputs(inputs) if is_valid => {
                             for (idx, input) in inputs.iter().enumerate() {
                                 insert_input(
+                                    &mut vkey_relation_map,
                                     &transaction,
                                     idx as i32,
                                     input.index,
@@ -465,6 +490,7 @@ async fn insert(
                             // you can use the is_valid field to know what kind of input it actually is
                             for (idx, input) in inputs.iter().enumerate() {
                                 insert_input(
+                                    &mut vkey_relation_map,
                                     &transaction,
                                     idx as i32,
                                     input.index,
@@ -479,8 +505,8 @@ async fn insert(
                         TransactionBodyComponent::Withdrawals(withdrawal_pairs) => {
                             for pair in withdrawal_pairs.deref() {
                                 let credential = pair.0.encode_fragment().unwrap();
-                                insert_credential(
-                                    &transaction,
+                                insert_stake_credential(
+                                    &mut vkey_relation_map,
                                     credential,
                                     txn,
                                     TxCredentialRelationValue::Withdrawal.into(),
@@ -493,8 +519,8 @@ async fn insert(
                         TransactionBodyComponent::RequiredSigners(key_hashes) => {
                             for &signer in key_hashes.iter() {
                                 let owner_credential = pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(signer).encode_fragment().unwrap();
-                                insert_credential(
-                                    &transaction,
+                                insert_stake_credential(
+                                    &mut vkey_relation_map,
                                     owner_credential,
                                     txn,
                                     TxCredentialRelationValue::RequiredSigner.into(),
@@ -507,6 +533,8 @@ async fn insert(
                         _ => (),
                     }
                 }
+
+                insert_tx_credentials(&vkey_relation_map, &transaction, txn).await?;
             }
         }
     }
@@ -553,14 +581,15 @@ async fn insert_address(
 }
 
 async fn insert_address_credential(
+    vkey_relation_map: &mut RelationMap,
     payload: Vec<u8>,
-    tx: &TransactionModel,
     address: &AddressModel,
     tx_relation: TxCredentialRelationValue,
     address_relation: i32,
     txn: &DatabaseTransaction,
 ) -> Result<(), DbErr> {
-    let stake_credential = insert_credential(tx, payload, txn, tx_relation).await?;
+    let stake_credential =
+        insert_stake_credential(vkey_relation_map, payload, txn, tx_relation).await?;
 
     let address_credential = AddressCredentialActiveModel {
         credential_id: Set(stake_credential.id),
@@ -580,31 +609,25 @@ async fn insert_address_credential(
     Ok(())
 }
 
-async fn insert_tx_credential(
-    stake_credential: &StakeCredentialModel,
+async fn insert_tx_credentials(
+    vkey_relation_map: &RelationMap,
     tx: &TransactionModel,
-    relation: TxCredentialRelationValue,
     txn: &DatabaseTransaction,
 ) -> Result<(), DbErr> {
-    let tx_credential = TxCredentialActiveModel {
-        credential_id: Set(stake_credential.id),
-        tx_id: Set(tx.id),
-        relation: Set(relation.into()),
-    };
-
-    let on_conflict = OnConflict::columns([
-        TxCredentialColumn::CredentialId,
-        TxCredentialColumn::TxId,
-        TxCredentialColumn::Relation,
-    ])
-    .do_nothing()
-    .to_owned();
-    tx_credential.insert_or(txn, &on_conflict).await?;
+    for (_k, v) in vkey_relation_map.0.iter() {
+        let tx_credential = TxCredentialActiveModel {
+            credential_id: Set(v.credential_id),
+            tx_id: Set(tx.id),
+            relation: Set(v.relation),
+        };
+        tx_credential.insert(txn).await?;
+    }
 
     Ok(())
 }
 
 async fn insert_input(
+    vkey_relation_map: &mut RelationMap,
     tx: &TransactionModel,
     index_in_input: i32,
     index_in_output: u64,
@@ -645,9 +668,8 @@ async fn insert_input(
             .await?;
 
         // 3) Associate the stake credentials to this transaction
-        let relation = TxCredentialRelationValue::Input;
         for stake_credential in stake_credentials {
-            insert_tx_credential(&stake_credential, &tx, relation, txn).await?;
+            vkey_relation_map.add_relation(&stake_credential, TxCredentialRelationValue::Input);
         }
     }
 
@@ -665,76 +687,205 @@ async fn insert_input(
 }
 
 async fn insert_certificates(
-    tx: &TransactionModel,
-    component: &TransactionBodyComponent,
+    vkey_relation_map: &mut RelationMap,
+    certs: &MaybeIndefArray<Certificate>,
     txn: &DatabaseTransaction,
 ) -> Result<(), DbErr> {
-    if let TransactionBodyComponent::Certificates(certs) = component {
-        for cert in certs.iter() {
-            match cert {
-                Certificate::StakeDelegation(credential, _) => {
-                    let credential = credential.encode_fragment().unwrap();
-                    insert_credential(tx, credential, txn, TxCredentialRelationValue::StakeDelegation.into()).await?;
-                    // TODO: Add delegation target as well? Probably should hide behind a flag for performance
-                }
-                Certificate::StakeRegistration(credential) => {
-                    let credential = credential.encode_fragment().unwrap();
-                    insert_credential(tx, credential, txn, TxCredentialRelationValue::StakeRegistration.into()).await?;
-                }
-                Certificate::StakeDeregistration(credential) => {
-                    let credential = credential.encode_fragment().unwrap();
-                    insert_credential(tx, credential, txn, TxCredentialRelationValue::StakeDeregistration.into()).await?;
-                }
-                Certificate::PoolRegistration { operator, pool_owners, reward_account, .. } => {
-                    let operator_credential = pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(operator.clone())
-                    .encode_fragment().unwrap();
-                    insert_credential(tx, operator_credential, txn, TxCredentialRelationValue::PoolOperator.into()).await?;
+    for cert in certs.iter() {
+        match cert {
+            Certificate::StakeDelegation(credential, pool) => {
+                let credential = credential.encode_fragment().unwrap();
+                insert_stake_credential(
+                    vkey_relation_map,
+                    credential,
+                    txn,
+                    TxCredentialRelationValue::StakeDelegation.into(),
+                )
+                .await?;
+                insert_stake_credential(
+                    vkey_relation_map,
+                    pool.to_vec(),
+                    txn,
+                    TxCredentialRelationValue::DelegationTarget.into(),
+                )
+                .await?;
+            }
+            Certificate::StakeRegistration(credential) => {
+                let credential = credential.encode_fragment().unwrap();
+                insert_stake_credential(
+                    vkey_relation_map,
+                    credential,
+                    txn,
+                    TxCredentialRelationValue::StakeDelegation.into(),
+                )
+                .await?;
+            }
+            Certificate::StakeDeregistration(credential) => {
+                let credential = credential.encode_fragment().unwrap();
+                insert_stake_credential(
+                    vkey_relation_map,
+                    credential,
+                    txn,
+                    TxCredentialRelationValue::StakeDeregistration.into(),
+                )
+                .await?;
+            }
+            Certificate::PoolRegistration {
+                operator,
+                pool_owners,
+                reward_account,
+                ..
+            } => {
+                let operator_credential =
+                    pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(
+                        operator.clone(),
+                    )
+                    .encode_fragment()
+                    .unwrap();
+                insert_stake_credential(
+                    vkey_relation_map,
+                    operator_credential,
+                    txn,
+                    TxCredentialRelationValue::PoolOperator.into(),
+                )
+                .await?;
 
-                    let reward_addr = RewardAddress::from_address(&cardano_multiplatform_lib::address::Address::from_bytes(reward_account.to_vec()).unwrap()).unwrap();
-                    let reward_key_hash: [u8; 28] = reward_addr.payment_cred().to_keyhash().unwrap().to_bytes().try_into().unwrap();
-                    match &reward_addr.payment_cred().kind() {
-                        cardano_multiplatform_lib::address::StakeCredKind::Key => {
-                            let reward_credential = pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(Hash::<28>::from(reward_key_hash)).encode_fragment().unwrap();
-                            insert_credential(tx, reward_credential, txn, TxCredentialRelationValue::PoolReward.into()).await?;
-                        },
-                        _ => {},
-                    };
+                let reward_addr = RewardAddress::from_address(
+                    &cardano_multiplatform_lib::address::Address::from_bytes(
+                        reward_account.to_vec(),
+                    )
+                    .unwrap(),
+                )
+                .unwrap();
+                insert_stake_credential(
+                    vkey_relation_map,
+                    reward_addr.payment_cred().to_bytes().to_vec(),
+                    txn,
+                    TxCredentialRelationValue::PoolReward.into(),
+                )
+                .await?;
 
-                    for &owner in pool_owners.iter() {
-                        let owner_credential = pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(owner).encode_fragment().unwrap();
-                        insert_credential(tx, owner_credential, txn, TxCredentialRelationValue::PoolOperator.into()).await?;
-                    };
+                for &owner in pool_owners.iter() {
+                    let owner_credential =
+                        pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(owner)
+                            .encode_fragment()
+                            .unwrap();
+                    insert_stake_credential(
+                        vkey_relation_map,
+                        owner_credential,
+                        txn,
+                        TxCredentialRelationValue::PoolOperator.into(),
+                    )
+                    .await?;
                 }
-                Certificate::PoolRetirement(key_hash, _) => {
-                    let operator_credential = pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(key_hash.clone()).encode_fragment().unwrap();
-                    insert_credential(tx, operator_credential, txn, TxCredentialRelationValue::PoolOperator.into()).await?;
-                }
-                Certificate::GenesisKeyDelegation(_, _, _) => {
-                    // genesis keys aren't stake credentials
-                }
-                Certificate::MoveInstantaneousRewardsCert(mir) => {
-                    match &mir.target {
-                        pallas::ledger::primitives::alonzo::InstantaneousRewardTarget::StakeCredentials(credential_pairs) => {
-                            for pair in credential_pairs.deref() {
-                                let credential = pair.0.encode_fragment().unwrap();
-                                insert_credential(tx, credential, txn, TxCredentialRelationValue::MirRecipient.into()).await?;
-                            }
-                        },
-                        _ => {},
+            }
+            Certificate::PoolRetirement(key_hash, _) => {
+                let operator_credential =
+                    pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(
+                        key_hash.clone(),
+                    )
+                    .encode_fragment()
+                    .unwrap();
+                insert_stake_credential(
+                    vkey_relation_map,
+                    operator_credential,
+                    txn,
+                    TxCredentialRelationValue::PoolOperator.into(),
+                )
+                .await?;
+            }
+            Certificate::GenesisKeyDelegation(_, _, _) => {
+                // genesis keys aren't stake credentials
+            }
+            Certificate::MoveInstantaneousRewardsCert(mir) => match &mir.target {
+                pallas::ledger::primitives::alonzo::InstantaneousRewardTarget::StakeCredentials(
+                    credential_pairs,
+                ) => {
+                    for pair in credential_pairs.deref() {
+                        let credential = pair.0.encode_fragment().unwrap();
+                        insert_stake_credential(
+                            vkey_relation_map,
+                            credential,
+                            txn,
+                            TxCredentialRelationValue::MirRecipient.into(),
+                        )
+                        .await?;
                     }
                 }
-            };
-        }
+                _ => {}
+            },
+        };
     }
 
     Ok(())
 }
 
-async fn insert_credential(
-    tx: &TransactionModel,
+async fn insert_witness(
+    vkey_relation_map: &mut RelationMap,
+    witness_set: &cardano_multiplatform_lib::TransactionWitnessSet,
+    txn: &DatabaseTransaction,
+) -> Result<(), DbErr> {
+    match witness_set.vkeys() {
+        Some(vkeys) => {
+            for i in 0..vkeys.len() {
+                let vkey = vkeys.get(i);
+                insert_stake_credential(
+                    vkey_relation_map,
+                    RelationMap::keyhash_to_pallas(&vkey.vkey().public_key().hash()).to_vec(),
+                    txn,
+                    TxCredentialRelationValue::Witness,
+                )
+                .await?;
+            }
+        }
+        _ => (),
+    };
+
+    match witness_set.native_scripts() {
+        Some(scripts) => {
+            for i in 0..scripts.len() {
+                let script = scripts.get(i);
+                insert_stake_credential(
+                    vkey_relation_map,
+                    RelationMap::scripthash_to_pallas(
+                        &script.hash(ScriptHashNamespace::NativeScript),
+                    )
+                    .to_vec(),
+                    txn,
+                    TxCredentialRelationValue::Witness,
+                )
+                .await?;
+            }
+        }
+        _ => (),
+    };
+
+    match witness_set.plutus_scripts() {
+        Some(scripts) => {
+            for i in 0..scripts.len() {
+                let script = scripts.get(i);
+                insert_stake_credential(
+                    vkey_relation_map,
+                    // TODO: PlutusV2
+                    RelationMap::scripthash_to_pallas(&script.hash(ScriptHashNamespace::PlutusV1))
+                        .to_vec(),
+                    txn,
+                    TxCredentialRelationValue::Witness,
+                )
+                .await?;
+            }
+        }
+        _ => (),
+    };
+
+    Ok(())
+}
+
+async fn insert_stake_credential(
+    vkey_relation_map: &mut RelationMap,
     credential: Vec<u8>,
     txn: &DatabaseTransaction,
-    relation: TxCredentialRelationValue,
+    tx_relation: TxCredentialRelationValue,
 ) -> Result<StakeCredentialModel, DbErr> {
     let sc = StakeCredential::find()
         .filter(StakeCredentialColumn::Credential.eq(credential.clone()))
@@ -742,7 +893,7 @@ async fn insert_credential(
         .await?;
 
     if let Some(stake_credential) = sc {
-        insert_tx_credential(&stake_credential, &tx, relation, txn).await?;
+        vkey_relation_map.add_relation(&stake_credential, tx_relation);
 
         Ok(stake_credential)
     } else {
@@ -753,7 +904,7 @@ async fn insert_credential(
 
         let stake_credential = stake_credential.insert(txn).await?;
 
-        insert_tx_credential(&stake_credential, &tx, relation, txn).await?;
+        vkey_relation_map.add_relation(&stake_credential, tx_relation);
 
         Ok(stake_credential)
     }
