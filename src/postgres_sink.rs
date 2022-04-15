@@ -43,7 +43,7 @@ impl<'a> Config<'a> {
                             perf_aggregator.set_overhead(&epoch_duration);
 
                             tracing::info!(
-                                "Finished processing epoch {} after {:?} (+${:?})",
+                                "Finished processing epoch {} after {:?} (+{:?})",
                                 epoch,
                                 epoch_duration.checked_sub(perf_aggregator.block_fetch),
                                 perf_aggregator.block_fetch

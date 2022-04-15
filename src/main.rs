@@ -6,6 +6,7 @@ use tracing_subscriber::prelude::*;
 
 mod byron;
 mod era_common;
+mod genesis;
 mod multiera;
 mod perf_aggregator;
 mod postgres_sink;
@@ -45,12 +46,12 @@ async fn main() -> anyhow::Result<()> {
 
     tracing::info!("{}", "Getting the latest block synced from DB");
 
-    let genesis_hash = setup::get_genesis_hash(&network)?;
+    let genesis_hash = genesis::get_genesis_hash(&network)?;
     // For rollbacks
     let points = match setup::get_latest_points(&conn).await? {
         points if points.is_empty() => {
             // insert genesis then fetch points again
-            setup::insert_genesis(&conn, genesis_hash, &network).await?;
+            genesis::process_genesis(&conn, genesis_hash, &network).await?;
             setup::get_latest_points(&conn).await?
         }
         points => points,
@@ -60,7 +61,7 @@ async fn main() -> anyhow::Result<()> {
         None => Err(anyhow!("Missing intersection point for bootstrapping")),
         Some(point) => match point.0 {
             0 => {
-                tracing::info!("Starting sync from genesis {}", genesis_hash);
+                tracing::info!("Starting sync after genesis {}", genesis_hash);
                 Ok(())
             }
             _ => {

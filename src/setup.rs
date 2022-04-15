@@ -11,14 +11,9 @@ use oura::{
 };
 
 use entity::{
-    prelude::{
-        AddressActiveModel, Block, BlockActiveModel, BlockColumn, TransactionActiveModel,
-        TransactionOutputActiveModel,
-    },
-    sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, QueryOrder, QuerySelect, Set},
+    prelude::{Block, BlockColumn},
+    sea_orm::{DatabaseConnection, EntityTrait, QueryOrder, QuerySelect},
 };
-
-use crate::types::GenesisFile;
 
 pub async fn get_latest_points(conn: &DatabaseConnection) -> anyhow::Result<Vec<PointArg>> {
     let points: Vec<PointArg> = Block::find()
@@ -43,7 +38,7 @@ pub fn oura_bootstrap(
     let intersect = match points.last() {
         None => Err(anyhow!("Missing intersection point for bootstrapping")),
         Some(point) if point.1 == genesis_hash => Ok(IntersectArg::Origin),
-        _ => Ok(IntersectArg::Fallbacks(points))
+        _ => Ok(IntersectArg::Fallbacks(points)),
     }?;
 
     let magic = MagicArg::from_str(network).map_err(|_| anyhow!("magic arg failed"))?;
@@ -98,86 +93,4 @@ pub fn oura_bootstrap(
     handles.push(filter_handle);
 
     Ok((handles, filter_rx))
-}
-
-const GENESIS_MAINNET: &str = include_str!("../genesis/mainnet.json");
-const GENESIS_TESTNET: &str = include_str!("../genesis/testnet.json");
-
-pub fn get_genesis_hash(network: &str) -> anyhow::Result<&str> {
-    // TODO: avoid hard-coding these and instead pull from genesis file
-    // https://github.com/dcSpark/oura-postgres-sink/issues/8
-    match network {
-        "mainnet" => Ok("5f20df933584822601f9e3f8c024eb5eb252fe8cefb24d1317dc3d432e940ebb"),
-        "testnet" => Ok("96fceff972c2c06bd3bb5243c39215333be6d56aaf4823073dca31afe5038471"),
-        rest => Err(anyhow!(
-            "{} is invalid. NETWORK must be either mainnet or testnet",
-            rest
-        ))
-    }
-}
-pub async fn insert_genesis(conn: &DatabaseConnection, genesis_hash: &str, network: &str) -> anyhow::Result<()> {
-    let genesis_str = match network {
-        "mainnet" => GENESIS_MAINNET,
-        "testnet" => GENESIS_TESTNET,
-        rest => {
-            return Err(anyhow!(
-                "{} is invalid. NETWORK must be either mainnet or testnet",
-                rest
-            ))
-        }
-    };
-
-    let genesis: GenesisFile = serde_json::from_str(genesis_str)?;
-
-    tracing::info!("Parsed Genesis File and Beginning Hydration");
-
-    let block = BlockActiveModel {
-        era: Set(0),
-        hash: Set(hex::decode(genesis_hash)?),
-        height: Set(0),
-        epoch: Set(0),
-        slot: Set(0),
-        ..Default::default()
-    };
-
-    let block = block.insert(conn).await?;
-
-    for data in genesis {
-        let tx_hash = hex::decode(data.hash)?;
-
-        let transaction = TransactionActiveModel {
-            block_id: Set(block.id),
-            hash: Set(tx_hash),
-            is_valid: Set(true),
-            // TODO: payload
-            payload: Set(vec![]),
-            // TODO: index
-            tx_index: Set(0),
-            ..Default::default()
-        };
-
-        let transaction = transaction.insert(conn).await?;
-
-        let payload = bs58::decode(data.address).into_vec()?;
-
-        let address = AddressActiveModel {
-            payload: Set(payload),
-            ..Default::default()
-        };
-
-        let address = address.insert(conn).await?;
-
-        let tx_output = TransactionOutputActiveModel {
-            address_id: Set(address.id),
-            tx_id: Set(transaction.id),
-            // TODO: payload
-            payload: Set(vec![]),
-            output_index: Set(data.index.try_into().unwrap()),
-            ..Default::default()
-        };
-
-        tx_output.save(conn).await?;
-    }
-
-    Ok(())
 }
