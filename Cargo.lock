@@ -1308,6 +1308,7 @@ dependencies = [
  "cryptoxide",
  "dotenv",
  "entity",
+ "futures",
  "hex",
  "migration",
  "oura",

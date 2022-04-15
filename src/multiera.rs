@@ -129,8 +129,7 @@ pub async fn process_multiera_block(
                 }
                 TransactionBodyComponent::Inputs(inputs) if is_valid => {
                     for (idx, input) in inputs.iter().enumerate() {
-                        crate::era_common::insert_input(
-                            &mut vkey_relation_map,
+                        let input_stake_creds = crate::era_common::insert_input(
                             &transaction,
                             idx as i32,
                             input.index,
@@ -138,6 +137,10 @@ pub async fn process_multiera_block(
                             txn,
                         )
                         .await?;
+                        for stake_cred in &input_stake_creds {
+                            vkey_relation_map
+                                .add_relation(stake_cred, TxCredentialRelationValue::Input);
+                        }
                     }
                     perf_aggregator.transaction_input_insert += time_counter.elapsed();
                     *time_counter = std::time::Instant::now();
@@ -146,8 +149,7 @@ pub async fn process_multiera_block(
                     // note: we consider collateral as just another kind of input instead of a separate table
                     // you can use the is_valid field to know what kind of input it actually is
                     for (idx, input) in inputs.iter().enumerate() {
-                        crate::era_common::insert_input(
-                            &mut vkey_relation_map,
+                        let input_stake_creds = crate::era_common::insert_input(
                             &transaction,
                             idx as i32,
                             input.index,
@@ -155,6 +157,10 @@ pub async fn process_multiera_block(
                             txn,
                         )
                         .await?;
+                        for stake_cred in &input_stake_creds {
+                            vkey_relation_map
+                                .add_relation(stake_cred, TxCredentialRelationValue::Input);
+                        }
                     }
                     perf_aggregator.collateral_insert += time_counter.elapsed();
                     *time_counter = std::time::Instant::now();

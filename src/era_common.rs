@@ -1,4 +1,3 @@
-use crate::{relation_map::RelationMap, types::TxCredentialRelationValue};
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, ColumnTrait, DatabaseTransaction, JoinType, QuerySelect, Set},
@@ -50,13 +49,14 @@ pub async fn insert_address(
 }
 
 pub async fn insert_input(
-    vkey_relation_map: &mut RelationMap,
     tx: &TransactionModel,
     index_in_input: i32,
     index_in_output: u64,
     tx_hash: &Hash<32>,
     txn: &DatabaseTransaction,
-) -> Result<(), DbErr> {
+) -> Result<Vec<entity::stake_credential::Model>, DbErr> {
+    let mut result: Vec<entity::stake_credential::Model> = vec![];
+
     // 1) Get the UTXO this input is spending
     let tx_output = TransactionOutput::find()
         .inner_join(Transaction)
@@ -93,7 +93,7 @@ pub async fn insert_input(
 
         // 3) Associate the stake credentials to this transaction
         for stake_credential in stake_credentials {
-            vkey_relation_map.add_relation(&stake_credential, TxCredentialRelationValue::Input);
+            result.push(stake_credential);
         }
     }
 
@@ -107,5 +107,5 @@ pub async fn insert_input(
 
     tx_input.save(txn).await?;
 
-    Ok(())
+    Ok(result)
 }
