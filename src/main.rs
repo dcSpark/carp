@@ -4,6 +4,10 @@ use dotenv::dotenv;
 use entity::sea_orm::Database;
 use tracing_subscriber::prelude::*;
 
+mod byron;
+mod era_common;
+mod multiera;
+mod perf_aggregator;
 mod postgres_sink;
 mod relation_map;
 mod setup;
