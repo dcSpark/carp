@@ -562,13 +562,19 @@ async fn insert_address(
     // 5) Storing up to 2704 bytes is a waste of space since they aren't used for anything
     payload.truncate(500);
 
+    // note: in the usual case, the address will already be in the DB when we query it
+    // that means it's faster to use find instead of write(on conflict do nothing)
+    // since "do nothing" returns None, a conflict mean we would have to use find as a fallback
+    // meaning the "on conflict do nothing" requires 2 queries in the usual case instead of 1
     let addr = Address::find()
         .filter(AddressColumn::Payload.eq(payload.clone()))
-        .one(txn)
+        // note: okay to use "all" since we're querying a unique key
+        // and "all" is faster than "first" if you know it will return a single result
+        .all(txn)
         .await?;
 
-    if let Some(addr) = addr {
-        Ok(addr)
+    if let Some(addr) = addr.first() {
+        Ok(addr.clone())
     } else {
         let address = AddressActiveModel {
             payload: Set(payload.clone()),
@@ -597,6 +603,11 @@ async fn insert_address_credential(
         relation: Set(address_relation),
     };
 
+    // As of April 15th, 2022, there are:
+    // total txs = 37,713,207
+    // total addresses = 3,239,919
+    // which means for every 10txs, there is 1 new address
+    // we still prefer to write(on conflict) instead of read-then-write because of Postgres MVCC
     let on_conflict = OnConflict::columns([
         AddressCredentialColumn::AddressId,
         AddressCredentialColumn::CredentialId,
@@ -639,10 +650,11 @@ async fn insert_input(
         .inner_join(Transaction)
         .filter(TransactionOutputColumn::OutputIndex.eq(index_in_output))
         .filter(TransactionColumn::Hash.eq(tx_hash.to_vec()))
-        .one(txn)
+        // note: we know this input exists and "all" is faster than "one" if we know the result exists
+        .all(txn)
         .await?;
 
-    let tx_output = tx_output.unwrap();
+    let tx_output = tx_output.first().cloned().unwrap();
 
     let is_byron = match cardano_multiplatform_lib::TransactionOutput::from_bytes(tx_output.payload)
     {
@@ -903,8 +915,11 @@ async fn insert_stake_credential(
         std::collections::btree_map::Entry::Vacant(_) => {
             StakeCredential::find()
                 .filter(StakeCredentialColumn::Credential.eq(credential.clone()))
-                .one(txn)
+                // note: we know this exists ("credential" is unique) and "all" is faster than "one" if we know the result exists
+                .all(txn)
                 .await?
+                .first()
+                .cloned()
         }
     };
 
