@@ -45,7 +45,9 @@ impl<'a> Config<'a> {
                             tracing::info!(
                                 "Finished processing epoch {} after {:?} (+{:?})",
                                 epoch,
-                                epoch_duration.checked_sub(perf_aggregator.block_fetch),
+                                epoch_duration
+                                    .checked_sub(perf_aggregator.block_fetch)
+                                    .unwrap_or(std::time::Duration::new(0, 0)),
                                 perf_aggregator.block_fetch
                             );
 
