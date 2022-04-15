@@ -167,10 +167,16 @@ pub async fn process_multiera_block(
                 }
                 TransactionBodyComponent::Withdrawals(withdrawal_pairs) => {
                     for pair in withdrawal_pairs.deref() {
-                        let credential = pair.0.encode_fragment().unwrap();
+                        let reward_addr = RewardAddress::from_address(
+                            &cardano_multiplatform_lib::address::Address::from_bytes(
+                                pair.0.clone().into(),
+                            )
+                            .unwrap(),
+                        )
+                        .unwrap();
                         insert_stake_credential(
                             &mut vkey_relation_map,
-                            credential,
+                            reward_addr.payment_cred().to_bytes().to_vec(),
                             txn,
                             TxCredentialRelationValue::Withdrawal.into(),
                         )
@@ -310,7 +316,7 @@ async fn insert_address_credential(
     payload: Vec<u8>,
     address: &AddressModel,
     tx_relation: TxCredentialRelationValue,
-    address_relation: i32,
+    address_relation: i32, // TODO: type
     txn: &DatabaseTransaction,
 ) -> Result<(), DbErr> {
     let stake_credential =
@@ -373,7 +379,11 @@ async fn insert_certificate(
             .await?;
             insert_stake_credential(
                 vkey_relation_map,
-                pool.to_vec(),
+                RelationMap::keyhash_to_pallas(
+                    &cardano_multiplatform_lib::crypto::Ed25519KeyHash::from_bytes(pool.to_vec())
+                        .unwrap(),
+                )
+                .to_vec(),
                 txn,
                 TxCredentialRelationValue::DelegationTarget.into(),
             )

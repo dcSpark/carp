@@ -152,6 +152,7 @@ fn block_with_era(era: Era, payload: &[u8]) -> anyhow::Result<(MultiEraBlock, i3
             let block = pallas::ledger::primitives::byron::Block::decode_fragment(payload)
                 .map_err(|_| anyhow!("failed to decode cbor"))?;
 
+            // TODO: avoid magic numbers
             (MultiEraBlock::Byron(Box::new(block)), 0)
         }
         rest => {
@@ -161,6 +162,7 @@ fn block_with_era(era: Era, payload: &[u8]) -> anyhow::Result<(MultiEraBlock, i3
             let box_block = Box::new(block);
 
             match rest {
+                // TODO: avoid magic numbers
                 Era::Shelley => (MultiEraBlock::Compatible(box_block), 1),
                 Era::Allegra => (MultiEraBlock::Compatible(box_block), 2),
                 Era::Mary => (MultiEraBlock::Compatible(box_block), 3),
