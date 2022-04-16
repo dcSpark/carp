@@ -15,4 +15,4 @@
 
 You will need to run Prisma for this (which requires `PGPASSWORD`)
 
-`npm run db-dump`
+`npm run parse-db`

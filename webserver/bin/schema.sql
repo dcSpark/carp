@@ -359,7 +359,7 @@ ALTER TABLE ONLY public."Transaction"
 --
 
 ALTER TABLE ONLY public."AddressCredentialRelation"
-    ADD CONSTRAINT "address_credential-pk" PRIMARY KEY (address_id, credential_id);
+    ADD CONSTRAINT "address_credential-pk" PRIMARY KEY (address_id, credential_id, relation);
 
 
 --
@@ -376,13 +376,6 @@ ALTER TABLE ONLY public.seaql_migrations
 
 ALTER TABLE ONLY public."TxCredentialRelation"
     ADD CONSTRAINT "tx_credential-pk" PRIMARY KEY (tx_id, credential_id);
-
-
---
--- Name: index-address_credential-address; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX "index-address_credential-address" ON public."AddressCredentialRelation" USING btree (address_id, credential_id, relation);
 
 
 --

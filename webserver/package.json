@@ -10,7 +10,7 @@
     "dev": "npx pgtyped --uri -c config.json && yarn build && concurrently \"nodemon -x tsoa spec-and-routes\" \"npx pgtyped -w -c config.json\" \"nodemon\"",
     "build": "tsoa spec-and-routes && tsc --outDir build --experimentalDecorators",
     "start": "NODE_ENV=production node build/app/server.js",
-    "parse-db": "pg_dump --no-owner --schema-only -d $DATABASE_URL > bin/schema.sql && npx prisma db pull && npx prisma generate",
+    "parse-db": "pg_dump --no-owner --schema-only -d $DATABASE_URL > bin/schema.sql && npx pgtyped --uri -c config.json",
     "prettier": "prettier --write \"**/*.tsx\""
   },
   "repository": {
