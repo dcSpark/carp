@@ -1,4 +1,3 @@
-import type { Block } from '@prisma/client';
 import type { Address } from './Address';
 
 export type TransactionHistoryRequest = {
