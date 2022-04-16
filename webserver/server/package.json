@@ -10,8 +10,9 @@
     "dev": "npx pgtyped --uri -c config.json && yarn build && concurrently \"nodemon -x tsoa spec-and-routes\" \"npx pgtyped -w -c config.json\" \"nodemon\"",
     "build": "tsoa spec-and-routes && tsc --outDir build --experimentalDecorators",
     "start": "NODE_ENV=production node build/app/server.js",
-    "parse-db": "pg_dump --no-owner --schema-only -d $DATABASE_URL > bin/schema.sql && npx pgtyped --uri -c config.json",
-    "prettier": "prettier --write \"**/*.tsx\""
+    "parse-db": "pg_dump --no-owner --schema-only -d $DATABASE_URL > bin/schema.sql && npx pgtyped --uri -c config.json && npx zapatos",
+    "prettier": "prettier --write \"**/*.tsx\"",
+    "query": "psql -U $PGUSER -h $POSTGRES_HOST -d $POSTGRES_DB -f ./test_query.sql"
   },
   "repository": {
     "type": "git",
@@ -33,6 +34,7 @@
     "http-status-codes": "2.2.0",
     "pg": "8.7.3",
     "swagger-ui-express": "4.3.0",
+    "tsd": "^0.20.0",
     "tsoa": "3.14.1",
     "typescript-is": "git+https://github.com/dcSpark/typescript-is-bin.git"
   },
@@ -65,6 +67,7 @@
     "ts-nameof": "5.0.0",
     "ts-node": "10.7.0",
     "ttypescript": "1.5.13",
-    "typescript": "4.6.3"
+    "typescript": "4.6.3",
+    "zapatos": "^5.0.2"
   }
 }

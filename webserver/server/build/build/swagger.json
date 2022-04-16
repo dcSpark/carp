@@ -6,65 +6,75 @@
         "requestBodies": {},
         "responses": {},
         "schemas": {
+            "BlockInfo": {
+                "properties": {
+                    "is_valid": {
+                        "type": "boolean"
+                    },
+                    "tx_ordinal": {
+                        "type": "number",
+                        "format": "double",
+                        "description": "index of tx in block"
+                    },
+                    "era": {
+                        "type": "number",
+                        "format": "double",
+                        "description": "Era of block this transaction was submitted in"
+                    },
+                    "slot": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "epoch": {
+                        "type": "number",
+                        "format": "double",
+                        "description": "timestamp with timezone"
+                    },
+                    "hash": {
+                        "type": "string"
+                    },
+                    "num": {
+                        "type": "number",
+                        "format": "double"
+                    }
+                },
+                "required": [
+                    "is_valid",
+                    "tx_ordinal",
+                    "era",
+                    "slot",
+                    "epoch",
+                    "hash",
+                    "num"
+                ],
+                "type": "object"
+            },
+            "TransactionInfo": {
+                "properties": {
+                    "transaction": {
+                        "type": "string",
+                        "description": "cbor-encoded transaction"
+                    },
+                    "block": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/BlockInfo"
+                            }
+                        ],
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "transaction",
+                    "block"
+                ],
+                "type": "object"
+            },
             "TransactionHistoryResponse": {
                 "properties": {
                     "transactions": {
                         "items": {
-                            "properties": {
-                                "transaction": {
-                                    "type": "string",
-                                    "description": "cbor-encoded transaction"
-                                },
-                                "block": {
-                                    "properties": {
-                                        "is_valid": {
-                                            "type": "boolean"
-                                        },
-                                        "tx_ordinal": {
-                                            "type": "number",
-                                            "format": "double",
-                                            "description": "index of tx in block"
-                                        },
-                                        "era": {
-                                            "type": "number",
-                                            "format": "double",
-                                            "description": "Era of block this transaction was submitted in"
-                                        },
-                                        "slot": {
-                                            "type": "number",
-                                            "format": "double"
-                                        },
-                                        "epoch": {
-                                            "type": "number",
-                                            "format": "double",
-                                            "description": "timestamp with timezone"
-                                        },
-                                        "hash": {
-                                            "type": "string"
-                                        },
-                                        "num": {
-                                            "type": "number",
-                                            "format": "double"
-                                        }
-                                    },
-                                    "required": [
-                                        "is_valid",
-                                        "tx_ordinal",
-                                        "era",
-                                        "slot",
-                                        "epoch",
-                                        "hash",
-                                        "num"
-                                    ],
-                                    "type": "object",
-                                    "nullable": true
-                                }
-                            },
-                            "required": [
-                                "transaction",
-                                "block"
-                            ],
-                            "type": "object"
+                            "$ref": "#/components/schemas/TransactionInfo"
                         },
                         "type": "array"
                     }

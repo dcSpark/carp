@@ -1,0 +1,12 @@
+{
+  "db": {
+    "connectionString": "{{DATABASE_URL}}"
+  },
+  "outDir": "./app/models",
+  "schemas": {
+    "public": {
+      "include": "*",
+      "exclude": ["seaql_migrations"]
+    }
+  }
+}
