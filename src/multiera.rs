@@ -203,6 +203,8 @@ pub async fn process_multiera_block(
         }
 
         insert_tx_credentials(&vkey_relation_map, &transaction, txn).await?;
+        perf_aggregator.tx_credential_relation += time_counter.elapsed();
+        *time_counter = std::time::Instant::now();
     }
 
     Ok(())

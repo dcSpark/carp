@@ -12,6 +12,7 @@ pub struct PerfAggregator {
     pub withdrawal_insert: Duration,
     pub required_signer_insert: Duration,
     pub witness_insert: Duration,
+    pub tx_credential_relation: Duration,
     pub block_fetch: Duration,
     pub rollback: Duration,
     pub overhead: Duration,
@@ -29,6 +30,7 @@ impl PerfAggregator {
             withdrawal_insert: Duration::new(0, 0),
             required_signer_insert: Duration::new(0, 0),
             witness_insert: Duration::new(0, 0),
+            tx_credential_relation: Duration::new(0, 0),
             block_fetch: Duration::new(0, 0),
             rollback: Duration::new(0, 0),
             overhead: Duration::new(0, 0),
@@ -45,6 +47,7 @@ impl PerfAggregator {
             + self.withdrawal_insert
             + self.required_signer_insert
             + self.witness_insert
+            + self.tx_credential_relation
             + self.block_fetch
             + self.rollback;
         self.overhead = *total_duration - non_duration_sum
@@ -67,6 +70,7 @@ impl std::ops::Add for PerfAggregator {
             withdrawal_insert: self.withdrawal_insert + other.withdrawal_insert,
             required_signer_insert: self.required_signer_insert + other.required_signer_insert,
             witness_insert: self.witness_insert + other.witness_insert,
+            tx_credential_relation: self.tx_credential_relation + other.tx_credential_relation,
             block_fetch: self.block_fetch + other.block_fetch,
             rollback: self.rollback + other.rollback,
             overhead: self.overhead + other.overhead,
