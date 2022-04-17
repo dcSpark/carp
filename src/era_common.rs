@@ -94,7 +94,11 @@ pub async fn insert_input(
 
         // 3) Associate the stake credentials to this transaction
         for stake_credential in stake_credentials {
-            vkey_relation_map.add_relation(&stake_credential, TxCredentialRelationValue::Input);
+            vkey_relation_map.add_relation(
+                stake_credential.id,
+                &stake_credential.credential,
+                TxCredentialRelationValue::Input,
+            );
         }
     }
 

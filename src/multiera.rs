@@ -216,11 +216,18 @@ async fn process_multiera_txs<'a>(
                             .unwrap(),
                         )
                         .unwrap();
-                        insert_stake_credential(
-                            &mut vkey_relation_map,
-                            reward_addr.payment_cred().to_bytes().to_vec(),
+                        let address = crate::era_common::insert_address(
+                            &mut reward_addr.to_address().to_bytes(),
                             txn,
+                        )
+                        .await?;
+                        insert_address_credential(
+                            &mut vkey_relation_map,
+                            reward_addr.payment_cred().to_bytes(),
+                            &address,
                             TxCredentialRelationValue::Withdrawal.into(),
+                            AddressCredentialRelationValue::PaymentKey.into(),
+                            txn,
                         )
                         .await?;
                     }
@@ -481,11 +488,16 @@ async fn insert_certificate(
                     .unwrap(),
             )
             .unwrap();
-            insert_stake_credential(
+            let address =
+                crate::era_common::insert_address(&mut reward_addr.to_address().to_bytes(), txn)
+                    .await?;
+            insert_address_credential(
                 vkey_relation_map,
-                reward_addr.payment_cred().to_bytes().to_vec(),
-                txn,
+                reward_addr.payment_cred().to_bytes(),
+                &address,
                 TxCredentialRelationValue::PoolReward.into(),
+                AddressCredentialRelationValue::PaymentKey.into(),
+                txn,
             )
             .await?;
 
@@ -633,7 +645,11 @@ async fn insert_stake_credential(
     };
 
     if let Some(stake_credential) = staking_credential {
-        vkey_relation_map.add_relation(&stake_credential, tx_relation);
+        vkey_relation_map.add_relation(
+            stake_credential.id,
+            &stake_credential.credential,
+            tx_relation,
+        );
 
         Ok(stake_credential)
     } else {
@@ -644,7 +660,11 @@ async fn insert_stake_credential(
 
         let stake_credential = stake_credential.insert(txn).await?;
 
-        vkey_relation_map.add_relation(&stake_credential, tx_relation);
+        vkey_relation_map.add_relation(
+            stake_credential.id,
+            &stake_credential.credential,
+            tx_relation,
+        );
 
         Ok(stake_credential)
     }

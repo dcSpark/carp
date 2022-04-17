@@ -34,14 +34,15 @@ impl RelationMap {
 
     pub fn add_relation(
         &mut self,
-        stake_credential: &entity::stake_credential::Model,
+        stake_credential_id: i64,
+        stake_credential: &Vec<u8>,
         relation: TxCredentialRelationValue,
     ) -> () {
         self.0
-            .entry(RelationMap::bytes_to_pallas(&stake_credential.credential))
+            .entry(RelationMap::bytes_to_pallas(&stake_credential))
             .and_modify(|val| val.relation |= i32::from(relation))
             .or_insert(RelationMapValue {
-                credential_id: stake_credential.id,
+                credential_id: stake_credential_id,
                 relation: relation.into(),
             });
     }
