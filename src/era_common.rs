@@ -52,7 +52,7 @@ pub async fn insert_address(
 
 pub async fn insert_input(
     vkey_relation_map: &mut RelationMap,
-    tx: &TransactionModel,
+    tx_id: i64,
     index_in_input: i32,
     index_in_output: u64,
     tx_hash: &Hash<32>,
@@ -101,7 +101,7 @@ pub async fn insert_input(
     // 4) Add input itself
     let tx_input = TransactionInputActiveModel {
         utxo_id: Set(tx_output.id),
-        tx_id: Set(tx.id),
+        tx_id: Set(tx_id),
         input_index: Set(index_in_input),
         ..Default::default()
     };

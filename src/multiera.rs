@@ -1,6 +1,6 @@
 use crate::perf_aggregator::PerfAggregator;
 use pallas::ledger::primitives::{
-    alonzo::{self, Certificate, TransactionBodyComponent},
+    alonzo::{self, Certificate, TransactionBody, TransactionBodyComponent},
     Fragment,
 };
 use std::ops::Deref;
@@ -20,6 +20,12 @@ use entity::{
     sea_orm::{prelude::*, sea_query::OnConflict, ColumnTrait, DatabaseTransaction, Set},
 };
 
+struct VirtualTransaction<'a> {
+    body: &'a TransactionBody,
+    witness_set: &'a cardano_multiplatform_lib::TransactionWitnessSet,
+    is_valid: bool,
+    database_index: i64,
+}
 pub async fn process_multiera_block(
     perf_aggregator: &mut PerfAggregator,
     time_counter: &mut std::time::Instant,
@@ -28,33 +34,40 @@ pub async fn process_multiera_block(
     db_block: &BlockModel,
     alonzo_block: &alonzo::Block,
 ) -> Result<(), DbErr> {
-    for (idx, (tx_body, tx_witness_set)) in alonzo_block
+    let joined_txs: Vec<(
+        TransactionActiveModel,
+        &TransactionBody,
+        cardano_multiplatform_lib::TransactionWitnessSet,
+        bool,
+    )> = alonzo_block
         .deref()
         .transaction_bodies
         .iter()
         .zip(alonzo_block.transaction_witness_sets.iter())
         .enumerate()
-    {
-        let body_payload = tx_body.encode_fragment().unwrap();
-        let body = &cardano_multiplatform_lib::TransactionBody::from_bytes(body_payload)
-            .map_err(|e| panic!("{:?}{:?}", e, block_record.cbor_hex))
-            .unwrap();
-
-        let witness_set_payload = tx_witness_set.encode_fragment().unwrap();
-        let witness_set =
-            &cardano_multiplatform_lib::TransactionWitnessSet::from_bytes(witness_set_payload)
-                .map_err(|e| panic!("{:?}\nBlock cbor: {:?}", e, block_record.cbor_hex))
+        .map(|(idx, (tx_body, tx_witness_set))| {
+            let body_payload = tx_body.encode_fragment().unwrap();
+            let body = &cardano_multiplatform_lib::TransactionBody::from_bytes(body_payload)
+                .map_err(|e| panic!("{:?}{:?}", e, block_record.cbor_hex))
                 .unwrap();
 
-        let aux_data = alonzo_block
-            .auxiliary_data_set
-            .iter()
-            .find(|(index, _)| *index as usize == idx);
+            let witness_set_payload = tx_witness_set.encode_fragment().unwrap();
+            let witness_set =
+                &cardano_multiplatform_lib::TransactionWitnessSet::from_bytes(witness_set_payload)
+                    .map_err(|e| panic!("{:?}\nBlock cbor: {:?}", e, block_record.cbor_hex))
+                    .unwrap();
 
-        let auxiliary_data = aux_data.map(|(_, a)| {
-            let auxiliary_data_payload = a.encode_fragment().unwrap();
+            let aux_data = alonzo_block
+                .auxiliary_data_set
+                .iter()
+                .find(|(index, _)| *index as usize == idx);
 
-            cardano_multiplatform_lib::metadata::AuxiliaryData::from_bytes(auxiliary_data_payload)
+            let auxiliary_data = aux_data.map(|(_, a)| {
+                let auxiliary_data_payload = a.encode_fragment().unwrap();
+
+                cardano_multiplatform_lib::metadata::AuxiliaryData::from_bytes(
+                    auxiliary_data_payload,
+                )
                 .map_err(|e| {
                     panic!(
                         "{:?}\n{:?}\n{:?}",
@@ -68,40 +81,77 @@ pub async fn process_multiera_block(
                     )
                 })
                 .unwrap()
-        });
+            });
 
-        let mut temp_tx =
-            cardano_multiplatform_lib::Transaction::new(body, witness_set, auxiliary_data);
+            let mut temp_tx =
+                cardano_multiplatform_lib::Transaction::new(body, witness_set, auxiliary_data);
 
-        let mut is_valid = true;
+            let mut is_valid = true;
 
-        if let Some(ref invalid_txs) = alonzo_block.invalid_transactions {
-            is_valid = !invalid_txs.iter().any(|i| *i as usize == idx)
-        }
+            if let Some(ref invalid_txs) = alonzo_block.invalid_transactions {
+                is_valid = !invalid_txs.iter().any(|i| *i as usize == idx)
+            }
 
-        temp_tx.set_is_valid(is_valid);
+            temp_tx.set_is_valid(is_valid);
 
-        let transaction = TransactionActiveModel {
-            hash: Set(tx_body.to_hash().to_vec()),
-            block_id: Set(db_block.id),
-            tx_index: Set(idx as i32),
-            payload: Set(temp_tx.to_bytes()),
-            is_valid: Set(is_valid),
-            ..Default::default()
-        };
+            let transaction = TransactionActiveModel {
+                hash: Set(tx_body.to_hash().to_vec()),
+                block_id: Set(db_block.id),
+                tx_index: Set(idx as i32),
+                payload: Set(temp_tx.to_bytes()),
+                is_valid: Set(is_valid),
+                ..Default::default()
+            };
 
-        let transaction = transaction.insert(txn).await?;
+            (transaction, tx_body, witness_set.clone(), is_valid)
+        })
+        .collect();
 
+    if joined_txs.len() > 0 {
+        let insertions = Transaction::insert_many(joined_txs.iter().map(|tx| tx.0.clone()))
+            .exec_with_returning(true, txn)
+            .await?
+            .unwrap();
         perf_aggregator.transaction_insert += time_counter.elapsed();
         *time_counter = std::time::Instant::now();
 
+        process_multiera_txs(
+            perf_aggregator,
+            time_counter,
+            txn,
+            block_record,
+            &joined_txs
+                .iter()
+                .enumerate()
+                .map(|(i, tx)| VirtualTransaction {
+                    body: tx.1,
+                    witness_set: &tx.2,
+                    is_valid: tx.3,
+                    database_index: insertions.id + (i as i64),
+                })
+                .collect(),
+        )
+        .await?;
+    }
+
+    Ok(())
+}
+
+async fn process_multiera_txs<'a>(
+    perf_aggregator: &mut PerfAggregator,
+    time_counter: &mut std::time::Instant,
+    txn: &DatabaseTransaction,
+    block_record: &BlockRecord,
+    cardano_transactions: &Vec<VirtualTransaction<'a>>,
+) -> Result<(), DbErr> {
+    for cardano_transaction in cardano_transactions.iter() {
         let mut vkey_relation_map = RelationMap::default();
-        insert_witness(&mut vkey_relation_map, &witness_set, txn).await?;
+        insert_witness(&mut vkey_relation_map, cardano_transaction.witness_set, txn).await?;
 
         perf_aggregator.witness_insert += time_counter.elapsed();
         *time_counter = std::time::Instant::now();
 
-        for component in tx_body.iter() {
+        for component in cardano_transaction.body.iter() {
             match component {
                 TransactionBodyComponent::Certificates(certs) => {
                     for cert in certs.iter() {
@@ -116,7 +166,7 @@ pub async fn process_multiera_block(
                             &mut vkey_relation_map,
                             &block_record,
                             txn,
-                            &transaction,
+                            cardano_transaction.database_index,
                             output,
                             idx,
                         )
@@ -125,11 +175,11 @@ pub async fn process_multiera_block(
                     perf_aggregator.transaction_output_insert += time_counter.elapsed();
                     *time_counter = std::time::Instant::now();
                 }
-                TransactionBodyComponent::Inputs(inputs) if is_valid => {
+                TransactionBodyComponent::Inputs(inputs) if cardano_transaction.is_valid => {
                     for (idx, input) in inputs.iter().enumerate() {
                         crate::era_common::insert_input(
                             &mut vkey_relation_map,
-                            &transaction,
+                            cardano_transaction.database_index,
                             idx as i32,
                             input.index,
                             &input.transaction_id,
@@ -140,13 +190,13 @@ pub async fn process_multiera_block(
                     perf_aggregator.transaction_input_insert += time_counter.elapsed();
                     *time_counter = std::time::Instant::now();
                 }
-                TransactionBodyComponent::Collateral(inputs) if !is_valid => {
+                TransactionBodyComponent::Collateral(inputs) if !cardano_transaction.is_valid => {
                     // note: we consider collateral as just another kind of input instead of a separate table
                     // you can use the is_valid field to know what kind of input it actually is
                     for (idx, input) in inputs.iter().enumerate() {
                         crate::era_common::insert_input(
                             &mut vkey_relation_map,
-                            &transaction,
+                            cardano_transaction.database_index,
                             idx as i32,
                             input.index,
                             &input.transaction_id,
@@ -200,7 +250,7 @@ pub async fn process_multiera_block(
             }
         }
 
-        insert_tx_credentials(&vkey_relation_map, &transaction, txn).await?;
+        insert_tx_credentials(&vkey_relation_map, cardano_transaction.database_index, txn).await?;
         perf_aggregator.tx_credential_relation += time_counter.elapsed();
         *time_counter = std::time::Instant::now();
     }
@@ -212,7 +262,7 @@ async fn insert_output(
     vkey_relation_map: &mut RelationMap,
     block_record: &BlockRecord,
     txn: &DatabaseTransaction,
-    transaction: &TransactionModel,
+    tx_id: i64,
     output: &alonzo::TransactionOutput,
     idx: usize,
 ) -> Result<(), DbErr> {
@@ -295,7 +345,7 @@ async fn insert_output(
     let tx_output = TransactionOutputActiveModel {
         payload: Set(output.encode_fragment().unwrap()),
         address_id: Set(address.id),
-        tx_id: Set(transaction.id),
+        tx_id: Set(tx_id),
         output_index: Set(idx as i32),
         ..Default::default()
     };
@@ -341,7 +391,7 @@ async fn insert_address_credential(
 
 async fn insert_tx_credentials(
     vkey_relation_map: &RelationMap,
-    tx: &TransactionModel,
+    tx_id: i64,
     txn: &DatabaseTransaction,
 ) -> Result<(), DbErr> {
     let models = vkey_relation_map
@@ -349,7 +399,7 @@ async fn insert_tx_credentials(
         .values()
         .map(|val| TxCredentialActiveModel {
             credential_id: Set(val.credential_id),
-            tx_id: Set(tx.id),
+            tx_id: Set(tx_id),
             relation: Set(val.relation),
         });
 

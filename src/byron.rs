@@ -106,7 +106,7 @@ async fn insert_byron_input(
 
     crate::era_common::insert_input(
         vkey_relation_map,
-        &transaction,
+        transaction.id,
         idx as i32,
         *index as u64,
         tx_hash,
