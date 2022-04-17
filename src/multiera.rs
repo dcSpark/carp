@@ -35,8 +35,6 @@ pub async fn process_multiera_block(
         .zip(alonzo_block.transaction_witness_sets.iter())
         .enumerate()
     {
-        let tx_hash = alonzo::crypto::hash_transaction(tx_body).to_vec();
-
         let body_payload = tx_body.encode_fragment().unwrap();
         let body = &cardano_multiplatform_lib::TransactionBody::from_bytes(body_payload)
             .map_err(|e| panic!("{:?}{:?}", e, block_record.cbor_hex))
@@ -84,7 +82,7 @@ pub async fn process_multiera_block(
         temp_tx.set_is_valid(is_valid);
 
         let transaction = TransactionActiveModel {
-            hash: Set(tx_hash),
+            hash: Set(tx_body.to_hash().to_vec()),
             block_id: Set(db_block.id),
             tx_index: Set(idx as i32),
             payload: Set(temp_tx.to_bytes()),
