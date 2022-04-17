@@ -344,13 +344,18 @@ async fn insert_tx_credentials(
     tx: &TransactionModel,
     txn: &DatabaseTransaction,
 ) -> Result<(), DbErr> {
-    for (_k, v) in vkey_relation_map.0.iter() {
-        let tx_credential = TxCredentialActiveModel {
-            credential_id: Set(v.credential_id),
+    let models = vkey_relation_map
+        .0
+        .values()
+        .map(|val| TxCredentialActiveModel {
+            credential_id: Set(val.credential_id),
             tx_id: Set(tx.id),
-            relation: Set(v.relation),
-        };
-        tx_credential.insert(txn).await?;
+            relation: Set(val.relation),
+        });
+
+    // no entries to add if tx only had Byron addresses
+    if models.len() > 0 {
+        TxCredential::insert_many(models).exec(txn).await?;
     }
 
     Ok(())
