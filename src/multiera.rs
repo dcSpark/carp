@@ -48,7 +48,15 @@ pub async fn process_multiera_block(
         .map(|(idx, (tx_body, tx_witness_set))| {
             let body_payload = tx_body.encode_fragment().unwrap();
             let body = &cardano_multiplatform_lib::TransactionBody::from_bytes(body_payload)
-                .map_err(|e| panic!("{:?}{:?}", e, block_record.cbor_hex))
+                .map_err(|e| {
+                    panic!(
+                        "{:?}\nBlock cbor: {:?}\nTransaction body cbor: {:?}\nTx hash: {:?}\n",
+                        e,
+                        block_record.cbor_hex,
+                        hex::encode(tx_body.encode_fragment().unwrap()),
+                        hex::encode(tx_body.to_hash().to_vec())
+                    )
+                })
                 .unwrap();
 
             let witness_set_payload = tx_witness_set.encode_fragment().unwrap();
@@ -175,38 +183,6 @@ async fn process_multiera_txs<'a>(
                     perf_aggregator.transaction_output_insert += time_counter.elapsed();
                     *time_counter = std::time::Instant::now();
                 }
-                TransactionBodyComponent::Inputs(inputs) if cardano_transaction.is_valid => {
-                    for (idx, input) in inputs.iter().enumerate() {
-                        crate::era_common::insert_input(
-                            &mut vkey_relation_map,
-                            cardano_transaction.database_index,
-                            idx as i32,
-                            input.index,
-                            &input.transaction_id,
-                            txn,
-                        )
-                        .await?;
-                    }
-                    perf_aggregator.transaction_input_insert += time_counter.elapsed();
-                    *time_counter = std::time::Instant::now();
-                }
-                TransactionBodyComponent::Collateral(inputs) if !cardano_transaction.is_valid => {
-                    // note: we consider collateral as just another kind of input instead of a separate table
-                    // you can use the is_valid field to know what kind of input it actually is
-                    for (idx, input) in inputs.iter().enumerate() {
-                        crate::era_common::insert_input(
-                            &mut vkey_relation_map,
-                            cardano_transaction.database_index,
-                            idx as i32,
-                            input.index,
-                            &input.transaction_id,
-                            txn,
-                        )
-                        .await?;
-                    }
-                    perf_aggregator.collateral_insert += time_counter.elapsed();
-                    *time_counter = std::time::Instant::now();
-                }
                 TransactionBodyComponent::Withdrawals(withdrawal_pairs) => {
                     for pair in withdrawal_pairs.deref() {
                         let reward_addr = RewardAddress::from_address(
@@ -255,6 +231,37 @@ async fn process_multiera_txs<'a>(
                 }
                 _ => (),
             }
+        }
+
+        // note: inputs have to be added AFTER outputs
+        for component in cardano_transaction.body.iter() {
+            match component {
+                TransactionBodyComponent::Inputs(inputs) if cardano_transaction.is_valid => {
+                    crate::era_common::insert_inputs(
+                        &mut vkey_relation_map,
+                        cardano_transaction.database_index,
+                        &inputs,
+                        txn,
+                    )
+                    .await?;
+                    perf_aggregator.transaction_input_insert += time_counter.elapsed();
+                    *time_counter = std::time::Instant::now();
+                }
+                TransactionBodyComponent::Collateral(inputs) if !cardano_transaction.is_valid => {
+                    // note: we consider collateral as just another kind of input instead of a separate table
+                    // you can use the is_valid field to know what kind of input it actually is
+                    crate::era_common::insert_inputs(
+                        &mut vkey_relation_map,
+                        cardano_transaction.database_index,
+                        &inputs,
+                        txn,
+                    )
+                    .await?;
+                    perf_aggregator.collateral_insert += time_counter.elapsed();
+                    *time_counter = std::time::Instant::now();
+                }
+                _ => (),
+            };
         }
 
         insert_tx_credentials(&vkey_relation_map, cardano_transaction.database_index, txn).await?;

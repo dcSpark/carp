@@ -2,6 +2,7 @@ use entity::{
     prelude::*,
     sea_orm::{prelude::*, ColumnTrait, DatabaseTransaction, JoinType, QuerySelect, Set},
 };
+use futures::future::join_all;
 use pallas::crypto::hash::Hash;
 
 use crate::{relation_map::RelationMap, types::TxCredentialRelationValue};
@@ -111,6 +112,88 @@ pub async fn insert_input(
     };
 
     tx_input.save(txn).await?;
+
+    Ok(())
+}
+
+pub async fn insert_inputs(
+    vkey_relation_map: &mut RelationMap,
+    tx_id: i64,
+    inputs: &Vec<pallas::ledger::primitives::alonzo::TransactionInput>,
+    txn: &DatabaseTransaction,
+) -> Result<(), DbErr> {
+    // 1) Get the UTXO this input is spending
+    let tx_outputs = join_all(inputs.iter().map(|input| {
+        TransactionOutput::find()
+            .inner_join(Transaction)
+            .filter(TransactionOutputColumn::OutputIndex.eq(input.index))
+            .filter(TransactionColumn::Hash.eq(input.transaction_id.to_vec()))
+            .one(txn)
+    }))
+    .await;
+
+    // 2) Associate any relation for credentials
+    let related_credentials = join_all(
+        tx_outputs
+            .iter()
+            // Byron addresses don't contain stake credentials, so we can skip them
+            .filter(|&tx_output| {
+                let model = tx_output.as_ref().unwrap().as_ref().unwrap();
+                let is_byron = match cardano_multiplatform_lib::TransactionOutput::from_bytes(
+                    model.payload.clone(),
+                ) {
+                    Ok(parsed_output) => parsed_output.address().as_byron().is_some(),
+                    // TODO: remove this once we've parsed the genesis block correctly instead of inserting dummy data
+                    Err(_) => true,
+                };
+                !is_byron
+            })
+            .map(|tx_output| {
+                let model = tx_output.as_ref().unwrap().as_ref().unwrap();
+
+                // 2) Get the stake credential for the UTXO being spent
+                StakeCredential::find()
+                    .inner_join(AddressCredential)
+                    .join(
+                        JoinType::InnerJoin,
+                        AddressCredentialRelation::Address.def(),
+                    )
+                    .join(
+                        JoinType::InnerJoin,
+                        AddressRelation::TransactionOutput.def(),
+                    )
+                    .filter(TransactionOutputColumn::Id.eq(model.id))
+                    .all(txn)
+            }),
+    )
+    .await;
+
+    // 3) Associate the stake credentials to this transaction
+    for stake_credentials in related_credentials {
+        for stake_credential in stake_credentials.unwrap() {
+            vkey_relation_map.add_relation(
+                stake_credential.id,
+                &stake_credential.credential,
+                TxCredentialRelationValue::Input,
+            );
+        }
+    }
+
+    // 4) Add inputs themselves
+    TransactionInput::insert_many(
+        inputs
+            .iter()
+            .zip(tx_outputs)
+            .enumerate()
+            .map(|(idx, pair)| TransactionInputActiveModel {
+                utxo_id: Set(pair.1.as_ref().unwrap().as_ref().unwrap().id),
+                tx_id: Set(tx_id),
+                input_index: Set(idx as i32),
+                ..Default::default()
+            }),
+    )
+    .exec(txn)
+    .await?;
 
     Ok(())
 }
