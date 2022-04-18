@@ -9,7 +9,6 @@ use pallas::ledger::primitives::{
     byron::{self, TxIn, TxOut},
     Fragment,
 };
-use std::ops::Deref;
 
 pub async fn process_byron_block(
     perf_aggregator: &mut PerfAggregator,
@@ -52,10 +51,20 @@ pub async fn process_byron_block(
                 perf_aggregator.transaction_output_insert += time_counter.elapsed();
                 *time_counter = std::time::Instant::now();
 
-                for (idx, input) in tx_body.transaction.inputs.iter().enumerate() {
-                    insert_byron_input(&mut vkey_relation_map, txn, &transaction, input, idx)
-                        .await?;
-                }
+                let inputs = tx_body
+                    .transaction
+                    .inputs
+                    .iter()
+                    .map(|input| byron_input_to_alonzo(&input))
+                    .collect();
+
+                crate::era_common::insert_inputs(
+                    &mut vkey_relation_map,
+                    transaction.id,
+                    &inputs,
+                    txn,
+                )
+                .await?;
 
                 perf_aggregator.transaction_input_insert += time_counter.elapsed();
                 *time_counter = std::time::Instant::now();
@@ -89,32 +98,17 @@ async fn insert_byron_output(
     Ok(())
 }
 
-async fn insert_byron_input(
-    vkey_relation_map: &mut RelationMap,
-    txn: &DatabaseTransaction,
-    transaction: &TransactionModel,
-    input: &TxIn,
-    idx: usize,
-) -> Result<(), DbErr> {
-    let (tx_hash, index) = match input {
-        TxIn::Variant0(wrapped) => wrapped.deref(),
+fn byron_input_to_alonzo(input: &TxIn) -> pallas::ledger::primitives::alonzo::TransactionInput {
+    match input {
+        TxIn::Variant0(wrapped) => pallas::ledger::primitives::alonzo::TransactionInput {
+            transaction_id: wrapped.0 .0.clone(),
+            index: wrapped.0 .1 as u64,
+        },
         TxIn::Other(index, tx_hash) => {
             // Note: Oura uses "other" to future proof itself against changes in the binary spec
             todo!("handle TxIn::Other({:?}, {:?})", index, tx_hash)
         }
-    };
-
-    crate::era_common::insert_input(
-        vkey_relation_map,
-        transaction.id,
-        idx as i32,
-        *index as u64,
-        tx_hash,
-        txn,
-    )
-    .await?;
-
-    Ok(())
+    }
 }
 
 fn blake2b256(data: &[u8]) -> [u8; 32] {
