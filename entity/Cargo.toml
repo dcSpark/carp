@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-sea-orm = { git = "https://github.com/dcSpark/sea-orm", branch = "support-on-conflict", features = [
+sea-orm = { git = "https://github.com/dcSpark/sea-orm", branch = "insert-many-returning", features = [
     "runtime-tokio-rustls",
     "sqlx-postgres",
     "macros",
