@@ -44,9 +44,7 @@ pub async fn process_byron_block(
                 perf_aggregator.transaction_insert += time_counter.elapsed();
                 *time_counter = std::time::Instant::now();
 
-                for (idx, output) in tx_body.transaction.outputs.iter().enumerate() {
-                    insert_byron_output(txn, &transaction, output, idx).await?;
-                }
+                insert_byron_outputs(txn, &transaction, &tx_body.transaction.outputs).await?;
 
                 perf_aggregator.transaction_output_insert += time_counter.elapsed();
                 *time_counter = std::time::Instant::now();
@@ -94,6 +92,35 @@ async fn insert_byron_output(
     };
 
     tx_output.save(txn).await?;
+
+    Ok(())
+}
+
+async fn insert_byron_outputs(
+    txn: &DatabaseTransaction,
+    transaction: &TransactionModel,
+    outputs: &Vec<TxOut>,
+) -> Result<(), DbErr> {
+    let address_inserts = crate::era_common::insert_addresses(
+        &outputs
+            .iter()
+            .map(|output| output.address.encode_fragment().unwrap())
+            .collect(),
+        txn,
+    )
+    .await?;
+
+    TransactionOutput::insert_many(outputs.iter().enumerate().map(|(idx, output)| {
+        TransactionOutputActiveModel {
+            payload: Set(output.encode_fragment().unwrap()),
+            address_id: Set(address_inserts.get(idx).unwrap().id),
+            tx_id: Set(transaction.id),
+            output_index: Set(idx as i32),
+            ..Default::default()
+        }
+    }))
+    .exec(txn)
+    .await?;
 
     Ok(())
 }
