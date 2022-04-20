@@ -42,16 +42,22 @@ impl<'a> Config<'a> {
                             let epoch_duration = epoch_start_time.elapsed();
                             perf_aggregator.set_overhead(&epoch_duration);
 
-                            tracing::info!(
-                                "Finished processing epoch {} after {:?} (+{:?})",
-                                last_epoch,
-                                epoch_duration
-                                    .checked_sub(perf_aggregator.block_fetch)
-                                    .unwrap_or(std::time::Duration::new(0, 0)),
-                                perf_aggregator.block_fetch
-                            );
+                            // skip posting stats if last_epoch == -1 (went application just launched)
+                            if last_epoch >= 0 {
+                                tracing::info!(
+                                    "Finished processing epoch {} after {:?} (+{:?})",
+                                    last_epoch,
+                                    epoch_duration
+                                        .checked_sub(perf_aggregator.block_fetch)
+                                        .unwrap_or(std::time::Duration::new(0, 0)),
+                                    perf_aggregator.block_fetch
+                                );
 
-                            tracing::trace!("Epoch part-wise time spent:\n{:#?}", perf_aggregator);
+                                tracing::trace!(
+                                    "Epoch part-wise time spent:\n{:#?}",
+                                    perf_aggregator
+                                );
+                            }
                             epoch_start_time = std::time::Instant::now();
                             perf_aggregator = PerfAggregator::new();
 
