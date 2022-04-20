@@ -109,7 +109,7 @@ async fn insert_block(
         era: Set(era),
         hash: Set(hash),
         height: Set(block_record.number as i32),
-        epoch: Set(0),
+        epoch: Set(block_record.epoch.unwrap() as i32),
         slot: Set(block_record.slot as i32),
         ..Default::default()
     };
