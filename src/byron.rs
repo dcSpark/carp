@@ -5,9 +5,12 @@ use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction, Set},
 };
-use pallas::ledger::primitives::{
-    byron::{self, TxIn, TxOut},
-    Fragment,
+use pallas::{
+    codec::utils::MaybeIndefArray,
+    ledger::primitives::{
+        byron::{self, TxIn, TxOut},
+        Fragment,
+    },
 };
 
 pub async fn process_byron_block(
@@ -22,35 +25,54 @@ pub async fn process_byron_block(
         // they don't contain any txs, so we can just ignore them
         byron::Block::EbBlock(_) => (),
         byron::Block::MainBlock(main_block) => {
-            for (idx, tx_body) in main_block.body.tx_payload.iter().enumerate() {
-                let tx_hash = blake2b256(&tx_body.transaction.encode_fragment().expect(""));
+            if main_block.body.tx_payload.is_empty() {
+                return Ok(());
+            }
+            let transaction_inserts =
+                Transaction::insert_many(main_block.body.tx_payload.iter().enumerate().map(
+                    |(idx, tx_body)| {
+                        let tx_hash = blake2b256(&tx_body.transaction.encode_fragment().expect(""));
 
-                let tx_payload = tx_body.encode_fragment().unwrap();
+                        let tx_payload = tx_body.encode_fragment().unwrap();
 
-                let transaction = TransactionActiveModel {
-                    hash: Set(tx_hash.to_vec()),
-                    block_id: Set(db_block.id),
-                    tx_index: Set(idx as i32),
-                    payload: Set(tx_payload),
-                    is_valid: Set(true), // always true in Byron
-                    ..Default::default()
-                };
+                        TransactionActiveModel {
+                            hash: Set(tx_hash.to_vec()),
+                            block_id: Set(db_block.id),
+                            tx_index: Set(idx as i32),
+                            payload: Set(tx_payload),
+                            is_valid: Set(true), // always true in Byron
+                            ..Default::default()
+                        }
+                    },
+                ))
+                .exec_many_with_returning(txn)
+                .await?;
 
-                let transaction = transaction.insert(txn).await?;
+            perf_aggregator.transaction_insert += time_counter.elapsed();
+            *time_counter = std::time::Instant::now();
 
+            let tx_outputs: Vec<_> = main_block
+                .body
+                .tx_payload
+                .iter()
+                .map(|payload| &payload.transaction.outputs)
+                .zip(&transaction_inserts)
+                .collect();
+
+            // note: outputs have to be added before inputs
+            insert_byron_outputs(txn, &tx_outputs).await?;
+
+            perf_aggregator.transaction_output_insert += time_counter.elapsed();
+            *time_counter = std::time::Instant::now();
+
+            // TODO: also match this
+            for (tx_payload, cardano_tx_in_db) in
+                main_block.body.tx_payload.iter().zip(&transaction_inserts)
+            {
                 // unused for Byron
                 let mut vkey_relation_map = RelationMap::default();
 
-                perf_aggregator.transaction_insert += time_counter.elapsed();
-                *time_counter = std::time::Instant::now();
-
-                // note: outputs have to be added before inputs
-                insert_byron_outputs(txn, &transaction, &tx_body.transaction.outputs).await?;
-
-                perf_aggregator.transaction_output_insert += time_counter.elapsed();
-                *time_counter = std::time::Instant::now();
-
-                let inputs = tx_body
+                let inputs: Vec<pallas::ledger::primitives::alonzo::TransactionInput> = tx_payload
                     .transaction
                     .inputs
                     .iter()
@@ -59,15 +81,15 @@ pub async fn process_byron_block(
 
                 crate::era_common::insert_inputs(
                     &mut vkey_relation_map,
-                    transaction.id,
+                    cardano_tx_in_db.id,
                     &inputs,
                     txn,
                 )
                 .await?;
-
-                perf_aggregator.transaction_input_insert += time_counter.elapsed();
-                *time_counter = std::time::Instant::now();
             }
+
+            perf_aggregator.transaction_input_insert += time_counter.elapsed();
+            *time_counter = std::time::Instant::now();
         }
     }
 
@@ -76,27 +98,33 @@ pub async fn process_byron_block(
 
 async fn insert_byron_outputs(
     txn: &DatabaseTransaction,
-    transaction: &TransactionModel,
-    outputs: &Vec<TxOut>,
+    outputs: &Vec<(&MaybeIndefArray<TxOut>, &TransactionModel)>,
 ) -> Result<(), DbErr> {
     let address_inserts = crate::era_common::insert_addresses(
         &outputs
             .iter()
+            .flat_map(|pair| pair.0.iter())
             .map(|output| output.address.encode_fragment().unwrap())
             .collect(),
         txn,
     )
     .await?;
 
-    TransactionOutput::insert_many(outputs.iter().enumerate().map(|(idx, output)| {
-        TransactionOutputActiveModel {
-            payload: Set(output.encode_fragment().unwrap()),
-            address_id: Set(address_inserts.get(idx).unwrap().id),
-            tx_id: Set(transaction.id),
-            output_index: Set(idx as i32),
-            ..Default::default()
-        }
-    }))
+    TransactionOutput::insert_many(
+        outputs
+            .iter()
+            .flat_map(|pair| pair.0.iter().enumerate().zip(std::iter::repeat(pair.1)))
+            .enumerate()
+            .map(|(address_lookup_index, ((output_index, output), tx_id))| {
+                TransactionOutputActiveModel {
+                    payload: Set(output.encode_fragment().unwrap()),
+                    address_id: Set(address_inserts.get(address_lookup_index).unwrap().id),
+                    tx_id: Set(tx_id.id),
+                    output_index: Set(output_index as i32),
+                    ..Default::default()
+                }
+            }),
+    )
     .exec(txn)
     .await?;
 
