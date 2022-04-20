@@ -2,9 +2,12 @@ use std::collections::BTreeSet;
 
 use entity::{
     prelude::*,
-    sea_orm::{prelude::*, ColumnTrait, DatabaseTransaction, JoinType, QuerySelect, Set},
+    sea_orm::{
+        prelude::*, ColumnTrait, Condition, DatabaseTransaction, JoinType, QuerySelect, Set,
+    },
 };
 use futures::future::join_all;
+use migration::sea_query::Expr;
 use std::collections::BTreeMap;
 
 use crate::{relation_map::RelationMap, types::TxCredentialRelationValue};
@@ -57,35 +60,9 @@ pub async fn insert_addresses(
     addresses: &Vec<Vec<u8>>,
     txn: &DatabaseTransaction,
 ) -> Result<Vec<AddressModel>, DbErr> {
-    // deduplicate addresses to avoid re-querying the same address many times
-    // useful not only as a perf improvement, but also avoids parallel queries writing to the same row
-    let deduplicated = BTreeSet::<_>::from_iter(addresses);
-
-    let db_entries = join_all(
-        deduplicated
-            .iter()
-            .map(|&address_bytes| get_or_set_address(address_bytes, txn)),
-    )
-    .await;
-
-    let db_entry_mapping = BTreeMap::<_, _>::from_iter(
-        deduplicated
-            .iter()
-            .enumerate()
-            .map(|(idx, &payload)| (payload, db_entries.get(idx).unwrap())),
-    );
-
-    addresses
-        .into_iter()
-        .map(|addr| db_entry_mapping[addr])
-        .cloned()
-        .collect()
-}
-
-async fn get_or_set_address(
-    address_bytes: &Vec<u8>,
-    txn: &DatabaseTransaction,
-) -> Result<AddressModel, DbErr> {
+    if addresses.is_empty() {
+        return Ok(vec![]);
+    }
     // During the Byron era of Cardano,
     // Addresses had a feature where you could add extra metadata in them
     // The amount of metadata you could insert was not capped
@@ -100,31 +77,61 @@ async fn get_or_set_address(
     // 3) It's not great to hard-code a postgresql-specific limitation
     // 4) 500 seems more obviously human than 2704 so maybe easier if somebody sees it
     // 5) Storing up to 2704 bytes is a waste of space since they aren't used for anything
-    let truncated_addr = &address_bytes[0..(std::cmp::min(address_bytes.len(), 500))];
+    let truncated_addrs: Vec<&[u8]> = addresses
+        .iter()
+        .map(|addr_bytes| &addr_bytes[0..(std::cmp::min(addr_bytes.len(), 500))])
+        .collect();
+
+    // deduplicate addresses to avoid re-querying the same address many times
+    // useful not only as a perf improvement, but also avoids parallel queries writing to the same row
+    let deduplicated = BTreeSet::<_>::from_iter(truncated_addrs.clone());
 
     // note: in the usual case, the address will already be in the DB when we query it
     // that means it's faster to use find instead of write(on conflict do nothing)
     // since "do nothing" returns None, a conflict mean we would have to use find as a fallback
     // meaning the "on conflict do nothing" requires 2 queries in the usual case instead of 1
-    let addr = Address::find()
-        .filter(AddressColumn::Payload.eq(truncated_addr.clone()))
-        // note: okay to use "all" since we're querying a unique key
-        // and "all" is faster than "first" if you know it will return a single result
+
+    // note: okay to batch use "all" since we're querying unique keys
+    let found_addresses = Address::find()
+        .filter(Condition::any().add(Expr::col(AddressColumn::Payload).is_in(deduplicated.clone())))
         .all(txn)
         .await?;
 
-    if let Some(addr) = addr.first() {
-        Ok(addr.clone())
-    } else {
-        let address = AddressActiveModel {
-            payload: Set(truncated_addr.to_vec()),
-            ..Default::default()
-        };
+    let mut result_map = BTreeMap::<_, _>::from_iter(
+        found_addresses
+            .iter()
+            .map(|model| (model.payload.as_slice(), model)),
+    );
 
-        // TODO: probably the find and the insert here can be many into a single query
-        let addr = address.insert(txn).await?;
-        Ok(addr.clone())
+    // check which addresses weren't found in the DB and prepare to add them
+    let addrs_to_add: Vec<AddressActiveModel> = deduplicated
+        .iter()
+        .filter(|&&addr| !result_map.contains_key(addr))
+        .map(|addr| AddressActiveModel {
+            payload: Set(addr.to_vec()),
+            ..Default::default()
+        })
+        .collect();
+
+    // add the new entires into the DB, then add them to our result mapping
+    let mut new_entries: Vec<AddressModel> = vec![];
+    if !addrs_to_add.is_empty() {
+        new_entries.extend(
+            Address::insert_many(addrs_to_add)
+                .exec_many_with_returning(txn)
+                .await?,
+        );
+        new_entries.iter().for_each(|model| {
+            result_map.insert(model.payload.as_slice(), model);
+        });
     }
+
+    Ok(addresses
+        .into_iter()
+        .enumerate()
+        .map(|(idx, _)| result_map[truncated_addrs[idx]])
+        .cloned()
+        .collect())
 }
 
 pub async fn insert_inputs(

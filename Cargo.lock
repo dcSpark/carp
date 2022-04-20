@@ -1833,7 +1833,7 @@ dependencies = [
 [[package]]
 name = "sea-orm"
 version = "0.7.1"
-source = "git+https://github.com/dcSpark/sea-orm?branch=insert-many-returning#4752b4c4cd78142fe8ae833bb7b360238afa7543"
+source = "git+https://github.com/dcSpark/sea-orm?branch=insert-many-returning#eedbaaa035bb0576508b270fb9bb82230d61d714"
 dependencies = [
  "async-stream",
  "async-trait",
@@ -1858,7 +1858,7 @@ dependencies = [
 [[package]]
 name = "sea-orm-macros"
 version = "0.7.0"
-source = "git+https://github.com/dcSpark/sea-orm?branch=insert-many-returning#4752b4c4cd78142fe8ae833bb7b360238afa7543"
+source = "git+https://github.com/dcSpark/sea-orm?branch=insert-many-returning#eedbaaa035bb0576508b270fb9bb82230d61d714"
 dependencies = [
  "bae",
  "heck 0.3.3",
