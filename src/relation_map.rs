@@ -7,7 +7,7 @@ pub struct RelationMapValue {
     pub relation: i32,
 }
 #[derive(Default)]
-pub struct RelationMap(pub BTreeMap<Hash<32>, RelationMapValue>);
+pub struct RelationMap(pub BTreeMap<i64 /* tx ID in db */, BTreeMap<Hash<32>, RelationMapValue>>);
 
 impl RelationMap {
     pub fn bytes_to_pallas(bytes: &Vec<u8>) -> Hash<32> {
@@ -32,13 +32,19 @@ impl RelationMap {
         )
     }
 
+    pub fn for_transaction(&mut self, tx_id: i64) -> &mut BTreeMap<Hash<32>, RelationMapValue> {
+        self.0.entry(tx_id).or_insert(BTreeMap::new())
+    }
+
     pub fn add_relation(
         &mut self,
+        tx_id: i64,
         stake_credential_id: i64,
         stake_credential: &Vec<u8>,
         relation: TxCredentialRelationValue,
     ) -> () {
-        self.0
+        let credential_map = self.for_transaction(tx_id);
+        credential_map
             .entry(RelationMap::bytes_to_pallas(&stake_credential))
             .and_modify(|val| val.relation |= i32::from(relation))
             .or_insert(RelationMapValue {

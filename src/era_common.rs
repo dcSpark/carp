@@ -190,6 +190,7 @@ pub async fn insert_inputs(
     for stake_credentials in related_credentials {
         for stake_credential in stake_credentials.unwrap() {
             vkey_relation_map.add_relation(
+                tx_id,
                 stake_credential.id,
                 &stake_credential.credential,
                 TxCredentialRelationValue::Input,
