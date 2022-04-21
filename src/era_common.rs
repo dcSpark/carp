@@ -1,4 +1,7 @@
-use std::collections::BTreeSet;
+use std::{
+    collections::BTreeSet,
+    sync::{Arc, Mutex},
+};
 
 use entity::{
     prelude::*,
@@ -135,7 +138,7 @@ pub async fn insert_addresses(
 }
 
 pub async fn insert_inputs(
-    vkey_relation_map: &mut RelationMap,
+    vkey_relation_map: Arc<Mutex<RelationMap>>,
     tx_id: i64,
     inputs: &Vec<pallas::ledger::primitives::alonzo::TransactionInput>,
     txn: &DatabaseTransaction,
@@ -187,14 +190,17 @@ pub async fn insert_inputs(
     .await;
 
     // 3) Associate the stake credentials to this transaction
-    for stake_credentials in related_credentials {
-        for stake_credential in stake_credentials.unwrap() {
-            vkey_relation_map.add_relation(
-                tx_id,
-                stake_credential.id,
-                &stake_credential.credential,
-                TxCredentialRelationValue::Input,
-            );
+    if related_credentials.len() > 0 {
+        let mut vkey_relation_map = vkey_relation_map.lock().unwrap();
+        for stake_credentials in related_credentials {
+            for stake_credential in stake_credentials.unwrap() {
+                vkey_relation_map.add_relation(
+                    tx_id,
+                    stake_credential.id,
+                    &stake_credential.credential,
+                    TxCredentialRelationValue::Input,
+                );
+            }
         }
     }
 

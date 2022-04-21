@@ -3,7 +3,10 @@ use pallas::ledger::primitives::{
     alonzo::{self, Certificate, TransactionBody, TransactionBodyComponent},
     Fragment,
 };
-use std::ops::Deref;
+use std::{
+    ops::Deref,
+    sync::{Arc, Mutex},
+};
 
 use cardano_multiplatform_lib::{
     address::{BaseAddress, EnterpriseAddress, PointerAddress, RewardAddress},
@@ -153,9 +156,9 @@ async fn process_multiera_txs<'a>(
     cardano_transactions: &Vec<VirtualTransaction<'a>>,
 ) -> Result<(), DbErr> {
     for cardano_transaction in cardano_transactions.iter() {
-        let mut vkey_relation_map = RelationMap::default();
+        let vkey_relation_map = Arc::new(Mutex::new(RelationMap::default()));
         insert_witness(
-            &mut vkey_relation_map,
+            vkey_relation_map.clone(),
             cardano_transaction.database_index,
             cardano_transaction.witness_set,
             txn,
@@ -170,7 +173,7 @@ async fn process_multiera_txs<'a>(
                 TransactionBodyComponent::Certificates(certs) => {
                     for cert in certs.iter() {
                         insert_certificate(
-                            &mut vkey_relation_map,
+                            vkey_relation_map.clone(),
                             cardano_transaction.database_index,
                             &cert,
                             txn,
@@ -183,7 +186,7 @@ async fn process_multiera_txs<'a>(
                 TransactionBodyComponent::Outputs(outputs) => {
                     for (idx, output) in outputs.iter().enumerate() {
                         insert_output(
-                            &mut vkey_relation_map,
+                            vkey_relation_map.clone(),
                             &block_record,
                             txn,
                             cardano_transaction.database_index,
@@ -210,9 +213,9 @@ async fn process_multiera_txs<'a>(
                         )
                         .await?;
                         insert_address_credential(
-                            &mut vkey_relation_map,
+                            vkey_relation_map.clone(),
                             cardano_transaction.database_index,
-                            reward_addr.payment_cred().to_bytes(),
+                            &reward_addr.payment_cred().to_bytes(),
                             &address,
                             TxCredentialRelationValue::Withdrawal.into(),
                             AddressCredentialRelationValue::PaymentKey.into(),
@@ -232,9 +235,9 @@ async fn process_multiera_txs<'a>(
                             .encode_fragment()
                             .unwrap();
                         insert_stake_credential(
-                            &mut vkey_relation_map,
+                            vkey_relation_map.clone(),
                             cardano_transaction.database_index,
-                            owner_credential,
+                            &owner_credential,
                             txn,
                             TxCredentialRelationValue::RequiredSigner.into(),
                         )
@@ -252,7 +255,7 @@ async fn process_multiera_txs<'a>(
             match component {
                 TransactionBodyComponent::Inputs(inputs) if cardano_transaction.is_valid => {
                     crate::era_common::insert_inputs(
-                        &mut vkey_relation_map,
+                        vkey_relation_map.clone(),
                         cardano_transaction.database_index,
                         &inputs,
                         txn,
@@ -265,7 +268,7 @@ async fn process_multiera_txs<'a>(
                     // note: we consider collateral as just another kind of input instead of a separate table
                     // you can use the is_valid field to know what kind of input it actually is
                     crate::era_common::insert_inputs(
-                        &mut vkey_relation_map,
+                        vkey_relation_map.clone(),
                         cardano_transaction.database_index,
                         &inputs,
                         txn,
@@ -278,7 +281,12 @@ async fn process_multiera_txs<'a>(
             };
         }
 
-        insert_tx_credentials(&vkey_relation_map, cardano_transaction.database_index, txn).await?;
+        insert_tx_credentials(
+            vkey_relation_map.clone(),
+            cardano_transaction.database_index,
+            txn,
+        )
+        .await?;
         perf_aggregator.tx_credential_relation += time_counter.elapsed();
         *time_counter = std::time::Instant::now();
     }
@@ -287,7 +295,7 @@ async fn process_multiera_txs<'a>(
 }
 
 async fn insert_output(
-    vkey_relation_map: &mut RelationMap,
+    vkey_relation_map: Arc<Mutex<RelationMap>>,
     block_record: &BlockRecord,
     txn: &DatabaseTransaction,
     tx_id: i64,
@@ -310,9 +318,9 @@ async fn insert_output(
         let payload = base_addr.payment_cred().to_bytes();
 
         insert_address_credential(
-            vkey_relation_map,
+            vkey_relation_map.clone(),
             tx_id,
-            payload,
+            &payload,
             &address,
             tx_relation.into(),
             address_relation.into(),
@@ -326,9 +334,9 @@ async fn insert_output(
         let address_relation = AddressCredentialRelationValue::StakeKey;
 
         insert_address_credential(
-            vkey_relation_map,
+            vkey_relation_map.clone(),
             tx_id,
-            payload,
+            &payload,
             &address,
             tx_relation.into(),
             address_relation.into(),
@@ -339,9 +347,9 @@ async fn insert_output(
         let payload = ptr_addr.payment_cred().to_bytes();
 
         insert_address_credential(
-            vkey_relation_map,
+            vkey_relation_map.clone(),
             tx_id,
-            payload,
+            &payload,
             &address,
             tx_relation.into(),
             address_relation.into(),
@@ -352,9 +360,9 @@ async fn insert_output(
         let payload = enterprise_addr.payment_cred().to_bytes();
 
         insert_address_credential(
-            vkey_relation_map,
+            vkey_relation_map.clone(),
             tx_id,
-            payload,
+            &payload,
             &address,
             tx_relation.into(),
             address_relation.into(),
@@ -364,9 +372,9 @@ async fn insert_output(
     } else if let Some(reward_addr) = RewardAddress::from_address(&addr) {
         let payload = reward_addr.payment_cred().to_bytes();
         insert_address_credential(
-            vkey_relation_map,
+            vkey_relation_map.clone(),
             tx_id,
-            payload,
+            &payload,
             &address,
             tx_relation.into(),
             address_relation.into(),
@@ -389,16 +397,17 @@ async fn insert_output(
 }
 
 async fn insert_address_credential(
-    vkey_relation_map: &mut RelationMap,
+    vkey_relation_map: Arc<Mutex<RelationMap>>,
     tx_id: i64,
-    payload: Vec<u8>,
+    payload: &Vec<u8>,
     address: &AddressModel,
     tx_relation: TxCredentialRelationValue,
     address_relation: i32, // TODO: type
     txn: &DatabaseTransaction,
 ) -> Result<(), DbErr> {
     let stake_credential =
-        insert_stake_credential(vkey_relation_map, tx_id, payload, txn, tx_relation).await?;
+        insert_stake_credential(vkey_relation_map.clone(), tx_id, payload, txn, tx_relation)
+            .await?;
 
     let address_credential = AddressCredentialActiveModel {
         credential_id: Set(stake_credential.id),
@@ -424,29 +433,31 @@ async fn insert_address_credential(
 }
 
 async fn insert_tx_credentials(
-    vkey_relation_map: &RelationMap,
+    vkey_relation_map: Arc<Mutex<RelationMap>>,
     tx_id: i64,
     txn: &DatabaseTransaction,
 ) -> Result<(), DbErr> {
-    match vkey_relation_map.0.get(&tx_id) {
-        Some(mapping) => {
-            let models = mapping.values().map(|val| TxCredentialActiveModel {
+    let models = match vkey_relation_map.lock().unwrap().0.get(&tx_id) {
+        Some(mapping) => mapping
+            .values()
+            .map(|val| TxCredentialActiveModel {
                 credential_id: Set(val.credential_id),
                 tx_id: Set(tx_id),
                 relation: Set(val.relation),
-            });
-            // no entries to add if tx only had Byron addresses
-            if models.len() > 0 {
-                TxCredential::insert_many(models).exec(txn).await?;
-            }
-            Ok(())
-        }
-        None => Ok(()),
+            })
+            .collect(),
+        None => vec![],
+    };
+
+    // no entries to add if tx only had Byron addresses
+    if models.len() > 0 {
+        TxCredential::insert_many(models).exec(txn).await?;
     }
+    Ok(())
 }
 
 async fn insert_certificate(
-    vkey_relation_map: &mut RelationMap,
+    vkey_relation_map: Arc<Mutex<RelationMap>>,
     tx_id: i64,
     cert: &Certificate,
     txn: &DatabaseTransaction,
@@ -455,17 +466,17 @@ async fn insert_certificate(
         Certificate::StakeDelegation(credential, pool) => {
             let credential = credential.encode_fragment().unwrap();
             insert_stake_credential(
-                vkey_relation_map,
+                vkey_relation_map.clone(),
                 tx_id,
-                credential,
+                &credential,
                 txn,
                 TxCredentialRelationValue::StakeDelegation.into(),
             )
             .await?;
             insert_stake_credential(
-                vkey_relation_map,
+                vkey_relation_map.clone(),
                 tx_id,
-                RelationMap::keyhash_to_pallas(
+                &RelationMap::keyhash_to_pallas(
                     &cardano_multiplatform_lib::crypto::Ed25519KeyHash::from_bytes(pool.to_vec())
                         .unwrap(),
                 )
@@ -478,9 +489,9 @@ async fn insert_certificate(
         Certificate::StakeRegistration(credential) => {
             let credential = credential.encode_fragment().unwrap();
             insert_stake_credential(
-                vkey_relation_map,
+                vkey_relation_map.clone(),
                 tx_id,
-                credential,
+                &credential,
                 txn,
                 TxCredentialRelationValue::StakeDelegation.into(),
             )
@@ -489,9 +500,9 @@ async fn insert_certificate(
         Certificate::StakeDeregistration(credential) => {
             let credential = credential.encode_fragment().unwrap();
             insert_stake_credential(
-                vkey_relation_map,
+                vkey_relation_map.clone(),
                 tx_id,
-                credential,
+                &credential,
                 txn,
                 TxCredentialRelationValue::StakeDeregistration.into(),
             )
@@ -508,9 +519,9 @@ async fn insert_certificate(
                     .encode_fragment()
                     .unwrap();
             insert_stake_credential(
-                vkey_relation_map,
+                vkey_relation_map.clone(),
                 tx_id,
-                operator_credential,
+                &operator_credential,
                 txn,
                 TxCredentialRelationValue::PoolOperator.into(),
             )
@@ -525,9 +536,9 @@ async fn insert_certificate(
                 crate::era_common::insert_address(&mut reward_addr.to_address().to_bytes(), txn)
                     .await?;
             insert_address_credential(
-                vkey_relation_map,
+                vkey_relation_map.clone(),
                 tx_id,
-                reward_addr.payment_cred().to_bytes(),
+                &reward_addr.payment_cred().to_bytes(),
                 &address,
                 TxCredentialRelationValue::PoolReward.into(),
                 AddressCredentialRelationValue::PaymentKey.into(),
@@ -541,9 +552,9 @@ async fn insert_certificate(
                         .encode_fragment()
                         .unwrap();
                 insert_stake_credential(
-                    vkey_relation_map,
+                    vkey_relation_map.clone(),
                     tx_id,
-                    owner_credential,
+                    &owner_credential,
                     txn,
                     TxCredentialRelationValue::PoolOperator.into(),
                 )
@@ -556,9 +567,9 @@ async fn insert_certificate(
                     .encode_fragment()
                     .unwrap();
             insert_stake_credential(
-                vkey_relation_map,
+                vkey_relation_map.clone(),
                 tx_id,
-                operator_credential,
+                &operator_credential,
                 txn,
                 TxCredentialRelationValue::PoolOperator.into(),
             )
@@ -574,9 +585,9 @@ async fn insert_certificate(
                 for pair in credential_pairs.deref() {
                     let credential = pair.0.encode_fragment().unwrap();
                     insert_stake_credential(
-                        vkey_relation_map,
+                        vkey_relation_map.clone(),
                         tx_id,
-                        credential,
+                        &credential,
                         txn,
                         TxCredentialRelationValue::MirRecipient.into(),
                     )
@@ -591,7 +602,7 @@ async fn insert_certificate(
 }
 
 async fn insert_witness(
-    vkey_relation_map: &mut RelationMap,
+    vkey_relation_map: Arc<Mutex<RelationMap>>,
     tx_id: i64,
     witness_set: &cardano_multiplatform_lib::TransactionWitnessSet,
     txn: &DatabaseTransaction,
@@ -601,9 +612,9 @@ async fn insert_witness(
             for i in 0..vkeys.len() {
                 let vkey = vkeys.get(i);
                 insert_stake_credential(
-                    vkey_relation_map,
+                    vkey_relation_map.clone(),
                     tx_id,
-                    RelationMap::keyhash_to_pallas(&vkey.vkey().public_key().hash()).to_vec(),
+                    &RelationMap::keyhash_to_pallas(&vkey.vkey().public_key().hash()).to_vec(),
                     txn,
                     TxCredentialRelationValue::Witness,
                 )
@@ -618,9 +629,9 @@ async fn insert_witness(
             for i in 0..scripts.len() {
                 let script = scripts.get(i);
                 insert_stake_credential(
-                    vkey_relation_map,
+                    vkey_relation_map.clone(),
                     tx_id,
-                    RelationMap::scripthash_to_pallas(
+                    &RelationMap::scripthash_to_pallas(
                         &script.hash(ScriptHashNamespace::NativeScript),
                     )
                     .to_vec(),
@@ -638,10 +649,10 @@ async fn insert_witness(
             for i in 0..scripts.len() {
                 let script = scripts.get(i);
                 insert_stake_credential(
-                    vkey_relation_map,
+                    vkey_relation_map.clone(),
                     tx_id,
                     // TODO: PlutusV2
-                    RelationMap::scripthash_to_pallas(&script.hash(ScriptHashNamespace::PlutusV1))
+                    &RelationMap::scripthash_to_pallas(&script.hash(ScriptHashNamespace::PlutusV1))
                         .to_vec(),
                     txn,
                     TxCredentialRelationValue::Witness,
@@ -656,37 +667,16 @@ async fn insert_witness(
 }
 
 async fn insert_stake_credential(
-    vkey_relation_map: &mut RelationMap,
+    vkey_relation_map: Arc<Mutex<RelationMap>>,
     tx_id: i64,
-    credential: Vec<u8>,
+    credential: &Vec<u8>,
     txn: &DatabaseTransaction,
     tx_relation: TxCredentialRelationValue,
 ) -> Result<StakeCredentialModel, DbErr> {
-    // we may have already looked up this credential inside this transaction
-    // so try and pull it from our local info before querying the DB
-    let staking_credential = match vkey_relation_map
-        .for_transaction(tx_id)
-        .entry(RelationMap::bytes_to_pallas(&credential))
-    {
-        std::collections::btree_map::Entry::Occupied(entry) => {
-            let val = entry.get();
-            Some(StakeCredentialModel {
-                id: val.credential_id,
-                credential: credential.clone(),
-            })
-        }
-        std::collections::btree_map::Entry::Vacant(_) => {
-            StakeCredential::find()
-                .filter(StakeCredentialColumn::Credential.eq(credential.clone()))
-                // note: we know this exists ("credential" is unique) and "all" is faster than "one" if we know the result exists
-                .all(txn)
-                .await?
-                .first()
-                .cloned()
-        }
-    };
-
+    let staking_credential =
+        fetch_stake_credential(vkey_relation_map.clone(), tx_id, credential, txn).await?;
     if let Some(stake_credential) = staking_credential {
+        let mut vkey_relation_map = vkey_relation_map.lock().unwrap();
         vkey_relation_map.add_relation(
             tx_id,
             stake_credential.id,
@@ -697,12 +687,13 @@ async fn insert_stake_credential(
         Ok(stake_credential)
     } else {
         let stake_credential = StakeCredentialActiveModel {
-            credential: Set(credential),
+            credential: Set(credential.clone()),
             ..Default::default()
         };
 
         let stake_credential = stake_credential.insert(txn).await?;
 
+        let mut vkey_relation_map = vkey_relation_map.lock().unwrap();
         vkey_relation_map.add_relation(
             tx_id,
             stake_credential.id,
@@ -711,5 +702,42 @@ async fn insert_stake_credential(
         );
 
         Ok(stake_credential)
+    }
+}
+
+async fn fetch_stake_credential(
+    vkey_relation_map: Arc<Mutex<RelationMap>>,
+    tx_id: i64,
+    credential: &Vec<u8>,
+    txn: &DatabaseTransaction,
+) -> Result<Option<StakeCredentialModel>, DbErr> {
+    // note: this is purely an optimization because a lot of txs contain the same address multiple times
+    // we may have already looked up this credential inside this transaction
+    // so try and pull it from our local info before querying the DB
+    let result: Result<Option<StakeCredentialModel>, DbErr> = (|| match &vkey_relation_map
+        .lock()
+        .unwrap()
+        .for_transaction(tx_id)
+        .entry(RelationMap::bytes_to_pallas(&credential))
+    {
+        std::collections::btree_map::Entry::Occupied(entry) => {
+            let val = entry.get();
+            Ok(Some(StakeCredentialModel {
+                id: val.credential_id,
+                credential: credential.clone(),
+            }))
+        }
+        std::collections::btree_map::Entry::Vacant(_) => Ok(None),
+    })();
+
+    match result? {
+        Some(val) => Ok(Some(val)),
+        None => Ok(StakeCredential::find()
+            .filter(StakeCredentialColumn::Credential.eq(credential.clone()))
+            // note: we know this exists ("credential" is unique) and "all" is faster than "one" if we know the result exists
+            .all(txn)
+            .await?
+            .first()
+            .cloned()),
     }
 }

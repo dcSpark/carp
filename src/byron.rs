@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use crate::perf_aggregator::PerfAggregator;
 use crate::relation_map::RelationMap;
 use cryptoxide::blake2b::Blake2b;
@@ -70,7 +72,7 @@ pub async fn process_byron_block(
                 main_block.body.tx_payload.iter().zip(&transaction_inserts)
             {
                 // unused for Byron
-                let mut vkey_relation_map = RelationMap::default();
+                let vkey_relation_map = Arc::new(Mutex::new(RelationMap::default()));
 
                 let inputs: Vec<pallas::ledger::primitives::alonzo::TransactionInput> = tx_payload
                     .transaction
@@ -80,7 +82,7 @@ pub async fn process_byron_block(
                     .collect();
 
                 crate::era_common::insert_inputs(
-                    &mut vkey_relation_map,
+                    vkey_relation_map.clone(),
                     cardano_tx_in_db.id,
                     &inputs,
                     txn,
