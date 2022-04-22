@@ -41,8 +41,7 @@ impl MigrationTrait for Migration {
                     // Note: the 3-tuple is the primary key
                     // The order of the key here matters since it affects how the generated index performs
                     // https://stackoverflow.com/a/11352543
-                    // Since all queries that include this table will include joins on <address_id, credential_id>
-                    // the performance should still be good
+                    // so we also need to explicitly create an index on CredentialId
                     .primary_key(
                         Index::create()
                             .table(Entity)
@@ -50,6 +49,11 @@ impl MigrationTrait for Migration {
                             .col(Column::AddressId)
                             .col(Column::CredentialId)
                             .col(Column::Relation),
+                    )
+                    .index(
+                        Index::create()
+                            .name("index-address_credential-credential")
+                            .col(Column::CredentialId),
                     )
                     .to_owned(),
             )

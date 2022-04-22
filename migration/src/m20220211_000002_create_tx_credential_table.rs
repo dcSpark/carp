@@ -40,13 +40,18 @@ impl MigrationTrait for Migration {
                     )
                     .col(ColumnDef::new(Column::Relation).integer().not_null())
                     // Note: the 2-tuple is the primary key
-                    // Since all queries that include this table will include joins on <TxId, CredentialId>
-                    // the performance should still be good
+                    // This creates an index on <TxId> and <TxId, CredentialId> (https://stackoverflow.com/a/11352543)
+                    // so we also need to explicitly create an index on CredentialId
                     .primary_key(
                         Index::create()
                             .table(Entity)
                             .name("tx_credential-pk")
                             .col(Column::TxId)
+                            .col(Column::CredentialId),
+                    )
+                    .index(
+                        Index::create()
+                            .name("index-tx_credential-credential")
                             .col(Column::CredentialId),
                     )
                     .to_owned(),
