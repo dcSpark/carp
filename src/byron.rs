@@ -67,28 +67,37 @@ pub async fn process_byron_block(
             perf_aggregator.transaction_output_insert += time_counter.elapsed();
             *time_counter = std::time::Instant::now();
 
-            // TODO: also match this
-            for (tx_payload, cardano_tx_in_db) in
-                main_block.body.tx_payload.iter().zip(&transaction_inserts)
-            {
-                // unused for Byron
-                let vkey_relation_map = Arc::new(Mutex::new(RelationMap::default()));
+            // unused for Byron
+            let vkey_relation_map = Arc::new(Mutex::new(RelationMap::default()));
 
-                let inputs: Vec<pallas::ledger::primitives::alonzo::TransactionInput> = tx_payload
-                    .transaction
-                    .inputs
+            let all_inputs: Vec<(
+                Vec<pallas::ledger::primitives::alonzo::TransactionInput>,
+                i64,
+            )> = main_block
+                .body
+                .tx_payload
+                .iter()
+                .zip(&transaction_inserts)
+                .map(|(tx_payload, cardano_tx_in_db)| {
+                    let inputs: Vec<pallas::ledger::primitives::alonzo::TransactionInput> =
+                        tx_payload
+                            .transaction
+                            .inputs
+                            .iter()
+                            .map(|input| byron_input_to_alonzo(&input))
+                            .collect();
+                    (inputs, cardano_tx_in_db.id)
+                })
+                .collect();
+            crate::era_common::insert_inputs(
+                vkey_relation_map.clone(),
+                &all_inputs
                     .iter()
-                    .map(|input| byron_input_to_alonzo(&input))
-                    .collect();
-
-                crate::era_common::insert_inputs(
-                    vkey_relation_map.clone(),
-                    cardano_tx_in_db.id,
-                    &inputs,
-                    txn,
-                )
-                .await?;
-            }
+                    .map(|inputs| (&inputs.0, inputs.1))
+                    .collect(),
+                txn,
+            )
+            .await?;
 
             perf_aggregator.transaction_input_insert += time_counter.elapsed();
             *time_counter = std::time::Instant::now();

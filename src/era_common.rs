@@ -6,10 +6,10 @@ use std::{
 use entity::{
     prelude::*,
     sea_orm::{
-        prelude::*, ColumnTrait, Condition, DatabaseTransaction, JoinType, QuerySelect, Set,
+        entity::*, prelude::*, ColumnTrait, Condition, DatabaseTransaction, JoinType, QuerySelect,
+        Set,
     },
 };
-use futures::future::join_all;
 use migration::sea_query::Expr;
 use std::collections::BTreeMap;
 
@@ -139,79 +139,140 @@ pub async fn insert_addresses(
 
 pub async fn insert_inputs(
     vkey_relation_map: Arc<Mutex<RelationMap>>,
-    tx_id: i64,
-    inputs: &Vec<pallas::ledger::primitives::alonzo::TransactionInput>,
+    inputs: &Vec<(
+        &Vec<pallas::ledger::primitives::alonzo::TransactionInput>,
+        i64,
+    )>,
     txn: &DatabaseTransaction,
 ) -> Result<(), DbErr> {
+    // avoid querying the DB if there were no inputs
+    let has_input = inputs.iter().any(|input| input.0.len() > 0);
+    if !has_input {
+        return Ok(());
+    }
+
     // 1) Get the UTXO this input is spending
-    let tx_outputs = join_all(inputs.iter().map(|input| {
-        TransactionOutput::find()
-            .inner_join(Transaction)
-            .filter(TransactionOutputColumn::OutputIndex.eq(input.index))
-            .filter(TransactionColumn::Hash.eq(input.transaction_id.to_vec()))
-            .one(txn)
-    }))
-    .await;
+    let mut output_conditions = Condition::any();
 
-    // 2) Associate any relation for credentials
-    let related_credentials = join_all(
-        tx_outputs
-            .iter()
-            // Byron addresses don't contain stake credentials, so we can skip them
-            .filter(|&tx_output| {
-                let model = tx_output.as_ref().unwrap().as_ref().unwrap();
-                let is_byron = match cardano_multiplatform_lib::TransactionOutput::from_bytes(
-                    model.payload.clone(),
-                ) {
-                    Ok(parsed_output) => parsed_output.address().as_byron().is_some(),
-                    // TODO: remove this once we've parsed the genesis block correctly instead of inserting dummy data
-                    Err(_) => true,
-                };
-                !is_byron
+    // note: we don't need to deduplicate the conditions because every UTXO can only be spent once
+    // so we know all these pairs are disjoint amongst all transactions
+    for input in inputs.iter().flat_map(|inputs| inputs.0.iter()) {
+        output_conditions = output_conditions.add(
+            Condition::all()
+                .add(TransactionOutputColumn::OutputIndex.eq(input.index))
+                .add(TransactionColumn::Hash.eq(input.transaction_id.to_vec())),
+        );
+    }
+
+    let tx_outputs = TransactionOutput::find()
+        .inner_join(Transaction)
+        .filter(output_conditions)
+        .select_with(Transaction)
+        .column(TransactionOutputColumn::Id)
+        .column(TransactionOutputColumn::OutputIndex)
+        .column(TransactionOutputColumn::Payload)
+        .column(TransactionColumn::Hash)
+        .column(TransactionColumn::Id)
+        // note: we can use "all" because all utxos are unique so we know:
+        // 1) there won't be duplicates in the result set
+        // 2) the # results == # of outputs in the filter
+        .all(txn)
+        .await?;
+
+    // 2) Creating the mappings we need to map from our DB results back to the original function input
+
+    let mut input_to_output_map = BTreeMap::<&Vec<u8>, BTreeMap<i64, i64>>::default();
+    for output in &tx_outputs {
+        input_to_output_map
+            .entry(&output.1.first().unwrap().hash)
+            .and_modify(|output_index_map| {
+                // note: we can insert right away instead of doing a 2nd lookup
+                // because the pair <payload, output_index> is unique
+                output_index_map.insert(output.0.output_index as i64, output.0.id);
             })
-            .map(|tx_output| {
-                let model = tx_output.as_ref().unwrap().as_ref().unwrap();
+            .or_insert({
+                let mut output_index_map = BTreeMap::<i64, i64>::default();
+                output_index_map.insert(output.0.output_index as i64, output.0.id);
+                output_index_map
+            });
+    }
 
-                // 2) Get the stake credential for the UTXO being spent
-                StakeCredential::find()
-                    .inner_join(AddressCredential)
-                    .join(
-                        JoinType::InnerJoin,
-                        AddressCredentialRelation::Address.def(),
-                    )
-                    .join(
-                        JoinType::InnerJoin,
-                        AddressRelation::TransactionOutput.def(),
-                    )
-                    .filter(TransactionOutputColumn::Id.eq(model.id))
-                    .all(txn)
-            }),
-    )
-    .await;
+    let mut output_to_input_tx = BTreeMap::<i64, i64>::default();
+    for input_tx_pair in inputs.iter() {
+        for input in input_tx_pair.0.iter() {
+            let output_id =
+                input_to_output_map[&input.transaction_id.to_vec()][&(input.index as i64)];
+            output_to_input_tx.insert(output_id, input_tx_pair.1);
+        }
+    }
 
-    // 3) Associate the stake credentials to this transaction
-    if related_credentials.len() > 0 {
-        let mut vkey_relation_map = vkey_relation_map.lock().unwrap();
-        for stake_credentials in related_credentials {
-            for stake_credential in stake_credentials.unwrap() {
-                vkey_relation_map.add_relation(
-                    tx_id,
-                    stake_credential.id,
-                    &stake_credential.credential,
-                    TxCredentialRelationValue::Input,
-                );
+    // 3) Get the credential for any Shelley-era address
+
+    let shelley_output_ids: Vec<i64> = tx_outputs
+        .iter()
+        // Byron addresses don't contain stake credentials, so we can skip them
+        .filter(|&tx_output| {
+            let is_byron = match cardano_multiplatform_lib::TransactionOutput::from_bytes(
+                tx_output.0.payload.clone(),
+            ) {
+                Ok(parsed_output) => parsed_output.address().as_byron().is_some(),
+                // TODO: remove this once we've parsed the genesis block correctly instead of inserting dummy data
+                Err(_) => true,
+            };
+            !is_byron
+        })
+        .map(|output| output.0.id)
+        .collect();
+
+    if shelley_output_ids.len() > 0 {
+        let related_credentials = StakeCredential::find()
+            .inner_join(AddressCredential)
+            .join(
+                JoinType::InnerJoin,
+                AddressCredentialRelation::Address.def(),
+            )
+            .join(
+                JoinType::InnerJoin,
+                AddressRelation::TransactionOutput.def(),
+            )
+            .filter(
+                Condition::any()
+                    .add(Expr::col(TransactionOutputColumn::Id).is_in(shelley_output_ids.clone())),
+            )
+            // we need to know which OutputId every credential is for so we can know which tx these creds are related to
+            .select_with(TransactionOutput)
+            .column(StakeCredentialColumn::Id)
+            .column(StakeCredentialColumn::Credential)
+            .column(TransactionOutputColumn::Id)
+            .all(txn)
+            .await?;
+
+        // 4) Associate the stake credentials to this transaction
+        if related_credentials.len() > 0 {
+            let mut vkey_relation_map = vkey_relation_map.lock().unwrap();
+            for stake_credentials in &related_credentials {
+                // recall: the same stake credential could have shown up in multiple outputs
+                for output in stake_credentials.1.iter() {
+                    vkey_relation_map.add_relation(
+                        output_to_input_tx[&output.id],
+                        stake_credentials.0.id,
+                        &stake_credentials.0.credential,
+                        TxCredentialRelationValue::Input,
+                    );
+                }
             }
         }
     }
 
-    // 4) Add inputs themselves
+    // 5) Add inputs themselves
     TransactionInput::insert_many(
         inputs
             .iter()
-            .zip(tx_outputs)
-            .enumerate()
-            .map(|(idx, pair)| TransactionInputActiveModel {
-                utxo_id: Set(pair.1.as_ref().unwrap().as_ref().unwrap().id),
+            .flat_map(|pair| pair.0.iter().enumerate().zip(std::iter::repeat(pair.1)))
+            .map(|((idx, input), tx_id)| TransactionInputActiveModel {
+                utxo_id: Set(
+                    input_to_output_map[&input.transaction_id.to_vec()][&(input.index as i64)]
+                ),
                 tx_id: Set(tx_id),
                 input_index: Set(idx as i32),
                 ..Default::default()

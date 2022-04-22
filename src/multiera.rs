@@ -256,8 +256,7 @@ async fn process_multiera_txs<'a>(
                 TransactionBodyComponent::Inputs(inputs) if cardano_transaction.is_valid => {
                     crate::era_common::insert_inputs(
                         vkey_relation_map.clone(),
-                        cardano_transaction.database_index,
-                        &inputs,
+                        &vec![(&inputs, cardano_transaction.database_index)],
                         txn,
                     )
                     .await?;
@@ -269,8 +268,7 @@ async fn process_multiera_txs<'a>(
                     // you can use the is_valid field to know what kind of input it actually is
                     crate::era_common::insert_inputs(
                         vkey_relation_map.clone(),
-                        cardano_transaction.database_index,
-                        &inputs,
+                        &vec![(&inputs, cardano_transaction.database_index)],
                         txn,
                     )
                     .await?;
