@@ -236,8 +236,7 @@ pub async fn insert_inputs(
                 AddressRelation::TransactionOutput.def(),
             )
             .filter(
-                Condition::any()
-                    .add(Expr::col(TransactionOutputColumn::Id).is_in(shelley_output_ids.clone())),
+                Condition::any().add(TransactionOutputColumn::Id.is_in(shelley_output_ids.clone())),
             )
             // we need to know which OutputId every credential is for so we can know which tx these creds are related to
             .select_with(TransactionOutput)
