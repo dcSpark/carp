@@ -120,9 +120,8 @@ pub async fn process_multiera_block(
 
     if joined_txs.len() > 0 {
         let insertions = Transaction::insert_many(joined_txs.iter().map(|tx| tx.0.clone()))
-            .exec_with_returning(true, txn)
-            .await?
-            .unwrap();
+            .exec_many_with_returning(txn)
+            .await?;
         perf_aggregator.transaction_insert += time_counter.elapsed();
         *time_counter = std::time::Instant::now();
 
@@ -133,12 +132,12 @@ pub async fn process_multiera_block(
             block_record,
             &joined_txs
                 .iter()
-                .enumerate()
-                .map(|(i, tx)| VirtualTransaction {
+                .zip(&insertions)
+                .map(|(tx, inserted)| VirtualTransaction {
                     body: tx.1,
                     witness_set: &tx.2,
                     is_valid: tx.3,
-                    database_index: insertions.id + (i as i64),
+                    database_index: inserted.id,
                 })
                 .collect(),
         )
