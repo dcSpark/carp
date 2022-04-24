@@ -28,7 +28,7 @@ pub enum TxCredentialRelationValue {
     // TODO: native script / mint (in witness)
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum AddressCredentialRelationValue {
     PaymentKey,
     StakeKey,

@@ -10,61 +10,16 @@ use entity::{
         Set,
     },
 };
-use migration::sea_query::Expr;
 use std::collections::BTreeMap;
 
 use crate::{relation_map::RelationMap, types::TxCredentialRelationValue};
 
-pub async fn insert_address(
-    payload: &mut Vec<u8>,
-    txn: &DatabaseTransaction,
-) -> Result<AddressModel, DbErr> {
-    // During the Byron era of Cardano,
-    // Addresses had a feature where you could add extra metadata in them
-    // The amount of metadata you could insert was not capped
-    // So some addresses got generated which are really large
-    // However, Postgres btree v4 has a maximum size of 2704 for an index
-    // Since these addresses can't be spent anyway, we just truncate them
-    // theoretically, we could truncate at 2704, but we truncate at 500
-    // reasons:
-    // 1) Postgres has shrunk the limit in the past, so they may do it again
-    // 2) Use of the INCLUDE in creating an index can increase its size
-    //    So best to leave some extra room incase this is useful someday
-    // 3) It's not great to hard-code a postgresql-specific limitation
-    // 4) 500 seems more obviously human than 2704 so maybe easier if somebody sees it
-    // 5) Storing up to 2704 bytes is a waste of space since they aren't used for anything
-    payload.truncate(500);
-
-    // note: in the usual case, the address will already be in the DB when we query it
-    // that means it's faster to use find instead of write(on conflict do nothing)
-    // since "do nothing" returns None, a conflict mean we would have to use find as a fallback
-    // meaning the "on conflict do nothing" requires 2 queries in the usual case instead of 1
-    let addr = Address::find()
-        .filter(AddressColumn::Payload.eq(payload.clone()))
-        // note: okay to use "all" since we're querying a unique key
-        // and "all" is faster than "first" if you know it will return a single result
-        .all(txn)
-        .await?;
-
-    if let Some(addr) = addr.first() {
-        Ok(addr.clone())
-    } else {
-        let address = AddressActiveModel {
-            payload: Set(payload.clone()),
-            ..Default::default()
-        };
-
-        let address = address.insert(txn).await?;
-        Ok(address)
-    }
-}
-
 pub async fn insert_addresses(
-    addresses: &Vec<Vec<u8>>,
+    addresses: &BTreeSet<Vec<u8>>,
     txn: &DatabaseTransaction,
-) -> Result<Vec<AddressModel>, DbErr> {
+) -> Result<(Vec<AddressModel>, BTreeMap<Vec<u8>, AddressModel>), DbErr> {
     if addresses.is_empty() {
-        return Ok(vec![]);
+        return Ok((vec![], BTreeMap::default()));
     }
     // During the Byron era of Cardano,
     // Addresses had a feature where you could add extra metadata in them
@@ -89,56 +44,60 @@ pub async fn insert_addresses(
     // useful not only as a perf improvement, but also avoids parallel queries writing to the same row
     let deduplicated = BTreeSet::<_>::from_iter(truncated_addrs.clone());
 
-    // note: in the usual case, the address will already be in the DB when we query it
-    // that means it's faster to use find instead of write(on conflict do nothing)
-    // since "do nothing" returns None, a conflict mean we would have to use find as a fallback
-    // meaning the "on conflict do nothing" requires 2 queries in the usual case instead of 1
+    let mut result_map = BTreeMap::<Vec<u8>, AddressModel>::default();
 
-    // note: okay to batch use "all" since we're querying unique keys
-    let found_addresses = Address::find()
-        .filter(Condition::any().add(Expr::col(AddressColumn::Payload).is_in(deduplicated.clone())))
-        .all(txn)
-        .await?;
+    // 1) Add addresses that were already in the DB
+    {
+        // note: in the usual case, the address will already be in the DB when we query it
+        // that means it's faster to use find instead of write(on conflict do nothing)
+        // since "do nothing" returns None, a conflict mean we would have to use find as a fallback
+        // meaning the "on conflict do nothing" requires 2 queries in the usual case instead of 1
 
-    let mut result_map = BTreeMap::<_, _>::from_iter(
-        found_addresses
-            .iter()
-            .map(|model| (model.payload.as_slice(), model)),
-    );
+        // note: okay to batch use "all" since we're querying unique keys
+        let mut found_addresses = Address::find()
+            .filter(Condition::any().add(AddressColumn::Payload.is_in(deduplicated.clone())))
+            .all(txn)
+            .await?;
 
-    // check which addresses weren't found in the DB and prepare to add them
-    let addrs_to_add: Vec<AddressActiveModel> = deduplicated
-        .iter()
-        .filter(|&&addr| !result_map.contains_key(addr))
-        .map(|addr| AddressActiveModel {
-            payload: Set(addr.to_vec()),
-            ..Default::default()
-        })
-        .collect();
-
-    // add the new entires into the DB, then add them to our result mapping
-    let mut new_entries: Vec<AddressModel> = vec![];
-    if !addrs_to_add.is_empty() {
-        new_entries.extend(
-            Address::insert_many(addrs_to_add)
-                .exec_many_with_returning(txn)
-                .await?,
+        // add addresses that already existed previously directly to the result
+        result_map.extend(
+            found_addresses
+                .drain(..)
+                .map(|model| (model.payload.clone(), model)),
         );
-        new_entries.iter().for_each(|model| {
-            result_map.insert(model.payload.as_slice(), model);
-        });
     }
 
-    Ok(addresses
-        .into_iter()
-        .enumerate()
-        .map(|(idx, _)| result_map[truncated_addrs[idx]])
-        .cloned()
-        .collect())
+    // 2) Add addresses that weren't in the DB
+    let mut additions: Vec<AddressModel> = vec![];
+    {
+        // check which addresses weren't found in the DB and prepare to add them
+        let addrs_to_add: Vec<AddressActiveModel> = deduplicated
+            .iter()
+            .filter(|&&addr| !result_map.contains_key(addr))
+            .map(|addr| AddressActiveModel {
+                payload: Set(addr.to_vec()),
+                ..Default::default()
+            })
+            .collect();
+
+        // add the new entires into the DB, then add them to our result mapping
+        if !addrs_to_add.is_empty() {
+            additions.extend(
+                Address::insert_many(addrs_to_add)
+                    .exec_many_with_returning(txn)
+                    .await?,
+            );
+            additions.iter().for_each(|model| {
+                result_map.insert(model.payload.clone(), model.clone());
+            });
+        }
+    }
+
+    Ok((additions, result_map))
 }
 
 pub async fn insert_inputs(
-    vkey_relation_map: Arc<Mutex<RelationMap>>,
+    vkey_relation_map: &mut RelationMap,
     inputs: &Vec<(
         &Vec<pallas::ledger::primitives::alonzo::TransactionInput>,
         i64,
@@ -248,13 +207,11 @@ pub async fn insert_inputs(
 
         // 4) Associate the stake credentials to this transaction
         if related_credentials.len() > 0 {
-            let mut vkey_relation_map = vkey_relation_map.lock().unwrap();
             for stake_credentials in &related_credentials {
                 // recall: the same stake credential could have shown up in multiple outputs
                 for output in stake_credentials.1.iter() {
                     vkey_relation_map.add_relation(
                         output_to_input_tx[&output.id],
-                        stake_credentials.0.id,
                         &stake_credentials.0.credential,
                         TxCredentialRelationValue::Input,
                     );

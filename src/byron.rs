@@ -1,5 +1,3 @@
-use std::sync::{Arc, Mutex};
-
 use crate::perf_aggregator::PerfAggregator;
 use crate::relation_map::RelationMap;
 use cryptoxide::blake2b::Blake2b;
@@ -68,7 +66,7 @@ pub async fn process_byron_block(
             *time_counter = std::time::Instant::now();
 
             // unused for Byron
-            let vkey_relation_map = Arc::new(Mutex::new(RelationMap::default()));
+            let mut vkey_relation_map = RelationMap::default();
 
             let all_inputs: Vec<(
                 Vec<pallas::ledger::primitives::alonzo::TransactionInput>,
@@ -90,7 +88,7 @@ pub async fn process_byron_block(
                 })
                 .collect();
             crate::era_common::insert_inputs(
-                vkey_relation_map.clone(),
+                &mut vkey_relation_map,
                 &all_inputs
                     .iter()
                     .map(|inputs| (&inputs.0, inputs.1))
@@ -111,7 +109,7 @@ async fn insert_byron_outputs(
     txn: &DatabaseTransaction,
     outputs: &Vec<(&MaybeIndefArray<TxOut>, &TransactionModel)>,
 ) -> Result<(), DbErr> {
-    let address_inserts = crate::era_common::insert_addresses(
+    let (_, address_map) = crate::era_common::insert_addresses(
         &outputs
             .iter()
             .flat_map(|pair| pair.0.iter())
@@ -125,16 +123,18 @@ async fn insert_byron_outputs(
         outputs
             .iter()
             .flat_map(|pair| pair.0.iter().enumerate().zip(std::iter::repeat(pair.1)))
-            .enumerate()
-            .map(|(address_lookup_index, ((output_index, output), tx_id))| {
-                TransactionOutputActiveModel {
+            .map(
+                |((output_index, output), tx_id)| TransactionOutputActiveModel {
                     payload: Set(output.encode_fragment().unwrap()),
-                    address_id: Set(address_inserts.get(address_lookup_index).unwrap().id),
+                    address_id: Set(address_map
+                        .get(&output.address.encode_fragment().unwrap())
+                        .unwrap()
+                        .id),
                     tx_id: Set(tx_id.id),
                     output_index: Set(output_index as i32),
                     ..Default::default()
-                }
-            }),
+                },
+            ),
     )
     .exec(txn)
     .await?;

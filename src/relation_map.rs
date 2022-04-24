@@ -2,15 +2,14 @@ use crate::types::TxCredentialRelationValue;
 use pallas::crypto::hash::Hash;
 use std::collections::BTreeMap;
 
-pub struct RelationMapValue {
-    pub credential_id: i64,
-    pub relation: i32,
-}
 #[derive(Default)]
-pub struct RelationMap(pub BTreeMap<i64 /* tx ID in db */, BTreeMap<Hash<32>, RelationMapValue>>);
+pub struct RelationMap(pub BTreeMap<i64 /* tx ID in db */, BTreeMap<Hash<32>, i32>>);
 
 impl RelationMap {
     pub fn bytes_to_pallas(bytes: &Vec<u8>) -> Hash<32> {
+        if bytes.len() == 29 {
+            panic!();
+        }
         let bytes: [u8; 32] = bytes.clone().try_into().unwrap();
         Hash::<32>::from(bytes)
     }
@@ -32,24 +31,20 @@ impl RelationMap {
         )
     }
 
-    pub fn for_transaction(&mut self, tx_id: i64) -> &mut BTreeMap<Hash<32>, RelationMapValue> {
+    pub fn for_transaction(&mut self, tx_id: i64) -> &mut BTreeMap<Hash<32>, i32> {
         self.0.entry(tx_id).or_insert(BTreeMap::new())
     }
 
     pub fn add_relation(
         &mut self,
         tx_id: i64,
-        stake_credential_id: i64,
         stake_credential: &Vec<u8>,
         relation: TxCredentialRelationValue,
     ) -> () {
         let credential_map = self.for_transaction(tx_id);
         credential_map
             .entry(RelationMap::bytes_to_pallas(&stake_credential))
-            .and_modify(|val| val.relation |= i32::from(relation))
-            .or_insert(RelationMapValue {
-                credential_id: stake_credential_id,
-                relation: relation.into(),
-            });
+            .and_modify(|val| *val |= i32::from(relation))
+            .or_insert(relation.into());
     }
 }
