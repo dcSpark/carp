@@ -186,9 +186,6 @@ async fn process_multiera_txs<'a>(
             cardano_transaction.witness_set,
         );
 
-        perf_aggregator.witness_insert += time_counter.elapsed();
-        *time_counter = std::time::Instant::now();
-
         for component in cardano_transaction.body.iter() {
             match component {
                 TransactionBodyComponent::Certificates(certs) => {
@@ -201,8 +198,6 @@ async fn process_multiera_txs<'a>(
                             &cert,
                         );
                     }
-                    perf_aggregator.certificate_insert += time_counter.elapsed();
-                    *time_counter = std::time::Instant::now();
                 }
                 TransactionBodyComponent::Outputs(outputs) => {
                     for (idx, output) in outputs.iter().enumerate() {
@@ -217,8 +212,6 @@ async fn process_multiera_txs<'a>(
                             idx,
                         );
                     }
-                    perf_aggregator.transaction_output_insert += time_counter.elapsed();
-                    *time_counter = std::time::Instant::now();
                 }
                 TransactionBodyComponent::Withdrawals(withdrawal_pairs) => {
                     for pair in withdrawal_pairs.deref() {
@@ -240,8 +233,6 @@ async fn process_multiera_txs<'a>(
                             AddressCredentialRelationValue::PaymentKey,
                         );
                     }
-                    perf_aggregator.withdrawal_insert += time_counter.elapsed();
-                    *time_counter = std::time::Instant::now();
                 }
                 TransactionBodyComponent::RequiredSigners(key_hashes) => {
                     for &signer in key_hashes.iter() {
@@ -257,8 +248,6 @@ async fn process_multiera_txs<'a>(
                             TxCredentialRelationValue::RequiredSigner,
                         );
                     }
-                    perf_aggregator.required_signer_insert += time_counter.elapsed();
-                    *time_counter = std::time::Instant::now();
                 }
                 _ => (),
             }
@@ -292,10 +281,14 @@ async fn process_multiera_txs<'a>(
         txn,
     )
     .await?;
+    perf_aggregator.stake_cred_insert += time_counter.elapsed();
+    *time_counter = std::time::Instant::now();
 
     // 2) Insert addresses
     let (new_addresses, address_to_model_map) =
         crate::era_common::insert_addresses(&queued_address, txn).await?;
+    perf_aggregator.addr_insert += time_counter.elapsed();
+    *time_counter = std::time::Instant::now();
 
     // 3) Insert address credential relations
     insert_address_credential_relation(
@@ -305,9 +298,13 @@ async fn process_multiera_txs<'a>(
         txn,
     )
     .await?;
+    perf_aggregator.addr_cred_relation_insert += time_counter.elapsed();
+    *time_counter = std::time::Instant::now();
 
     // 4) Insert outputs
     insert_outputs(&address_to_model_map, &queued_output, txn).await?;
+    perf_aggregator.transaction_output_insert += time_counter.elapsed();
+    *time_counter = std::time::Instant::now();
 
     // 5) Insert inputs (note: inputs have to be added AFTER outputs added to DB)
     {
@@ -330,6 +327,8 @@ async fn process_multiera_txs<'a>(
         vkey_relation_map.0.extend(input_vkey_relation_map.0);
         cred_to_model_map.extend(input_cred_to_model_map);
     }
+    perf_aggregator.transaction_input_insert += time_counter.elapsed();
+    *time_counter = std::time::Instant::now();
 
     // 6) Insert tx relations
     insert_tx_credentials(&vkey_relation_map, &cred_to_model_map, txn).await?;

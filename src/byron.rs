@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use crate::perf_aggregator::PerfAggregator;
 use crate::relation_map::RelationMap;
 use cryptoxide::blake2b::Blake2b;
@@ -59,9 +61,21 @@ pub async fn process_byron_block(
                 .zip(&transaction_inserts)
                 .collect();
 
-            // note: outputs have to be added before inputs
-            insert_byron_outputs(txn, &tx_outputs).await?;
+            // insert addresses
+            let (_, address_map) = crate::era_common::insert_addresses(
+                &tx_outputs
+                    .iter()
+                    .flat_map(|pair| pair.0.iter())
+                    .map(|output| output.address.encode_fragment().unwrap())
+                    .collect(),
+                txn,
+            )
+            .await?;
+            perf_aggregator.addr_insert += time_counter.elapsed();
+            *time_counter = std::time::Instant::now();
 
+            // note: outputs have to be added before inputs
+            insert_byron_outputs(txn, &address_map, &tx_outputs).await?;
             perf_aggregator.transaction_output_insert += time_counter.elapsed();
             *time_counter = std::time::Instant::now();
 
@@ -107,18 +121,9 @@ pub async fn process_byron_block(
 
 async fn insert_byron_outputs(
     txn: &DatabaseTransaction,
+    address_map: &BTreeMap<Vec<u8>, AddressModel>,
     outputs: &Vec<(&MaybeIndefArray<TxOut>, &TransactionModel)>,
 ) -> Result<(), DbErr> {
-    let (_, address_map) = crate::era_common::insert_addresses(
-        &outputs
-            .iter()
-            .flat_map(|pair| pair.0.iter())
-            .map(|output| output.address.encode_fragment().unwrap())
-            .collect(),
-        txn,
-    )
-    .await?;
-
     TransactionOutput::insert_many(
         outputs
             .iter()
