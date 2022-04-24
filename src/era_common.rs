@@ -2,9 +2,7 @@ use std::collections::BTreeSet;
 
 use entity::{
     prelude::*,
-    sea_orm::{
-        entity::*, prelude::*, ColumnTrait, Condition, DatabaseTransaction, QuerySelect, Set,
-    },
+    sea_orm::{entity::*, prelude::*, ColumnTrait, Condition, DatabaseTransaction, Set},
 };
 use std::collections::BTreeMap;
 
