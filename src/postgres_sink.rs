@@ -33,9 +33,7 @@ impl<'a> Config<'a> {
             let event = input.recv()?;
             perf_aggregator.block_fetch += event_fetch_start.elapsed();
 
-            let data = event.data.clone();
-
-            match data {
+            match &event.data {
                 EventData::Block(block_record) => {
                     match block_record.epoch {
                         Some(epoch) if epoch as i128 > last_epoch => {
@@ -74,7 +72,7 @@ impl<'a> Config<'a> {
                     perf_aggregator += self
                         .conn
                         .transaction::<_, PerfAggregator, DbErr>(|txn| {
-                            Box::pin(insert_block(block_record, txn))
+                            Box::pin(insert_block(block_record.clone(), txn))
                         })
                         .await?;
                 }
@@ -85,7 +83,7 @@ impl<'a> Config<'a> {
                     };
                     let rollback_start = std::time::Instant::now();
                     Block::delete_many()
-                        .filter(BlockColumn::Slot.gt(block_slot))
+                        .filter(BlockColumn::Slot.gt(*block_slot))
                         .exec(self.conn)
                         .await?;
                     perf_aggregator.rollback += rollback_start.elapsed();
@@ -125,7 +123,7 @@ async fn insert_block(
     perf_aggregator.block_insertion += time_counter.elapsed();
     time_counter = std::time::Instant::now();
 
-    match multi_block {
+    match &multi_block {
         MultiEraBlock::Byron(byron_block) => {
             crate::byron::process_byron_block(
                 &mut perf_aggregator,

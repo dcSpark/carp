@@ -753,7 +753,6 @@ async fn insert_outputs(
         TransactionOutputActiveModel {
             address_id: Set(address_to_model_map.get(&entry.address).unwrap().id),
             tx_id: Set(entry.tx_id),
-            // TODO: payload
             payload: Set(entry.payload.clone()),
             output_index: Set(entry.idx as i32),
             ..Default::default()
@@ -778,6 +777,7 @@ async fn add_input_relations(
     let mut output_to_input_tx = BTreeMap::<i64, i64>::default();
     for input_tx_pair in inputs.iter() {
         for input in input_tx_pair.0.iter() {
+            // println!("tx: {}", hex::encode(input.transaction_id.to_vec()));
             let output_id =
                 input_to_output_map[&input.transaction_id.to_vec()][&(input.index as i64)];
             output_to_input_tx.insert(output_id, input_tx_pair.1);
