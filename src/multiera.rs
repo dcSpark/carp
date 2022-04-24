@@ -817,9 +817,10 @@ async fn add_input_relations(
             )
             // we need to know which OutputId every credential is for so we can know which tx these creds are related to
             .select_with(TransactionOutput)
-            .column(StakeCredentialColumn::Id)
-            .column(StakeCredentialColumn::Credential)
-            .column(TransactionOutputColumn::Id)
+            // TODO: we only actually need these columns, but sea-orm returns the full join
+            // .column(StakeCredentialColumn::Id)
+            // .column(StakeCredentialColumn::Credential)
+            // .column(TransactionOutputColumn::Id)
             .all(txn)
             .await?;
 

@@ -120,11 +120,12 @@ pub async fn get_outputs_for_inputs(
         .inner_join(Transaction)
         .filter(output_conditions)
         .select_with(Transaction)
-        .column(TransactionOutputColumn::Id)
-        .column(TransactionOutputColumn::OutputIndex)
-        .column(TransactionOutputColumn::Payload)
-        .column(TransactionColumn::Hash)
-        .column(TransactionColumn::Id)
+        // TODO: we only actually need these columns, but sea-orm returns the full join
+        // .column(TransactionOutputColumn::Id)
+        // .column(TransactionOutputColumn::OutputIndex)
+        // .column(TransactionOutputColumn::Payload)
+        // .column(TransactionColumn::Hash)
+        // .column(TransactionColumn::Id)
         // note: we can use "all" because all utxos are unique so we know:
         // 1) there won't be duplicates in the result set
         // 2) the # results == # of outputs in the filter
