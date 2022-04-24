@@ -21,7 +21,9 @@ use crate::{
 };
 use entity::{
     prelude::*,
-    sea_orm::{prelude::*, ColumnTrait, Condition, DatabaseTransaction, Set},
+    sea_orm::{
+        prelude::*, ColumnTrait, Condition, DatabaseTransaction, JoinType, QuerySelect, Set,
+    },
 };
 
 struct VirtualTransaction<'a> {
@@ -268,10 +270,39 @@ async fn process_multiera_txs<'a>(
         }
     }
 
-    // TODO: do (1) and (2) in parallel
+    // 1) Insert addresses
+    let (new_addresses, address_to_model_map) =
+        crate::era_common::insert_addresses(&queued_address, txn).await?;
+    perf_aggregator.addr_insert += time_counter.elapsed();
+    *time_counter = std::time::Instant::now();
 
-    // 1) Insert stake credentials
-    let mut cred_to_model_map = insert_stake_credentials(
+    // 2) Insert outputs
+    insert_outputs(&address_to_model_map, &queued_output, txn).await?;
+    perf_aggregator.transaction_output_insert += time_counter.elapsed();
+    *time_counter = std::time::Instant::now();
+
+    // 3) Insert inputs (note: inputs have to be added AFTER outputs added to DB)
+    {
+        let outputs_for_inputs =
+            crate::era_common::get_outputs_for_inputs(&queued_inputs, txn).await?;
+        let input_to_output_map = crate::era_common::gen_input_to_output_map(&outputs_for_inputs);
+
+        // TODO: add input relations & inputs in parallel
+        add_input_relations(
+            &mut vkey_relation_map,
+            &queued_inputs,
+            &outputs_for_inputs,
+            &input_to_output_map,
+            txn,
+        )
+        .await?;
+        crate::era_common::insert_inputs(&queued_inputs, &input_to_output_map, txn).await?;
+    }
+    perf_aggregator.transaction_input_insert += time_counter.elapsed();
+    *time_counter = std::time::Instant::now();
+
+    // 4) Insert stake credentials
+    let cred_to_model_map = insert_stake_credentials(
         &vkey_relation_map
             .0
             .values()
@@ -284,13 +315,7 @@ async fn process_multiera_txs<'a>(
     perf_aggregator.stake_cred_insert += time_counter.elapsed();
     *time_counter = std::time::Instant::now();
 
-    // 2) Insert addresses
-    let (new_addresses, address_to_model_map) =
-        crate::era_common::insert_addresses(&queued_address, txn).await?;
-    perf_aggregator.addr_insert += time_counter.elapsed();
-    *time_counter = std::time::Instant::now();
-
-    // 3) Insert address credential relations
+    // 5) Insert address credential relations
     insert_address_credential_relation(
         &cred_to_model_map,
         &new_addresses,
@@ -299,35 +324,6 @@ async fn process_multiera_txs<'a>(
     )
     .await?;
     perf_aggregator.addr_cred_relation_insert += time_counter.elapsed();
-    *time_counter = std::time::Instant::now();
-
-    // 4) Insert outputs
-    insert_outputs(&address_to_model_map, &queued_output, txn).await?;
-    perf_aggregator.transaction_output_insert += time_counter.elapsed();
-    *time_counter = std::time::Instant::now();
-
-    // 5) Insert inputs (note: inputs have to be added AFTER outputs added to DB)
-    {
-        // inserting inputs may reveal some new credentials and relations we need to track
-        let mut input_vkey_relation_map = RelationMap::default();
-        crate::era_common::insert_inputs(&mut input_vkey_relation_map, &queued_inputs, txn).await?;
-
-        // check if any of the credentials found are new
-        let new_credentials = input_vkey_relation_map
-            .0
-            .values()
-            .flat_map(|cred_to_model| cred_to_model.keys())
-            .map(|pallas| pallas.to_vec())
-            .filter(|cred| cred_to_model_map.get(cred).is_none())
-            .collect();
-
-        let input_cred_to_model_map = insert_stake_credentials(&new_credentials, txn).await?;
-
-        // add in all the new creds & relations
-        vkey_relation_map.0.extend(input_vkey_relation_map.0);
-        cred_to_model_map.extend(input_cred_to_model_map);
-    }
-    perf_aggregator.transaction_input_insert += time_counter.elapsed();
     *time_counter = std::time::Instant::now();
 
     // 6) Insert tx relations
@@ -763,6 +759,82 @@ async fn insert_outputs(
     }))
     .exec(txn)
     .await?;
+
+    Ok(())
+}
+
+async fn add_input_relations(
+    vkey_relation_map: &mut RelationMap,
+    inputs: &Vec<(
+        &Vec<pallas::ledger::primitives::alonzo::TransactionInput>,
+        i64,
+    )>,
+    outputs_for_inputs: &Vec<(TransactionOutputModel, Vec<TransactionModel>)>,
+    input_to_output_map: &BTreeMap<&Vec<u8>, BTreeMap<i64, i64>>,
+    txn: &DatabaseTransaction,
+) -> Result<(), DbErr> {
+    let mut output_to_input_tx = BTreeMap::<i64, i64>::default();
+    for input_tx_pair in inputs.iter() {
+        for input in input_tx_pair.0.iter() {
+            let output_id =
+                input_to_output_map[&input.transaction_id.to_vec()][&(input.index as i64)];
+            output_to_input_tx.insert(output_id, input_tx_pair.1);
+        }
+    }
+
+    let shelley_output_ids: Vec<i64> = outputs_for_inputs
+        .iter()
+        // Byron addresses don't contain stake credentials, so we can skip them
+        .filter(|&tx_output| {
+            let is_byron = match cardano_multiplatform_lib::TransactionOutput::from_bytes(
+                tx_output.0.payload.clone(),
+            ) {
+                Ok(parsed_output) => parsed_output.address().as_byron().is_some(),
+                // TODO: remove this once we've parsed the genesis block correctly instead of inserting dummy data
+                Err(_) => true,
+            };
+            !is_byron
+        })
+        .map(|output| output.0.id)
+        .collect();
+
+    if shelley_output_ids.len() > 0 {
+        // get stake credentials for the outputs that were consumed
+        let related_credentials = StakeCredential::find()
+            .inner_join(AddressCredential)
+            .join(
+                JoinType::InnerJoin,
+                AddressCredentialRelation::Address.def(),
+            )
+            .join(
+                JoinType::InnerJoin,
+                AddressRelation::TransactionOutput.def(),
+            )
+            .filter(
+                Condition::any().add(TransactionOutputColumn::Id.is_in(shelley_output_ids.clone())),
+            )
+            // we need to know which OutputId every credential is for so we can know which tx these creds are related to
+            .select_with(TransactionOutput)
+            .column(StakeCredentialColumn::Id)
+            .column(StakeCredentialColumn::Credential)
+            .column(TransactionOutputColumn::Id)
+            .all(txn)
+            .await?;
+
+        // 4) Associate the stake credentials to this transaction
+        if related_credentials.len() > 0 {
+            for stake_credentials in &related_credentials {
+                // recall: the same stake credential could have shown up in multiple outputs
+                for output in stake_credentials.1.iter() {
+                    vkey_relation_map.add_relation(
+                        output_to_input_tx[&output.id],
+                        &stake_credentials.0.credential,
+                        TxCredentialRelationValue::Input,
+                    );
+                }
+            }
+        }
+    }
 
     Ok(())
 }

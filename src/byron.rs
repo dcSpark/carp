@@ -1,7 +1,6 @@
 use std::collections::BTreeMap;
 
 use crate::perf_aggregator::PerfAggregator;
-use crate::relation_map::RelationMap;
 use cryptoxide::blake2b::Blake2b;
 use entity::{
     prelude::*,
@@ -79,9 +78,6 @@ pub async fn process_byron_block(
             perf_aggregator.transaction_output_insert += time_counter.elapsed();
             *time_counter = std::time::Instant::now();
 
-            // unused for Byron
-            let mut vkey_relation_map = RelationMap::default();
-
             let all_inputs: Vec<(
                 Vec<pallas::ledger::primitives::alonzo::TransactionInput>,
                 i64,
@@ -101,15 +97,17 @@ pub async fn process_byron_block(
                     (inputs, cardano_tx_in_db.id)
                 })
                 .collect();
-            crate::era_common::insert_inputs(
-                &mut vkey_relation_map,
-                &all_inputs
-                    .iter()
-                    .map(|inputs| (&inputs.0, inputs.1))
-                    .collect(),
-                txn,
-            )
-            .await?;
+
+            let flattened_inputs = all_inputs
+                .iter()
+                .map(|inputs| (&inputs.0, inputs.1))
+                .collect();
+            let outputs_for_inputs =
+                crate::era_common::get_outputs_for_inputs(&flattened_inputs, txn).await?;
+
+            let input_to_output_map =
+                crate::era_common::gen_input_to_output_map(&outputs_for_inputs);
+            crate::era_common::insert_inputs(&flattened_inputs, &input_to_output_map, txn).await?;
 
             perf_aggregator.transaction_input_insert += time_counter.elapsed();
             *time_counter = std::time::Instant::now();
