@@ -6,7 +6,6 @@ use pallas::ledger::primitives::{
 use std::{
     collections::{BTreeMap, BTreeSet},
     ops::Deref,
-    sync::{Arc, Mutex},
 };
 
 use cardano_multiplatform_lib::{
@@ -287,16 +286,19 @@ async fn process_multiera_txs<'a>(
             crate::era_common::get_outputs_for_inputs(&queued_inputs, txn).await?;
         let input_to_output_map = crate::era_common::gen_input_to_output_map(&outputs_for_inputs);
 
-        // TODO: add input relations & inputs in parallel
-        add_input_relations(
-            &mut vkey_relation_map,
-            &queued_inputs,
-            &outputs_for_inputs,
-            &input_to_output_map,
-            txn,
+        let (relation_result, input_result) = futures::future::join(
+            add_input_relations(
+                &mut vkey_relation_map,
+                &queued_inputs,
+                &outputs_for_inputs,
+                &input_to_output_map,
+                txn,
+            ),
+            crate::era_common::insert_inputs(&queued_inputs, &input_to_output_map, txn),
         )
-        .await?;
-        crate::era_common::insert_inputs(&queued_inputs, &input_to_output_map, txn).await?;
+        .await;
+        relation_result?;
+        input_result?;
     }
     perf_aggregator.transaction_input_insert += time_counter.elapsed();
     *time_counter = std::time::Instant::now();
