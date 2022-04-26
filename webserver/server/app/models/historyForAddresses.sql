@@ -4,6 +4,7 @@ SELECT "Transaction".id,
         "Transaction".hash,
         "Transaction".tx_index,
         "Transaction".is_valid,
+        "Block".hash AS block_hash,
         "Block".epoch,
         "Block".slot,
         "Block".era,
@@ -13,6 +14,7 @@ SELECT "Transaction".id,
       INNER JOIN "Transaction" ON "TxCredentialRelation".tx_id = "Transaction".id
       INNER JOIN "Block" ON "Transaction".block_id = "Block".id
       WHERE "StakeCredential".credential = ANY (:credentials)
-      ORDER BY "Block".height ASC,
+      ORDER BY
+        "Block".height ASC,
         "Transaction".tx_index ASC
       LIMIT 100;

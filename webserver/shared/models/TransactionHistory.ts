@@ -1,6 +1,4 @@
-import type { Address } from './Address';
-import type Zapatos from 'zapatos/schema';
-import { expectType } from 'tsd';
+import type { Address } from "./Address";
 
 export type TransactionHistoryRequest = {
   addresses: Address[];
@@ -24,18 +22,28 @@ export type BlockInfo = {
   slot: number;
   /** Era of block this transaction was submitted in */
   era: number;
+
+  // note: the following information, in a sense, belongs to the tx
+  // but we put it in the block section because we can't know it
+  // until the information shows up inside a block
+
   /** index of tx in block */
   tx_ordinal: number;
   is_valid: boolean;
 };
 export type TransactionInfo = {
+  /**
+   * Strictly speaking, you can calculate this by hashing the payload
+   * It's just provided for convenience
+   */
+  hash: string;
+  payload: string;
+};
+export type TxAndBlockInfo = {
   block: null | BlockInfo;
   /** cbor-encoded transaction */
-  transaction: string;
+  transaction: TransactionInfo;
 };
 export type TransactionHistoryResponse = {
-  transactions: TransactionInfo[];
+  transactions: TxAndBlockInfo[];
 };
-
-// tsoa can't support looking up Zapatos types, so instead we just make sure the types match
-expectType<Equals<BlockInfo['era'], Zapatos.Block.Selectable['era']>>(true);
