@@ -70,6 +70,30 @@ services:
         max-size: "1m"
         max-file: "10"
 
+  # to run stack without backup, please comment this out
+  # currently supports only AWS s3. GCP and Azure TODO
+  postgres_backup:
+    build:
+      context: ./backuper
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+    - NETWORK=${NETWORK:-testnet}
+    - CARDANO_NODE_SOCKET_PATH=/app/node-ipc/node.socket
+    - POSTGRES_DB=cardano
+    - PGPASSFILE=/run/secrets/.pgpass
+    - S3_BUCKET=${S3_BUCKET:?Please set me}
+    - S3_FOLDER=${S3_BUCKET:?Recommend as hostname}
+    - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:?Please set me}
+    - AWS_SECRET_ACCESS_KEY=${AWS_ACCESS_KEY_ID:?Please set me}
+    secrets:
+    - pgpass
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
+
 secrets:
   pgpass:
     file: ./config/secrets/${NETWORK:-testnet}/.pgpass
