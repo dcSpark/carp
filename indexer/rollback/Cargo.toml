@@ -1,0 +1,18 @@
+[package]
+name = "rollback"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+sea-schema = { git = "https://github.com/dcSpark/sea-schema", branch = "bump-sea-x", default-features = false, features = [
+    "migration",
+    "debug-print",
+] }
+anyhow = "1.0.53"
+clap = { version = "3.0", features = ["derive"] }
+tracing-subscriber = "0.3.9"
+tracing = "0.1.31"
+dotenv = "0.15.0"
+tokio = { version = "1.16.1", features = ["full"] }
+entity = { path = "../entity" }
