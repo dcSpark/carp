@@ -7,9 +7,6 @@ pub struct RelationMap(pub BTreeMap<i64 /* tx ID in db */, BTreeMap<Hash<32>, i3
 
 impl RelationMap {
     pub fn bytes_to_pallas(bytes: &Vec<u8>) -> Hash<32> {
-        if bytes.len() == 29 {
-            panic!();
-        }
         let bytes: [u8; 32] = bytes.clone().try_into().unwrap();
         Hash::<32>::from(bytes)
     }

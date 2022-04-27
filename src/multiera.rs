@@ -25,6 +25,75 @@ use entity::{
     },
 };
 
+/// Oura & CML have a bug where the tx hash is wrong
+/// if the cbor include a larger-than-necessary int representation
+/// Until we get a proper fix, we create a mapping of broken hash to real hash
+// static broken_hash_mapping: Lazy<BTreeMap<Vec<u8>, Vec<u8>>> = Lazy::new(|| {
+//     let mut mapping = BTreeMap::<Vec<u8>, Vec<u8>>::default();
+//     mapping.insert(
+//         hex::decode("80aa254b951c57b9cc3cac7fd87da8021839ee47d120c0e7ae228cebe81c6754").unwrap(),
+//         hex::decode("85d476f64056d8cb776239147ad4430711cc69286823ec888c59776bf8ffd794").unwrap(),
+//     );
+//     mapping.insert(
+//         hex::decode("8f8a36bef60a4e92f5f345c4544dd454bbf1824361ae9bf6c1e9221bd24c4f39").unwrap(),
+//         hex::decode("b6d54d7b7ea398a923789bbec8838ad9060fa09fcfd2085aad241963e2b1ab27").unwrap(),
+//     );
+//     mapping.insert(
+//         hex::decode("d10ec76956c3f58e18c9a8bc680cf7311a6e132cf73e638060c70499aa3bd1eb").unwrap(),
+//         hex::decode("68ec93da477aec3cf91e2de5ed55113a93a3b523a016a9c9a03bde32533edcd3").unwrap(),
+//     );
+//     mapping.insert(
+//         hex::decode("bbf040785dd06fb3f595af0a23d9f17f9ca0393d39012c8bdef42a286cd047a5").unwrap(),
+//         hex::decode("b85ca66fdfebd3bc1cc14fa13bb03ffb25be7e75721888d5fcf82175efa83ddf").unwrap(),
+//     );
+//     mapping.insert(
+//         hex::decode("19d5925fe8021913db3a5b7d91c323fb02ba5db666907d7461c3f8889e431aa0").unwrap(),
+//         hex::decode("c313dd7f7f084d3a70c692fb08db109d4637261ccb6d8b38edbeacdb42f626d7").unwrap(),
+//     );
+//     mapping.insert(
+//         hex::decode("85ca0ef7d48d0a9d77e4db9581ef8da339bad2b7d730ec07f4cb3bf05df8ffc2").unwrap(),
+//         hex::decode("716a5e92c50bf7d896cb79b338a0aedd4b7b4dd0bc3ff29212cf906a51715a71").unwrap(),
+//     );
+//     mapping.insert(
+//         hex::decode("6744f9f865db1dbf42bbf7be47902149b49d678d799a6ac0cb4ce7ace311eefd").unwrap(),
+//         hex::decode("5efde14726458207dbd96fb6a1ffd0528d47f51f55f4e0c34d52a8e004a6b25a").unwrap(),
+//     );
+//     mapping.insert(
+//         hex::decode("7212feef21477ee683605656c2f7a161e45a3388e1e2339c931e70106e1367c0").unwrap(),
+//         hex::decode("56c4c6e56790f06a3cc54baa7becb093ea40608a3e870ee749411438d761689e").unwrap(),
+//     );
+//     mapping.insert(
+//         hex::decode("6fdc2a2c06a7487992cf505713076ec64d517ff23a63c468fb8ab91f1603a645").unwrap(),
+//         hex::decode("1d31bfa575281e594440c7adfec0e0c676f3a7a4112b07092ce28b05ab0a39fd").unwrap(),
+//     );
+//     mapping.insert(
+//         hex::decode("16a65f7f4eff43dcb7abe4daa8a74d8d2d038548659981f61526cd61c7763082").unwrap(),
+//         hex::decode("91a99d669384cd60f1a23cbec7e8c956ead8b812f57eaa59433e5175c4eed7e7").unwrap(),
+//     );
+
+//     mapping
+// });
+
+// fn replace_inputs(
+//     inputs: &Vec<pallas::ledger::primitives::alonzo::TransactionInput>,
+// ) -> Vec<pallas::ledger::primitives::alonzo::TransactionInput> {
+//     inputs
+//         .iter()
+//         .map(
+//             |input| match broken_hash_mapping.get(&input.transaction_id.to_vec()) {
+//                 Some(new_hash) => pallas::ledger::primitives::alonzo::TransactionInput {
+//                     transaction_id: RelationMap::bytes_to_pallas(new_hash),
+//                     index: input.index,
+//                 },
+//                 None => pallas::ledger::primitives::alonzo::TransactionInput::decode_fragment(
+//                     &input.encode_fragment().unwrap(),
+//                 )
+//                 .unwrap(),
+//             },
+//         )
+//         .collect()
+// }
+
 struct VirtualTransaction<'a> {
     body: &'a TransactionBody,
     witness_set: &'a cardano_multiplatform_lib::TransactionWitnessSet,
@@ -282,6 +351,15 @@ async fn process_multiera_txs<'a>(
 
     // 3) Insert inputs (note: inputs have to be added AFTER outputs added to DB)
     {
+        // let mapped_inputs: Vec<_> = queued_inputs
+        //     .iter()
+        //     .map(|&(inputs, _)| replace_inputs(inputs))
+        //     .collect();
+        // let fixed_queued_inputs: Vec<_> = queued_inputs
+        //     .iter()
+        //     .enumerate()
+        //     .map(|(i, &(_, output_idx))| (&mapped_inputs[i], output_idx))
+        //     .collect();
         let outputs_for_inputs =
             crate::era_common::get_outputs_for_inputs(&queued_inputs, txn).await?;
         let input_to_output_map = crate::era_common::gen_input_to_output_map(&outputs_for_inputs);
@@ -303,7 +381,7 @@ async fn process_multiera_txs<'a>(
     perf_aggregator.transaction_input_insert += time_counter.elapsed();
     *time_counter = std::time::Instant::now();
 
-    // 4) Insert stake credentials
+    // 4) Insert stake credentials (note: has to be done after inputs as they may add new creds)
     let cred_to_model_map = insert_stake_credentials(
         &vkey_relation_map
             .0
@@ -777,10 +855,16 @@ async fn add_input_relations(
     let mut output_to_input_tx = BTreeMap::<i64, i64>::default();
     for input_tx_pair in inputs.iter() {
         for input in input_tx_pair.0.iter() {
-            // println!("tx: {}", hex::encode(input.transaction_id.to_vec()));
-            let output_id =
-                input_to_output_map[&input.transaction_id.to_vec()][&(input.index as i64)];
-            output_to_input_tx.insert(output_id, input_tx_pair.1);
+            match input_to_output_map.get(&input.transaction_id.to_vec()) {
+                Some(entry_for_tx) => {
+                    let output_id = entry_for_tx[&(input.index as i64)];
+                    output_to_input_tx.insert(output_id, input_tx_pair.1);
+                }
+                None => {
+                    println!("tx: {}", hex::encode(input.transaction_id.to_vec()));
+                    panic!();
+                }
+            }
         }
     }
 
