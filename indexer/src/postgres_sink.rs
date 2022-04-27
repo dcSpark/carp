@@ -8,8 +8,8 @@ use pallas::ledger::primitives::{
     Fragment,
 };
 
-use crate::perf_aggregator::PerfAggregator;
 use crate::types::MultiEraBlock;
+use crate::{perf_aggregator::PerfAggregator, types::EraValue};
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, ColumnTrait, DatabaseTransaction, Set, TransactionTrait},
@@ -110,7 +110,7 @@ async fn insert_block(
     let (multi_block, era) = block_with_era(block_record.era, &block_payload).unwrap();
 
     let block = BlockActiveModel {
-        era: Set(era),
+        era: Set(era.into()),
         hash: Set(hash),
         height: Set(block_record.number as i32),
         epoch: Set(block_record.epoch.unwrap() as i32),
@@ -150,14 +150,13 @@ async fn insert_block(
     Ok(perf_aggregator)
 }
 
-fn block_with_era(era: Era, payload: &[u8]) -> anyhow::Result<(MultiEraBlock, i32)> {
+fn block_with_era(era: Era, payload: &[u8]) -> anyhow::Result<(MultiEraBlock, EraValue)> {
     let data = match era {
         Era::Byron => {
             let block = pallas::ledger::primitives::byron::Block::decode_fragment(payload)
                 .map_err(|_| anyhow!("failed to decode cbor"))?;
 
-            // TODO: avoid magic numbers
-            (MultiEraBlock::Byron(Box::new(block)), 0)
+            (MultiEraBlock::Byron(Box::new(block)), EraValue::Byron)
         }
         rest => {
             let alonzo::BlockWrapper(_, block) = alonzo::BlockWrapper::decode_fragment(payload)
@@ -166,11 +165,10 @@ fn block_with_era(era: Era, payload: &[u8]) -> anyhow::Result<(MultiEraBlock, i3
             let box_block = Box::new(block);
 
             match rest {
-                // TODO: avoid magic numbers
-                Era::Shelley => (MultiEraBlock::Compatible(box_block), 1),
-                Era::Allegra => (MultiEraBlock::Compatible(box_block), 2),
-                Era::Mary => (MultiEraBlock::Compatible(box_block), 3),
-                Era::Alonzo => (MultiEraBlock::Compatible(box_block), 4),
+                Era::Shelley => (MultiEraBlock::Compatible(box_block), EraValue::Shelley),
+                Era::Allegra => (MultiEraBlock::Compatible(box_block), EraValue::Allegra),
+                Era::Mary => (MultiEraBlock::Compatible(box_block), EraValue::Mary),
+                Era::Alonzo => (MultiEraBlock::Compatible(box_block), EraValue::Alonzo),
                 _ => unreachable!(),
             }
         }
