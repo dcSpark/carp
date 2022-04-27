@@ -37,19 +37,13 @@ Note: steps assume mainnet
 1. Run the env file (`set -a; . .env; set +a`) - note you will have to re-run this command every time you reopen your shell
 1. `cargo migrate up` (you can debug migration by adding a `-v` at the end of the command)
 
-### Migrations
-
-There is an alias configured for convenience.
-
-- `cargo migrate up`
-- `cargo migrate down`
-- `cargo migrate help`
-
 ### Running
 
-`cargo run` will start oura-postgres-sink.
+This project contains two different parts to it:
+
+1. An in [indexer README](./indexer/README.md) which stores the chain to a Postgres database
+2. A [webserver README]('./webserver/README.md) which provides a REST API for querying the database (ex: for light wallets)
 
 You may also be interested in:
 
-1. The [webserver](./webserver/) which provides a REST API which is useful for light wallets and similar applications
 2. The [generated SQL](./webserver/bin/schema.sql) if you want to run your own queries
