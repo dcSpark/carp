@@ -23,8 +23,13 @@ export class TransactionController extends Controller {
    * Ordered by <block.height, transaction.tx_index>
    * Transactions that are in a block appear before txs that aren't
    * Two txs that both aren't in a block are sorted by their position in the mempool
+   *
+   * Addresses can be in the following form:
+   * - Stake credential hex
+   * - Bech32 (addr1, addr_vkh, etc.)
+   * - Legacy Byron format (Ae2, Dd, etc.)
    */
-  @SuccessResponse(`${StatusCodes.OK}`, 'Created')
+  @SuccessResponse(`${StatusCodes.OK}`)
   @Post()
   public async txsForAddress(
     @Body()
@@ -33,10 +38,15 @@ export class TransactionController extends Controller {
     errorResponse: TsoaResponse<StatusCodes.BAD_REQUEST, { reason: string }>
   ): Promise<TransactionHistoryResponse> {
     if (requestBody.addresses.length > ADDRESS_REQUEST_LIMIT) {
-      throw new Error(); // TODO: proper error
+      return errorResponse(StatusCodes.BAD_REQUEST, {
+        reason: `Exceeded request limit of ${ADDRESS_REQUEST_LIMIT} addresses. Found ${requestBody.addresses.length}`,
+      });
     }
     const addressTypes = getAddressTypes(requestBody.addresses);
     if (addressTypes.invalid.length > 0) {
+      return errorResponse(StatusCodes.BAD_REQUEST, {
+        reason: `Incorrectly formatted addresses found: ${JSON.stringify(addressTypes.invalid)}`,
+      });
     }
     const txs = await Promise.all([
       historyForCredentials(addressTypes.credentialHex.map(addr => Buffer.from(addr, 'hex'))),
