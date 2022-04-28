@@ -1,2 +1,3 @@
 [alias]
 migrate = "run --manifest-path ./migration/Cargo.toml --"
+rollback = "run --manifest-path ./rollback/Cargo.toml --"
