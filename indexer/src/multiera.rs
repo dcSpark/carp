@@ -886,6 +886,8 @@ async fn add_input_relations(
 
     if shelley_output_ids.len() > 0 {
         // get stake credentials for the outputs that were consumed
+        // note: this may return duplicates if the same credential is used
+        // as both the payment key and the staking key of a base address
         let related_credentials = StakeCredential::find()
             .inner_join(AddressCredential)
             .join(
