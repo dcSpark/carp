@@ -1,4 +1,4 @@
-/* @name HistoryForAddresses */
+/* @name sqlHistoryForCredentials */
 SELECT "Transaction".id,
         "Transaction".payload,
         "Transaction".hash,
@@ -17,4 +17,4 @@ SELECT "Transaction".id,
       ORDER BY
         "Block".height ASC,
         "Transaction".tx_index ASC
-      LIMIT 100;
+      LIMIT (:limit);

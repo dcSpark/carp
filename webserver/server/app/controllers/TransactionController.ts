@@ -1,25 +1,29 @@
 import { Body, Controller, TsoaResponse, Res, Post, Route, SuccessResponse } from 'tsoa';
-import { historyForAddress } from '../services/TransactionHistoryService';
+import { historyForAddresses, historyForCredentials } from '../services/TransactionHistoryService';
 import { StatusCodes } from 'http-status-codes';
 import type {
   TransactionHistoryRequest,
   TransactionHistoryResponse,
+  MempoolTx,
 } from '../../../shared/models/TransactionHistory';
-import assertNever from 'assert-never';
 import { bech32 } from 'bech32';
 import {
-  Address,
   ByronAddress,
-  BaseAddress,
-  PointerAddress,
-  EnterpriseAddress,
-  RewardAddress,
-  Transaction,
+  Ed25519KeyHash,
+  ScriptHash,
+  StakeCredential,
 } from '@dcspark/cardano-multiplatform-lib-nodejs';
 import Cip5 from '@dcspark/cip5-js';
+import { ADDRESS_REQUEST_LIMIT, ADDRESS_RESPONSE_LIMIT } from '../../../shared/constants';
+import { ParsedAddressTypes } from '../models/ParsedAddressTypes';
 
 @Route('txsForAddress')
 export class TransactionController extends Controller {
+  /**
+   * Ordered by <block.height, transaction.tx_index>
+   * Transactions that are in a block appear before txs that aren't
+   * Two txs that both aren't in a block are sorted by their position in the mempool
+   */
   @SuccessResponse(`${StatusCodes.OK}`, 'Created')
   @Post()
   public async txsForAddress(
@@ -32,10 +36,39 @@ export class TransactionController extends Controller {
       throw new Error(); // TODO: proper error
     }
     const addressTypes = getAddressTypes(requestBody.addresses);
-    // TODO: support other types
-    return await historyForAddress(
-      addressTypes.credentialHex.map(addr => Buffer.from(addr, 'hex'))
-    );
+    if (addressTypes.invalid.length > 0) {
+    }
+    const txs = await Promise.all([
+      historyForCredentials(addressTypes.credentialHex.map(addr => Buffer.from(addr, 'hex'))),
+      historyForAddresses([
+        ...addressTypes.exactAddress.map(addr => Buffer.from(addr, 'hex')),
+        ...addressTypes.exactLegacyAddress.map(addr => Buffer.from(addr, 'hex')),
+      ]),
+    ]);
+
+    const mergedTxs = [...txs[0].transactions, ...txs[1].transactions];
+    mergedTxs.sort((a, b) => {
+      // return any tx in a block before txs not in a block
+      if ('mempool' in a) {
+        if ('mempool' in b) {
+          // if neither are in a block, we just make sure the order is consistent
+          return a.mempool.positionInMempool - b.mempool.positionInMempool;
+        }
+        return -1;
+      }
+      if ('mempool' in b) return 1;
+      if (a.block.height === b.block.height) {
+        return a.block.tx_ordinal - b.block.tx_ordinal;
+      }
+      return a.block.height - b.block.height;
+    });
+
+    return {
+      transactions:
+        mergedTxs.length > ADDRESS_RESPONSE_LIMIT
+          ? mergedTxs.slice(0, ADDRESS_RESPONSE_LIMIT)
+          : mergedTxs,
+    };
 
     // switch (verifiedBody.kind) {
     //   case "ok": {
@@ -114,13 +147,6 @@ export class TransactionController extends Controller {
   }
 }
 
-type ParsedAddressTypes = {
-  credentialHex: string[];
-  exactAddress: string[];
-  exactLegacyAddress: string[];
-  invalid: string[];
-};
-
 const credentialLength = 32 * 2; // 32 bytes = 64 hex letters
 
 export const getAddressTypes = (addresses: string[]): ParsedAddressTypes => {
@@ -152,15 +178,21 @@ export const getAddressTypes = (addresses: string[]): ParsedAddressTypes => {
         case Cip5.hashes.stake_vkh:
         case Cip5.hashes.stake_shared_vkh:
         case Cip5.hashes.addr_shared_vkh: {
-          // TODO: convert to credential
           const payload = bech32.fromWords(bech32Info.words);
-          result.credentialHex.push(Buffer.from(payload).toString('hex'));
+          const keyHash = Ed25519KeyHash.from_bytes(Buffer.from(payload));
+          const stakeCred = StakeCredential.from_keyhash(keyHash);
+          result.credentialHex.push(Buffer.from(stakeCred.to_bytes()).toString('hex'));
+          keyHash.free();
+          stakeCred.free();
           continue;
         }
         case Cip5.hashes.script: {
-          // TODO: convert to credential
           const payload = bech32.fromWords(bech32Info.words);
-          result.credentialHex.push(Buffer.from(payload).toString('hex'));
+          const keyHash = ScriptHash.from_bytes(Buffer.from(payload));
+          const stakeCred = StakeCredential.from_scripthash(keyHash);
+          result.credentialHex.push(Buffer.from(stakeCred.to_bytes()).toString('hex'));
+          keyHash.free();
+          stakeCred.free();
           continue;
         }
       }

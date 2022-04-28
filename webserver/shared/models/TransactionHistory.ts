@@ -11,10 +11,12 @@ export type TransactionHistoryRequest = {
   };
   /** block hash - inclusive */
   untilBlock: string;
+  /** for pagination into the mempool */
+  mempoolIndex?: number;
 };
 
 export type BlockInfo = {
-  num: number;
+  height: number;
   hash: string;
   /** timestamp with timezone */
   // time: string;
@@ -37,11 +39,13 @@ export type TransactionInfo = {
    * It's just provided for convenience
    */
   hash: string;
+  /** cbor-encoded transaction */
   payload: string;
 };
-export type TxAndBlockInfo = {
-  block: null | BlockInfo;
-  /** cbor-encoded transaction */
+export type MempoolTx = {
+  positionInMempool: number;
+};
+export type TxAndBlockInfo = ({ block: BlockInfo } | { mempool: MempoolTx }) & {
   transaction: TransactionInfo;
 };
 export type TransactionHistoryResponse = {
