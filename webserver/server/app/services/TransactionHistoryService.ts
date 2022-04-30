@@ -1,19 +1,25 @@
-import { ADDRESS_RESPONSE_LIMIT } from '../../../shared/constants';
 import type { TransactionHistoryResponse } from '../../../shared/models/TransactionHistory';
 import { sqlHistoryForCredentials } from '../models/sqlHistoryForCredentials.queries';
 import { sqlHistoryForAddresses } from '../models/sqlHistoryForAddresses.queries';
-import pool from './PgPoolSingleton';
+import type { PoolClient } from 'pg';
+import type { PaginationType } from './PaginationService';
 
 export async function historyForCredentials(
-  stakeCredentials: Buffer[]
+  request: PaginationType & {
+    dbTx: PoolClient;
+    stakeCredentials: Buffer[];
+  }
 ): Promise<TransactionHistoryResponse> {
-  if (stakeCredentials.length === 0) return { transactions: [] };
+  if (request.stakeCredentials.length === 0) return { transactions: [] };
   const txs = await sqlHistoryForCredentials.run(
     {
-      credentials: stakeCredentials,
-      limit: ADDRESS_RESPONSE_LIMIT.toString(),
+      credentials: request.stakeCredentials,
+      after_block_id: request.after?.block_id ?? -1,
+      after_tx_id: (request.after?.tx_id ?? -1)?.toString(),
+      limit: request.limit.toString(),
+      until_block_id: request.until.block_id,
     },
-    pool
+    request.dbTx
   );
   return {
     transactions: txs.map(entry => ({
@@ -36,15 +42,21 @@ export async function historyForCredentials(
 }
 
 export async function historyForAddresses(
-  addresses: Buffer[]
+  request: PaginationType & {
+    addresses: Buffer[];
+    dbTx: PoolClient;
+  }
 ): Promise<TransactionHistoryResponse> {
-  if (addresses.length === 0) return { transactions: [] };
+  if (request.addresses?.length === 0) return { transactions: [] };
   const txs = await sqlHistoryForAddresses.run(
     {
-      addresses: addresses,
-      limit: ADDRESS_RESPONSE_LIMIT.toString(),
+      addresses: request.addresses,
+      after_block_id: request.after?.block_id ?? -1,
+      after_tx_id: (request.after?.tx_id ?? -1)?.toString(),
+      limit: request.limit.toString(),
+      until_block_id: request.until.block_id,
     },
-    pool
+    request.dbTx
   );
   return {
     transactions: txs.map(entry => ({

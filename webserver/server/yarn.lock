@@ -4299,6 +4299,13 @@ pg-protocol@*, pg-protocol@^1.5.0:
   resolved "https://registry.yarnpkg.com/pg-protocol/-/pg-protocol-1.5.0.tgz#b5dd452257314565e2d54ab3c132adc46565a6a0"
   integrity sha512-muRttij7H8TqRNu/DxrAJQITO4Ac7RmX3Klyr/9mJEOBeIpgnF8f9jAfRz5d3XwQZl5qBjF9gLsUtMPJE0vezQ==
 
+pg-tx@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/pg-tx/-/pg-tx-1.0.1.tgz#700dc43b42afdfa91a49cd8d568742c95ba94ad9"
+  integrity sha512-RdBZyy3XzuF+i/HQO5/0Qc79vPjY+e6ILkNfPgRrWuN6pj5KGYq5Ef3wJub3ubC4uGKORclyneqsiyc4EUiWJA==
+  dependencies:
+    pg "^8.6.0"
+
 pg-types@^2.1.0, pg-types@^2.2.0:
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/pg-types/-/pg-types-2.2.0.tgz#2d0250d636454f7cfa3b6ae0382fdfa8063254a3"
@@ -4310,7 +4317,7 @@ pg-types@^2.1.0, pg-types@^2.2.0:
     postgres-date "~1.0.4"
     postgres-interval "^1.1.0"
 
-pg@8.7.3:
+pg@8.7.3, pg@^8.6.0:
   version "8.7.3"
   resolved "https://registry.yarnpkg.com/pg/-/pg-8.7.3.tgz#8a5bdd664ca4fda4db7997ec634c6e5455b27c44"
   integrity sha512-HPmH4GH4H3AOprDJOazoIcpI49XFsHCe8xlrjHkWiapdbHK+HLtbm/GQzXYAZwmPju/kzKhjaSfMACG+8cgJcw==

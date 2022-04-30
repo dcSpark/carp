@@ -16,6 +16,12 @@ import {
 import Cip5 from '@dcspark/cip5-js';
 import { ADDRESS_REQUEST_LIMIT, ADDRESS_RESPONSE_LIMIT } from '../../../shared/constants';
 import { ParsedAddressTypes } from '../models/ParsedAddressTypes';
+import tx from 'pg-tx';
+import pool from '../services/PgPoolSingleton';
+import { resolvePageStart, resolveUntilBlock } from '../services/PaginationService';
+import { ErrorShape, genErrorMessage } from '../models/errors';
+import { Errors } from '../models/errors';
+import { expectType } from 'tsd';
 
 @Route('txsForAddress')
 export class TransactionController extends Controller {
@@ -35,28 +41,84 @@ export class TransactionController extends Controller {
     @Body()
     requestBody: TransactionHistoryRequest,
     @Res()
-    errorResponse: TsoaResponse<StatusCodes.BAD_REQUEST, { reason: string }>
+    errorResponse: TsoaResponse<
+      StatusCodes.BAD_REQUEST | StatusCodes.PRECONDITION_REQUIRED,
+      ErrorShape
+    >
   ): Promise<TransactionHistoryResponse> {
     if (requestBody.addresses.length > ADDRESS_REQUEST_LIMIT) {
-      return errorResponse(StatusCodes.BAD_REQUEST, {
-        reason: `Exceeded request limit of ${ADDRESS_REQUEST_LIMIT} addresses. Found ${requestBody.addresses.length}`,
-      });
+      return errorResponse(
+        StatusCodes.BAD_REQUEST,
+        genErrorMessage(Errors.AddressLimitExceeded, {
+          limit: ADDRESS_REQUEST_LIMIT,
+          found: requestBody.addresses.length,
+        })
+      );
     }
     const addressTypes = getAddressTypes(requestBody.addresses);
     if (addressTypes.invalid.length > 0) {
-      return errorResponse(StatusCodes.BAD_REQUEST, {
-        reason: `Incorrectly formatted addresses found: ${JSON.stringify(addressTypes.invalid)}`,
-      });
+      return errorResponse(
+        StatusCodes.BAD_REQUEST,
+        genErrorMessage(Errors.IncorrectAddressFormat, {
+          addresses: addressTypes.invalid,
+        })
+      );
     }
-    const txs = await Promise.all([
-      historyForCredentials(addressTypes.credentialHex.map(addr => Buffer.from(addr, 'hex'))),
-      historyForAddresses([
-        ...addressTypes.exactAddress.map(addr => Buffer.from(addr, 'hex')),
-        ...addressTypes.exactLegacyAddress.map(addr => Buffer.from(addr, 'hex')),
-      ]),
-    ]);
+    const cardanoTxs = await tx<
+      ErrorShape | [TransactionHistoryResponse, TransactionHistoryResponse]
+    >(pool, async dbTx => {
+      const [until, pageStart] = await Promise.all([
+        resolveUntilBlock({
+          block_hash: Buffer.from(requestBody.untilBlock, 'hex'),
+          dbTx,
+        }),
+        requestBody.after == null
+          ? Promise.resolve(undefined)
+          : resolvePageStart({
+              after_block: Buffer.from(requestBody.after.block, 'hex'),
+              after_tx: Buffer.from(requestBody.after.tx, 'hex'),
+              dbTx,
+            }),
+      ]);
+      if (until == null) {
+        return genErrorMessage(Errors.UntilBlockNotFound, {
+          untilBlock: requestBody.untilBlock,
+        });
+      }
+      if (requestBody.after != null && pageStart == null) {
+        return genErrorMessage(Errors.PageStartNotFound, {
+          blockHash: requestBody.after.block,
+          txHash: requestBody.after.tx,
+        });
+      }
 
-    const mergedTxs = [...txs[0].transactions, ...txs[1].transactions];
+      const commonRequest = {
+        after: pageStart,
+        limit: ADDRESS_RESPONSE_LIMIT,
+        until,
+        dbTx,
+      };
+      const result = await Promise.all([
+        historyForCredentials({
+          stakeCredentials: addressTypes.credentialHex.map(addr => Buffer.from(addr, 'hex')),
+          ...commonRequest,
+        }),
+        historyForAddresses({
+          addresses: [
+            ...addressTypes.exactAddress.map(addr => Buffer.from(addr, 'hex')),
+            ...addressTypes.exactLegacyAddress.map(addr => Buffer.from(addr, 'hex')),
+          ],
+          ...commonRequest,
+        }),
+      ]);
+      return result;
+    });
+    if ('code' in cardanoTxs) {
+      expectType<Equals<typeof cardanoTxs, ErrorShape>>(true);
+      return errorResponse(StatusCodes.PRECONDITION_REQUIRED, cardanoTxs);
+    }
+
+    const mergedTxs = [...cardanoTxs[0].transactions, ...cardanoTxs[1].transactions];
     mergedTxs.sort((a, b) => {
       // return any tx in a block before txs not in a block
       if ('mempool' in a) {
@@ -79,81 +141,6 @@ export class TransactionController extends Controller {
           ? mergedTxs.slice(0, ADDRESS_RESPONSE_LIMIT)
           : mergedTxs,
     };
-
-    // switch (verifiedBody.kind) {
-    //   case "ok": {
-    //     const body = verifiedBody.value;
-    //     const limit = body.limit || apiResponseLimit;
-    //     const [referenceTx, referenceBlock] =
-    //       (body.after && [body.after.tx, body.after.block]) || [];
-    //     const referenceBestBlock = body.untilBlock;
-    //     const untilBlockNum = await askBlockNumByHash(pool, referenceBestBlock);
-    //     const afterBlockInfo = await askBlockNumByTxHash(pool, referenceTx);
-
-    //     if (
-    //       untilBlockNum.kind === "error" &&
-    //       untilBlockNum.errMsg === utils.errMsgs.noValue
-    //     ) {
-    //       throw new Error("REFERENCE_BEST_BLOCK_MISMATCH");
-    //     }
-    //     if (
-    //       afterBlockInfo.kind === "error" &&
-    //       typeof referenceTx !== "undefined"
-    //     ) {
-    //       throw new Error("REFERENCE_TX_NOT_FOUND");
-    //     }
-
-    //     if (
-    //       afterBlockInfo.kind === "ok" &&
-    //       afterBlockInfo.value.block.hash !== referenceBlock
-    //     ) {
-    //       throw new Error("REFERENCE_BLOCK_MISMATCH");
-    //     }
-
-    //     // when things are running smoothly, we would never hit this case case
-    //     if (untilBlockNum.kind !== "ok") {
-    //       throw new Error(untilBlockNum.errMsg);
-    //     }
-    //     const afterInfo = getOrDefaultAfterParam(afterBlockInfo);
-
-    //     const maybeTxs = await askTransactionHistory(
-    //       pool,
-    //       limit,
-    //       body.addresses,
-    //       afterInfo,
-    //       untilBlockNum.value
-    //     );
-    //     switch (maybeTxs.kind) {
-    //       case "ok": {
-    //         const txs = mapTransactionFragsToResponse(maybeTxs.value);
-
-    //         if (req.headers?.["flint-version"]) {
-    //           const userFlintVersion = req.headers?.["flint-version"];
-
-    //           // https://github.com/substack/semver-compare
-    //           const flintSupportsApiVersion = semverCompare(
-    //             userFlintVersion,
-    //             FLINT_VERSION_WITH_API_VERSION_SUPPORT
-    //           );
-    //           // if userFlintVersion >=  FLINT_VERSION_WITH_API_VERSION_SUPPORT
-    //           if (flintSupportsApiVersion >= 0) {
-    //             res.send({ txs, version: TX_HISTORY_API_VERSION });
-    //             return;
-    //           }
-    //         }
-    //         res.send(txs);
-    //         return;
-    //       }
-    //       case "error":
-    //         throw new Error(maybeTxs.errMsg);
-    //       default:
-    //         return utils.assertNever(maybeTxs);
-    //     }
-    //   }
-    //   case "error":
-    //     throw new Error(verifiedBody.errMsg);
-    //   default:
-    //     return utils.assertNever(verifiedBody);
   }
 }
 

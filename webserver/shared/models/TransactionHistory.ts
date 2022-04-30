@@ -42,7 +42,10 @@ export type TransactionInfo = {
   /** cbor-encoded transaction */
   payload: string;
 };
+
+// https://github.com/CardanoSolutions/ogmios/issues/209
 export type MempoolTx = {
+  hash: string;
   positionInMempool: number;
 };
 export type TxAndBlockInfo = ({ block: BlockInfo } | { mempool: MempoolTx }) & {
