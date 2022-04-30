@@ -362,7 +362,7 @@ checksum = "c1db59621ec70f09c5e9b597b220c7a2b43611f4710dc03ceb8748637775692c"
 [[package]]
 name = "cardano-multiplatform-lib"
 version = "0.2.0"
-source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?branch=expand-whitelist#fb48f2049c6f8240fa23f511d75de36513015984"
+source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?branch=expand-whitelist#75236b4ddbd92e827ca037d5c495434c7cd1e663"
 dependencies = [
  "bech32 0.7.3",
  "cbor_event",
@@ -478,9 +478,9 @@ dependencies = [
 
 [[package]]
 name = "clear_on_drop"
-version = "0.2.4"
+version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c9cc5db465b294c3fa986d5bbb0f3017cd850bff6dd6c52f9ccff8b4d21b7b08"
+checksum = "38508a63f4979f0048febc9966fadbd48e5dab31fd0ec6a3f151bbf4a74f7423"
 dependencies = [
  "cc",
 ]
