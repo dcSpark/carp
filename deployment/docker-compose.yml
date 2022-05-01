@@ -8,6 +8,8 @@ services:
       - POSTGRES_LOGGING=true
       - POSTGRES_DB=cardano
       - PGPASSFILE=/run/secrets/.pgpass
+      - POSTGRES_PASSWORD=ouradb
+      - POSTGRES_USER=oura
     secrets:
       - pgpass
     volumes:
@@ -48,6 +50,7 @@ services:
       - NETWORK=${NETWORK:-testnet}
       - SOCKET=/app/node-ipc/node.socket
       - PGPASSFILE=/run/secrets/.pgpass
+      - DATABASE_URL=postgresql://oura:ouradb@postgres:5432/cardano
     secrets:
       - pgpass
     volumes:
