@@ -52,6 +52,7 @@ impl MigrationTrait for Migration {
                     )
                     .index(
                         Index::create()
+                            .table(Entity)
                             .name("index-address_credential-credential")
                             .col(Column::CredentialId),
                     )
