@@ -10,10 +10,11 @@ use cardano_multiplatform_lib::{
     },
     utils::Value,
 };
+use entity::sea_orm::Iterable;
 use entity::{
     prelude::{
         Address, AddressActiveModel, BlockActiveModel, Transaction, TransactionActiveModel,
-        TransactionOutput, TransactionOutputActiveModel,
+        TransactionModel, TransactionOutput, TransactionOutputActiveModel,
     },
     sea_orm::{
         ActiveModelTrait, DatabaseConnection, DatabaseTransaction, EntityTrait, Set,
@@ -153,7 +154,7 @@ pub async fn insert_genesis(
     }
 
     let (inserted_txs, inserted_addresses) = try_join(
-        Transaction::insert_many(transactions).exec_many_with_returning(txn),
+        bulk_insert_txs(txn, &transactions),
         Address::insert_many(addresses).exec_many_with_returning(txn),
     )
     .await?;
@@ -177,4 +178,22 @@ pub async fn insert_genesis(
         .await?;
 
     Ok(())
+}
+
+// https://github.com/SeaQL/sea-orm/issues/691
+async fn bulk_insert_txs(
+    txn: &DatabaseTransaction,
+    transactions: &Vec<TransactionActiveModel>,
+) -> Result<Vec<TransactionModel>, DbErr> {
+    let mut result: Vec<TransactionModel> = vec![];
+    for chunk in transactions
+        .chunks((u16::MAX / <Transaction as EntityTrait>::Column::iter().count() as u16) as usize)
+    {
+        result.extend(
+            Transaction::insert_many(chunk.to_vec())
+                .exec_many_with_returning(txn)
+                .await?,
+        );
+    }
+    Ok(result)
 }

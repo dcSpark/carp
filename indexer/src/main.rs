@@ -48,7 +48,7 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("{}", "Getting the latest block synced from DB");
 
     // For rollbacks
-    let intersect = match setup::get_latest_points(&conn).await? {
+    let intersect = match &setup::get_latest_points(&conn).await? {
         points if points.is_empty() => {
             // insert genesis then fetch points again
             genesis::process_genesis(&conn, &network).await?;
@@ -56,17 +56,17 @@ async fn main() -> anyhow::Result<()> {
             IntersectArg::Origin
         }
         points => {
-            let last_point = &points.last().unwrap();
+            let last_point = points.last().unwrap();
             tracing::info!(
                 "Starting sync at block #{} ({})",
                 last_point.0,
                 last_point.1
             );
-            IntersectArg::Fallbacks(points)
+            IntersectArg::Fallbacks(points.clone())
         }
     };
 
-    let (handles, input) = setup::oura_bootstrap(&intersect, &network, socket)?;
+    let (handles, input) = setup::oura_bootstrap(intersect, &network, socket)?;
 
     let sink_setup = postgres_sink::Config { conn: &conn };
 

@@ -1,5 +1,3 @@
-use serde::Deserialize;
-
 use pallas::ledger::primitives::{alonzo, byron};
 
 #[derive(Debug)]
