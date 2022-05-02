@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate::perf_aggregator::PerfAggregator;
+use crate::{era_common::get_truncated_address, perf_aggregator::PerfAggregator};
 use cryptoxide::blake2b::Blake2b;
 use entity::{
     prelude::*,
@@ -130,7 +130,9 @@ async fn insert_byron_outputs(
                 |((output_index, output), tx_id)| TransactionOutputActiveModel {
                     payload: Set(output.encode_fragment().unwrap()),
                     address_id: Set(address_map
-                        .get(&output.address.encode_fragment().unwrap())
+                        .get(get_truncated_address(
+                            &output.address.encode_fragment().unwrap(),
+                        ))
                         .unwrap()
                         .id),
                     tx_id: Set(tx_id.id),

@@ -6,6 +6,10 @@ use entity::{
 };
 use std::collections::BTreeMap;
 
+pub fn get_truncated_address(addr_bytes: &Vec<u8>) -> &[u8] {
+    &addr_bytes[0..(std::cmp::min(addr_bytes.len(), 500))]
+}
+
 pub async fn insert_addresses(
     addresses: &BTreeSet<Vec<u8>>,
     txn: &DatabaseTransaction,
@@ -29,7 +33,7 @@ pub async fn insert_addresses(
     // 5) Storing up to 2704 bytes is a waste of space since they aren't used for anything
     let truncated_addrs: Vec<&[u8]> = addresses
         .iter()
-        .map(|addr_bytes| &addr_bytes[0..(std::cmp::min(addr_bytes.len(), 500))])
+        .map(|addr_bytes| get_truncated_address(addr_bytes))
         .collect();
 
     // deduplicate addresses to avoid re-querying the same address many times

@@ -1,4 +1,4 @@
-use crate::perf_aggregator::PerfAggregator;
+use crate::{era_common::get_truncated_address, perf_aggregator::PerfAggregator};
 use pallas::ledger::primitives::{
     alonzo::{self, Certificate, TransactionBody, TransactionBodyComponent},
     Fragment,
@@ -829,7 +829,10 @@ async fn insert_outputs(
 
     TransactionOutput::insert_many(queued_output.iter().map(|entry| {
         TransactionOutputActiveModel {
-            address_id: Set(address_to_model_map.get(&entry.address).unwrap().id),
+            address_id: Set(address_to_model_map
+                .get(get_truncated_address(&entry.address))
+                .unwrap()
+                .id),
             tx_id: Set(entry.tx_id),
             payload: Set(entry.payload.clone()),
             output_index: Set(entry.idx as i32),
