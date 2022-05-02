@@ -83,12 +83,3 @@ impl From<EraValue> for i32 {
         }
     }
 }
-
-pub type GenesisFile = Vec<GenesisData>;
-
-#[derive(Debug, Deserialize)]
-pub struct GenesisData {
-    pub hash: String,
-    pub index: u64,
-    pub address: String,
-}

@@ -2,6 +2,7 @@ use anyhow::anyhow;
 use dotenv::dotenv;
 
 use entity::sea_orm::Database;
+use oura::sources::IntersectArg;
 use tracing_subscriber::prelude::*;
 
 mod byron;
@@ -46,32 +47,26 @@ async fn main() -> anyhow::Result<()> {
 
     tracing::info!("{}", "Getting the latest block synced from DB");
 
-    let genesis_hash = genesis::get_genesis_hash(&network)?;
     // For rollbacks
-    let points = match setup::get_latest_points(&conn).await? {
+    let intersect = match setup::get_latest_points(&conn).await? {
         points if points.is_empty() => {
             // insert genesis then fetch points again
-            genesis::process_genesis(&conn, genesis_hash, &network).await?;
-            setup::get_latest_points(&conn).await?
+            genesis::process_genesis(&conn, &network).await?;
+            // we need a special intersection type when bootstrapping from genesis
+            IntersectArg::Origin
         }
-        points => points,
+        points => {
+            let last_point = &points.last().unwrap();
+            tracing::info!(
+                "Starting sync at block #{} ({})",
+                last_point.0,
+                last_point.1
+            );
+            IntersectArg::Fallbacks(points)
+        }
     };
 
-    match points.last() {
-        None => Err(anyhow!("Missing intersection point for bootstrapping")),
-        Some(point) => match point.0 {
-            0 => {
-                tracing::info!("Starting sync after genesis {}", genesis_hash);
-                Ok(())
-            }
-            _ => {
-                tracing::info!("Starting sync at block #{} ({})", point.0, point.1);
-                Ok(())
-            }
-        },
-    }?;
-
-    let (handles, input) = setup::oura_bootstrap(points, genesis_hash, &network, socket)?;
+    let (handles, input) = setup::oura_bootstrap(&intersect, &network, socket)?;
 
     let sink_setup = postgres_sink::Config { conn: &conn };
 

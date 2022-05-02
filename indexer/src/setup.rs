@@ -34,18 +34,10 @@ pub async fn get_latest_points(conn: &DatabaseConnection) -> anyhow::Result<Vec<
 }
 
 pub fn oura_bootstrap(
-    points: Vec<PointArg>,
-    genesis_hash: &str,
+    intersect: IntersectArg,
     network: &str,
     socket: String,
 ) -> anyhow::Result<(Vec<JoinHandle<()>>, StageReceiver)> {
-    // we need a special intersection type when bootstrapping from genesis
-    let intersect = match points.last() {
-        None => Err(anyhow!("Missing intersection point for bootstrapping")),
-        Some(point) if point.1 == genesis_hash => Ok(IntersectArg::Origin),
-        _ => Ok(IntersectArg::Fallbacks(points)),
-    }?;
-
     let magic = MagicArg::from_str(network).map_err(|_| anyhow!("magic arg failed"))?;
 
     let well_known = ChainWellKnownInfo::try_from_magic(*magic)

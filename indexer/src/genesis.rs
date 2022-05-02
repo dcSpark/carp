@@ -1,36 +1,35 @@
+use std::fs;
+
 use anyhow::anyhow;
 
+use cardano_multiplatform_lib::{
+    address::ByronAddress,
+    genesis::byron::{
+        config::GenesisData,
+        parse::{parse, redeem_pubkey_to_txid},
+    },
+    utils::Value,
+};
 use entity::{
     prelude::{
-        AddressActiveModel, BlockActiveModel, TransactionActiveModel, TransactionOutputActiveModel,
+        Address, AddressActiveModel, BlockActiveModel, Transaction, TransactionActiveModel,
+        TransactionOutput, TransactionOutputActiveModel,
     },
-    sea_orm::{ActiveModelTrait, DatabaseConnection, DatabaseTransaction, Set, TransactionTrait},
+    sea_orm::{
+        ActiveModelTrait, DatabaseConnection, DatabaseTransaction, EntityTrait, Set,
+        TransactionTrait,
+    },
 };
+use futures::future::try_join;
 use migration::DbErr;
 
-use crate::types::GenesisFile;
+use crate::byron::blake2b256;
 
-const GENESIS_MAINNET: &str = include_str!("../genesis/mainnet.json");
-const GENESIS_TESTNET: &str = include_str!("../genesis/testnet.json");
+const GENESIS_MAINNET: &str = "./genesis/mainnet-byron-genesis.json";
+const GENESIS_TESTNET: &str = "./genesis/testnet-byron-genesis.json";
 
-pub fn get_genesis_hash(network: &str) -> anyhow::Result<&str> {
-    // TODO: avoid hard-coding these and instead pull from genesis file
-    // https://github.com/dcSpark/oura-postgres-sink/issues/8
-    match network {
-        "mainnet" => Ok("5f20df933584822601f9e3f8c024eb5eb252fe8cefb24d1317dc3d432e940ebb"),
-        "testnet" => Ok("96fceff972c2c06bd3bb5243c39215333be6d56aaf4823073dca31afe5038471"),
-        rest => Err(anyhow!(
-            "{} is invalid. NETWORK must be either mainnet or testnet",
-            rest
-        )),
-    }
-}
-pub async fn process_genesis(
-    conn: &DatabaseConnection,
-    genesis_hash: &str,
-    network: &str,
-) -> anyhow::Result<()> {
-    let genesis_str = match network {
+pub async fn process_genesis(conn: &DatabaseConnection, network: &str) -> anyhow::Result<()> {
+    let genesis_path = match network {
         "mainnet" => GENESIS_MAINNET,
         "testnet" => GENESIS_TESTNET,
         rest => {
@@ -42,9 +41,11 @@ pub async fn process_genesis(
     };
 
     tracing::info!("Parsing genesis file...");
-
     let mut time_counter = std::time::Instant::now();
-    let genesis_file: Box<GenesisFile> = Box::new(serde_json::from_str(genesis_str)?);
+
+    let file = fs::File::open(genesis_path).expect("Failed to open genesis file");
+    let genesis_file: Box<GenesisData> = Box::new(parse(file));
+
     tracing::info!(
         "Finished parsing genesis file after {:?}",
         time_counter.elapsed()
@@ -52,8 +53,7 @@ pub async fn process_genesis(
     time_counter = std::time::Instant::now();
 
     tracing::info!("Inserting genesis data into database...");
-    let genesis_hash: String = genesis_hash.to_owned();
-    conn.transaction(|txn| Box::pin(insert_genesis(txn, genesis_file, genesis_hash)))
+    conn.transaction(|txn| Box::pin(insert_genesis(txn, genesis_file)))
         .await?;
 
     tracing::info!(
@@ -66,12 +66,19 @@ pub async fn process_genesis(
 
 pub async fn insert_genesis(
     txn: &DatabaseTransaction,
-    genesis_file: Box<GenesisFile>,
-    genesis_hash: String,
+    genesis_file: Box<GenesisData>,
 ) -> Result<(), DbErr> {
+    let genesis_hash = genesis_file.genesis_prev.to_bytes();
+    tracing::info!(
+        "Starting sync based on genesis hash {}",
+        hex::encode(genesis_hash.clone())
+    );
+
+    // note: strictly speaking, the epoch, height, etc. isn't defined for the genesis block
+    // since it comes before the first Epoch Boundary Block (EBB)
     let block = BlockActiveModel {
         era: Set(0),
-        hash: Set(hex::decode(genesis_hash).unwrap()),
+        hash: Set(genesis_hash),
         height: Set(0),
         epoch: Set(0),
         slot: Set(0),
@@ -80,42 +87,94 @@ pub async fn insert_genesis(
 
     let block = block.insert(txn).await?;
 
-    for data in genesis_file.iter() {
-        let tx_hash = hex::decode(&data.hash).unwrap();
+    // note: avvm added before non-avvm
+    // https://github.com/input-output-hk/cardano-ledger/blob/ac51494e151af0ad99b937a787458ce71db0aaea/eras/byron/ledger/impl/src/Cardano/Chain/UTxO/GenesisUTxO.hs#L21
 
-        let transaction = TransactionActiveModel {
+    let mut transactions: Vec<TransactionActiveModel> = vec![];
+    // note: genesis file is a JSON structure, so there shouldn't be duplicate addresses
+    // even across avvm and non-avvm it should be unique, otherwise two txs with the same tx hash would exist
+    let mut addresses: Vec<AddressActiveModel> = vec![];
+    let mut outputs: Vec<cardano_multiplatform_lib::TransactionOutput> = vec![];
+
+    for (pub_key, amount) in genesis_file.avvm_distr.iter() {
+        let (tx_hash, extended_addr) =
+            redeem_pubkey_to_txid(&pub_key, Some(genesis_file.protocol_magic));
+        let byron_addr =
+            ByronAddress::from_bytes(extended_addr.to_address().as_ref().to_vec()).unwrap();
+
+        transactions.push(TransactionActiveModel {
             block_id: Set(block.id),
-            hash: Set(tx_hash),
+            hash: Set(tx_hash.to_bytes().to_vec()),
             is_valid: Set(true),
-            // TODO: payload
-            payload: Set(vec![]),
-            // TODO: index
-            tx_index: Set(0),
+            payload: Set(byron_addr.to_bytes()),
+            tx_index: Set(transactions.len() as i32),
             ..Default::default()
-        };
+        });
 
-        let transaction = transaction.insert(txn).await?;
-
-        let payload = bs58::decode(&data.address).into_vec().unwrap();
-
-        let address = AddressActiveModel {
-            payload: Set(payload),
+        addresses.push(AddressActiveModel {
+            payload: Set(byron_addr.to_bytes()),
             ..Default::default()
-        };
+        });
 
-        let address = address.insert(txn).await?;
-
-        let tx_output = TransactionOutputActiveModel {
-            address_id: Set(address.id),
-            tx_id: Set(transaction.id),
-            // TODO: payload
-            payload: Set(vec![]),
-            output_index: Set(data.index.try_into().unwrap()),
-            ..Default::default()
-        };
-
-        tx_output.save(txn).await?;
+        outputs.push(cardano_multiplatform_lib::TransactionOutput::new(
+            &byron_addr.to_address(),
+            &Value::new(amount),
+        ));
     }
+
+    // note: empty on mainnet
+    for (addr, amount) in genesis_file.non_avvm_balances.iter() {
+        let byron_addr = ByronAddress::from_bytes(addr.as_ref().to_vec()).unwrap();
+
+        let tx_hash = blake2b256(&addr.as_ref());
+
+        // println!("{}", amount.to_str());
+        // println!("{}", byron_addr.to_base58());
+        // println!("{}", hex::encode(tx_hash));
+
+        transactions.push(TransactionActiveModel {
+            block_id: Set(block.id),
+            hash: Set(tx_hash.to_vec()),
+            is_valid: Set(true),
+            payload: Set(byron_addr.to_bytes()),
+            tx_index: Set(transactions.len() as i32),
+            ..Default::default()
+        });
+
+        addresses.push(AddressActiveModel {
+            payload: Set(byron_addr.to_bytes()),
+            ..Default::default()
+        });
+
+        outputs.push(cardano_multiplatform_lib::TransactionOutput::new(
+            &byron_addr.to_address(),
+            &Value::new(amount),
+        ));
+    }
+
+    let (inserted_txs, inserted_addresses) = try_join(
+        Transaction::insert_many(transactions).exec_many_with_returning(txn),
+        Address::insert_many(addresses).exec_many_with_returning(txn),
+    )
+    .await?;
+
+    let outputs_to_add =
+        inserted_txs
+            .iter()
+            .zip(inserted_addresses)
+            .enumerate()
+            .map(|(i, (tx, addr))| TransactionOutputActiveModel {
+                address_id: Set(addr.id),
+                tx_id: Set(tx.id),
+                payload: Set(outputs[i].to_bytes()),
+                // recall: genesis txs are hashes of addresses
+                // so all txs have a single output
+                output_index: Set(0),
+                ..Default::default()
+            });
+    TransactionOutput::insert_many(outputs_to_add)
+        .exec_many_with_returning(txn)
+        .await?;
 
     Ok(())
 }

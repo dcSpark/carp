@@ -872,13 +872,13 @@ async fn add_input_relations(
         .iter()
         // Byron addresses don't contain stake credentials, so we can skip them
         .filter(|&tx_output| {
-            let is_byron = match cardano_multiplatform_lib::TransactionOutput::from_bytes(
+            let is_byron = cardano_multiplatform_lib::TransactionOutput::from_bytes(
                 tx_output.0.payload.clone(),
-            ) {
-                Ok(parsed_output) => parsed_output.address().as_byron().is_some(),
-                // TODO: remove this once we've parsed the genesis block correctly instead of inserting dummy data
-                Err(_) => true,
-            };
+            )
+            .unwrap()
+            .address()
+            .as_byron()
+            .is_some();
             !is_byron
         })
         .map(|output| output.0.id)
