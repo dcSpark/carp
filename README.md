@@ -28,7 +28,7 @@ This repo, by default, is setup to work with a local node. If you want to run on
 Note: steps assume mainnet
 
 1. `sudo -u postgres createdb oura_postgres_mainnet`
-1. `psql -U postgres -d oura_postgres_mainnet -c 'ALTER DATABASE oura_postgres_mainnet SET jit_above_cost = -1;'`
+1. `sudo -u postgres psql -c 'ALTER DATABASE oura_postgres_mainnet SET jit_above_cost = -1;'`
 1. `sudo -u postgres createuser oura`
 1. `sudo -u postgres psql -c "\password oura"`
 1. Add your database name & user password to `secrets/.pgpass`
