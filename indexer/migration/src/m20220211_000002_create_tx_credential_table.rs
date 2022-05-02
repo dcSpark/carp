@@ -49,12 +49,16 @@ impl MigrationTrait for Migration {
                             .col(Column::TxId)
                             .col(Column::CredentialId),
                     )
-                    .index(
-                        Index::create()
-                            .table(Entity)
-                            .name("index-tx_credential-credential")
-                            .col(Column::CredentialId),
-                    )
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .table(Entity)
+                    .name("index-tx_credential-credential")
+                    .col(Column::CredentialId)
                     .to_owned(),
             )
             .await
