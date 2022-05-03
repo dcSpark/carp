@@ -661,6 +661,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "dag-test"
+version = "0.1.0"
+dependencies = [
+ "shred",
+]
+
+[[package]]
 name = "digest"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

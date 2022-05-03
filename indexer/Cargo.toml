@@ -1,5 +1,5 @@
 [workspace]
-members = [".", "entity", "migration", "rollback", "reparse"]
+members = [".", "entity", "migration", "rollback", "dag-test", "reparse"]
 
 [package]
 name = "oura-postgres-sink"

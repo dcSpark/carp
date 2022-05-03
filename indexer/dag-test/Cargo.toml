@@ -1,0 +1,8 @@
+[package]
+name = "dag-test"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+shred = "0.12.0"
