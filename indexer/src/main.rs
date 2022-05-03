@@ -13,6 +13,7 @@ mod perf_aggregator;
 mod postgres_sink;
 mod relation_map;
 mod setup;
+mod tasks;
 mod types;
 
 #[tokio::main]

@@ -2,3 +2,4 @@
 migrate = "run --manifest-path ./migration/Cargo.toml --"
 rollback = "run --manifest-path ./rollback/Cargo.toml --"
 reparse = "run --manifest-path ./reparse/Cargo.toml --"
+dag-test = "run --manifest-path ./dag-test/Cargo.toml --"
