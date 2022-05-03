@@ -6,8 +6,10 @@ use entity::{
 };
 use std::collections::BTreeMap;
 
+static ADDRESS_TRUNCATE: usize = 500; // 1000 in hex
+
 pub fn get_truncated_address(addr_bytes: &Vec<u8>) -> &[u8] {
-    &addr_bytes[0..(std::cmp::min(addr_bytes.len(), 500))]
+    &addr_bytes[0..(std::cmp::min(addr_bytes.len(), ADDRESS_TRUNCATE))]
 }
 
 pub async fn insert_addresses(
@@ -23,13 +25,13 @@ pub async fn insert_addresses(
     // So some addresses got generated which are really large
     // However, Postgres btree v4 has a maximum size of 2704 for an index
     // Since these addresses can't be spent anyway, we just truncate them
-    // theoretically, we could truncate at 2704, but we truncate at 500
+    // theoretically, we could truncate at 2704, but we truncate at ADDRESS_TRUNCATE
     // reasons:
     // 1) Postgres has shrunk the limit in the past, so they may do it again
     // 2) Use of the INCLUDE in creating an index can increase its size
     //    So best to leave some extra room incase this is useful someday
     // 3) It's not great to hard-code a postgresql-specific limitation
-    // 4) 500 seems more obviously human than 2704 so maybe easier if somebody sees it
+    // 4) ADDRESS_TRUNCATE seems more obviously human than 2704 so maybe easier if somebody sees it
     // 5) Storing up to 2704 bytes is a waste of space since they aren't used for anything
     let truncated_addrs: Vec<&[u8]> = addresses
         .iter()
