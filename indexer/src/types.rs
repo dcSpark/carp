@@ -8,11 +8,13 @@ pub enum MultiEraBlock {
 
 #[derive(Copy, Clone)]
 pub enum TxCredentialRelationValue {
-    Witness, // appears in the witness of the tx
-    // TODO: differentiate being part of input&output as staking key from payment key
-    // TODO: unused input. Ex: collateral input when collateral isn't consumed
+    Witness,     // appears in the witness of the tx
+    UnusedInput, // collateral input when collateral isn't consumed or opposite if collateral was consumed
+    UnusedInputStake,
     Input,
     Output,
+    InputStake,  // occurs as the staking key of an input
+    OutputStake, // occurs as the staking key of an output
     StakeDeregistration,
     StakeDelegation,
     StakeRegistration,
@@ -49,6 +51,10 @@ impl From<TxCredentialRelationValue> for i32 {
             TxCredentialRelationValue::Withdrawal => 0b100000000000,
             TxCredentialRelationValue::RequiredSigner => 0b1000000000000,
             TxCredentialRelationValue::InNativeScript => 0b10000000000000,
+            TxCredentialRelationValue::UnusedInput => 0b100000000000000,
+            TxCredentialRelationValue::UnusedInputStake => 0b1000000000000000,
+            TxCredentialRelationValue::InputStake => 0b10000000000000000,
+            TxCredentialRelationValue::OutputStake => 0b100000000000000000,
         }
     }
 }

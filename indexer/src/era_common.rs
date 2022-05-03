@@ -100,7 +100,7 @@ pub async fn get_outputs_for_inputs(
         i64,
     )>,
     txn: &DatabaseTransaction,
-) -> Result<Vec<(TransactionOutputModel, Vec<TransactionModel>)>, DbErr> {
+) -> Result<Vec<(TransactionOutputModel, TransactionModel)>, DbErr> {
     // avoid querying the DB if there were no inputs
     let has_input = inputs.iter().any(|input| input.0.len() > 0);
     if !has_input {
@@ -120,7 +120,7 @@ pub async fn get_outputs_for_inputs(
         );
     }
 
-    let tx_outputs = TransactionOutput::find()
+    let mut tx_outputs = TransactionOutput::find()
         .inner_join(Transaction)
         .filter(output_conditions)
         .select_with(Transaction)
@@ -136,16 +136,25 @@ pub async fn get_outputs_for_inputs(
         .all(txn)
         .await?;
 
-    Ok(tx_outputs)
+    Ok(tx_outputs
+        .drain(..)
+        // <tx, tx_out> is a one-to-one mapping so it's safe to flatten this
+        .map(|(output, txs)| {
+            if txs.len() > 1 {
+                panic!();
+            }
+            (output, txs[0].clone())
+        })
+        .collect())
 }
 
 pub fn gen_input_to_output_map<'a>(
-    outputs_for_inputs: &'a Vec<(TransactionOutputModel, Vec<TransactionModel>)>,
+    outputs_for_inputs: &'a Vec<(TransactionOutputModel, TransactionModel)>,
 ) -> BTreeMap<&'a Vec<u8>, BTreeMap<i64, i64>> {
     let mut input_to_output_map = BTreeMap::<&Vec<u8>, BTreeMap<i64, i64>>::default();
     for output in outputs_for_inputs {
         input_to_output_map
-            .entry(&output.1.first().unwrap().hash)
+            .entry(&output.1.hash)
             .and_modify(|output_index_map| {
                 // note: we can insert right away instead of doing a 2nd lookup
                 // because the pair <payload, output_index> is unique
