@@ -21,9 +21,7 @@ use crate::{
 };
 use entity::{
     prelude::*,
-    sea_orm::{
-        prelude::*, ColumnTrait, Condition, DatabaseTransaction, JoinType, QuerySelect, Set,
-    },
+    sea_orm::{prelude::*, ColumnTrait, Condition, DatabaseTransaction, Set},
 };
 
 struct VirtualTransaction<'a> {
@@ -77,7 +75,7 @@ pub async fn process_multiera_block(
                         e,
                         block_record.cbor_hex,
                         hex::encode(tx_body.encode_fragment().unwrap()),
-                        hex::encode(tx_body.to_hash().to_vec())
+                        hex::encode(tx_body.to_hash())
                     )
                 })
                 .unwrap();
@@ -138,7 +136,7 @@ pub async fn process_multiera_block(
         })
         .collect();
 
-    if joined_txs.len() > 0 {
+    if !joined_txs.is_empty() {
         let insertions = Transaction::insert_many(joined_txs.iter().map(|tx| tx.0.clone()))
             .exec_many_with_returning(txn)
             .await?;
@@ -149,7 +147,7 @@ pub async fn process_multiera_block(
             perf_aggregator,
             time_counter,
             txn,
-            &joined_txs
+            joined_txs
                 .iter()
                 .zip(&insertions)
                 .map(|(tx, inserted)| VirtualTransaction {
@@ -158,7 +156,8 @@ pub async fn process_multiera_block(
                     is_valid: tx.3,
                     database_index: inserted.id,
                 })
-                .collect(),
+                .collect::<Vec<_>>()
+                .as_slice(),
         )
         .await?;
     }
@@ -170,7 +169,7 @@ async fn process_multiera_txs<'a>(
     perf_aggregator: &mut PerfAggregator,
     time_counter: &mut std::time::Instant,
     txn: &DatabaseTransaction,
-    cardano_transactions: &Vec<VirtualTransaction<'a>>,
+    cardano_transactions: &[VirtualTransaction<'a>],
 ) -> Result<(), DbErr> {
     let mut vkey_relation_map = RelationMap::default();
     let mut queued_address_credential = BTreeSet::<QueuedAddressCredential>::default();
@@ -201,7 +200,7 @@ async fn process_multiera_txs<'a>(
                             &mut queued_address_credential,
                             &mut queued_address,
                             cardano_transaction.database_index,
-                            &cert,
+                            cert,
                         );
                     }
                 }
@@ -212,7 +211,7 @@ async fn process_multiera_txs<'a>(
                             &mut queued_address_credential,
                             &mut queued_address,
                             &mut queued_output,
-                            &cardano_transaction.body,
+                            cardano_transaction.body,
                             cardano_transaction.database_index,
                             output,
                             idx,
@@ -263,18 +262,18 @@ async fn process_multiera_txs<'a>(
             match component {
                 TransactionBodyComponent::Inputs(inputs) => {
                     if cardano_transaction.is_valid {
-                        queued_inputs.push((&inputs, cardano_transaction.database_index))
+                        queued_inputs.push((inputs, cardano_transaction.database_index))
                     } else {
-                        queued_unused_inputs.push((&inputs, cardano_transaction.database_index))
+                        queued_unused_inputs.push((inputs, cardano_transaction.database_index))
                     }
                 }
                 TransactionBodyComponent::Collateral(inputs) if !cardano_transaction.is_valid => {
                     // note: we consider collateral as just another kind of input instead of a separate table
                     // you can use the is_valid field to know what kind of input it actually is
                     if !cardano_transaction.is_valid {
-                        queued_inputs.push((&inputs, cardano_transaction.database_index))
+                        queued_inputs.push((inputs, cardano_transaction.database_index))
                     } else {
-                        queued_unused_inputs.push((&inputs, cardano_transaction.database_index))
+                        queued_unused_inputs.push((inputs, cardano_transaction.database_index))
                     }
                 }
                 _ => (),
@@ -302,10 +301,11 @@ async fn process_multiera_txs<'a>(
         add_input_relations(
             &mut vkey_relation_map,
             &queued_inputs,
-            &outputs_for_inputs
+            outputs_for_inputs
                 .iter()
                 .map(|(output, _)| output)
-                .collect(),
+                .collect::<Vec<_>>()
+                .as_slice(),
             &input_to_output_map,
         );
         crate::era_common::insert_inputs(&queued_inputs, &input_to_output_map, txn).await?;
@@ -320,10 +320,11 @@ async fn process_multiera_txs<'a>(
         add_input_relations(
             &mut vkey_relation_map,
             &queued_unused_inputs,
-            &outputs_for_inputs
+            outputs_for_inputs
                 .iter()
                 .map(|(output, _)| output)
-                .collect(),
+                .collect::<Vec<_>>()
+                .as_slice(),
             &input_to_output_map,
         );
     }
@@ -383,7 +384,7 @@ async fn insert_tx_credentials(
     }
 
     // no entries to add if tx only had Byron addresses
-    if models.len() > 0 {
+    if !models.is_empty() {
         TxCredential::insert_many(models).exec(txn).await?;
     }
     Ok(())
@@ -393,61 +394,49 @@ fn queue_witness(
     vkey_relation_map: &mut RelationMap,
     tx_id: i64,
     witness_set: &cardano_multiplatform_lib::TransactionWitnessSet,
-) -> () {
-    match witness_set.vkeys() {
-        Some(vkeys) => {
-            for i in 0..vkeys.len() {
-                let vkey = vkeys.get(i);
+) {
+    if let Some(vkeys) = witness_set.vkeys() {
+        for i in 0..vkeys.len() {
+            let vkey = vkeys.get(i);
+            vkey_relation_map.add_relation(
+                tx_id,
+                RelationMap::keyhash_to_pallas(&vkey.vkey().public_key().hash()).as_slice(),
+                TxCredentialRelationValue::Witness,
+            );
+        }
+    }
+    if let Some(scripts) = witness_set.native_scripts() {
+        for i in 0..scripts.len() {
+            let script = scripts.get(i);
+            vkey_relation_map.add_relation(
+                tx_id,
+                RelationMap::scripthash_to_pallas(&script.hash(ScriptHashNamespace::NativeScript))
+                    .as_slice(),
+                TxCredentialRelationValue::Witness,
+            );
+
+            let vkeys_in_script = RequiredSignersSet::from(&script);
+            for vkey_in_script in vkeys_in_script {
                 vkey_relation_map.add_relation(
                     tx_id,
-                    &RelationMap::keyhash_to_pallas(&vkey.vkey().public_key().hash()).to_vec(),
-                    TxCredentialRelationValue::Witness,
+                    RelationMap::keyhash_to_pallas(&vkey_in_script).as_slice(),
+                    TxCredentialRelationValue::InNativeScript,
                 );
             }
         }
-        _ => (),
-    };
+    }
 
-    match witness_set.native_scripts() {
-        Some(scripts) => {
-            for i in 0..scripts.len() {
-                let script = scripts.get(i);
-                vkey_relation_map.add_relation(
-                    tx_id,
-                    &RelationMap::scripthash_to_pallas(
-                        &script.hash(ScriptHashNamespace::NativeScript),
-                    )
-                    .to_vec(),
-                    TxCredentialRelationValue::Witness,
-                );
-
-                let vkeys_in_script = RequiredSignersSet::from(&script);
-                for vkey_in_script in vkeys_in_script {
-                    vkey_relation_map.add_relation(
-                        tx_id,
-                        &RelationMap::keyhash_to_pallas(&vkey_in_script).to_vec(),
-                        TxCredentialRelationValue::InNativeScript,
-                    );
-                }
-            }
+    if let Some(scripts) = witness_set.plutus_scripts() {
+        for i in 0..scripts.len() {
+            let script = scripts.get(i);
+            vkey_relation_map.add_relation(
+                tx_id,
+                RelationMap::scripthash_to_pallas(&script.hash(ScriptHashNamespace::PlutusV1))
+                    .as_slice(),
+                TxCredentialRelationValue::Witness,
+            );
         }
-        _ => (),
-    };
-
-    match witness_set.plutus_scripts() {
-        Some(scripts) => {
-            for i in 0..scripts.len() {
-                let script = scripts.get(i);
-                vkey_relation_map.add_relation(
-                    tx_id,
-                    &RelationMap::scripthash_to_pallas(&script.hash(ScriptHashNamespace::PlutusV1))
-                        .to_vec(),
-                    TxCredentialRelationValue::Witness,
-                );
-            }
-        }
-        _ => (),
-    };
+    }
 }
 
 fn queue_certificate(
@@ -456,7 +445,7 @@ fn queue_certificate(
     queued_address: &mut BTreeSet<Vec<u8>>,
     tx_id: i64,
     cert: &Certificate,
-) -> () {
+) {
     match cert {
         Certificate::StakeDelegation(credential, pool) => {
             let credential = credential.encode_fragment().unwrap();
@@ -469,11 +458,11 @@ fn queue_certificate(
 
             vkey_relation_map.add_relation(
                 tx_id,
-                &RelationMap::keyhash_to_pallas(
+                RelationMap::keyhash_to_pallas(
                     &cardano_multiplatform_lib::crypto::Ed25519KeyHash::from_bytes(pool.to_vec())
                         .unwrap(),
                 )
-                .to_vec(),
+                .as_slice(),
                 TxCredentialRelationValue::DelegationTarget,
             );
         }
@@ -502,7 +491,7 @@ fn queue_certificate(
             ..
         } => {
             let operator_credential =
-                pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(operator.clone())
+                pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(*operator)
                     .encode_fragment()
                     .unwrap();
 
@@ -544,7 +533,7 @@ fn queue_certificate(
         }
         Certificate::PoolRetirement(key_hash, _) => {
             let operator_credential =
-                pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(key_hash.clone())
+                pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(*key_hash)
                     .encode_fragment()
                     .unwrap();
             vkey_relation_map.add_relation(
@@ -556,10 +545,11 @@ fn queue_certificate(
         Certificate::GenesisKeyDelegation(_, _, _) => {
             // genesis keys aren't stake credentials
         }
-        Certificate::MoveInstantaneousRewardsCert(mir) => match &mir.target {
-            pallas::ledger::primitives::alonzo::InstantaneousRewardTarget::StakeCredentials(
+        Certificate::MoveInstantaneousRewardsCert(mir) => {
+            if let pallas::ledger::primitives::alonzo::InstantaneousRewardTarget::StakeCredentials(
                 credential_pairs,
-            ) => {
+            ) = &mir.target
+            {
                 for pair in credential_pairs.deref() {
                     let credential = pair.0.encode_fragment().unwrap();
 
@@ -570,8 +560,7 @@ fn queue_certificate(
                     );
                 }
             }
-            _ => {}
-        },
+        }
     };
 }
 
@@ -584,13 +573,13 @@ fn queue_address_credential(
     credential: &cardano_multiplatform_lib::address::StakeCredential,
     tx_relation: TxCredentialRelationValue,
     address_relation: AddressCredentialRelationValue,
-) -> () {
+) {
     queued_address.insert(address.clone());
     vkey_relation_map.add_relation(tx_id, &credential.to_bytes(), tx_relation);
     queued_address_credential.insert(QueuedAddressCredential {
         address: address.clone(),
         stake_credential: credential.to_bytes(),
-        address_relation: address_relation,
+        address_relation,
     });
 }
 
@@ -603,7 +592,7 @@ fn queue_output(
     tx_id: i64,
     output: &alonzo::TransactionOutput,
     idx: usize,
-) -> () {
+) {
     use cardano_multiplatform_lib::address::Address;
     let addr = Address::from_bytes(output.address.to_vec())
         .map_err(|e| panic!("{:?}{:?}", e, tx_body.to_hash().to_vec()))
@@ -658,7 +647,7 @@ fn queue_output(
             tx_relation,
             address_relation,
         );
-    } else if let Some(_) = ByronAddress::from_address(&addr) {
+    } else if ByronAddress::from_address(&addr).is_some() {
         queued_address.insert(addr.to_bytes());
     } else if let Some(enterprise_addr) = EnterpriseAddress::from_address(&addr) {
         queue_address_credential(
@@ -693,7 +682,7 @@ async fn insert_stake_credentials(
 ) -> Result<BTreeMap<Vec<u8>, StakeCredentialModel>, DbErr> {
     let mut result_map = BTreeMap::<Vec<u8>, StakeCredentialModel>::default();
 
-    if deduplicated_creds.len() == 0 {
+    if deduplicated_creds.is_empty() {
         return Ok(result_map);
     }
 
@@ -742,7 +731,7 @@ async fn insert_stake_credentials(
 
 async fn insert_address_credential_relation(
     cred_to_model_map: &BTreeMap<Vec<u8>, StakeCredentialModel>,
-    new_addresses: &Vec<AddressModel>,
+    new_addresses: &[AddressModel],
     queued_address_credential: &BTreeSet<QueuedAddressCredential>,
     txn: &DatabaseTransaction,
 ) -> Result<(), DbErr> {
@@ -757,20 +746,17 @@ async fn insert_address_credential_relation(
 
     let mut to_add: Vec<AddressCredentialActiveModel> = vec![];
     for entry in queued_address_credential {
-        match address_map.get(&entry.address) {
-            Some(&address_model) => {
-                to_add.push(AddressCredentialActiveModel {
-                    credential_id: Set(cred_to_model_map.get(&entry.stake_credential).unwrap().id),
-                    address_id: Set(address_model.id),
-                    relation: Set(entry.address_relation as i32),
-                });
-            }
-            // we can ignore addresses we've already seen before
-            None => {}
+        // we can ignore addresses we've already seen before
+        if let Some(&address_model) = address_map.get(&entry.address) {
+            to_add.push(AddressCredentialActiveModel {
+                credential_id: Set(cred_to_model_map.get(&entry.stake_credential).unwrap().id),
+                address_id: Set(address_model.id),
+                relation: Set(entry.address_relation as i32),
+            });
         }
     }
 
-    if to_add.len() > 0 {
+    if !to_add.is_empty() {
         AddressCredential::insert_many(to_add).exec(txn).await?;
     }
 
@@ -779,7 +765,7 @@ async fn insert_address_credential_relation(
 
 async fn insert_outputs(
     address_to_model_map: &BTreeMap<Vec<u8>, AddressModel>,
-    queued_output: &Vec<QueuedOutput>,
+    queued_output: &[QueuedOutput],
     txn: &DatabaseTransaction,
 ) -> Result<(), DbErr> {
     if queued_output.is_empty() {
@@ -806,13 +792,13 @@ async fn insert_outputs(
 
 fn add_input_relations(
     vkey_relation_map: &mut RelationMap,
-    inputs: &Vec<(
+    inputs: &[(
         &Vec<pallas::ledger::primitives::alonzo::TransactionInput>,
         i64,
-    )>,
-    outputs: &Vec<&TransactionOutputModel>,
+    )],
+    outputs: &[&TransactionOutputModel],
     input_to_output_map: &BTreeMap<&Vec<u8>, BTreeMap<i64, i64>>,
-) -> () {
+) {
     let mut output_to_input_tx = BTreeMap::<i64, i64>::default();
     for input_tx_pair in inputs.iter() {
         for input in input_tx_pair.0.iter() {
@@ -822,7 +808,7 @@ fn add_input_relations(
                     output_to_input_tx.insert(output_id, input_tx_pair.1);
                 }
                 None => {
-                    println!("tx: {}", hex::encode(input.transaction_id.to_vec()));
+                    println!("tx: {}", hex::encode(input.transaction_id));
                     panic!();
                 }
             }
@@ -853,8 +839,8 @@ fn add_input_cred_relation(
     addr: &cardano_multiplatform_lib::address::Address,
     input_relation: TxCredentialRelationValue,
     input_stake_relation: TxCredentialRelationValue,
-) -> () {
-    if let Some(base_addr) = BaseAddress::from_address(&addr) {
+) {
+    if let Some(base_addr) = BaseAddress::from_address(addr) {
         // Payment Key
         {
             vkey_relation_map.add_relation(
@@ -872,21 +858,21 @@ fn add_input_cred_relation(
                 input_stake_relation,
             );
         }
-    } else if let Some(reward_addr) = RewardAddress::from_address(&addr) {
+    } else if let Some(reward_addr) = RewardAddress::from_address(addr) {
         vkey_relation_map.add_relation(
             tx_id,
             &reward_addr.payment_cred().to_bytes(),
             input_relation,
         );
-    } else if let Some(_) = ByronAddress::from_address(&addr) {
+    } else if ByronAddress::from_address(addr).is_some() {
         // Byron address has no credentials
-    } else if let Some(enterprise_addr) = EnterpriseAddress::from_address(&addr) {
+    } else if let Some(enterprise_addr) = EnterpriseAddress::from_address(addr) {
         vkey_relation_map.add_relation(
             tx_id,
             &enterprise_addr.payment_cred().to_bytes(),
             input_relation,
         );
-    } else if let Some(ptr_addr) = PointerAddress::from_address(&addr) {
+    } else if let Some(ptr_addr) = PointerAddress::from_address(addr) {
         vkey_relation_map.add_relation(tx_id, &ptr_addr.payment_cred().to_bytes(), input_relation);
     } else {
         panic!("Unexpected address type {}", hex::encode(addr.to_bytes()));

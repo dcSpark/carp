@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 
 static ADDRESS_TRUNCATE: usize = 500; // 1000 in hex
 
-pub fn get_truncated_address(addr_bytes: &Vec<u8>) -> &[u8] {
+pub fn get_truncated_address(addr_bytes: &[u8]) -> &[u8] {
     &addr_bytes[0..(std::cmp::min(addr_bytes.len(), ADDRESS_TRUNCATE))]
 }
 
@@ -35,7 +35,7 @@ pub async fn insert_addresses(
     // 5) Storing up to 2704 bytes is a waste of space since they aren't used for anything
     let truncated_addrs: Vec<&[u8]> = addresses
         .iter()
-        .map(|addr_bytes| get_truncated_address(addr_bytes))
+        .map(|addr| get_truncated_address(addr.as_slice()))
         .collect();
 
     // deduplicate addresses to avoid re-querying the same address many times
@@ -95,14 +95,14 @@ pub async fn insert_addresses(
 }
 
 pub async fn get_outputs_for_inputs(
-    inputs: &Vec<(
+    inputs: &[(
         &Vec<pallas::ledger::primitives::alonzo::TransactionInput>,
         i64,
-    )>,
+    )],
     txn: &DatabaseTransaction,
 ) -> Result<Vec<(TransactionOutputModel, TransactionModel)>, DbErr> {
     // avoid querying the DB if there were no inputs
-    let has_input = inputs.iter().any(|input| input.0.len() > 0);
+    let has_input = inputs.iter().any(|input| !input.0.is_empty());
     if !has_input {
         return Ok(vec![]);
     }
@@ -171,15 +171,15 @@ pub fn gen_input_to_output_map<'a>(
 }
 
 pub async fn insert_inputs(
-    inputs: &Vec<(
+    inputs: &[(
         &Vec<pallas::ledger::primitives::alonzo::TransactionInput>,
         i64,
-    )>,
+    )],
     input_to_output_map: &BTreeMap<&Vec<u8>, BTreeMap<i64, i64>>,
     txn: &DatabaseTransaction,
 ) -> Result<(), DbErr> {
     // avoid querying the DB if there were no inputs
-    let has_input = inputs.iter().any(|input| input.0.len() > 0);
+    let has_input = inputs.iter().any(|input| !input.0.is_empty());
     if !has_input {
         return Ok(());
     }

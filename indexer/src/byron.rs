@@ -92,13 +92,16 @@ pub async fn process_byron_block(
                             .transaction
                             .inputs
                             .iter()
-                            .map(|input| byron_input_to_alonzo(&input))
+                            .map(byron_input_to_alonzo)
                             .collect();
                     (inputs, cardano_tx_in_db.id)
                 })
                 .collect();
 
-            let flattened_inputs = all_inputs
+            let flattened_inputs: Vec<(
+                &Vec<pallas::ledger::primitives::alonzo::TransactionInput>,
+                i64,
+            )> = all_inputs
                 .iter()
                 .map(|inputs| (&inputs.0, inputs.1))
                 .collect();
@@ -120,7 +123,7 @@ pub async fn process_byron_block(
 async fn insert_byron_outputs(
     txn: &DatabaseTransaction,
     address_map: &BTreeMap<Vec<u8>, AddressModel>,
-    outputs: &Vec<(&MaybeIndefArray<TxOut>, &TransactionModel)>,
+    outputs: &[(&MaybeIndefArray<TxOut>, &TransactionModel)],
 ) -> Result<(), DbErr> {
     TransactionOutput::insert_many(
         outputs

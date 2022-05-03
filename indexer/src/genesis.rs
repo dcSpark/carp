@@ -99,7 +99,7 @@ pub async fn insert_genesis(
 
     for (pub_key, amount) in genesis_file.avvm_distr.iter() {
         let (tx_hash, extended_addr) =
-            redeem_pubkey_to_txid(&pub_key, Some(genesis_file.protocol_magic));
+            redeem_pubkey_to_txid(pub_key, Some(genesis_file.protocol_magic));
         let byron_addr =
             ByronAddress::from_bytes(extended_addr.to_address().as_ref().to_vec()).unwrap();
 
@@ -108,6 +108,7 @@ pub async fn insert_genesis(
             hash: Set(tx_hash.to_bytes().to_vec()),
             is_valid: Set(true),
             payload: Set(byron_addr.to_bytes()),
+            // note: strictly speaking, genesis txs are unordered so there is no defined index
             tx_index: Set(transactions.len() as i32),
             ..Default::default()
         });
@@ -128,7 +129,7 @@ pub async fn insert_genesis(
     for (addr, amount) in genesis_file.non_avvm_balances.iter() {
         let byron_addr = ByronAddress::from_bytes(addr.as_ref().to_vec()).unwrap();
 
-        let tx_hash = blake2b256(&addr.as_ref());
+        let tx_hash = blake2b256(addr.as_ref());
 
         // println!("{}", amount.to_str());
         // println!("{}", byron_addr.to_base58());
@@ -139,6 +140,7 @@ pub async fn insert_genesis(
             hash: Set(tx_hash.to_vec()),
             is_valid: Set(true),
             payload: Set(byron_addr.to_bytes()),
+            // note: strictly speaking, genesis txs are unordered so there is no defined index
             tx_index: Set(transactions.len() as i32),
             ..Default::default()
         });
@@ -185,7 +187,7 @@ pub async fn insert_genesis(
 // https://github.com/SeaQL/sea-orm/issues/691
 async fn bulk_insert_txs(
     txn: &DatabaseTransaction,
-    transactions: &Vec<TransactionActiveModel>,
+    transactions: &[TransactionActiveModel],
 ) -> Result<Vec<TransactionModel>, DbErr> {
     let mut result: Vec<TransactionModel> = vec![];
     for chunk in transactions

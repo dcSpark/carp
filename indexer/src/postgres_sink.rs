@@ -130,7 +130,7 @@ async fn insert_block(
                 &mut time_counter,
                 txn,
                 &block,
-                &byron_block,
+                byron_block,
             )
             .await?
         }
@@ -141,7 +141,7 @@ async fn insert_block(
                 txn,
                 &block_record,
                 &block,
-                &alonzo_block,
+                alonzo_block,
             )
             .await?
         }

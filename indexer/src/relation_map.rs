@@ -6,8 +6,8 @@ use std::collections::BTreeMap;
 pub struct RelationMap(pub BTreeMap<i64 /* tx ID in db */, BTreeMap<Hash<32>, i32>>);
 
 impl RelationMap {
-    pub fn bytes_to_pallas(bytes: &Vec<u8>) -> Hash<32> {
-        let bytes: [u8; 32] = bytes.clone().try_into().unwrap();
+    pub fn bytes_to_pallas(bytes: &[u8]) -> Hash<32> {
+        let bytes: [u8; 32] = bytes.try_into().unwrap();
         Hash::<32>::from(bytes)
     }
 
@@ -35,13 +35,14 @@ impl RelationMap {
     pub fn add_relation(
         &mut self,
         tx_id: i64,
-        stake_credential: &Vec<u8>,
+        stake_credential: &[u8],
         relation: TxCredentialRelationValue,
-    ) -> () {
+    ) {
+        let relation_int = i32::from(relation);
         let credential_map = self.for_transaction(tx_id);
         credential_map
-            .entry(RelationMap::bytes_to_pallas(&stake_credential))
-            .and_modify(|val| *val |= i32::from(relation))
-            .or_insert(relation.into());
+            .entry(RelationMap::bytes_to_pallas(stake_credential))
+            .and_modify(|val| *val |= relation_int)
+            .or_insert(relation_int);
     }
 }
