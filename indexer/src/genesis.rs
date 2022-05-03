@@ -117,6 +117,7 @@ pub async fn insert_genesis(
             ..Default::default()
         });
 
+        // TODO: this is actually wrong. CML uses the Shelley format, but this should be the Byron format
         outputs.push(cardano_multiplatform_lib::TransactionOutput::new(
             &byron_addr.to_address(),
             &Value::new(amount),
@@ -147,6 +148,7 @@ pub async fn insert_genesis(
             ..Default::default()
         });
 
+        // TODO: this is actually wrong. CML uses the Shelley format, but this should be the Byron format
         outputs.push(cardano_multiplatform_lib::TransactionOutput::new(
             &byron_addr.to_address(),
             &Value::new(amount),

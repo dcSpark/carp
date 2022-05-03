@@ -875,13 +875,15 @@ async fn add_input_relations(
         .iter()
         // Byron addresses don't contain stake credentials, so we can skip them
         .filter(|&tx_output| {
-            let is_byron = cardano_multiplatform_lib::TransactionOutput::from_bytes(
+            let is_byron = match &cardano_multiplatform_lib::TransactionOutput::from_bytes(
                 tx_output.0.payload.clone(),
-            )
-            .unwrap()
-            .address()
-            .as_byron()
-            .is_some();
+            ) {
+                Ok(payload) => payload.address().as_byron().is_some(),
+                Err(_e) => {
+                    // https://github.com/dcSpark/cardano-multiplatform-lib/issues/61
+                    true
+                }
+            };
             !is_byron
         })
         .map(|output| output.0.id)

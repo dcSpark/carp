@@ -32,6 +32,8 @@ async fn reparse_txs(conn: &DatabaseConnection, start_index: u64) -> Result<(), 
             (100.0 * txs.first().unwrap().id as f64) / (tx_count as f64)
         );
         for tx in txs {
+            // TODO: this will fail on all Byron txs
+            // https://github.com/dcSpark/cardano-multiplatform-lib/issues/61
             if let Err(e) = &cardano_multiplatform_lib::Transaction::from_bytes(tx.payload.clone())
             {
                 println!(
@@ -114,6 +116,8 @@ async fn reparse_tx_out(conn: &DatabaseConnection, start_index: u64) -> Result<(
             (100.0 * tx_outs.first().unwrap().id as f64) / (tx_out_count as f64)
         );
         for tx_out in tx_outs {
+            // TODO: this will fail on all Byron txs
+            // https://github.com/dcSpark/cardano-multiplatform-lib/issues/61
             if let Err(e) =
                 &cardano_multiplatform_lib::TransactionOutput::from_bytes(tx_out.payload.clone())
             {
