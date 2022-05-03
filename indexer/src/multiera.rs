@@ -11,6 +11,7 @@ use std::{
 use cardano_multiplatform_lib::{
     address::{BaseAddress, ByronAddress, EnterpriseAddress, PointerAddress, RewardAddress},
     utils::ScriptHashNamespace,
+    RequiredSignersSet,
 };
 use oura::model::BlockRecord;
 
@@ -392,6 +393,15 @@ fn queue_witness(
                     .to_vec(),
                     TxCredentialRelationValue::Witness,
                 );
+
+                let vkeys_in_script = RequiredSignersSet::from(&script);
+                for vkey_in_script in vkeys_in_script {
+                    vkey_relation_map.add_relation(
+                        tx_id,
+                        &RelationMap::keyhash_to_pallas(&vkey_in_script).to_vec(),
+                        TxCredentialRelationValue::InNativeScript,
+                    );
+                }
             }
         }
         _ => (),

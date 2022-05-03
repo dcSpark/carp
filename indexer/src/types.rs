@@ -10,6 +10,7 @@ pub enum MultiEraBlock {
 pub enum TxCredentialRelationValue {
     Witness, // appears in the witness of the tx
     // TODO: differentiate being part of input&output as staking key from payment key
+    // TODO: unused input. Ex: collateral input when collateral isn't consumed
     Input,
     Output,
     StakeDeregistration,
@@ -22,8 +23,7 @@ pub enum TxCredentialRelationValue {
     MirRecipient,
     Withdrawal,
     RequiredSigner,
-    // TODO: unused input. Ex: collateral input when collateral isn't consumed
-    // TODO: native script / mint (in witness)
+    InNativeScript, // keyhash in scripts including mints
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -48,6 +48,7 @@ impl From<TxCredentialRelationValue> for i32 {
             TxCredentialRelationValue::MirRecipient => 0b10000000000,
             TxCredentialRelationValue::Withdrawal => 0b100000000000,
             TxCredentialRelationValue::RequiredSigner => 0b1000000000000,
+            TxCredentialRelationValue::InNativeScript => 0b10000000000000,
         }
     }
 }
