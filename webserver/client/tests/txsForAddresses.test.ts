@@ -451,11 +451,13 @@ describe(`/${Routes.txsForAddresses}`, function () {
   it("Get tx using script hash", async () => {
     const result = await query({
       addresses: [
+        // note: this is the jpg.store contract address
+        // so this is also a test one of the largest joins you could end up doing
         bech32.encode(
           Cip5.hashes.script,
           bech32.toWords(
             Buffer.from(
-              "eb188aca85f89b55579d4de10a729700e7113b325389404ea7d5cfe6",
+              "4a59ebd93ea53d1bbf7f82232c7b012700a0cf4bb78d879dabb1a20a",
               "hex"
             )
           ),
@@ -465,9 +467,7 @@ describe(`/${Routes.txsForAddresses}`, function () {
       untilBlock:
         "34b1926c6adb2a9b196701e99de1cbd41953a25033bac10d0ae259ea83bb65d2",
     });
-    expect(result.transactions).to.have.lengthOf(
-      Math.min(508, ADDRESS_RESPONSE_LIMIT)
-    );
+    expect(result.transactions).to.have.lengthOf(1);
   });
 
   it("Two bech32 addresses in the same tx don't result in the tx being duplicated", async () => {

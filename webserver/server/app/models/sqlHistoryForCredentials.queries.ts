@@ -33,21 +33,37 @@ export interface ISqlHistoryForCredentialsQuery {
   result: ISqlHistoryForCredentialsResult;
 }
 
-const sqlHistoryForCredentialsIR: any = {"name":"sqlHistoryForCredentials","params":[{"name":"credentials","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":426,"b":436,"line":9,"col":41}]}},{"name":"relation","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":488,"b":495,"line":11,"col":41}]}},{"name":"until_block_id","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":936,"b":949,"line":27,"col":24}]}},{"name":"after_block_id","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":1101,"b":1114,"line":33,"col":25},{"a":1254,"b":1267,"line":36,"col":26}]}},{"name":"after_tx_id","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":1293,"b":1303,"line":36,"col":65}]}},{"name":"limit","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":1408,"b":1412,"line":41,"col":14}]}}],"usedParamSet":{"credentials":true,"relation":true,"until_block_id":true,"after_block_id":true,"after_tx_id":true,"limit":true},"statement":{"body":"WITH related_txs AS (\n  SELECT DISTINCT ON (\"Transaction\".id) \"Transaction\".*\n  FROM \"StakeCredential\"\n  INNER JOIN \"TxCredentialRelation\" ON \"TxCredentialRelation\".credential_id = \"StakeCredential\".id\n  INNER JOIN \"Transaction\" ON \"TxCredentialRelation\".tx_id = \"Transaction\".id\n  INNER JOIN \"Block\" ON \"Transaction\".block_id = \"Block\".id\n  WHERE\n    \"StakeCredential\".credential = ANY (:credentials)\n    AND\n    (\"TxCredentialRelation\".relation & (:relation)) > 0\n)\nSELECT related_txs.id,\n        related_txs.payload,\n        related_txs.hash,\n        related_txs.tx_index,\n        related_txs.is_valid,\n        \"Block\".hash AS block_hash,\n        \"Block\".epoch,\n        \"Block\".slot,\n        \"Block\".era,\n        \"Block\".height\n      FROM related_txs\n      INNER JOIN \"Block\" ON related_txs.block_id = \"Block\".id\n      WHERE\n                                              \n        \"Block\".id <= (:until_block_id)\n        and (\n                                                                                                             \n          \"Block\".id > (:after_block_id)\n            or\n                                                                                               \n          (\"Block\".id = (:after_block_id) and related_txs.id > (:after_tx_id))\n        ) \n      ORDER BY\n        \"Block\".height ASC,\n        related_txs.tx_index ASC\n      LIMIT (:limit)","loc":{"a":37,"b":1413,"line":2,"col":0}}};
+const sqlHistoryForCredentialsIR: any = {"name":"sqlHistoryForCredentials","params":[{"name":"credentials","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":458,"b":468,"line":10,"col":43}]}},{"name":"relation","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":524,"b":531,"line":12,"col":43}]}},{"name":"until_block_id","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":628,"b":641,"line":15,"col":34}]}},{"name":"after_block_id","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":795,"b":808,"line":21,"col":35},{"a":954,"b":967,"line":24,"col":36}]}},{"name":"after_tx_id","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":995,"b":1005,"line":24,"col":77}]}},{"name":"limit","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":1087,"b":1091,"line":30,"col":12}]}}],"usedParamSet":{"credentials":true,"relation":true,"until_block_id":true,"after_block_id":true,"after_tx_id":true,"limit":true},"statement":{"body":"WITH related_txs AS (\n  SELECT * FROM (\n    SELECT DISTINCT ON (\"Transaction\".id) \"Transaction\".*\n    FROM \"StakeCredential\"\n    INNER JOIN \"TxCredentialRelation\" ON \"TxCredentialRelation\".credential_id = \"StakeCredential\".id\n    INNER JOIN \"Transaction\" ON \"TxCredentialRelation\".tx_id = \"Transaction\".id\n    INNER JOIN \"Block\" ON \"Transaction\".block_id = \"Block\".id\n    WHERE\n      \"StakeCredential\".credential = ANY (:credentials)\n      AND\n      (\"TxCredentialRelation\".relation & (:relation)) > 0\n      AND\n                                            \n      \"Transaction\".block_id <= (:until_block_id)\n      AND (\n                                                                                                       \n        \"Transaction\".block_id > (:after_block_id)\n          OR\n                                                                                             \n        (\"Transaction\".block_id = (:after_block_id) AND \"Transaction\".id > (:after_tx_id))\n      )\n  ) t\n    ORDER BY\n      block_id ASC,\n      tx_index ASC\n    LIMIT (:limit)\n)\nSELECT related_txs.id,\n        related_txs.payload,\n        related_txs.hash,\n        related_txs.tx_index,\n        related_txs.is_valid,\n        \"Block\".hash AS block_hash,\n        \"Block\".epoch,\n        \"Block\".slot,\n        \"Block\".era,\n        \"Block\".height\n      FROM related_txs\n      INNER JOIN \"Block\" ON related_txs.block_id = \"Block\".id","loc":{"a":37,"b":1442,"line":2,"col":0}}};
 
 /**
  * Query generated from SQL:
  * ```
  * WITH related_txs AS (
- *   SELECT DISTINCT ON ("Transaction".id) "Transaction".*
- *   FROM "StakeCredential"
- *   INNER JOIN "TxCredentialRelation" ON "TxCredentialRelation".credential_id = "StakeCredential".id
- *   INNER JOIN "Transaction" ON "TxCredentialRelation".tx_id = "Transaction".id
- *   INNER JOIN "Block" ON "Transaction".block_id = "Block".id
- *   WHERE
- *     "StakeCredential".credential = ANY (:credentials)
- *     AND
- *     ("TxCredentialRelation".relation & (:relation)) > 0
+ *   SELECT * FROM (
+ *     SELECT DISTINCT ON ("Transaction".id) "Transaction".*
+ *     FROM "StakeCredential"
+ *     INNER JOIN "TxCredentialRelation" ON "TxCredentialRelation".credential_id = "StakeCredential".id
+ *     INNER JOIN "Transaction" ON "TxCredentialRelation".tx_id = "Transaction".id
+ *     INNER JOIN "Block" ON "Transaction".block_id = "Block".id
+ *     WHERE
+ *       "StakeCredential".credential = ANY (:credentials)
+ *       AND
+ *       ("TxCredentialRelation".relation & (:relation)) > 0
+ *       AND
+ *                                             
+ *       "Transaction".block_id <= (:until_block_id)
+ *       AND (
+ *                                                                                                        
+ *         "Transaction".block_id > (:after_block_id)
+ *           OR
+ *                                                                                              
+ *         ("Transaction".block_id = (:after_block_id) AND "Transaction".id > (:after_tx_id))
+ *       )
+ *   ) t
+ *     ORDER BY
+ *       block_id ASC,
+ *       tx_index ASC
+ *     LIMIT (:limit)
  * )
  * SELECT related_txs.id,
  *         related_txs.payload,
@@ -61,20 +77,6 @@ const sqlHistoryForCredentialsIR: any = {"name":"sqlHistoryForCredentials","para
  *         "Block".height
  *       FROM related_txs
  *       INNER JOIN "Block" ON related_txs.block_id = "Block".id
- *       WHERE
- *                                               
- *         "Block".id <= (:until_block_id)
- *         and (
- *                                                                                                              
- *           "Block".id > (:after_block_id)
- *             or
- *                                                                                                
- *           ("Block".id = (:after_block_id) and related_txs.id > (:after_tx_id))
- *         ) 
- *       ORDER BY
- *         "Block".height ASC,
- *         related_txs.tx_index ASC
- *       LIMIT (:limit)
  * ```
  */
 export const sqlHistoryForCredentials = new PreparedQuery<ISqlHistoryForCredentialsParams,ISqlHistoryForCredentialsResult>(sqlHistoryForCredentialsIR);

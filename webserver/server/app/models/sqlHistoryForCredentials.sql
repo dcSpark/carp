@@ -1,14 +1,33 @@
 /* @name sqlHistoryForCredentials */
 WITH related_txs AS (
-  SELECT DISTINCT ON ("Transaction".id) "Transaction".*
-  FROM "StakeCredential"
-  INNER JOIN "TxCredentialRelation" ON "TxCredentialRelation".credential_id = "StakeCredential".id
-  INNER JOIN "Transaction" ON "TxCredentialRelation".tx_id = "Transaction".id
-  INNER JOIN "Block" ON "Transaction".block_id = "Block".id
-  WHERE
-    "StakeCredential".credential = ANY (:credentials)
-    AND
-    ("TxCredentialRelation".relation & (:relation)) > 0
+  SELECT * FROM (
+    SELECT DISTINCT ON ("Transaction".id) "Transaction".*
+    FROM "StakeCredential"
+    INNER JOIN "TxCredentialRelation" ON "TxCredentialRelation".credential_id = "StakeCredential".id
+    INNER JOIN "Transaction" ON "TxCredentialRelation".tx_id = "Transaction".id
+    INNER JOIN "Block" ON "Transaction".block_id = "Block".id
+    WHERE
+      "StakeCredential".credential = ANY (:credentials)
+      AND
+      ("TxCredentialRelation".relation & (:relation)) > 0
+      AND
+      /* is within untilBlock (inclusive) */
+      "Transaction".block_id <= (:until_block_id)
+      AND (
+        /* 
+          * Either:
+          * 1: comes in block strict after the "after" field
+        */
+        "Transaction".block_id > (:after_block_id)
+          OR
+        /* 2) Is in the same block as the "after" field, but is tx that appears afterwards */
+        ("Transaction".block_id = (:after_block_id) AND "Transaction".id > (:after_tx_id))
+      )
+  ) t
+    ORDER BY
+      block_id ASC,
+      tx_index ASC
+    LIMIT (:limit)
 )
 SELECT related_txs.id,
         related_txs.payload,
@@ -21,21 +40,5 @@ SELECT related_txs.id,
         "Block".era,
         "Block".height
       FROM related_txs
-      INNER JOIN "Block" ON related_txs.block_id = "Block".id
-      WHERE
-        /* is within untilBlock (inclusive) */
-        "Block".id <= (:until_block_id)
-        and (
-          /* 
-           * Either:
-           * 1: comes in block strict after the "after" field
-          */
-          "Block".id > (:after_block_id)
-            or
-          /* 2) Is in the same block as the "after" field, but is tx that appears afterwards */
-          ("Block".id = (:after_block_id) and related_txs.id > (:after_tx_id))
-        ) 
-      ORDER BY
-        "Block".height ASC,
-        related_txs.tx_index ASC
-      LIMIT (:limit);
+      INNER JOIN "Block" ON related_txs.block_id = "Block".id;
+
