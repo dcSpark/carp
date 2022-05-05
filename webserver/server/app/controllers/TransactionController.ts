@@ -32,29 +32,6 @@ export class TransactionController extends Controller {
   /**
    * Ordered by `<block.height, transaction.tx_index>`
    * Note: this endpoint only returns txs that are in a block. Use another tool to see mempool for txs not in a block
-   *
-   * Addresses can be in the following form:
-   * - Credential hex (8200581c...) - note this is not a keyhash (it contains a credential type prefix)
-   * - Bech32 full addresses (`addr1`, `stake1`)
-   * - Bech32 credentials ( `addr_vkh1`, `script1`, etc.) - this is the recommended approach
-   * - Legacy Byron format (Ae2, Dd, etc.)
-   *
-   * Note: we recommend avoiding to query wallet history for base addresses using bech32
-   * As Cardano UTXO spendability depends only on the payment credential and not the full base address
-   * The result will also miss transactions that are only related to the payment key of the address
-   * ex: the payment key is used in a multisig
-   *
-   * Warning: querying reward bech32 addresses is equivalent to querying the stake credential inside it
-   * This may return more results than expected (ex: a multisig containing the staking key of the wallet)
-   * You can filter specific usages using the relation filter bitmask
-   *
-   * Note: the reason you have to specify both a tx hash AND a block hash in the "after" for pagination
-   * is because this is the only way to make sure your pagination doesn't get affected by rollbacks
-   * ex: a rollback could cause a tx to be removed from one block and appear in a totally different block
-   * Specifying the block hash as well allows making sure you're paginating on the right tx in the right block
-   *
-   * Note: using two different address representations in the same query will hurt performance (ex: addr1 and addr_vkh1)
-   * This because under-the-hood this will run multiple independent SQL queries for the different formats
    */
   @SuccessResponse(`${StatusCodes.OK}`)
   @Post()
