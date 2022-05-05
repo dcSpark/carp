@@ -194,6 +194,27 @@ describe(`/${Routes.txsForAddresses}`, function () {
     ]);
   });
 
+  it("should allow limiting the number of transactions returned", async () => {
+    const result = await query({
+      addresses: [
+        "DdzFFzCqrhsnUbJho1ERJsuZxkevYTofBFMuQo5Uaxmb2dHUQX7TzK4C9gN5Yc5Hc4ok4o4wj1krZrgvQWGfd4BgpYFRQUQBgLzZxFi6",
+        "DdzFFzCqrht33HAPd4PyqRAhmry5gsSgvZjh8dWdZPuHYchXPbP1W3Rw5A2zwgftbeU9rMu3znnpNib3oFGkmBy3LL8i8VTZhNG9qnwN",
+        "DdzFFzCqrhsgXjCq9Gc3RbGkGNnShyMqKcXzvJM4ByLhuPQ77UGRjy59TQbtLdMuJJz9PcFACi5mYrfA9h11vUehcZPCzJUsC7nirrJB",
+        "DdzFFzCqrhsksJxdqiVRGY5kZbzKJmMW9qKcZMVZ95oYaDrCHEEk1fxV4QbkoNDu24WY1ZKCUnuizc8SWaVPkEwv66eTtUdsyVRBkgD7",
+      ],
+      untilBlock:
+        "5fc6a3d84cbd3a1fab3d0f1228e0e788a1ba28f682a3a2ea7b2d49ad99645a2c",
+      limit: 5,
+    });
+    expect(result.transactions.map((tx) => tx.transaction.hash)).to.eql([
+      "ee01627b2bfa5bd5a7dd9d2be7f9108ea0c0585c58216cb16d07803ae769b34f",
+      "d5dff06dda8659afb095482b95c1f5bf0beba6e2a93f614532769a4a5a575793",
+      "b77647288bf6553726c93faa94685637ac2976c85bba3f3dfd4d011de24371cb",
+      "62eb7d469b75b0f15c4b9e905346f5dac13ffa97539bb17cb3867ca74aa25a20",
+      "753b8b70901835b6d0104df0622ab14e0596b112c49ada022fc2f8210ac73f1b",
+    ]);
+  });
+
   it("should do same history even if addresses sent twice", async () => {
     const resultUnique = await query({
       addresses: [

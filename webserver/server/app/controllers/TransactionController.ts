@@ -118,7 +118,7 @@ export class TransactionController extends Controller {
 
       const commonRequest = {
         after: pageStart,
-        limit: ADDRESS_RESPONSE_LIMIT,
+        limit: requestBody.limit ?? ADDRESS_RESPONSE_LIMIT,
         until,
         dbTx,
       };

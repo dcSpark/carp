@@ -38,6 +38,8 @@ export type TransactionHistoryRequest = {
   untilBlock: string;
   /** Defaults to `RelationFilterType.NO_FILTER` */
   relationFilter?: RelationFilter;
+  /** Defaults to `ADDRESS_RESPONSE_LIMIT` */
+  limit?: number;
 };
 
 export type BlockInfo = {
