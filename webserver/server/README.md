@@ -1,7 +1,7 @@
 # Setup
 
 1. Follow the DB setup steps in the [root README](../../README.md)
-1. If you need to run the dev tools like Prisma, you also need to set the `PGPASSWORD` env variable (not set by .env) as Prisma doesn't support PGPASSFILE
+1. Note: unlike the Rust tool, the Typescript codebase doesn't support `PGPASSFILE` so you will have to set the `PGPASSWORD` env variable (not set by .env)
 1. `nvm use`
 1. `yarn install`
 
@@ -9,10 +9,11 @@
 
 # Run
 
-1. `yarn start`
+1. (dev) `yarn dev`
+1. (prod) `yarn build && yarn start`
 
 # Regenerate database
 
-You will need to run Prisma for this (which requires `PGPASSWORD`)
+You will need to run `pgtyped` for this (which requires `PGPASSWORD`)
 
 `npm run parse-db`

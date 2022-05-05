@@ -1,14 +1,6 @@
 {
-  "extends": "../tsconfig.json",
+  "extends": "./tsconfig.build.json",
   "compilerOptions": {
-    "typeRoots": [
-      "../types",
-      "./node_modules/@types",
-      "./app/models/zapatos/schema.d.ts"
-    ]
+    "noEmit": true,
   },
-  "include": [
-    "./app/**/*",
-    "../shared/**/*"
-  ]
 }

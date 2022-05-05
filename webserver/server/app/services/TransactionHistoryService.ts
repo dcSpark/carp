@@ -18,6 +18,7 @@ export async function historyForCredentials(
       after_tx_id: (request.after?.tx_id ?? -1)?.toString(),
       limit: request.limit.toString(),
       until_block_id: request.until.block_id,
+      relation: 0xff,
     },
     request.dbTx
   );

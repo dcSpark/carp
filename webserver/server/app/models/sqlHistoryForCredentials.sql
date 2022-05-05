@@ -16,6 +16,8 @@ SELECT "Transaction".id,
       WHERE
         "StakeCredential".credential = ANY (:credentials)
         AND
+        ("TxCredentialRelation".relation & (:relation)) > 0
+        AND
         /* is within untilBlock (inclusive) */
         "Block".id <= (:until_block_id)
         and (

@@ -19,33 +19,38 @@ import { ParsedAddressTypes } from '../models/ParsedAddressTypes';
 import tx from 'pg-tx';
 import pool from '../services/PgPoolSingleton';
 import { resolvePageStart, resolveUntilBlock } from '../services/PaginationService';
-import { ErrorShape, genErrorMessage } from '../models/errors';
-import { Errors } from '../models/errors';
+import { ErrorShape, genErrorMessage } from '../../../shared/errors';
+import { Errors } from '../../../shared/errors';
 import { expectType } from 'tsd';
+import { EndpointTypes, Routes } from '../../../shared/routes';
+import sortBy from 'lodash/sortBy';
 
-@Route('txsForAddress')
+const route = Routes.txsForAddresses;
+
+@Route('txsForAddresses')
 export class TransactionController extends Controller {
   /**
-   * Ordered by <block.height, transaction.tx_index>
-   * Transactions that are in a block appear before txs that aren't
-   * Two txs that both aren't in a block are sorted by their position in the mempool
+   * Ordered by `<block.height, transaction.tx_index>`
+   * Note: this endpoint only returns txs that are in a block. See the mempool for txs not in a block
    *
    * Addresses can be in the following form:
    * - Stake credential hex
    * - Bech32 (addr1, addr_vkh, etc.)
    * - Legacy Byron format (Ae2, Dd, etc.)
+   *
+   * TODO: handle bech32 addresses only showing inputs & outputs?
    */
   @SuccessResponse(`${StatusCodes.OK}`)
   @Post()
-  public async txsForAddress(
+  public async txsForAddresses(
     @Body()
-    requestBody: TransactionHistoryRequest,
+    requestBody: EndpointTypes[typeof route]['input'],
     @Res()
     errorResponse: TsoaResponse<
       StatusCodes.BAD_REQUEST | StatusCodes.PRECONDITION_REQUIRED,
       ErrorShape
     >
-  ): Promise<TransactionHistoryResponse> {
+  ): Promise<EndpointTypes[typeof route]['response']> {
     if (requestBody.addresses.length > ADDRESS_REQUEST_LIMIT) {
       return errorResponse(
         StatusCodes.BAD_REQUEST,
@@ -118,22 +123,10 @@ export class TransactionController extends Controller {
       return errorResponse(StatusCodes.PRECONDITION_REQUIRED, cardanoTxs);
     }
 
-    const mergedTxs = [...cardanoTxs[0].transactions, ...cardanoTxs[1].transactions];
-    mergedTxs.sort((a, b) => {
-      // return any tx in a block before txs not in a block
-      if ('mempool' in a) {
-        if ('mempool' in b) {
-          // if neither are in a block, we just make sure the order is consistent
-          return a.mempool.positionInMempool - b.mempool.positionInMempool;
-        }
-        return -1;
-      }
-      if ('mempool' in b) return 1;
-      if (a.block.height === b.block.height) {
-        return a.block.tx_ordinal - b.block.tx_ordinal;
-      }
-      return a.block.height - b.block.height;
-    });
+    const mergedTxs = sortBy(
+      [...cardanoTxs[0].transactions, ...cardanoTxs[1].transactions],
+      [tx => tx.block.height, tx => tx.block.tx_ordinal]
+    );
 
     return {
       transactions:
@@ -167,7 +160,8 @@ export const getAddressTypes = (addresses: string[]): ParsedAddressTypes => {
         case Cip5.miscellaneous.addr_test:
         case Cip5.miscellaneous.stake:
         case Cip5.miscellaneous.stake_test: {
-          result.exactAddress.push(address);
+          const payload = bech32.fromWords(bech32Info.words);
+          result.exactAddress.push(Buffer.from(payload).toString('hex'));
           continue;
         }
         case Cip5.hashes.addr_vkh:
@@ -195,7 +189,9 @@ export const getAddressTypes = (addresses: string[]): ParsedAddressTypes => {
       }
     } catch (_e) {}
     if (ByronAddress.is_valid(address)) {
-      result.exactLegacyAddress.push(address);
+      const byronAddr = ByronAddress.from_base58(address);
+      result.exactLegacyAddress.push(Buffer.from(byronAddr.to_bytes()).toString('hex'));
+      byronAddr.free();
       continue;
     }
     result.invalid.push(address);

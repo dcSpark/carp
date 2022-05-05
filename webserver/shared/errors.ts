@@ -1,4 +1,4 @@
-import type { PaginationType } from '../services/PaginationService';
+import type { PaginationType } from "../server/app/services/PaginationService";
 
 export enum ErrorCodes {
   // we explicitly add the numbers to this enum
@@ -17,23 +17,25 @@ export type ErrorShape = {
 export const Errors = {
   AddressLimitExceeded: {
     code: ErrorCodes.AddressLimitExceeded,
-    prefix: 'Exceeded request address limit.',
+    prefix: "Exceeded request address limit.",
     detailsGen: (details: { limit: number; found: number }) =>
       `Limit of ${details.limit}, found ${details.found}`,
   },
   IncorrectAddressFormat: {
     code: ErrorCodes.IncorrectAddressFormat,
-    prefix: 'Incorrectly formatted addresses found.',
-    detailsGen: (details: { addresses: string[] }) => JSON.stringify(details.addresses),
+    prefix: "Incorrectly formatted addresses found.",
+    detailsGen: (details: { addresses: string[] }) =>
+      JSON.stringify(details.addresses),
   },
   UntilBlockNotFound: {
     code: ErrorCodes.UntilBlockNotFound,
-    prefix: 'Until block not found.',
-    detailsGen: (details: { untilBlock: string }) => `Searched block hash: ${details.untilBlock}`,
+    prefix: "Until block not found.",
+    detailsGen: (details: { untilBlock: string }) =>
+      `Searched block hash: ${details.untilBlock}`,
   },
   PageStartNotFound: {
     code: ErrorCodes.PageStartNotFound,
-    prefix: 'After block and/or transaction not found.',
+    prefix: "After block and/or transaction not found.",
     detailsGen: (details: { blockHash: string; txHash: string }) =>
       `Searched block hash ${details.blockHash} and tx hash ${details.txHash}`,
   },
@@ -41,14 +43,17 @@ export const Errors = {
 
 export function genErrorMessage<T extends typeof Errors[keyof typeof Errors]>(
   type: T,
-  details: Parameters<T['detailsGen']>[0]
+  details: Parameters<T["detailsGen"]>[0]
 ): {
-  code: T['code'];
+  code: T["code"];
   reason: string;
 } {
   const generatedDetails = type.detailsGen(details as any);
   return {
     code: type.code,
-    reason: generatedDetails.length === 0 ? type.prefix : `${type.prefix} ${generatedDetails}`,
+    reason:
+      generatedDetails.length === 0
+        ? type.prefix
+        : `${type.prefix} ${generatedDetails}`,
   };
 }

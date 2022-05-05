@@ -11,8 +11,6 @@ export type TransactionHistoryRequest = {
   };
   /** block hash - inclusive */
   untilBlock: string;
-  /** for pagination into the mempool */
-  mempoolIndex?: number;
 };
 
 export type BlockInfo = {
@@ -48,7 +46,8 @@ export type MempoolTx = {
   hash: string;
   positionInMempool: number;
 };
-export type TxAndBlockInfo = ({ block: BlockInfo } | { mempool: MempoolTx }) & {
+export type TxAndBlockInfo = {
+  block: BlockInfo;
   transaction: TransactionInfo;
 };
 export type TransactionHistoryResponse = {
