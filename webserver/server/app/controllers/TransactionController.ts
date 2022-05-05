@@ -34,8 +34,9 @@ export class TransactionController extends Controller {
    * Note: this endpoint only returns txs that are in a block. Use another tool to see mempool for txs not in a block
    *
    * Addresses can be in the following form:
-   * - Stake credential hex
-   * - Bech32 (addr1, addr_vkh, etc.)
+   * - Credential hex (8200581c...) - note this is not a keyhash (it contains a credential type prefix)
+   * - Bech32 full addresses (`addr1`, `stake1`)
+   * - Bech32 credentials ( `addr_vkh1`, `script1`, etc.) - this is the recommended approach
    * - Legacy Byron format (Ae2, Dd, etc.)
    *
    * Note: we recommend avoiding to query wallet history for base addresses using bech32
@@ -51,6 +52,9 @@ export class TransactionController extends Controller {
    * is because this is the only way to make sure your pagination doesn't get affected by rollbacks
    * ex: a rollback could cause a tx to be removed from one block and appear in a totally different block
    * Specifying the block hash as well allows making sure you're paginating on the right tx in the right block
+   *
+   * Note: using two different address representations in the same query will hurt performance (ex: addr1 and addr_vkh1)
+   * This because under-the-hood this will run multiple independent SQL queries for the different formats
    */
   @SuccessResponse(`${StatusCodes.OK}`)
   @Post()
@@ -174,10 +178,6 @@ export const getAddressTypes = (addresses: string[]): ParsedAddressTypes => {
       switch (bech32Info.prefix) {
         case Cip5.miscellaneous.addr:
         case Cip5.miscellaneous.addr_test:
-          const addr = Address.from_bech32(address);
-          const base_addr = addr.as_base();
-          if (base_addr == null) throw new Error();
-          console.log(Buffer.from(base_addr.payment_cred().to_bytes()).toString('hex'));
           const payload = bech32.fromWords(bech32Info.words);
           result.exactAddress.push(Buffer.from(payload).toString('hex'));
           continue;
@@ -191,6 +191,7 @@ export const getAddressTypes = (addresses: string[]): ParsedAddressTypes => {
           } else {
             const cred = rewardAddr.payment_cred();
             result.credentialHex.push(Buffer.from(cred.to_bytes()).toString('hex'));
+            addr.free();
             cred.free();
           }
           continue;

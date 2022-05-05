@@ -36,6 +36,7 @@ export type TransactionHistoryRequest = {
   };
   /** block hash - inclusive */
   untilBlock: string;
+  /** Defaults to `RelationFilterType.NO_FILTER` */
   relationFilter?: RelationFilter;
 };
 
