@@ -1,18 +1,18 @@
-import axios, { AxiosError, AxiosResponse } from "axios";
+import axios from "axios";
+import type { AxiosError, AxiosResponse } from "axios";
 import { expect } from "chai";
-import { Errors, ErrorShape } from "../../shared/errors";
-import { EndpointTypes, Routes } from "../../shared/routes";
+import { Errors } from "../../shared/errors";
+import type { ErrorShape } from "../../shared/errors";
+import type { EndpointTypes } from "../../shared/routes";
+import { Routes } from "../../shared/routes";
 import { StatusCodes } from "http-status-codes";
 import sortBy from "lodash/sortBy";
 import { bech32 } from "bech32";
 import Cip5 from "@dcspark/cip5-js";
 import { RelationFilterType } from "../../shared/models/TransactionHistory";
-import { ADDRESS_RESPONSE_LIMIT } from "../../shared/constants";
 
 const urlBase = "http://localhost:3000";
 type HistoryQuery = EndpointTypes[Routes.txsForAddresses];
-
-console.log(`${urlBase}/${Routes.txsForAddresses}`);
 
 const hashForUntilBlock =
   "5fc6a3d84cbd3a1fab3d0f1228e0e788a1ba28f682a3a2ea7b2d49ad99645a2c";
@@ -34,6 +34,8 @@ function getErrorResponse(
   if (err.response == null) throw new Error(`Unexpected null response`);
   return err.response;
 }
+
+// eslint-disable-next-line mocha/no-setup-in-describe
 describe(`/${Routes.txsForAddresses}`, function () {
   this.timeout(10000);
   it("should return empty if addresses do not exist", async function () {
@@ -47,7 +49,7 @@ describe(`/${Routes.txsForAddresses}`, function () {
     expect(result.transactions).be.empty;
   });
 
-  it("should return empty if there are no tx after the given address", async () => {
+  it("should return empty if there are no tx after the given address", async function () {
     const result = await query({
       addresses: [
         "DdzFFzCqrhsqW5ZTDVX3sR9eEuBr5uPvWoBGaT5GjBQuA2gFL8aRvnecCr73xBsjWnSsebgHAFxEczaUDgW3pMs9Yx4CedeBemyqa1Rr",
@@ -62,9 +64,9 @@ describe(`/${Routes.txsForAddresses}`, function () {
     expect(result.transactions).be.empty;
   });
 
-  it("should throw reference errors for a until block that doesn't exist.", async () => {
+  it("should throw reference errors for a until block that doesn't exist.", async function () {
     try {
-      const result = await query({
+      await query({
         addresses: [
           "Ae2tdPwUPEZHu3NZa6kCwet2msq4xrBXKHBDvogFKwMsF18Jca8JHLRBas7",
         ],
@@ -72,7 +74,8 @@ describe(`/${Routes.txsForAddresses}`, function () {
           "0000000000000000000000000000000000000000000000000000000000000000",
       });
       expect(1).to.be.equal(0); // equivalent to asset false
-    } catch (err: any) {
+    } catch (err: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const response = getErrorResponse(err);
       expect(response.status).to.be.equal(StatusCodes.PRECONDITION_REQUIRED);
       expect(response.data.reason).to.satisfy((msg: string) =>
@@ -81,9 +84,9 @@ describe(`/${Routes.txsForAddresses}`, function () {
     }
   });
 
-  it("should throw reference errors for a tx that doesn't exist.", async () => {
+  it("should throw reference errors for a tx that doesn't exist.", async function () {
     try {
-      const result = await query({
+      await query({
         addresses: [
           "Ae2tdPwUPEZHu3NZa6kCwet2msq4xrBXKHBDvogFKwMsF18Jca8JHLRBas7",
         ],
@@ -95,7 +98,8 @@ describe(`/${Routes.txsForAddresses}`, function () {
         },
       });
       expect(1).to.be.equal(0); // equivalent to asset false
-    } catch (err: any) {
+    } catch (err: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const response = getErrorResponse(err);
       expect(response.status).to.be.equal(StatusCodes.PRECONDITION_REQUIRED);
       expect(response.data.reason).to.satisfy((msg: string) =>
@@ -104,9 +108,9 @@ describe(`/${Routes.txsForAddresses}`, function () {
     }
   });
 
-  it("should throw reference errors for a tx that doesn't match the block in after.", async () => {
+  it("should throw reference errors for a tx that doesn't match the block in after.", async function () {
     try {
-      const result = await query({
+      await query({
         addresses: [
           "Ae2tdPwUPEZHu3NZa6kCwet2msq4xrBXKHBDvogFKwMsF18Jca8JHLRBas7",
         ],
@@ -118,7 +122,8 @@ describe(`/${Routes.txsForAddresses}`, function () {
         },
       });
       expect(1).to.be.equal(0); // equivalent to asset false
-    } catch (err: any) {
+    } catch (err: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const response = getErrorResponse(err);
       expect(response.status).to.be.equal(StatusCodes.PRECONDITION_REQUIRED);
       expect(response.data.reason).to.satisfy((msg: string) =>
@@ -127,7 +132,7 @@ describe(`/${Routes.txsForAddresses}`, function () {
     }
   });
 
-  it("should not include a transaction twice if an address appears in both the input & the output", async () => {
+  it("should not include a transaction twice if an address appears in both the input & the output", async function () {
     const result = await query({
       addresses: [
         "DdzFFzCqrht3UrnL3bCK5QMi9XtmkqGG3G2tmuY17tWyhq63S7EzMpJPogoPKx15drcnJkH4A7QdqYgs4h3XD1zXb3zkDyBuAZcaqYDS",
@@ -143,7 +148,7 @@ describe(`/${Routes.txsForAddresses}`, function () {
     expect(result.transactions).to.have.length(1);
   });
 
-  it("should return elements sorted asc block height", async () => {
+  it("should return elements sorted asc block height", async function () {
     const result = await query({
       addresses: [
         "DdzFFzCqrht6pqNhrJwDYh8gchg1h45C2bJRTFKmQbsv1T1EX63kpWtrwYVPTAAmpt29jYoTGBZSTDJfjA3w54kCMmsjKvsnGjnAraoB",
@@ -162,7 +167,7 @@ describe(`/${Routes.txsForAddresses}`, function () {
     );
   });
 
-  it("should return history for input and output addresses", async () => {
+  it("should return history for input and output addresses", async function () {
     const result = await query({
       addresses: [
         "DdzFFzCqrhsnUbJho1ERJsuZxkevYTofBFMuQo5Uaxmb2dHUQX7TzK4C9gN5Yc5Hc4ok4o4wj1krZrgvQWGfd4BgpYFRQUQBgLzZxFi6",
@@ -194,7 +199,7 @@ describe(`/${Routes.txsForAddresses}`, function () {
     ]);
   });
 
-  it("should allow limiting the number of transactions returned", async () => {
+  it("should allow limiting the number of transactions returned", async function () {
     const result = await query({
       addresses: [
         "DdzFFzCqrhsnUbJho1ERJsuZxkevYTofBFMuQo5Uaxmb2dHUQX7TzK4C9gN5Yc5Hc4ok4o4wj1krZrgvQWGfd4BgpYFRQUQBgLzZxFi6",
@@ -215,7 +220,7 @@ describe(`/${Routes.txsForAddresses}`, function () {
     ]);
   });
 
-  it("should do same history even if addresses sent twice", async () => {
+  it("should do same history even if addresses sent twice", async function () {
     const resultUnique = await query({
       addresses: [
         "DdzFFzCqrhsnUbJho1ERJsuZxkevYTofBFMuQo5Uaxmb2dHUQX7TzK4C9gN5Yc5Hc4ok4o4wj1krZrgvQWGfd4BgpYFRQUQBgLzZxFi6",
@@ -234,7 +239,7 @@ describe(`/${Routes.txsForAddresses}`, function () {
     expect(resultUnique.transactions).to.eql(resultDuplicate.transactions);
   });
 
-  it("Pagination mid-block should be supported", async () => {
+  it("Pagination mid-block should be supported", async function () {
     const result = await query({
       addresses: [
         "addr1q84shx6jr9s258r9m45ujeyde7u4z7tthkedezjm5kdr4um64gv6jqqncjd205c540fgu5450tzvu27n9lk8ulm3s99spva2ru",
@@ -256,7 +261,7 @@ describe(`/${Routes.txsForAddresses}`, function () {
     );
   });
 
-  it("Transaction-era transactions should be marked properly", async () => {
+  it("Transaction-era transactions should be marked properly", async function () {
     // Byron era
     {
       const result = await query({
@@ -294,7 +299,7 @@ describe(`/${Routes.txsForAddresses}`, function () {
     }
   });
 
-  it("untilBlock should limit the response", async () => {
+  it("untilBlock should limit the response", async function () {
     const result = await query({
       addresses: [
         "DdzFFzCqrhsnUbJho1ERJsuZxkevYTofBFMuQo5Uaxmb2dHUQX7TzK4C9gN5Yc5Hc4ok4o4wj1krZrgvQWGfd4BgpYFRQUQBgLzZxFi6",
@@ -309,7 +314,7 @@ describe(`/${Routes.txsForAddresses}`, function () {
     expect(last.block.height).to.be.eql(4105397);
   });
 
-  it("Response should have the right shape", async () => {
+  it("Response should have the right shape", async function () {
     const result = await query({
       addresses: [
         "DdzFFzCqrhsnUbJho1ERJsuZxkevYTofBFMuQo5Uaxmb2dHUQX7TzK4C9gN5Yc5Hc4ok4o4wj1krZrgvQWGfd4BgpYFRQUQBgLzZxFi6",
@@ -335,7 +340,7 @@ describe(`/${Routes.txsForAddresses}`, function () {
     });
   });
 
-  it("order of tx objects should be by block_num asc, tx_ordinal as", async () => {
+  it("order of tx objects should be by block_num asc, tx_ordinal as", async function () {
     const result = await query({
       addresses: [
         "Ae2tdPwUPEYynjShTL8D2L2GGggTH3AGtMteb7r65oLar1vzZ4JPfxob4b8",
@@ -350,7 +355,7 @@ describe(`/${Routes.txsForAddresses}`, function () {
     expect(result.transactions).to.be.eql(mergedTxs);
   });
 
-  it("Get payment key that only occurs in input", async () => {
+  it("Get payment key that only occurs in input", async function () {
     const result = await query({
       addresses: [
         bech32.encode(
@@ -377,7 +382,7 @@ describe(`/${Routes.txsForAddresses}`, function () {
     );
   });
 
-  it("Get payment key that only occurs in output", async () => {
+  it("Get payment key that only occurs in output", async function () {
     const result = await query({
       addresses: [
         bech32.encode(
@@ -399,7 +404,7 @@ describe(`/${Routes.txsForAddresses}`, function () {
     );
   });
 
-  it("Get tx using base address bech32", async () => {
+  it("Get tx using base address bech32", async function () {
     const result = await query({
       addresses: [
         "addr1qxz6hulv54gzf2suy2u5gkvmt6ysasfdlvvegy3fmf969y7r3y3kdut55a40jff00qmg74686vz44v6k363md06qkq0q8eqdws",
@@ -413,7 +418,7 @@ describe(`/${Routes.txsForAddresses}`, function () {
     );
   });
 
-  it("Get tx only related by its staking key", async () => {
+  it("Get tx only related by its staking key", async function () {
     const result = await query({
       addresses: [
         "stake1uydrhuvnrhlzpkzrkukp3h4n0fp5dzqzcz36t5thkmfezyc47wa2x",
@@ -432,7 +437,7 @@ describe(`/${Routes.txsForAddresses}`, function () {
     );
   });
 
-  it("Get tx only related by its staking key with explicit filter", async () => {
+  it("Get tx only related by its staking key with explicit filter", async function () {
     const result = await query({
       addresses: [
         "stake1uydrhuvnrhlzpkzrkukp3h4n0fp5dzqzcz36t5thkmfezyc47wa2x",
@@ -452,7 +457,7 @@ describe(`/${Routes.txsForAddresses}`, function () {
     );
   });
 
-  it("Fail to find tx only related by its staking key with strict filter", async () => {
+  it("Fail to find tx only related by its staking key with strict filter", async function () {
     const result = await query({
       addresses: [
         "stake1uydrhuvnrhlzpkzrkukp3h4n0fp5dzqzcz36t5thkmfezyc47wa2x",
@@ -469,7 +474,7 @@ describe(`/${Routes.txsForAddresses}`, function () {
     expect(result.transactions).to.have.lengthOf(0);
   });
 
-  it("Get tx using script hash", async () => {
+  it("Get tx using script hash", async function () {
     const result = await query({
       addresses: [
         // note: this is the jpg.store contract address
@@ -491,7 +496,7 @@ describe(`/${Routes.txsForAddresses}`, function () {
     expect(result.transactions).to.have.lengthOf(1);
   });
 
-  it("Two bech32 addresses in the same tx don't result in the tx being duplicated", async () => {
+  it("Two bech32 addresses in the same tx don't result in the tx being duplicated", async function () {
     const result = await query({
       addresses: [
         "addr1q95ldat52vp36p9awxsge5lnre7kr0af8yph7rj50h59pcm85l8qxaqez4dsa7xqdmr83cmzsg2xl4cz8yfljexuj3cqgf6zhz",
@@ -513,7 +518,7 @@ describe(`/${Routes.txsForAddresses}`, function () {
     expect(Array.from(duplicated)).to.be.eql([]);
   });
 
-  it("Two credentials in the same tx don't result in the tx being duplicated", async () => {
+  it("Two credentials in the same tx don't result in the tx being duplicated", async function () {
     const result = await query({
       addresses: [
         "8200581c69f6f57453031d04bd71a08cd3f31e7d61bfa939037f0e547de850e3",

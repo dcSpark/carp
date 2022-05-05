@@ -1,6 +1,5 @@
 module.exports = {
     "root": true,
-    parser: '@typescript-eslint/parser',
     "parserOptions": {
         "ecmaVersion": 2020,
         "tsconfigRootDir": __dirname,
@@ -12,13 +11,6 @@ module.exports = {
         "es2020": true,
         "mocha": true
     },
-    "extends": [
-        "plugin:@typescript-eslint/recommended",
-        "plugin:@typescript-eslint/recommended-requiring-type-checking",
-        'plugin:jest/recommended',
-        'plugin:import/typescript',
-        "prettier"
-    ],
     rules: {
         '@typescript-eslint/no-unsafe-assignment': 'off',
         '@typescript-eslint/no-unsafe-return': 'off',
@@ -120,13 +112,6 @@ module.exports = {
         'no-unused-expressions': 0,
         'no-lone-blocks': 0,
         'max-classes-per-file': 0,
-        'no-restricted-properties': [
-            2,
-            {
-            object: 'TrezorConnect',
-            message: 'Use TrezorWrapper instead to minimize Trezor iframe lifespan',
-            },
-        ],
     },
     plugins: ['@typescript-eslint', 'import', 'promise', 'prettier'],
     ignorePatterns: ['.eslintrc.js', '**/*.queries.ts'],

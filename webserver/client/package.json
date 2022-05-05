@@ -4,7 +4,7 @@
   "description": "Web client for the oura-postgres-sink server",
   "main": "app/index.js",
   "scripts": {
-    "eslint": "eslint src tests",
+    "eslint": "eslint tests",
     "test": "mocha -r ts-node/register tests/**/*.test.ts --slow 0",
     "typecheck": "tsc --project tsconfig.json",
     "prettier": "prettier --write \"**/*.tsx\""
@@ -19,13 +19,10 @@
     "url": "https://github.com/dcSpark/oura-postgres-sink/issues"
   },
   "homepage": "https://github.com/dcSpark/oura-postgres-sink#readme",
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
     "@dcspark/cardano-multiplatform-lib-nodejs": "^0.2.0",
     "@dcspark/cip5-js": "^1.0.0",
-    "bech32": "2.0.0",
-    "http-status-codes": "^2.2.0",
     "@types/body-parser": "1.19.2",
     "@types/chai": "^4.3.1",
     "@types/eslint": "8.4.1",
@@ -38,14 +35,17 @@
     "@typescript-eslint/eslint-plugin": "5.18.0",
     "@typescript-eslint/parser": "5.18.0",
     "axios": "^0.27.2",
+    "bech32": "2.0.0",
     "chai": "^4.3.6",
     "eslint": "8.13.0",
     "eslint-config-airbnb-typescript": "17.0.0",
     "eslint-config-prettier": "8.5.0",
     "eslint-plugin-import": "2.26.0",
     "eslint-plugin-jest": "26.1.4",
+    "eslint-plugin-mocha": "^10.0.4",
     "eslint-plugin-prettier": "4.0.0",
     "eslint-plugin-promise": "6.0.0",
+    "http-status-codes": "^2.2.0",
     "lodash": "^4.17.21",
     "mocha": "^10.0.0",
     "prettier": "2.6.2",

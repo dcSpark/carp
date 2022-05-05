@@ -1,29 +1,20 @@
 import { Body, Controller, TsoaResponse, Res, Post, Route, SuccessResponse } from 'tsoa';
 import { historyForAddresses, historyForCredentials } from '../services/TransactionHistoryService';
 import { StatusCodes } from 'http-status-codes';
-import {
-  TransactionHistoryResponse,
-  RelationFilterType,
-} from '../../../shared/models/TransactionHistory';
-import { bech32 } from 'bech32';
-import {
-  Address,
-  ByronAddress,
-  Ed25519KeyHash,
-  ScriptHash,
-  StakeCredential,
-} from '@dcspark/cardano-multiplatform-lib-nodejs';
-import Cip5 from '@dcspark/cip5-js';
+import type { TransactionHistoryResponse } from '../../../shared/models/TransactionHistory';
+import { RelationFilterType } from '../../../shared/models/TransactionHistory';
 import { ADDRESS_REQUEST_LIMIT, ADDRESS_RESPONSE_LIMIT } from '../../../shared/constants';
-import { ParsedAddressTypes } from '../models/ParsedAddressTypes';
 import tx from 'pg-tx';
 import pool from '../services/PgPoolSingleton';
 import { resolvePageStart, resolveUntilBlock } from '../services/PaginationService';
-import { ErrorShape, genErrorMessage } from '../../../shared/errors';
+import type { ErrorShape } from '../../../shared/errors';
+import { genErrorMessage } from '../../../shared/errors';
 import { Errors } from '../../../shared/errors';
 import { expectType } from 'tsd';
-import { EndpointTypes, Routes } from '../../../shared/routes';
+import type { EndpointTypes } from '../../../shared/routes';
+import { Routes } from '../../../shared/routes';
 import sortBy from 'lodash/sortBy';
+import { getAddressTypes } from '../models/utils';
 
 const route = Routes.txsForAddresses;
 
@@ -45,6 +36,7 @@ export class TransactionController extends Controller {
     >
   ): Promise<EndpointTypes[typeof route]['response']> {
     if (requestBody.addresses.length > ADDRESS_REQUEST_LIMIT) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return errorResponse(
         StatusCodes.BAD_REQUEST,
         genErrorMessage(Errors.AddressLimitExceeded, {
@@ -55,6 +47,7 @@ export class TransactionController extends Controller {
     }
     const addressTypes = getAddressTypes(requestBody.addresses);
     if (addressTypes.invalid.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return errorResponse(
         StatusCodes.BAD_REQUEST,
         genErrorMessage(Errors.IncorrectAddressFormat, {
@@ -117,6 +110,7 @@ export class TransactionController extends Controller {
     });
     if ('code' in cardanoTxs) {
       expectType<Equals<typeof cardanoTxs, ErrorShape>>(true);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return errorResponse(StatusCodes.PRECONDITION_REQUIRED, cardanoTxs);
     }
 
@@ -133,78 +127,3 @@ export class TransactionController extends Controller {
     };
   }
 }
-
-const credentialLength = 32 * 2; // 32 bytes = 64 hex letters
-
-export const getAddressTypes = (addresses: string[]): ParsedAddressTypes => {
-  const result: ParsedAddressTypes = {
-    credentialHex: [],
-    exactAddress: [],
-    exactLegacyAddress: [],
-    invalid: [],
-  };
-  const isCredentialHex = (address: string) =>
-    new RegExp(`^[0-9a-fA-F]{${credentialLength}}$`).test(address);
-  for (const address of addresses) {
-    if (isCredentialHex(address)) {
-      result.credentialHex.push(address);
-      continue;
-    }
-    try {
-      const bech32Info = bech32.decode(address, 1000);
-      switch (bech32Info.prefix) {
-        case Cip5.miscellaneous.addr:
-        case Cip5.miscellaneous.addr_test:
-          const payload = bech32.fromWords(bech32Info.words);
-          result.exactAddress.push(Buffer.from(payload).toString('hex'));
-          continue;
-        case Cip5.miscellaneous.stake:
-        case Cip5.miscellaneous.stake_test: {
-          const addr = Address.from_bech32(address);
-          const rewardAddr = addr.as_reward();
-          if (rewardAddr == null) {
-            result.invalid.push(address);
-            addr.free();
-          } else {
-            const cred = rewardAddr.payment_cred();
-            result.credentialHex.push(Buffer.from(cred.to_bytes()).toString('hex'));
-            addr.free();
-            cred.free();
-          }
-          continue;
-        }
-        case Cip5.hashes.addr_vkh:
-        case Cip5.hashes.policy_vkh:
-        case Cip5.hashes.stake_vkh:
-        case Cip5.hashes.stake_shared_vkh:
-        case Cip5.hashes.addr_shared_vkh: {
-          const payload = bech32.fromWords(bech32Info.words);
-          const keyHash = Ed25519KeyHash.from_bytes(Buffer.from(payload));
-          const stakeCred = StakeCredential.from_keyhash(keyHash);
-          result.credentialHex.push(Buffer.from(stakeCred.to_bytes()).toString('hex'));
-          keyHash.free();
-          stakeCred.free();
-          continue;
-        }
-        case Cip5.hashes.script: {
-          const payload = bech32.fromWords(bech32Info.words);
-          const keyHash = ScriptHash.from_bytes(Buffer.from(payload));
-          const stakeCred = StakeCredential.from_scripthash(keyHash);
-          result.credentialHex.push(Buffer.from(stakeCred.to_bytes()).toString('hex'));
-          keyHash.free();
-          stakeCred.free();
-          continue;
-        }
-      }
-    } catch (_e) {}
-    if (ByronAddress.is_valid(address)) {
-      const byronAddr = ByronAddress.from_base58(address);
-      result.exactLegacyAddress.push(Buffer.from(byronAddr.to_bytes()).toString('hex'));
-      byronAddr.free();
-      continue;
-    }
-    result.invalid.push(address);
-  }
-
-  return result;
-};

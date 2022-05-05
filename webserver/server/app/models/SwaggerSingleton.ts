@@ -1,6 +1,6 @@
 import type { JsonObject } from 'swagger-ui-express';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
 let cachedJson: JsonObject = null as any;
 
 export default async (): Promise<JsonObject> => {
