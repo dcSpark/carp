@@ -174,6 +174,10 @@ export const getAddressTypes = (addresses: string[]): ParsedAddressTypes => {
       switch (bech32Info.prefix) {
         case Cip5.miscellaneous.addr:
         case Cip5.miscellaneous.addr_test:
+          const addr = Address.from_bech32(address);
+          const base_addr = addr.as_base();
+          if (base_addr == null) throw new Error();
+          console.log(Buffer.from(base_addr.payment_cred().to_bytes()).toString('hex'));
           const payload = bech32.fromWords(bech32Info.words);
           result.exactAddress.push(Buffer.from(payload).toString('hex'));
           continue;

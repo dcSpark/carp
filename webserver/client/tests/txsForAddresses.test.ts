@@ -7,6 +7,7 @@ import sortBy from "lodash/sortBy";
 import { bech32 } from "bech32";
 import Cip5 from "@dcspark/cip5-js";
 import { RelationFilterType } from "../../shared/models/TransactionHistory";
+import { ADDRESS_RESPONSE_LIMIT } from "../../shared/constants";
 
 const urlBase = "http://localhost:3000";
 type HistoryQuery = EndpointTypes[Routes.txsForAddresses];
@@ -196,7 +197,6 @@ describe(`/${Routes.txsForAddresses}`, function () {
   it("should do same history even if addresses sent twice", async () => {
     const resultUnique = await query({
       addresses: [
-        "DdzFFzCqrhsnUbJho1ERJsuZxkevYTofBFMuQo5Uaxmb2dHUQX7TzK4C9gN5Yc5Hc4ok4o4wj1krZrgvQWGfd4BgpYFRQUQBgLzZxFi6",
         "DdzFFzCqrhsnUbJho1ERJsuZxkevYTofBFMuQo5Uaxmb2dHUQX7TzK4C9gN5Yc5Hc4ok4o4wj1krZrgvQWGfd4BgpYFRQUQBgLzZxFi6",
       ],
       untilBlock:
@@ -465,6 +465,52 @@ describe(`/${Routes.txsForAddresses}`, function () {
       untilBlock:
         "34b1926c6adb2a9b196701e99de1cbd41953a25033bac10d0ae259ea83bb65d2",
     });
-    expect(result.transactions).to.have.lengthOf(100);
+    expect(result.transactions).to.have.lengthOf(
+      Math.min(508, ADDRESS_RESPONSE_LIMIT)
+    );
+  });
+
+  it("Two bech32 addresses in the same tx don't result in the tx being duplicated", async () => {
+    const result = await query({
+      addresses: [
+        "addr1q95ldat52vp36p9awxsge5lnre7kr0af8yph7rj50h59pcm85l8qxaqez4dsa7xqdmr83cmzsg2xl4cz8yfljexuj3cqgf6zhz",
+        "addr1qx967jynr3gc0n2elhj48a88mghp524fyqhvdenczh9nlzsra34p9pswlrq86nq63hna7p4vkrcrxznqslkta9eqs2nsr793vd",
+      ],
+      untilBlock:
+        "a8269def34ff4dcb9801934e8a6ea22ed081a1991c5900282c9236a04cff5c3d",
+    });
+
+    const deduplicated = new Set();
+    const duplicated = new Set();
+    for (const tx of result.transactions) {
+      if (deduplicated.has(tx.transaction.hash)) {
+        duplicated.add(tx.transaction.hash);
+      } else {
+        deduplicated.add(tx.transaction.hash);
+      }
+    }
+    expect(Array.from(duplicated)).to.be.eql([]);
+  });
+
+  it("Two credentials in the same tx don't result in the tx being duplicated", async () => {
+    const result = await query({
+      addresses: [
+        "8200581c69f6f57453031d04bd71a08cd3f31e7d61bfa939037f0e547de850e3",
+        "8200581c8baf48931c5187cd59fde553f4e7da2e1a2aa9202ec6e67815cb3f8a",
+      ],
+      untilBlock:
+        "a8269def34ff4dcb9801934e8a6ea22ed081a1991c5900282c9236a04cff5c3d",
+    });
+
+    const deduplicated = new Set();
+    const duplicated = new Set();
+    for (const tx of result.transactions) {
+      if (deduplicated.has(tx.transaction.hash)) {
+        duplicated.add(tx.transaction.hash);
+      } else {
+        deduplicated.add(tx.transaction.hash);
+      }
+    }
+    expect(Array.from(duplicated)).to.be.eql([]);
   });
 });

@@ -1,2 +1,2 @@
 export const ADDRESS_REQUEST_LIMIT = 100;
-export const ADDRESS_RESPONSE_LIMIT = 100;
+export const ADDRESS_RESPONSE_LIMIT = 1000;
