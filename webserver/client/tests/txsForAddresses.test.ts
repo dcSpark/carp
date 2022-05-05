@@ -6,6 +6,7 @@ import { StatusCodes } from "http-status-codes";
 import sortBy from "lodash/sortBy";
 import { bech32 } from "bech32";
 import Cip5 from "@dcspark/cip5-js";
+import { RelationFilterType } from "../../shared/models/TransactionHistory";
 
 const urlBase = "http://localhost:3000";
 type HistoryQuery = EndpointTypes[Routes.txsForAddresses];
@@ -377,5 +378,59 @@ describe(`/${Routes.txsForAddresses}`, function () {
     );
   });
 
-  // TODO: test credential that only appears in each relation type
+  it("Get tx only related by its staking key", async () => {
+    const result = await query({
+      addresses: [
+        "stake1uydrhuvnrhlzpkzrkukp3h4n0fp5dzqzcz36t5thkmfezyc47wa2x",
+      ],
+      after: {
+        tx: "193c753a090fa0e7248590d407137e9439622e2fe818688186aeb47ac9b58fa4",
+        block:
+          "42b95a9ce5b17f02aa00f99c3bca0a9eccbdbe0942fa246b5376af66979c8c0c",
+      },
+      untilBlock:
+        "d62a740622c27a501697c90fdbdba7ff4931a1ff2ffccdbb5c85bdaa2bec9539",
+    });
+    expect(result.transactions).to.have.lengthOf(1);
+    expect(result.transactions[0].transaction.hash).to.equal(
+      "e2da505cca54744a512cccb714bdb71439a28df0b5a122f489ebea4f1c690995"
+    );
+  });
+
+  it("Get tx only related by its staking key with explicit filter", async () => {
+    const result = await query({
+      addresses: [
+        "stake1uydrhuvnrhlzpkzrkukp3h4n0fp5dzqzcz36t5thkmfezyc47wa2x",
+      ],
+      after: {
+        tx: "193c753a090fa0e7248590d407137e9439622e2fe818688186aeb47ac9b58fa4",
+        block:
+          "42b95a9ce5b17f02aa00f99c3bca0a9eccbdbe0942fa246b5376af66979c8c0c",
+      },
+      untilBlock:
+        "d62a740622c27a501697c90fdbdba7ff4931a1ff2ffccdbb5c85bdaa2bec9539",
+      relationFilter: RelationFilterType.Withdrawal,
+    });
+    expect(result.transactions).to.have.lengthOf(1);
+    expect(result.transactions[0].transaction.hash).to.equal(
+      "e2da505cca54744a512cccb714bdb71439a28df0b5a122f489ebea4f1c690995"
+    );
+  });
+
+  it("Fail to find tx only related by its staking key with strict filter", async () => {
+    const result = await query({
+      addresses: [
+        "stake1uydrhuvnrhlzpkzrkukp3h4n0fp5dzqzcz36t5thkmfezyc47wa2x",
+      ],
+      after: {
+        tx: "193c753a090fa0e7248590d407137e9439622e2fe818688186aeb47ac9b58fa4",
+        block:
+          "42b95a9ce5b17f02aa00f99c3bca0a9eccbdbe0942fa246b5376af66979c8c0c",
+      },
+      untilBlock:
+        "d62a740622c27a501697c90fdbdba7ff4931a1ff2ffccdbb5c85bdaa2bec9539",
+      relationFilter: RelationFilterType.FILTER_ALL,
+    });
+    expect(result.transactions).to.have.lengthOf(0);
+  });
 });

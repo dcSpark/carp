@@ -5,7 +5,6 @@
   "main": "app/index.js",
   "scripts": {
     "eslint": "eslint app",
-    "test": "jest --config=jest.config.ts",
     "typecheck": "tsc --project tsconfig.json",
     "dev": "npx pgtyped --uri -c config.json && yarn build && concurrently \"nodemon -x tsoa spec-and-routes\" \"npx pgtyped -w -c config.json\" \"nodemon\"",
     "build": "tsoa spec-and-routes && tsc --project tsconfig.build.json --outDir build --experimentalDecorators",

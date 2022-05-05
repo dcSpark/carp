@@ -1,15 +1,17 @@
 import { Body, Controller, TsoaResponse, Res, Post, Route, SuccessResponse } from 'tsoa';
 import { historyForAddresses, historyForCredentials } from '../services/TransactionHistoryService';
 import { StatusCodes } from 'http-status-codes';
-import type {
+import {
   TransactionHistoryRequest,
   TransactionHistoryResponse,
-  MempoolTx,
+  RelationFilterType,
 } from '../../../shared/models/TransactionHistory';
 import { bech32 } from 'bech32';
 import {
+  Address,
   ByronAddress,
   Ed25519KeyHash,
+  RewardAddress,
   ScriptHash,
   StakeCredential,
 } from '@dcspark/cardano-multiplatform-lib-nodejs';
@@ -31,14 +33,26 @@ const route = Routes.txsForAddresses;
 export class TransactionController extends Controller {
   /**
    * Ordered by `<block.height, transaction.tx_index>`
-   * Note: this endpoint only returns txs that are in a block. See the mempool for txs not in a block
+   * Note: this endpoint only returns txs that are in a block. Use another tool to see mempool for txs not in a block
    *
    * Addresses can be in the following form:
    * - Stake credential hex
    * - Bech32 (addr1, addr_vkh, etc.)
    * - Legacy Byron format (Ae2, Dd, etc.)
    *
-   * TODO: handle bech32 addresses only showing inputs & outputs?
+   * Note: we recommend avoiding to query wallet history for base addresses using bech32
+   * As Cardano UTXO spendability depends only on the payment credential and not the full base address
+   * The result will also miss transactions that are only related to the payment key of the address
+   * ex: the payment key is used in a multisig
+   *
+   * Warning: querying reward bech32 addresses is equivalent to querying the stake credential inside it
+   * This may return more results than expected (ex: a multisig containing the staking key of the wallet)
+   * You can filter specific usages using the relation filter bitmask
+   *
+   * Note: the reason you have to specify both a tx hash AND a block hash in the "after" for pagination
+   * is because this is the only way to make sure your pagination doesn't get affected by rollbacks
+   * ex: a rollback could cause a tx to be removed from one block and appear in a totally different block
+   * Specifying the block hash as well allows making sure you're paginating on the right tx in the right block
    */
   @SuccessResponse(`${StatusCodes.OK}`)
   @Post()
@@ -69,6 +83,9 @@ export class TransactionController extends Controller {
         })
       );
     }
+
+    // note: we use a SQL transaction to make sure the pagination check works properly
+    // otherwise, a rollback could happen between getting the pagination info and the history query
     const cardanoTxs = await tx<
       ErrorShape | [TransactionHistoryResponse, TransactionHistoryResponse]
     >(pool, async dbTx => {
@@ -106,6 +123,7 @@ export class TransactionController extends Controller {
       const result = await Promise.all([
         historyForCredentials({
           stakeCredentials: addressTypes.credentialHex.map(addr => Buffer.from(addr, 'hex')),
+          relationFilter: requestBody.relationFilter ?? RelationFilterType.NO_FILTER,
           ...commonRequest,
         }),
         historyForAddresses({
@@ -158,10 +176,21 @@ export const getAddressTypes = (addresses: string[]): ParsedAddressTypes => {
       switch (bech32Info.prefix) {
         case Cip5.miscellaneous.addr:
         case Cip5.miscellaneous.addr_test:
-        case Cip5.miscellaneous.stake:
-        case Cip5.miscellaneous.stake_test: {
           const payload = bech32.fromWords(bech32Info.words);
           result.exactAddress.push(Buffer.from(payload).toString('hex'));
+          continue;
+        case Cip5.miscellaneous.stake:
+        case Cip5.miscellaneous.stake_test: {
+          const addr = Address.from_bech32(address);
+          const rewardAddr = addr.as_reward();
+          if (rewardAddr == null) {
+            result.invalid.push(address);
+            addr.free();
+          } else {
+            const cred = rewardAddr.payment_cred();
+            result.credentialHex.push(Buffer.from(cred.to_bytes()).toString('hex'));
+            cred.free();
+          }
           continue;
         }
         case Cip5.hashes.addr_vkh:

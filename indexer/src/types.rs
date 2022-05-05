@@ -34,6 +34,7 @@ pub enum AddressCredentialRelationValue {
     StakeKey,
 }
 
+// Note: keep in sync with the Javascript type RelationFilterType
 impl From<TxCredentialRelationValue> for i32 {
     fn from(item: TxCredentialRelationValue) -> Self {
         match item {

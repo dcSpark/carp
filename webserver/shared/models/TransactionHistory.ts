@@ -1,5 +1,30 @@
 import type { Address } from "./Address";
 
+export type RelationFilter = number;
+// note: keep in sync with Rust type TxCredentialRelationValue
+export enum RelationFilterType {
+  FILTER_ALL = 0,
+  Witness = 0b1,
+  Input = 0b10,
+  Output = 0b100,
+  StakeDeregistration = 0b1000,
+  StakeDelegation = 0b10000,
+  StakeRegistration = 0b100000,
+  DelegationTarget = 0b1000000,
+  PoolOwner = 0b10000000,
+  PoolOperator = 0b100000000,
+  PoolReward = 0b1000000000,
+  MirRecipient = 0b10000000000,
+  Withdrawal = 0b100000000000,
+  RequiredSigner = 0b1000000000000,
+  InNativeScript = 0b10000000000000,
+  UnusedInput = 0b100000000000000,
+  UnusedInputStake = 0b1000000000000000,
+  InputStake = 0b10000000000000000,
+  OutputStake = 0b100000000000000000,
+  NO_FILTER = 0xff,
+}
+
 export type TransactionHistoryRequest = {
   addresses: Address[];
   /** omitting "after" means you query starting from the genesis block */
@@ -11,6 +36,7 @@ export type TransactionHistoryRequest = {
   };
   /** block hash - inclusive */
   untilBlock: string;
+  relationFilter?: RelationFilter;
 };
 
 export type BlockInfo = {
@@ -41,11 +67,6 @@ export type TransactionInfo = {
   payload: string;
 };
 
-// https://github.com/CardanoSolutions/ogmios/issues/209
-export type MempoolTx = {
-  hash: string;
-  positionInMempool: number;
-};
 export type TxAndBlockInfo = {
   block: BlockInfo;
   transaction: TransactionInfo;

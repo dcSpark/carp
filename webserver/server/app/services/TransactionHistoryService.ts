@@ -1,4 +1,7 @@
-import type { TransactionHistoryResponse } from '../../../shared/models/TransactionHistory';
+import type {
+  RelationFilter,
+  TransactionHistoryResponse,
+} from '../../../shared/models/TransactionHistory';
 import { sqlHistoryForCredentials } from '../models/sqlHistoryForCredentials.queries';
 import { sqlHistoryForAddresses } from '../models/sqlHistoryForAddresses.queries';
 import type { PoolClient } from 'pg';
@@ -8,6 +11,7 @@ export async function historyForCredentials(
   request: PaginationType & {
     dbTx: PoolClient;
     stakeCredentials: Buffer[];
+    relationFilter: RelationFilter;
   }
 ): Promise<TransactionHistoryResponse> {
   if (request.stakeCredentials.length === 0) return { transactions: [] };
@@ -18,7 +22,7 @@ export async function historyForCredentials(
       after_tx_id: (request.after?.tx_id ?? -1)?.toString(),
       limit: request.limit.toString(),
       until_block_id: request.until.block_id,
-      relation: 0xff,
+      relation: request.relationFilter,
     },
     request.dbTx
   );
