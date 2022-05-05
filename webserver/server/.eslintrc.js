@@ -2,7 +2,7 @@ module.exports = {
   root: true,
   parser: '@typescript-eslint/parser',
   parserOptions: {
-    project: './tsconfig.typecheck.json',
+    project: './tsconfig.json',
     ecmaVersion: 'es2019',
     sourceType: 'module',
     tsconfigRootDir: __dirname,

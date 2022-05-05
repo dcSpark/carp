@@ -6,7 +6,7 @@
   "scripts": {
     "eslint": "eslint src tests",
     "test": "mocha -r ts-node/register tests/**/*.test.ts --slow 0",
-    "typecheck": "tsc --project tsconfig.typecheck.json",
+    "typecheck": "tsc --project tsconfig.json",
     "prettier": "prettier --write \"**/*.tsx\""
   },
   "repository": {
