@@ -2,7 +2,6 @@ import { Body, Controller, TsoaResponse, Res, Post, Route, SuccessResponse } fro
 import { historyForAddresses, historyForCredentials } from '../services/TransactionHistoryService';
 import { StatusCodes } from 'http-status-codes';
 import {
-  TransactionHistoryRequest,
   TransactionHistoryResponse,
   RelationFilterType,
 } from '../../../shared/models/TransactionHistory';
@@ -11,7 +10,6 @@ import {
   Address,
   ByronAddress,
   Ed25519KeyHash,
-  RewardAddress,
   ScriptHash,
   StakeCredential,
 } from '@dcspark/cardano-multiplatform-lib-nodejs';

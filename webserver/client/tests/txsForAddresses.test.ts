@@ -378,6 +378,20 @@ describe(`/${Routes.txsForAddresses}`, function () {
     );
   });
 
+  it("Get tx using base address bech32", async () => {
+    const result = await query({
+      addresses: [
+        "addr1qxz6hulv54gzf2suy2u5gkvmt6ysasfdlvvegy3fmf969y7r3y3kdut55a40jff00qmg74686vz44v6k363md06qkq0q8eqdws",
+      ],
+      untilBlock:
+        "094ae9802b7e0a8cee97e88cc14a3029f8788d9cb9568ae32337e6ba2c0c1a5b",
+    });
+    expect(result.transactions).to.have.lengthOf(1);
+    expect(result.transactions[0].transaction.hash).to.equal(
+      "7e758ee91595c5a7c668fbe41aacc16ed0f27f317db2e70479a8f16ac85ebd6a"
+    );
+  });
+
   it("Get tx only related by its staking key", async () => {
     const result = await query({
       addresses: [
@@ -432,5 +446,25 @@ describe(`/${Routes.txsForAddresses}`, function () {
       relationFilter: RelationFilterType.FILTER_ALL,
     });
     expect(result.transactions).to.have.lengthOf(0);
+  });
+
+  it("Get tx using script hash", async () => {
+    const result = await query({
+      addresses: [
+        bech32.encode(
+          Cip5.hashes.script,
+          bech32.toWords(
+            Buffer.from(
+              "eb188aca85f89b55579d4de10a729700e7113b325389404ea7d5cfe6",
+              "hex"
+            )
+          ),
+          1000
+        ),
+      ],
+      untilBlock:
+        "34b1926c6adb2a9b196701e99de1cbd41953a25033bac10d0ae259ea83bb65d2",
+    });
+    expect(result.transactions).to.have.lengthOf(100);
   });
 });
