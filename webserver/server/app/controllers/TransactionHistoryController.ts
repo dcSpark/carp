@@ -2,7 +2,7 @@ import { Body, Controller, TsoaResponse, Res, Post, Route, SuccessResponse } fro
 import { historyForAddresses, historyForCredentials } from '../services/TransactionHistoryService';
 import { StatusCodes } from 'http-status-codes';
 import type { TransactionHistoryResponse } from '../../../shared/models/TransactionHistory';
-import { ADDRESS_REQUEST_LIMIT, ADDRESS_RESPONSE_LIMIT } from '../../../shared/constants';
+import { ADDRESS_LIMIT } from '../../../shared/constants';
 import tx from 'pg-tx';
 import pool from '../services/PgPoolSingleton';
 import { resolvePageStart, resolveUntilBlock } from '../services/PaginationService';
@@ -19,7 +19,7 @@ import { RelationFilterType } from '../../../shared/models/common';
 const route = Routes.transactionHistory;
 
 @Route('transaction/history')
-export class TransactionController extends Controller {
+export class TransactionHistoryController extends Controller {
   /**
    * Ordered by `<block.height, transaction.tx_index>`
    * Note: this endpoint only returns txs that are in a block. Use another tool to see mempool for txs not in a block
@@ -35,12 +35,12 @@ export class TransactionController extends Controller {
       ErrorShape
     >
   ): Promise<EndpointTypes[typeof route]['response']> {
-    if (requestBody.addresses.length > ADDRESS_REQUEST_LIMIT) {
+    if (requestBody.addresses.length > ADDRESS_LIMIT.REQUEST) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return errorResponse(
         StatusCodes.BAD_REQUEST,
         genErrorMessage(Errors.AddressLimitExceeded, {
-          limit: ADDRESS_REQUEST_LIMIT,
+          limit: ADDRESS_LIMIT.REQUEST,
           found: requestBody.addresses.length,
         })
       );
@@ -88,7 +88,7 @@ export class TransactionController extends Controller {
 
       const commonRequest = {
         after: pageStart,
-        limit: requestBody.limit ?? ADDRESS_RESPONSE_LIMIT,
+        limit: requestBody.limit ?? ADDRESS_LIMIT.RESPONSE,
         until,
         dbTx,
       };
@@ -116,13 +116,13 @@ export class TransactionController extends Controller {
 
     const mergedTxs = sortBy(
       [...cardanoTxs[0].transactions, ...cardanoTxs[1].transactions],
-      [tx => tx.block.height, tx => tx.block.tx_ordinal]
+      [tx => tx.block.height, tx => tx.block.indexInBlock]
     );
 
     return {
       transactions:
-        mergedTxs.length > ADDRESS_RESPONSE_LIMIT
-          ? mergedTxs.slice(0, ADDRESS_RESPONSE_LIMIT)
+        mergedTxs.length > ADDRESS_LIMIT.RESPONSE
+          ? mergedTxs.slice(0, ADDRESS_LIMIT.RESPONSE)
           : mergedTxs,
     };
   }

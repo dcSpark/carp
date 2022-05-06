@@ -7,6 +7,8 @@ export enum ErrorCodes {
   IncorrectAddressFormat = 1,
   UntilBlockNotFound = 2,
   PageStartNotFound = 3,
+  UtxoLimitExceeded = 4,
+  IncorrectTxHashFormat = 5,
 }
 
 export type ErrorShape = {
@@ -21,11 +23,23 @@ export const Errors = {
     detailsGen: (details: { limit: number; found: number }) =>
       `Limit of ${details.limit}, found ${details.found}`,
   },
+  UtxoLimitExceeded: {
+    code: ErrorCodes.UtxoLimitExceeded,
+    prefix: "Exceeded request utxo limit.",
+    detailsGen: (details: { limit: number; found: number }) =>
+      `Limit of ${details.limit}, found ${details.found}`,
+  },
   IncorrectAddressFormat: {
     code: ErrorCodes.IncorrectAddressFormat,
     prefix: "Incorrectly formatted addresses found.",
     detailsGen: (details: { addresses: string[] }) =>
       JSON.stringify(details.addresses),
+  },
+  IncorrectTxHashFormat: {
+    code: ErrorCodes.IncorrectTxHashFormat,
+    prefix: "Incorrectly formatted transaction hash found.",
+    detailsGen: (details: { txHash: string[] }) =>
+      JSON.stringify(details.txHash),
   },
   UntilBlockNotFound: {
     code: ErrorCodes.UntilBlockNotFound,

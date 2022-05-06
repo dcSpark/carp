@@ -9,8 +9,6 @@ import {
 import Cip5 from '@dcspark/cip5-js';
 import type { ParsedAddressTypes } from './pagination/ParsedAddressTypes';
 
-const credentialLength = 32 * 2; // 32 bytes = 64 hex letters
-
 export const getAddressTypes = (addresses: string[]): ParsedAddressTypes => {
   const result: ParsedAddressTypes = {
     credentialHex: [],
@@ -25,8 +23,7 @@ export const getAddressTypes = (addresses: string[]): ParsedAddressTypes => {
     set.add(value);
     result.reverseMap.set(key, set);
   };
-  const isCredentialHex = (address: string) =>
-    new RegExp(`^[0-9a-fA-F]{${credentialLength}}$`).test(address);
+
   for (const address of addresses) {
     if (isCredentialHex(address)) {
       result.credentialHex.push(address);
@@ -111,3 +108,15 @@ export const getAddressTypes = (addresses: string[]): ParsedAddressTypes => {
 
   return result;
 };
+
+const credentialLength = 32 * 2; // 32 bytes = 64 hex letters
+const credentialRegex = new RegExp(`^[0-9a-fA-F]{${credentialLength}}$`);
+export function isCredentialHex(maybeCredentialHex: string): boolean {
+  return credentialRegex.test(maybeCredentialHex);
+}
+
+const txHashLength = 32 * 2; // 32 bytes = 64 hex letters
+const txHashRegex = new RegExp(`^[0-9a-fA-F]{${txHashLength}}$`);
+export function isTxHash(maybeTxHash: string): boolean {
+  return txHashRegex.test(maybeTxHash);
+}

@@ -48,3 +48,8 @@ export type Pagination = {
   /** block hash - inclusive */
   untilBlock: string;
 };
+
+export type UtxoPointer = {
+  txHash: string;
+  index: number;
+};

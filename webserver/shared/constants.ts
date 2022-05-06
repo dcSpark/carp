@@ -1,2 +1,8 @@
-export const ADDRESS_REQUEST_LIMIT = 100;
-export const ADDRESS_RESPONSE_LIMIT = 1000;
+export const ADDRESS_LIMIT = {
+  REQUEST: 100,
+  RESPONSE: 1000,
+};
+export const UTXO_LIMIT = {
+  REQUEST: 100,
+  RESPONSE: 1000,
+};

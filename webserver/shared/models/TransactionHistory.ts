@@ -5,7 +5,7 @@ export type TransactionHistoryRequest = {
   addresses: Address[];
   /** Defaults to `RelationFilterType.NO_FILTER` */
   relationFilter?: RelationFilter;
-  /** Defaults to `ADDRESS_RESPONSE_LIMIT` */
+  /** Defaults to `ADDRESS_LIMIT.RESPONSE` */
   limit?: number;
 } & Pagination;
 
@@ -24,8 +24,8 @@ export type BlockInfo = {
   // until the information shows up inside a block
 
   /** index of tx in block */
-  tx_ordinal: number;
-  is_valid: boolean;
+  indexInBlock: number;
+  isValid: boolean;
 };
 export type TransactionInfo = {
   /**

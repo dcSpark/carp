@@ -33,8 +33,8 @@ export async function historyForCredentials(
         epoch: entry.epoch,
         slot: entry.slot,
         era: entry.era,
-        tx_ordinal: entry.tx_index,
-        is_valid: entry.is_valid,
+        indexInBlock: entry.tx_index,
+        isValid: entry.is_valid,
       },
 
       transaction: {
@@ -71,8 +71,8 @@ export async function historyForAddresses(
         epoch: entry.epoch,
         slot: entry.slot,
         era: entry.era,
-        tx_ordinal: entry.tx_index,
-        is_valid: entry.is_valid,
+        indexInBlock: entry.tx_index,
+        isValid: entry.is_valid,
       },
 
       transaction: {

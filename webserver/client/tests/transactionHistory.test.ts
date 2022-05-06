@@ -325,7 +325,7 @@ describe(`/${Routes.transactionHistory}`, function () {
         epoch: 190,
         slot: 4107844,
         era: 0,
-        tx_ordinal: 0,
+        indexInBlock: 0,
         is_valid: true,
       },
       transaction: {
@@ -336,7 +336,7 @@ describe(`/${Routes.transactionHistory}`, function () {
     });
   });
 
-  it("order of tx objects should be by block_num asc, tx_ordinal as", async function () {
+  it("order of tx objects should be by block_num asc, indexInBlock asc", async function () {
     const result = await query({
       addresses: [
         "Ae2tdPwUPEYynjShTL8D2L2GGggTH3AGtMteb7r65oLar1vzZ4JPfxob4b8",
@@ -345,7 +345,7 @@ describe(`/${Routes.transactionHistory}`, function () {
     });
     const mergedTxs = sortBy(result.transactions, [
       (tx) => tx.block.height,
-      (tx) => tx.block.tx_ordinal,
+      (tx) => tx.block.indexInBlock,
     ]);
     expect(result.transactions).to.be.eql(mergedTxs);
   });

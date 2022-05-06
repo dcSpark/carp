@@ -1,6 +1,6 @@
 import { Body, Controller, TsoaResponse, Res, Post, Route, SuccessResponse } from 'tsoa';
 import { StatusCodes } from 'http-status-codes';
-import { ADDRESS_REQUEST_LIMIT } from '../../../shared/constants';
+import { ADDRESS_LIMIT } from '../../../shared/constants';
 import tx from 'pg-tx';
 import pool from '../services/PgPoolSingleton';
 import { resolvePageStart, resolveUntilBlock } from '../services/PaginationService';
@@ -34,12 +34,12 @@ export class AddressInUseController extends Controller {
       ErrorShape
     >
   ): Promise<EndpointTypes[typeof route]['response']> {
-    if (requestBody.addresses.length > ADDRESS_REQUEST_LIMIT) {
+    if (requestBody.addresses.length > ADDRESS_LIMIT.REQUEST) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return errorResponse(
         StatusCodes.BAD_REQUEST,
         genErrorMessage(Errors.AddressLimitExceeded, {
-          limit: ADDRESS_REQUEST_LIMIT,
+          limit: ADDRESS_LIMIT.REQUEST,
           found: requestBody.addresses.length,
         })
       );
@@ -108,8 +108,6 @@ export class AddressInUseController extends Controller {
         return result;
       }
     );
-    console.log('-------------');
-    console.log(JSON.stringify(addresses));
     if ('code' in addresses) {
       expectType<Equals<typeof addresses, ErrorShape>>(true);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return
@@ -118,7 +116,6 @@ export class AddressInUseController extends Controller {
 
     const result = [...addresses[0].addresses, ...addresses[1].addresses];
     result.sort();
-    console.log(result);
     return {
       addresses: result,
     };
