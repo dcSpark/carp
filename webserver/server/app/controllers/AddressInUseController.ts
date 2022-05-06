@@ -74,7 +74,7 @@ export class AddressInUseController extends Controller {
               }),
         ]);
         if (until == null) {
-          return genErrorMessage(Errors.UntilBlockNotFound, {
+          return genErrorMessage(Errors.BlockHashNotFound, {
             untilBlock: requestBody.untilBlock,
           });
         }

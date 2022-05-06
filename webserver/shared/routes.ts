@@ -2,6 +2,7 @@ import type {
   AddressUsedRequest,
   AddressUsedResponse,
 } from "./models/AddressUsed";
+import { BlockLatestRequest, BlockLatestResponse } from "./models/BlockLatest";
 import type {
   TransactionHistoryRequest,
   TransactionHistoryResponse,
@@ -15,6 +16,7 @@ export enum Routes {
   transactionHistory = "transaction/history",
   transactionOutput = "transaction/output",
   addressUsed = "address/used",
+  blockLatest = "block/latest",
 }
 
 export type EndpointTypes = {
@@ -32,5 +34,10 @@ export type EndpointTypes = {
     name: typeof Routes.addressUsed;
     input: AddressUsedRequest;
     response: AddressUsedResponse;
+  };
+  [Routes.blockLatest]: {
+    name: typeof Routes.blockLatest;
+    input: BlockLatestRequest;
+    response: BlockLatestResponse;
   };
 };

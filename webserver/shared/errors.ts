@@ -5,10 +5,12 @@ export enum ErrorCodes {
   // that way removing an entry in the future isn't a breaking change
   AddressLimitExceeded = 0,
   IncorrectAddressFormat = 1,
-  UntilBlockNotFound = 2,
+  BlockHashNotFound = 2,
   PageStartNotFound = 3,
   UtxoLimitExceeded = 4,
   IncorrectTxHashFormat = 5,
+  BlockOffsetLimit = 6,
+  OffsetBlockNotFound = 7,
 }
 
 export type ErrorShape = {
@@ -41,9 +43,9 @@ export const Errors = {
     detailsGen: (details: { txHash: string[] }) =>
       JSON.stringify(details.txHash),
   },
-  UntilBlockNotFound: {
-    code: ErrorCodes.UntilBlockNotFound,
-    prefix: "Until block not found.",
+  BlockHashNotFound: {
+    code: ErrorCodes.BlockHashNotFound,
+    prefix: "Block hash not found.",
     detailsGen: (details: { untilBlock: string }) =>
       `Searched block hash: ${details.untilBlock}`,
   },
@@ -52,6 +54,19 @@ export const Errors = {
     prefix: "After block and/or transaction not found.",
     detailsGen: (details: { blockHash: string; txHash: string }) =>
       `Searched block hash ${details.blockHash} and tx hash ${details.txHash}`,
+  },
+  BlockOffsetLimit: {
+    code: ErrorCodes.BlockOffsetLimit,
+    prefix: "Block offset exceeded the limit.",
+    detailsGen: (details: { offset: number; limit: number }) =>
+      `Offset used was ${details.offset}, but limit is ${details.limit}`,
+  },
+  OffsetBlockNotFound: {
+    code: ErrorCodes.OffsetBlockNotFound,
+    prefix:
+      "Block not found at offset. Are you sure your database is synchronized?",
+    detailsGen: (details: { offset: number }) =>
+      `Offset used was ${details.offset}`,
   },
 } as const;
 

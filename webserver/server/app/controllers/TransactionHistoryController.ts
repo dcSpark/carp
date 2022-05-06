@@ -75,7 +75,7 @@ export class TransactionHistoryController extends Controller {
             }),
       ]);
       if (until == null) {
-        return genErrorMessage(Errors.UntilBlockNotFound, {
+        return genErrorMessage(Errors.BlockHashNotFound, {
           untilBlock: requestBody.untilBlock,
         });
       }

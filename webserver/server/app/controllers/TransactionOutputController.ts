@@ -56,7 +56,7 @@ export class TransactionOutputController extends Controller {
     }
     const { utxos } = await outputsForTransaction({
       dbTx: pool,
-      utxoPointers: requestBody.utxoPointers,
+      ...requestBody,
     });
     return {
       utxos,

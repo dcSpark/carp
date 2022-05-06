@@ -79,7 +79,7 @@ describe(`/${Routes.transactionHistory}`, function () {
       const response = getErrorResponse(err);
       expect(response.status).to.be.equal(StatusCodes.PRECONDITION_REQUIRED);
       expect(response.data.reason).to.satisfy((msg: string) =>
-        msg.startsWith(Errors.UntilBlockNotFound.prefix)
+        msg.startsWith(Errors.BlockHashNotFound.prefix)
       );
     }
   });
