@@ -32,18 +32,34 @@ export interface ISqlHistoryForAddressesQuery {
   result: ISqlHistoryForAddressesResult;
 }
 
-const sqlHistoryForAddressesIR: any = {"name":"sqlHistoryForAddresses","params":[{"name":"addresses","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":456,"b":464,"line":8,"col":34}]}},{"name":"until_block_id","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":900,"b":913,"line":24,"col":24}]}},{"name":"after_block_id","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":1065,"b":1078,"line":30,"col":25},{"a":1218,"b":1231,"line":33,"col":26}]}},{"name":"after_tx_id","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":1257,"b":1267,"line":33,"col":65}]}},{"name":"limit","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":1372,"b":1376,"line":38,"col":14}]}}],"usedParamSet":{"addresses":true,"until_block_id":true,"after_block_id":true,"after_tx_id":true,"limit":true},"statement":{"body":"WITH related_txs AS (\n  SELECT DISTINCT ON (\"Transaction\".id) \"Transaction\".*\n  FROM \"Address\"\n  INNER JOIN \"TransactionOutput\" ON \"TransactionOutput\".address_id = \"Address\".id\n  LEFT JOIN \"TransactionInput\" ON \"TransactionInput\".utxo_id = \"TransactionOutput\".id\n  INNER JOIN \"Transaction\" ON (\"TransactionOutput\".tx_id = \"Transaction\".id OR \"TransactionInput\".tx_id = \"Transaction\".id)\n  WHERE \"Address\".payload = ANY (:addresses)\n)\nSELECT related_txs.id,\n        related_txs.payload,\n        related_txs.hash,\n        related_txs.tx_index,\n        related_txs.is_valid,\n        \"Block\".hash AS block_hash,\n        \"Block\".epoch,\n        \"Block\".slot,\n        \"Block\".era,\n        \"Block\".height\n      FROM related_txs\n      INNER JOIN \"Block\" ON related_txs.block_id = \"Block\".id\n      WHERE\n                                              \n        \"Block\".id <= (:until_block_id)\n        and (\n                                                                                                             \n          \"Block\".id > (:after_block_id)\n            or\n                                                                                               \n          (\"Block\".id = (:after_block_id) and related_txs.id > (:after_tx_id))\n        ) \n      ORDER BY\n        \"Block\".height ASC,\n        related_txs.tx_index ASC\n      LIMIT (:limit)","loc":{"a":35,"b":1377,"line":2,"col":0}}};
+const sqlHistoryForAddressesIR: any = {"name":"sqlHistoryForAddresses","params":[{"name":"addresses","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":486,"b":494,"line":9,"col":36}]}},{"name":"until_block_id","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":586,"b":599,"line":12,"col":34}]}},{"name":"after_block_id","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":753,"b":766,"line":18,"col":35},{"a":912,"b":925,"line":21,"col":36}]}},{"name":"after_tx_id","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":953,"b":963,"line":21,"col":77}]}},{"name":"limit","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":1037,"b":1041,"line":27,"col":10}]}}],"usedParamSet":{"addresses":true,"until_block_id":true,"after_block_id":true,"after_tx_id":true,"limit":true},"statement":{"body":"WITH related_txs AS (\n  SELECT * FROM (\n    SELECT DISTINCT ON (\"Transaction\".id) \"Transaction\".*\n    FROM \"Address\"\n    INNER JOIN \"TransactionOutput\" ON \"TransactionOutput\".address_id = \"Address\".id\n    LEFT JOIN \"TransactionInput\" ON \"TransactionInput\".utxo_id = \"TransactionOutput\".id\n    INNER JOIN \"Transaction\" ON (\"TransactionOutput\".tx_id = \"Transaction\".id OR \"TransactionInput\".tx_id = \"Transaction\".id)\n    WHERE \"Address\".payload = ANY (:addresses)\n      AND\n                                            \n      \"Transaction\".block_id <= (:until_block_id)\n      AND (\n                                                                                                       \n        \"Transaction\".block_id > (:after_block_id)\n          OR\n                                                                                             \n        (\"Transaction\".block_id = (:after_block_id) AND \"Transaction\".id > (:after_tx_id))\n      )\n  ) t\n  ORDER BY\n    block_id ASC,\n    tx_index ASC\n  LIMIT (:limit)\n)\nSELECT related_txs.id,\n        related_txs.payload,\n        related_txs.hash,\n        related_txs.tx_index,\n        related_txs.is_valid,\n        \"Block\".hash AS block_hash,\n        \"Block\".epoch,\n        \"Block\".slot,\n        \"Block\".era,\n        \"Block\".height\n      FROM related_txs\n      INNER JOIN \"Block\" ON related_txs.block_id = \"Block\".id","loc":{"a":35,"b":1392,"line":2,"col":0}}};
 
 /**
  * Query generated from SQL:
  * ```
  * WITH related_txs AS (
- *   SELECT DISTINCT ON ("Transaction".id) "Transaction".*
- *   FROM "Address"
- *   INNER JOIN "TransactionOutput" ON "TransactionOutput".address_id = "Address".id
- *   LEFT JOIN "TransactionInput" ON "TransactionInput".utxo_id = "TransactionOutput".id
- *   INNER JOIN "Transaction" ON ("TransactionOutput".tx_id = "Transaction".id OR "TransactionInput".tx_id = "Transaction".id)
- *   WHERE "Address".payload = ANY (:addresses)
+ *   SELECT * FROM (
+ *     SELECT DISTINCT ON ("Transaction".id) "Transaction".*
+ *     FROM "Address"
+ *     INNER JOIN "TransactionOutput" ON "TransactionOutput".address_id = "Address".id
+ *     LEFT JOIN "TransactionInput" ON "TransactionInput".utxo_id = "TransactionOutput".id
+ *     INNER JOIN "Transaction" ON ("TransactionOutput".tx_id = "Transaction".id OR "TransactionInput".tx_id = "Transaction".id)
+ *     WHERE "Address".payload = ANY (:addresses)
+ *       AND
+ *                                             
+ *       "Transaction".block_id <= (:until_block_id)
+ *       AND (
+ *                                                                                                        
+ *         "Transaction".block_id > (:after_block_id)
+ *           OR
+ *                                                                                              
+ *         ("Transaction".block_id = (:after_block_id) AND "Transaction".id > (:after_tx_id))
+ *       )
+ *   ) t
+ *   ORDER BY
+ *     block_id ASC,
+ *     tx_index ASC
+ *   LIMIT (:limit)
  * )
  * SELECT related_txs.id,
  *         related_txs.payload,
@@ -57,20 +73,6 @@ const sqlHistoryForAddressesIR: any = {"name":"sqlHistoryForAddresses","params":
  *         "Block".height
  *       FROM related_txs
  *       INNER JOIN "Block" ON related_txs.block_id = "Block".id
- *       WHERE
- *                                               
- *         "Block".id <= (:until_block_id)
- *         and (
- *                                                                                                              
- *           "Block".id > (:after_block_id)
- *             or
- *                                                                                                
- *           ("Block".id = (:after_block_id) and related_txs.id > (:after_tx_id))
- *         ) 
- *       ORDER BY
- *         "Block".height ASC,
- *         related_txs.tx_index ASC
- *       LIMIT (:limit)
  * ```
  */
 export const sqlHistoryForAddresses = new PreparedQuery<ISqlHistoryForAddressesParams,ISqlHistoryForAddressesResult>(sqlHistoryForAddressesIR);
