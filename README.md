@@ -27,7 +27,7 @@ A) TBD. We support parsing genesis blocks so it should be doable. Feel free to m
 Q) What are the risks and common pitfalls of using this project?\
 A) See [pitfalls](./pitfalls)
 
-### Running
+# Running
 
 This project contains two different parts to it:
 
@@ -36,4 +36,5 @@ This project contains two different parts to it:
 
 You may also be interested in:
 
+1. The webserver [swagger API](https://dcspark.github.io/oura-postgres-sink/#/)
 2. The [generated SQL](./webserver/bin/schema.sql) if you want to run your own queries
