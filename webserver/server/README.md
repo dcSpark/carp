@@ -14,6 +14,9 @@
 
 # Regenerate database
 
-You will need to run `pgtyped` for this (which requires `PGPASSWORD`)
+Requirements:
+
+- You will need to run `pgtyped` for this (which requires `PGPASSWORD`)
+- You will need to have pipenv setup (see [gen-graph.sh](./bin/gen-graph.sh) for setup instructions)
 
 `npm run parse-db`
