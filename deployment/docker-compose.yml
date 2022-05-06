@@ -7,7 +7,7 @@ services:
     environment:
       - POSTGRES_LOGGING=true
       - POSTGRES_DB=cardano
-      - PGPASSFILE=/run/secrets/.pgpass
+      # - PGPASSFILE=/run/secrets/.pgpass
       - POSTGRES_PASSWORD=ouradb
       - POSTGRES_USER=oura
     secrets:
