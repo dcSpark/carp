@@ -6,10 +6,13 @@ services:
     image: postgres:13.6 # 14.2, 13.6, 12.10, 11.15 # replace with correct major version on existing installations, no alpine
     environment:
       - POSTGRES_LOGGING=true
-      - POSTGRES_DB=cardano
+      - POSTGRES_DB=${POSTGRES_DB:-carp}
       - PGPASSFILE=/run/secrets/.pgpass
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?Export PG password}
+      - POSTGRES_USER=${POSTGRES_USER:?Export PG username}
     secrets:
-      - pgpass
+      - source: pgpass
+        target: .pgpass
     volumes:
       - ./${NETWORK:-testnet}/postgres-data:/var/lib/postgresql/data
 
@@ -48,8 +51,11 @@ services:
       - NETWORK=${NETWORK:-testnet}
       - SOCKET=/app/node-ipc/node.socket
       - PGPASSFILE=/run/secrets/.pgpass
+      - DATABASE_URL=${DATABASE_URL}
+      - RUST_BACKTRACE=full
     secrets:
-      - pgpass
+      - source: pgpass
+        target: .pgpass
     volumes:
       - ./${NETWORK:-testnet}/node-ipc:/app/node-ipc:rw
     entrypoint:
@@ -66,6 +72,34 @@ services:
       options:
         max-size: "1m"
         max-file: "10"
+
+  # to run stack without backup, please comment this out
+  # currently supports only AWS s3. GCP and Azure TODO
+  # postgres_backup:
+  #   build:
+  #     context: ./backuper
+  #     dockerfile: Dockerfile
+  #   restart: unless-stopped
+  #   environment:
+  #   - NETWORK=${NETWORK:-testnet}
+  #   - CARDANO_NODE_SOCKET_PATH=/app/node-ipc/node.socket
+  #   - POSTGRES_DB=${POSTGRES_DB:-carp}
+  #   - POSTGRES_USER=${POSTGRES_USER:?Export PG username}
+  #   - PGPASSFILE=/run/secrets/.pgpass
+  #   - S3_BUCKET=${S3_BUCKET:?Please set me}
+  #   - S3_FOLDER=${S3_FOLDER:?Recommend as hostname}
+  #   - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:?Please set me}
+  #   - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:?Please set me}
+  #   volumes:
+  #   - ./${NETWORK:-testnet}/node-ipc:/app/node-ipc:rw
+  #   secrets:
+  #   - source: pgpass
+  #     target: .pgpass
+  #   logging:
+  #     driver: "json-file"
+  #     options:
+  #       max-size: "200k"
+  #       max-file: "10"
 
 secrets:
   pgpass:
