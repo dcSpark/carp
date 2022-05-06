@@ -16,9 +16,9 @@ import sortBy from 'lodash/sortBy';
 import { getAddressTypes } from '../models/utils';
 import { RelationFilterType } from '../../../shared/models/common';
 
-const route = Routes.txsForAddresses;
+const route = Routes.transactionHistory;
 
-@Route('txsForAddresses')
+@Route('transaction/history')
 export class TransactionController extends Controller {
   /**
    * Ordered by `<block.height, transaction.tx_index>`
@@ -26,7 +26,7 @@ export class TransactionController extends Controller {
    */
   @SuccessResponse(`${StatusCodes.OK}`)
   @Post()
-  public async txsForAddresses(
+  public async transactionHistory(
     @Body()
     requestBody: EndpointTypes[typeof route]['input'],
     @Res()

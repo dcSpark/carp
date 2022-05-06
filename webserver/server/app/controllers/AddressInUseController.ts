@@ -25,7 +25,7 @@ export class AddressInUseController extends Controller {
    */
   @SuccessResponse(`${StatusCodes.OK}`)
   @Post()
-  public async txsForAddresses(
+  public async addressUsed(
     @Body()
     requestBody: EndpointTypes[typeof route]['input'],
     @Res()

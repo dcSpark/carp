@@ -8,13 +8,13 @@ import type {
 } from "./models/TransactionHistory";
 
 export enum Routes {
-  txsForAddresses = "txsForAddresses",
+  transactionHistory = "transaction/history",
   addressUsed = "address/used",
 }
 
 export type EndpointTypes = {
-  [Routes.txsForAddresses]: {
-    name: typeof Routes.txsForAddresses;
+  [Routes.transactionHistory]: {
+    name: typeof Routes.transactionHistory;
     input: TransactionHistoryRequest;
     response: TransactionHistoryResponse;
   };

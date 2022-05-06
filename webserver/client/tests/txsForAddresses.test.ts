@@ -12,7 +12,7 @@ import Cip5 from "@dcspark/cip5-js";
 import { RelationFilterType } from "../../shared/models/common";
 
 const urlBase = "http://localhost:3000";
-type HistoryQuery = EndpointTypes[Routes.txsForAddresses];
+type HistoryQuery = EndpointTypes[Routes.transactionHistory];
 
 const hashForUntilBlock =
   "5fc6a3d84cbd3a1fab3d0f1228e0e788a1ba28f682a3a2ea7b2d49ad99645a2c";
@@ -24,7 +24,7 @@ async function query(
     HistoryQuery["response"],
     AxiosResponse<HistoryQuery["response"]>,
     HistoryQuery["input"]
-  >(`${urlBase}/${Routes.txsForAddresses}`, data);
+  >(`${urlBase}/${Routes.transactionHistory}`, data);
   return result.data;
 }
 
@@ -36,7 +36,7 @@ function getErrorResponse(
 }
 
 // eslint-disable-next-line mocha/no-setup-in-describe
-describe(`/${Routes.txsForAddresses}`, function () {
+describe(`/${Routes.transactionHistory}`, function () {
   this.timeout(10000);
   it("should return empty if addresses do not exist", async function () {
     const result = await query({
