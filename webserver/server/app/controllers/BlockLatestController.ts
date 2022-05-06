@@ -29,6 +29,7 @@ export class BlockLatestController extends Controller {
   ): Promise<EndpointTypes[typeof route]['response']> {
     const normalizedOffset = Math.abs(requestBody.offset);
     if (normalizedOffset > BLOCK_LIMIT.OFFSET) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return errorResponse(
         StatusCodes.BAD_REQUEST,
         genErrorMessage(Errors.BlockOffsetLimit, {
@@ -42,6 +43,7 @@ export class BlockLatestController extends Controller {
       offset: normalizedOffset,
     });
     if (latestBlock == null) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return errorResponse(
         StatusCodes.PRECONDITION_REQUIRED,
         genErrorMessage(Errors.OffsetBlockNotFound, {

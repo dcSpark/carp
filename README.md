@@ -1,41 +1,31 @@
 # Oura Postgres Sink
 
-Sync a postgres database with the cardano blockchain using [Oura](https://github.com/txpipe/oura)
+Syncs Cardano blockchain information a Postgres database.
+
+- Backend: written in Rust using [Oura](https://github.com/txpipe/oura) and [CML](https://github.com/dcSpark/cardano-multiplatform-lib).
+- Sever & Client: Written using Typescript
 
 # Core pillars
 
-- Speed
-- Modular
-- Flexible (return cbor instead of parsed)
-- Type safe
-- Documented
+- **Speed**: queries should be fast so they can be used inside production applications like wallets without the user feeling the application is not responsive.
+- **Modular**: it should be easy to enable only the database functionality you need to keep sync times fast and size requirements low.
+- **Flexible**: instead of assuming the format users will need, prefer to use raw cbor or raw bytes. Almost all applications already implement [CML](https://github.com/dcSpark/cardano-multiplatform-lib) so they should be able to parse this data without any issue.
+- **Type safe**: using and exposing types to avoid bugs is crucial in financial software. Database queries and the web server should have all its types checked and available to users.
+- **Documented**: Although we have to assume the user has read the [cardano ledger specs](https://github.com/input-output-hk/cardano-ledger), design decisions, usage and pitfalls should all be documented.
 
 # FAQ
 
-Q) How long to sync?
-A) TBD
+Q) How does it take to sync the database from scratch?\
+A) Around 4-5 days. The first epochs are really fast, but Alonzo takes about ~1hr per epoch. We recommend tacking occasional snapshots of the database so that you can easily spin up new nodes or recover from crashes without having to resync from scratch.
 
-Q) How long to query history?
-A) TBD
+Q) How long to query history?\
+A) Querying the transaction history for an address should take ~200ms for local queries (no network overhead). Of course, it will take longer if you're using a slow machine or if your machine is at max utilization.
 
-Q) How to launch my own network?
-A) TBD
+Q) How to launch my own network?\
+A) TBD. We support parsing genesis blocks so it should be doable. Feel free to make a PR for more concrete steps.
 
-## Database setup
-
-This repo, by default, is setup to work with a local node. If you want to run on a remote node, you can change the socket in `.env`. If this remote node requires a TCP connection, you can change the `BearerKind` to TCP in the code.
-
-Note: steps assume mainnet
-
-1. `sudo -u postgres createdb oura_postgres_mainnet`
-1. `sudo -u postgres psql -c 'ALTER DATABASE oura_postgres_mainnet SET jit_above_cost = -1;'`
-1. `sudo -u postgres createuser oura`
-1. `sudo -u postgres psql -c "\password oura"`
-1. Add your database name & user password to `secrets/.pgpass`
-1. `chmod 600 secrets/.pgpass`
-1. Modify the env variables in `.env` if needed (ex: connecting to local node instead of remote)
-1. Run the env file (`set -a; . .env; set +a`) - note you will have to re-run this command every time you reopen your shell
-1. `cd indexer; cargo migrate up` (you can debug migration by adding a `-v` at the end of the command)
+Q) What are the risks and common pitfalls of using this project?\
+A) See [pitfalls](./pitfalls)
 
 ### Running
 
