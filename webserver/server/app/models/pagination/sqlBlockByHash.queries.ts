@@ -1,4 +1,4 @@
-/** Types generated for queries found in "app/models/sqlBlockByHash.sql" */
+/** Types generated for queries found in "app/models/pagination/sqlBlockByHash.sql" */
 import { PreparedQuery } from '@pgtyped/query';
 
 /** 'SqlBlockByHash' parameters type */

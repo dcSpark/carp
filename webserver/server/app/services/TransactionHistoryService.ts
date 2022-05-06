@@ -1,17 +1,16 @@
-import type {
-  RelationFilter,
-  TransactionHistoryResponse,
-} from '../../../shared/models/TransactionHistory';
-import { sqlHistoryForCredentials } from '../models/sqlHistoryForCredentials.queries';
-import { sqlHistoryForAddresses } from '../models/sqlHistoryForAddresses.queries';
+import type { TransactionHistoryResponse } from '../../../shared/models/TransactionHistory';
+import { sqlHistoryForCredentials } from '../models/transaction/sqlHistoryForCredentials.queries';
+import { sqlHistoryForAddresses } from '../models/transaction/sqlHistoryForAddresses.queries';
 import type { PoolClient } from 'pg';
 import type { PaginationType } from './PaginationService';
+import type { RelationFilter } from '../../../shared/models/common';
 
 export async function historyForCredentials(
   request: PaginationType & {
     dbTx: PoolClient;
     stakeCredentials: Buffer[];
     relationFilter: RelationFilter;
+    limit: number;
   }
 ): Promise<TransactionHistoryResponse> {
   if (request.stakeCredentials.length === 0) return { transactions: [] };
@@ -50,6 +49,7 @@ export async function historyForAddresses(
   request: PaginationType & {
     addresses: Buffer[];
     dbTx: PoolClient;
+    limit: number;
   }
 ): Promise<TransactionHistoryResponse> {
   if (request.addresses?.length === 0) return { transactions: [] };

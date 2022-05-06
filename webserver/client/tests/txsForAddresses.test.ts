@@ -9,7 +9,7 @@ import { StatusCodes } from "http-status-codes";
 import sortBy from "lodash/sortBy";
 import { bech32 } from "bech32";
 import Cip5 from "@dcspark/cip5-js";
-import { RelationFilterType } from "../../shared/models/TransactionHistory";
+import { RelationFilterType } from "../../shared/models/common";
 
 const urlBase = "http://localhost:3000";
 type HistoryQuery = EndpointTypes[Routes.txsForAddresses];
@@ -175,8 +175,7 @@ describe(`/${Routes.txsForAddresses}`, function () {
         "DdzFFzCqrhsgXjCq9Gc3RbGkGNnShyMqKcXzvJM4ByLhuPQ77UGRjy59TQbtLdMuJJz9PcFACi5mYrfA9h11vUehcZPCzJUsC7nirrJB",
         "DdzFFzCqrhsksJxdqiVRGY5kZbzKJmMW9qKcZMVZ95oYaDrCHEEk1fxV4QbkoNDu24WY1ZKCUnuizc8SWaVPkEwv66eTtUdsyVRBkgD7",
       ],
-      untilBlock:
-        "5fc6a3d84cbd3a1fab3d0f1228e0e788a1ba28f682a3a2ea7b2d49ad99645a2c",
+      untilBlock: hashForUntilBlock,
     });
     expect(result.transactions.map((tx) => tx.transaction.hash)).to.eql([
       "ee01627b2bfa5bd5a7dd9d2be7f9108ea0c0585c58216cb16d07803ae769b34f",
@@ -207,8 +206,7 @@ describe(`/${Routes.txsForAddresses}`, function () {
         "DdzFFzCqrhsgXjCq9Gc3RbGkGNnShyMqKcXzvJM4ByLhuPQ77UGRjy59TQbtLdMuJJz9PcFACi5mYrfA9h11vUehcZPCzJUsC7nirrJB",
         "DdzFFzCqrhsksJxdqiVRGY5kZbzKJmMW9qKcZMVZ95oYaDrCHEEk1fxV4QbkoNDu24WY1ZKCUnuizc8SWaVPkEwv66eTtUdsyVRBkgD7",
       ],
-      untilBlock:
-        "5fc6a3d84cbd3a1fab3d0f1228e0e788a1ba28f682a3a2ea7b2d49ad99645a2c",
+      untilBlock: hashForUntilBlock,
       limit: 5,
     });
     expect(result.transactions.map((tx) => tx.transaction.hash)).to.eql([
@@ -225,16 +223,14 @@ describe(`/${Routes.txsForAddresses}`, function () {
       addresses: [
         "DdzFFzCqrhsnUbJho1ERJsuZxkevYTofBFMuQo5Uaxmb2dHUQX7TzK4C9gN5Yc5Hc4ok4o4wj1krZrgvQWGfd4BgpYFRQUQBgLzZxFi6",
       ],
-      untilBlock:
-        "5fc6a3d84cbd3a1fab3d0f1228e0e788a1ba28f682a3a2ea7b2d49ad99645a2c",
+      untilBlock: hashForUntilBlock,
     });
     const resultDuplicate = await query({
       addresses: [
         "DdzFFzCqrhsnUbJho1ERJsuZxkevYTofBFMuQo5Uaxmb2dHUQX7TzK4C9gN5Yc5Hc4ok4o4wj1krZrgvQWGfd4BgpYFRQUQBgLzZxFi6",
         "DdzFFzCqrhsnUbJho1ERJsuZxkevYTofBFMuQo5Uaxmb2dHUQX7TzK4C9gN5Yc5Hc4ok4o4wj1krZrgvQWGfd4BgpYFRQUQBgLzZxFi6",
       ],
-      untilBlock:
-        "5fc6a3d84cbd3a1fab3d0f1228e0e788a1ba28f682a3a2ea7b2d49ad99645a2c",
+      untilBlock: hashForUntilBlock,
     });
     expect(resultUnique.transactions).to.eql(resultDuplicate.transactions);
   });
@@ -345,8 +341,7 @@ describe(`/${Routes.txsForAddresses}`, function () {
       addresses: [
         "Ae2tdPwUPEYynjShTL8D2L2GGggTH3AGtMteb7r65oLar1vzZ4JPfxob4b8",
       ],
-      untilBlock:
-        "5fc6a3d84cbd3a1fab3d0f1228e0e788a1ba28f682a3a2ea7b2d49ad99645a2c",
+      untilBlock: hashForUntilBlock,
     });
     const mergedTxs = sortBy(result.transactions, [
       (tx) => tx.block.height,
@@ -437,7 +432,7 @@ describe(`/${Routes.txsForAddresses}`, function () {
     );
   });
 
-  it("Get tx only related by its staking key with explicit filter", async function () {
+  it("Gets tx only related by its staking key with explicit filter", async function () {
     const result = await query({
       addresses: [
         "stake1uydrhuvnrhlzpkzrkukp3h4n0fp5dzqzcz36t5thkmfezyc47wa2x",

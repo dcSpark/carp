@@ -1,4 +1,4 @@
-/** Types generated for queries found in "app/models/sqlHistoryForCredentials.sql" */
+/** Types generated for queries found in "app/models/transaction/sqlHistoryForCredentials.sql" */
 import { PreparedQuery } from '@pgtyped/query';
 
 export type BufferArray = (Buffer)[];

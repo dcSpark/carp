@@ -1,5 +1,4 @@
 import { bech32 } from 'bech32';
-import type { ParsedAddressTypes } from './ParsedAddressTypes';
 import {
   Address,
   ByronAddress,
@@ -8,6 +7,7 @@ import {
   StakeCredential,
 } from '@dcspark/cardano-multiplatform-lib-nodejs';
 import Cip5 from '@dcspark/cip5-js';
+import type { ParsedAddressTypes } from './pagination/ParsedAddressTypes';
 
 const credentialLength = 32 * 2; // 32 bytes = 64 hex letters
 
@@ -16,13 +16,21 @@ export const getAddressTypes = (addresses: string[]): ParsedAddressTypes => {
     credentialHex: [],
     exactAddress: [],
     exactLegacyAddress: [],
+    reverseMap: new Map(),
     invalid: [],
+  };
+
+  const updateSet = (key: string, value: string): void => {
+    const set = result.reverseMap.get(key) ?? new Set();
+    set.add(value);
+    result.reverseMap.set(key, set);
   };
   const isCredentialHex = (address: string) =>
     new RegExp(`^[0-9a-fA-F]{${credentialLength}}$`).test(address);
   for (const address of addresses) {
     if (isCredentialHex(address)) {
       result.credentialHex.push(address);
+      updateSet(address, address);
       continue;
     }
     try {
@@ -31,7 +39,11 @@ export const getAddressTypes = (addresses: string[]): ParsedAddressTypes => {
         case Cip5.miscellaneous.addr:
         case Cip5.miscellaneous.addr_test:
           const payload = bech32.fromWords(bech32Info.words);
-          result.exactAddress.push(Buffer.from(payload).toString('hex'));
+          const asHex = Buffer.from(payload).toString('hex');
+
+          result.exactAddress.push(asHex);
+          updateSet(asHex, address);
+
           continue;
         case Cip5.miscellaneous.stake:
         case Cip5.miscellaneous.stake_test: {
@@ -42,7 +54,11 @@ export const getAddressTypes = (addresses: string[]): ParsedAddressTypes => {
             addr.free();
           } else {
             const cred = rewardAddr.payment_cred();
-            result.credentialHex.push(Buffer.from(cred.to_bytes()).toString('hex'));
+            const asHex = Buffer.from(cred.to_bytes()).toString('hex');
+
+            result.credentialHex.push(asHex);
+            updateSet(asHex, address);
+
             addr.free();
             cred.free();
           }
@@ -56,7 +72,11 @@ export const getAddressTypes = (addresses: string[]): ParsedAddressTypes => {
           const payload = bech32.fromWords(bech32Info.words);
           const keyHash = Ed25519KeyHash.from_bytes(Buffer.from(payload));
           const stakeCred = StakeCredential.from_keyhash(keyHash);
-          result.credentialHex.push(Buffer.from(stakeCred.to_bytes()).toString('hex'));
+          const asHex = Buffer.from(stakeCred.to_bytes()).toString('hex');
+
+          result.credentialHex.push(asHex);
+          updateSet(asHex, address);
+
           keyHash.free();
           stakeCred.free();
           continue;
@@ -65,7 +85,11 @@ export const getAddressTypes = (addresses: string[]): ParsedAddressTypes => {
           const payload = bech32.fromWords(bech32Info.words);
           const keyHash = ScriptHash.from_bytes(Buffer.from(payload));
           const stakeCred = StakeCredential.from_scripthash(keyHash);
-          result.credentialHex.push(Buffer.from(stakeCred.to_bytes()).toString('hex'));
+          const asHex = Buffer.from(stakeCred.to_bytes()).toString('hex');
+
+          updateSet(asHex, address);
+          result.credentialHex.push(asHex);
+
           keyHash.free();
           stakeCred.free();
           continue;
@@ -74,7 +98,11 @@ export const getAddressTypes = (addresses: string[]): ParsedAddressTypes => {
     } catch (_e) {}
     if (ByronAddress.is_valid(address)) {
       const byronAddr = ByronAddress.from_base58(address);
-      result.exactLegacyAddress.push(Buffer.from(byronAddr.to_bytes()).toString('hex'));
+      const asHex = Buffer.from(byronAddr.to_bytes()).toString('hex');
+
+      updateSet(asHex, address);
+      result.exactLegacyAddress.push(asHex);
+
       byronAddr.free();
       continue;
     }

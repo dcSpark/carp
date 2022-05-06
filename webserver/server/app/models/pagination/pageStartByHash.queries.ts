@@ -1,4 +1,4 @@
-/** Types generated for queries found in "app/models/pageStartByHash.sql" */
+/** Types generated for queries found in "app/models/pagination/pageStartByHash.sql" */
 import { PreparedQuery } from '@pgtyped/query';
 
 /** 'PageStartByHash' parameters type */

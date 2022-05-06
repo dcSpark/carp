@@ -1,6 +1,6 @@
 import type { PoolClient } from 'pg';
-import { pageStartByHash } from '../models/pageStartByHash.queries';
-import { sqlBlockByHash } from '../models/sqlBlockByHash.queries';
+import { pageStartByHash } from '../models/pagination/pageStartByHash.queries';
+import { sqlBlockByHash } from '../models/pagination/sqlBlockByHash.queries';
 
 export type PaginationType = {
   after:
@@ -12,7 +12,6 @@ export type PaginationType = {
   until: {
     block_id: number;
   };
-  limit: number;
 };
 
 export async function resolveUntilBlock(request: {

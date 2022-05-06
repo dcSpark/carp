@@ -2,7 +2,6 @@ import { Body, Controller, TsoaResponse, Res, Post, Route, SuccessResponse } fro
 import { historyForAddresses, historyForCredentials } from '../services/TransactionHistoryService';
 import { StatusCodes } from 'http-status-codes';
 import type { TransactionHistoryResponse } from '../../../shared/models/TransactionHistory';
-import { RelationFilterType } from '../../../shared/models/TransactionHistory';
 import { ADDRESS_REQUEST_LIMIT, ADDRESS_RESPONSE_LIMIT } from '../../../shared/constants';
 import tx from 'pg-tx';
 import pool from '../services/PgPoolSingleton';
@@ -15,6 +14,7 @@ import type { EndpointTypes } from '../../../shared/routes';
 import { Routes } from '../../../shared/routes';
 import sortBy from 'lodash/sortBy';
 import { getAddressTypes } from '../models/utils';
+import { RelationFilterType } from '../../../shared/models/common';
 
 const route = Routes.txsForAddresses;
 

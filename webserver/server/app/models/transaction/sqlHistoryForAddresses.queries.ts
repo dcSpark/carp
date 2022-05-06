@@ -1,4 +1,4 @@
-/** Types generated for queries found in "app/models/sqlHistoryForAddresses.sql" */
+/** Types generated for queries found in "app/models/transaction/sqlHistoryForAddresses.sql" */
 import { PreparedQuery } from '@pgtyped/query';
 
 export type BufferArray = (Buffer)[];
