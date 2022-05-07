@@ -98,6 +98,7 @@ async fn insert_block(
     block_record: BlockRecord,
     txn: &DatabaseTransaction,
 ) -> Result<PerfAggregator, DbErr> {
+    println!("Start insert block");
     let mut perf_aggregator = PerfAggregator::new();
     let mut time_counter = std::time::Instant::now();
 
@@ -129,8 +130,7 @@ async fn insert_block(
                 &mut perf_aggregator,
                 &mut time_counter,
                 txn,
-                &block,
-                byron_block,
+                (byron_block, &block),
             )
             .await?
         }
