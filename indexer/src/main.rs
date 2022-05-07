@@ -62,7 +62,12 @@ async fn main() -> anyhow::Result<()> {
                 last_point.0,
                 last_point.1
             );
-            IntersectArg::Fallbacks(points.clone())
+            // if last block sync'd was at slot 0,
+            // that means it was the genesis block so we start from origin
+            match last_point.0 {
+                0 => IntersectArg::Origin,
+                _ => IntersectArg::Fallbacks(points.clone()),
+            }
         }
     };
 
