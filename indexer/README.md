@@ -15,7 +15,7 @@ Note: steps assume mainnet
 1. Add your database name & user password to `secrets/.pgpass`
 1. `chmod 600 secrets/.pgpass`
 1. Modify the env variables in `.env` if needed (ex: connecting to local node instead of remote)
-1. Run the env file (`set -a; . ../env; set +a`) - note you will have to re-run this command every time you reopen your shell
+1. At the root of the repo, run `set -a; . ./.env; set +a` - note you will have to re-run this command every time you reopen your shell
 1. `cargo migrate up` (you can debug migration by adding a `-v` at the end of the command)
 
 # IDE setup
