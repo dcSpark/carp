@@ -5,13 +5,13 @@ use entity::{
     sea_orm::{prelude::*, DatabaseTransaction, Set},
 };
 use pallas::ledger::primitives::{byron, Fragment};
-use shred::{ResourceId, System, SystemData, World, Write, WriteExpect};
+use shred::{ResourceId, System, SystemData, World, Write};
 
-use crate::byron::blake2b256;
+use crate::tasks::utils::blake2b256;
 
 #[derive(SystemData)]
 pub struct Data<'a> {
-    byron_txs: WriteExpect<'a, Vec<TransactionModel>>,
+    byron_txs: Write<'a, Vec<TransactionModel>>,
 }
 
 pub struct ByronTransactionTask<'a> {
@@ -24,7 +24,6 @@ impl<'a> System<'a> for ByronTransactionTask<'_> {
     type SystemData = Data<'a>;
 
     fn run(&mut self, mut bundle: Data<'a>) {
-        println!("{}", "foo");
         let result = self
             .handle
             .block_on(handle_tx(self.db_tx, self.block))
@@ -37,7 +36,6 @@ async fn handle_tx(
     db_tx: &DatabaseTransaction,
     block: (&byron::Block, &BlockModel),
 ) -> Result<Vec<TransactionModel>, DbErr> {
-    println!("{}", "asdf");
     match &block.0 {
         // Byron era had Epoch-boundary blocks for calculating stake distribution changes
         // they don't contain any txs, so we can just ignore them

@@ -177,15 +177,15 @@ pub async fn insert_inputs(
     )],
     input_to_output_map: &BTreeMap<&Vec<u8>, BTreeMap<i64, i64>>,
     txn: &DatabaseTransaction,
-) -> Result<(), DbErr> {
+) -> Result<Vec<TransactionInputModel>, DbErr> {
     // avoid querying the DB if there were no inputs
     let has_input = inputs.iter().any(|input| !input.0.is_empty());
     if !has_input {
-        return Ok(());
+        return Ok(vec![]);
     }
 
     // 3) Add inputs themselves
-    TransactionInput::insert_many(
+    let result = TransactionInput::insert_many(
         inputs
             .iter()
             .flat_map(|pair| pair.0.iter().enumerate().zip(std::iter::repeat(pair.1)))
@@ -198,8 +198,8 @@ pub async fn insert_inputs(
                 ..Default::default()
             }),
     )
-    .exec(txn)
+    .exec_many_with_returning(txn)
     .await?;
 
-    Ok(())
+    Ok(result)
 }

@@ -24,7 +24,7 @@ use entity::{
 use futures::future::try_join;
 use migration::DbErr;
 
-use crate::byron::blake2b256;
+use crate::tasks::utils::blake2b256;
 
 const GENESIS_MAINNET: &str = "./genesis/mainnet-byron-genesis.json";
 const GENESIS_TESTNET: &str = "./genesis/testnet-byron-genesis.json";

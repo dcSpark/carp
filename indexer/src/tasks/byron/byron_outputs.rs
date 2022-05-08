@@ -11,15 +11,15 @@ use pallas::{
         Fragment,
     },
 };
-use shred::{ReadExpect, ResourceId, System, SystemData, World, WriteExpect};
+use shred::{Read, ResourceId, System, SystemData, World, Write};
 use std::collections::BTreeMap;
 
 use crate::era_common::get_truncated_address;
 
 #[derive(SystemData)]
 pub struct Data<'a> {
-    byron_txs: ReadExpect<'a, Vec<TransactionModel>>,
-    outputs: WriteExpect<'a, Vec<TransactionOutputModel>>,
+    byron_txs: Read<'a, Vec<TransactionModel>>,
+    outputs: Write<'a, Vec<TransactionOutputModel>>,
 }
 
 pub struct ByronOutputTask<'a> {
@@ -62,6 +62,9 @@ async fn handle_outputs(
                 .zip(byron_txs)
                 .collect();
 
+            if tx_outputs.is_empty() {
+                return Ok(vec![]);
+            }
             // insert addresses
             let (_, address_map) = crate::era_common::insert_addresses(
                 &tx_outputs
