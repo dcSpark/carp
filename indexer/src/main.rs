@@ -83,7 +83,7 @@ async fn main() -> anyhow::Result<()> {
         }
     };
 
-    println!("{}", args.plan);
+    tracing::info!("Execution plan {}", args.plan);
     let exec_plan = Arc::new(ExecutionPlan::load_from_file(&args.plan));
 
     let (handles, input) = setup::oura_bootstrap(intersect, &network, socket)?;

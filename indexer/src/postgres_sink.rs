@@ -7,7 +7,10 @@ use pallas::ledger::primitives::{
     alonzo::{self},
     Fragment,
 };
-use std::sync::{Arc, Mutex};
+use std::{
+    sync::{Arc, Mutex},
+    time::Duration,
+};
 
 use crate::{
     perf_aggregator::PerfAggregator, tasks::execution_plan::ExecutionPlan, types::EraValue,
@@ -46,21 +49,35 @@ impl<'a> Config<'a> {
                     match block_record.epoch {
                         Some(epoch) if epoch as i128 > last_epoch => {
                             let epoch_duration = epoch_start_time.elapsed();
-                            perf_aggregator.set_overhead(&epoch_duration);
+                            perf_aggregator.set_overhead(
+                                &epoch_duration,
+                                task_perf_aggregator
+                                    .lock()
+                                    .unwrap()
+                                    .0
+                                    .values()
+                                    .fold(Duration::new(0, 0), |acc, next| {
+                                        acc.checked_add(*next).unwrap()
+                                    }),
+                            );
 
                             // skip posting stats if last_epoch == -1 (went application just launched)
                             if last_epoch >= 0 {
-                                // tracing::info!(
-                                //     "Finished processing epoch {} after {:?} (+{:?})",
-                                //     last_epoch,
-                                //     epoch_duration
-                                //         .checked_sub(perf_aggregator.block_fetch)
-                                //         .unwrap_or(std::time::Duration::new(0, 0)),
-                                //     perf_aggregator.block_fetch
-                                // );
+                                tracing::info!(
+                                    "Finished processing epoch {} after {:?} (+{:?})",
+                                    last_epoch,
+                                    epoch_duration
+                                        .checked_sub(perf_aggregator.block_fetch)
+                                        .unwrap_or(std::time::Duration::new(0, 0)),
+                                    perf_aggregator.block_fetch
+                                );
 
                                 tracing::trace!(
-                                    "Epoch part-wise time spent:\n{:#?}",
+                                    "Epoch non-task time spent:\n{:#?}",
+                                    perf_aggregator
+                                );
+                                tracing::trace!(
+                                    "Epoch task-wise time spent:\n{:#?}",
                                     task_perf_aggregator.lock().unwrap()
                                 );
                             }
