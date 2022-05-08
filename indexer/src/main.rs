@@ -19,6 +19,15 @@ mod relation_map;
 mod setup;
 mod tasks;
 mod types;
+use clap::Parser;
+
+#[derive(Parser, Debug)]
+#[clap(version)]
+struct Args {
+    /// Path of the execution plan to use
+    #[clap(short, long, default_value = "execution_plans/default.ini")]
+    plan: String,
+}
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -41,6 +50,7 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("{}", "Starting oura-postgres-sink");
 
     dotenv().ok();
+    let args = Args::parse();
 
     let network = std::env::var("NETWORK").expect("env NETWORK not found");
     let socket = std::env::var("SOCKET").expect("env SOCKET not found");
@@ -76,8 +86,8 @@ async fn main() -> anyhow::Result<()> {
         }
     };
 
-    // TODO: use a cmd line argument to override
-    let exec_plan = Arc::new(ExecutionPlan::load_from_file("execution_plans/default.ini"));
+    println!("{}", args.plan);
+    let exec_plan = Arc::new(ExecutionPlan::load_from_file(&args.plan));
 
     let (handles, input) = setup::oura_bootstrap(intersect, &network, socket)?;
 

@@ -18,6 +18,10 @@ Note: steps assume mainnet
 1. At the root of the repo, run `set -a; . ./.env; set +a` - note you will have to re-run this command every time you reopen your shell
 1. `cargo migrate up` (you can debug migration by adding a `-v` at the end of the command)
 
+# Run
+
+`cargo run -- --plan execution_plans/default.ini`
+
 # IDE setup
 
 1. Install `rust-analyzer`

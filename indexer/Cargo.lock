@@ -1458,6 +1458,7 @@ dependencies = [
  "base64",
  "bs58",
  "cardano-multiplatform-lib",
+ "clap 3.1.8",
  "cryptoxide",
  "dotenv",
  "entity",
