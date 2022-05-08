@@ -9,10 +9,7 @@ use tracing_subscriber::prelude::*;
 
 use crate::tasks::execution_plan::ExecutionPlan;
 
-mod byron;
-mod era_common;
 mod genesis;
-mod multiera;
 mod perf_aggregator;
 mod postgres_sink;
 mod relation_map;

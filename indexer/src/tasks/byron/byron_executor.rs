@@ -1,20 +1,18 @@
 use std::sync::{Arc, Mutex};
 
+use crate::tasks::database_task::BlockInfo;
 use crate::tasks::database_task::TaskRegistryEntry;
 use crate::tasks::execution_plan::ExecutionPlan;
 use crate::tasks::utils::find_task_registry_entry;
 use crate::tasks::utils::TaskPerfAggregator;
-use entity::{
-    prelude::*,
-    sea_orm::{prelude::*, DatabaseTransaction},
-};
+use entity::sea_orm::{prelude::*, DatabaseTransaction};
 use pallas::ledger::primitives::byron::{self};
 use shred::{DispatcherBuilder, World};
 use tokio::runtime::Handle;
 
 pub async fn process_byron_block(
     txn: &DatabaseTransaction,
-    block: (&byron::Block, &BlockModel),
+    block: BlockInfo<'_, byron::Block>,
     exec_plan: &ExecutionPlan,
     perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
 ) -> Result<(), DbErr> {

@@ -11,7 +11,9 @@ use pallas::ledger::primitives::{byron, Fragment};
 use shred::{DispatcherBuilder, ResourceId, System, SystemData, World, Write};
 
 use crate::tasks::{
-    database_task::{ByronTaskRegistryEntry, DatabaseTaskMeta, TaskBuilder, TaskRegistryEntry},
+    database_task::{
+        BlockInfo, ByronTaskRegistryEntry, DatabaseTaskMeta, TaskBuilder, TaskRegistryEntry,
+    },
     utils::{blake2b256, TaskPerfAggregator},
 };
 
@@ -22,7 +24,7 @@ pub struct Data<'a> {
 
 pub struct ByronTransactionTask<'a> {
     pub db_tx: &'a DatabaseTransaction,
-    pub block: (&'a byron::Block, &'a BlockModel),
+    pub block: BlockInfo<'a, byron::Block>,
     pub handle: &'a tokio::runtime::Handle,
     pub perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
 }
@@ -33,7 +35,7 @@ impl<'a> DatabaseTaskMeta<'a, byron::Block> for ByronTransactionTask<'a> {
 
     fn new(
         db_tx: &'a DatabaseTransaction,
-        block: (&'a byron::Block, &'a BlockModel),
+        block: BlockInfo<'a, byron::Block>,
         handle: &'a tokio::runtime::Handle,
         perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
     ) -> Self {
@@ -59,7 +61,7 @@ impl<'a> TaskBuilder<'a, byron::Block> for ByronTransactionTaskBuilder {
         &self,
         dispatcher_builder: &mut DispatcherBuilder<'a, 'c>,
         db_tx: &'a DatabaseTransaction,
-        block: (&'a byron::Block, &'a BlockModel),
+        block: BlockInfo<'a, byron::Block>,
         handle: &'a tokio::runtime::Handle,
         perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
         _properties: &ini::Properties,
@@ -94,9 +96,9 @@ impl<'a> System<'a> for ByronTransactionTask<'_> {
 
 async fn handle_tx(
     db_tx: &DatabaseTransaction,
-    block: (&byron::Block, &BlockModel),
+    block: BlockInfo<'_, byron::Block>,
 ) -> Result<Vec<TransactionModel>, DbErr> {
-    match &block.0 {
+    match &block.1 {
         // Byron era had Epoch-boundary blocks for calculating stake distribution changes
         // they don't contain any txs, so we can just ignore them
         byron::Block::EbBlock(_) => Ok(vec![]),
@@ -114,7 +116,7 @@ async fn handle_tx(
 
                         TransactionActiveModel {
                             hash: Set(tx_hash.to_vec()),
-                            block_id: Set(block.1.id),
+                            block_id: Set(block.2.id),
                             tx_index: Set(idx as i32),
                             payload: Set(tx_payload),
                             is_valid: Set(true), // always true in Byron

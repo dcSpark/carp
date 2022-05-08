@@ -10,7 +10,9 @@ use shred::{DispatcherBuilder, Read, ResourceId, System, SystemData, World, Writ
 use std::sync::{Arc, Mutex};
 
 use crate::tasks::{
-    database_task::{ByronTaskRegistryEntry, DatabaseTaskMeta, TaskBuilder, TaskRegistryEntry},
+    database_task::{
+        BlockInfo, ByronTaskRegistryEntry, DatabaseTaskMeta, TaskBuilder, TaskRegistryEntry,
+    },
     utils::TaskPerfAggregator,
 };
 
@@ -19,12 +21,12 @@ use super::byron_outputs::ByronOutputTask;
 #[derive(SystemData)]
 pub struct Data<'a> {
     byron_txs: Read<'a, Vec<TransactionModel>>,
-    inputs: Write<'a, Vec<TransactionInputModel>>,
+    byron_inputs: Write<'a, Vec<TransactionInputModel>>,
 }
 
 pub struct ByronInputTask<'a> {
     db_tx: &'a DatabaseTransaction,
-    block: (&'a byron::Block, &'a BlockModel),
+    block: BlockInfo<'a, byron::Block>,
     handle: &'a tokio::runtime::Handle,
     perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
 }
@@ -35,7 +37,7 @@ impl<'a> DatabaseTaskMeta<'a, byron::Block> for ByronInputTask<'a> {
 
     fn new(
         db_tx: &'a DatabaseTransaction,
-        block: (&'a byron::Block, &'a BlockModel),
+        block: BlockInfo<'a, byron::Block>,
         handle: &'a tokio::runtime::Handle,
         perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
     ) -> Self {
@@ -60,7 +62,7 @@ impl<'a> TaskBuilder<'a, byron::Block> for ByronInputTaskBuilder {
         &self,
         dispatcher_builder: &mut DispatcherBuilder<'a, 'c>,
         db_tx: &'a DatabaseTransaction,
-        block: (&'a byron::Block, &'a BlockModel),
+        block: BlockInfo<'a, byron::Block>,
         handle: &'a tokio::runtime::Handle,
         perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
         _properties: &ini::Properties,
@@ -88,7 +90,7 @@ impl<'a> System<'a> for ByronInputTask<'_> {
                 bundle.byron_txs.as_slice(),
             ))
             .unwrap();
-        *bundle.inputs = result;
+        *bundle.byron_inputs = result;
 
         self.perf_aggregator
             .lock()
@@ -99,10 +101,10 @@ impl<'a> System<'a> for ByronInputTask<'_> {
 
 async fn handle_inputs(
     db_tx: &DatabaseTransaction,
-    block: (&byron::Block, &BlockModel),
+    block: BlockInfo<'_, byron::Block>,
     byron_txs: &[TransactionModel],
 ) -> Result<Vec<TransactionInputModel>, DbErr> {
-    match &block.0 {
+    match &block.1 {
         // Byron era had Epoch-boundary blocks for calculating stake distribution changes
         // they don't contain any txs, so we can just ignore them
         byron::Block::EbBlock(_) => Ok(vec![]),
@@ -135,13 +137,16 @@ async fn handle_inputs(
                 .map(|inputs| (&inputs.0, inputs.1))
                 .collect();
             let outputs_for_inputs =
-                crate::era_common::get_outputs_for_inputs(&flattened_inputs, db_tx).await?;
+                crate::tasks::era_common::get_outputs_for_inputs(&flattened_inputs, db_tx).await?;
 
             let input_to_output_map =
-                crate::era_common::gen_input_to_output_map(&outputs_for_inputs);
-            let result =
-                crate::era_common::insert_inputs(&flattened_inputs, &input_to_output_map, db_tx)
-                    .await?;
+                crate::tasks::era_common::gen_input_to_output_map(&outputs_for_inputs);
+            let result = crate::tasks::era_common::insert_inputs(
+                &flattened_inputs,
+                &input_to_output_map,
+                db_tx,
+            )
+            .await?;
             Ok(result)
         }
     }
@@ -150,11 +155,11 @@ async fn handle_inputs(
 fn byron_input_to_alonzo(input: &TxIn) -> pallas::ledger::primitives::alonzo::TransactionInput {
     match input {
         TxIn::Variant0(wrapped) => pallas::ledger::primitives::alonzo::TransactionInput {
-            transaction_id: wrapped.0 .0.clone(),
+            transaction_id: wrapped.0 .0,
             index: wrapped.0 .1 as u64,
         },
         TxIn::Other(index, tx_hash) => {
-            // Note: Oura uses "other" to future proof itself against changes in the binary spec
+            // Note: Pallas uses "other" to future proof itself against changes in the binary spec
             todo!("handle TxIn::Other({:?}, {:?})", index, tx_hash)
         }
     }

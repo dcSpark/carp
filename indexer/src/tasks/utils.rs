@@ -29,6 +29,11 @@ pub fn find_task_registry_entry(task_name: &str) -> Option<TaskRegistryEntry> {
                     return Some(*registry_entry);
                 }
             }
+            TaskRegistryEntry::Multiera(entry) => {
+                if entry.name == task_name {
+                    return Some(*registry_entry);
+                }
+            }
         }
     }
     None

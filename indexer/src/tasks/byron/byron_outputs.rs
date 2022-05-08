@@ -16,12 +16,12 @@ use pallas::{
 use shred::{DispatcherBuilder, Read, ResourceId, System, SystemData, World, Write};
 use std::collections::BTreeMap;
 
-use crate::{
-    era_common::get_truncated_address,
-    tasks::{
-        database_task::{ByronTaskRegistryEntry, DatabaseTaskMeta, TaskBuilder, TaskRegistryEntry},
-        utils::TaskPerfAggregator,
+use crate::tasks::{
+    database_task::{
+        BlockInfo, ByronTaskRegistryEntry, DatabaseTaskMeta, TaskBuilder, TaskRegistryEntry,
     },
+    era_common::{get_truncated_address, AddressInBlock},
+    utils::TaskPerfAggregator,
 };
 
 use super::byron_txs::ByronTransactionTask;
@@ -29,12 +29,12 @@ use super::byron_txs::ByronTransactionTask;
 #[derive(SystemData)]
 pub struct Data<'a> {
     byron_txs: Read<'a, Vec<TransactionModel>>,
-    outputs: Write<'a, Vec<TransactionOutputModel>>,
+    byron_outputs: Write<'a, Vec<TransactionOutputModel>>,
 }
 
 pub struct ByronOutputTask<'a> {
     db_tx: &'a DatabaseTransaction,
-    block: (&'a byron::Block, &'a BlockModel),
+    block: BlockInfo<'a, byron::Block>,
     handle: &'a tokio::runtime::Handle,
     perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
 }
@@ -45,7 +45,7 @@ impl<'a> DatabaseTaskMeta<'a, byron::Block> for ByronOutputTask<'a> {
 
     fn new(
         db_tx: &'a DatabaseTransaction,
-        block: (&'a byron::Block, &'a BlockModel),
+        block: BlockInfo<'a, byron::Block>,
         handle: &'a tokio::runtime::Handle,
         perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
     ) -> Self {
@@ -70,7 +70,7 @@ impl<'a> TaskBuilder<'a, byron::Block> for ByronOutputTaskBuilder {
         &self,
         dispatcher_builder: &mut DispatcherBuilder<'a, 'c>,
         db_tx: &'a DatabaseTransaction,
-        block: (&'a byron::Block, &'a BlockModel),
+        block: BlockInfo<'a, byron::Block>,
         handle: &'a tokio::runtime::Handle,
         perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
         _properties: &ini::Properties,
@@ -98,7 +98,7 @@ impl<'a> System<'a> for ByronOutputTask<'_> {
                 bundle.byron_txs.as_slice(),
             ))
             .unwrap();
-        *bundle.outputs = result;
+        *bundle.byron_outputs = result;
 
         self.perf_aggregator
             .lock()
@@ -109,10 +109,10 @@ impl<'a> System<'a> for ByronOutputTask<'_> {
 
 async fn handle_outputs(
     db_tx: &DatabaseTransaction,
-    block: (&byron::Block, &BlockModel),
+    block: BlockInfo<'_, byron::Block>,
     byron_txs: &[TransactionModel],
 ) -> Result<Vec<TransactionOutputModel>, DbErr> {
-    match &block.0 {
+    match &block.1 {
         // Byron era had Epoch-boundary blocks for calculating stake distribution changes
         // they don't contain any txs, so we can just ignore them
         byron::Block::EbBlock(_) => Ok(vec![]),
@@ -129,7 +129,7 @@ async fn handle_outputs(
                 return Ok(vec![]);
             }
             // insert addresses
-            let (_, address_map) = crate::era_common::insert_addresses(
+            let address_map = crate::tasks::era_common::insert_addresses(
                 &tx_outputs
                     .iter()
                     .flat_map(|pair| pair.0.iter())
@@ -147,7 +147,7 @@ async fn handle_outputs(
 
 async fn insert_byron_outputs(
     txn: &DatabaseTransaction,
-    address_map: &BTreeMap<Vec<u8>, AddressModel>,
+    address_map: &BTreeMap<Vec<u8>, AddressInBlock>,
     outputs: &[(&MaybeIndefArray<TxOut>, &TransactionModel)],
 ) -> Result<Vec<TransactionOutputModel>, DbErr> {
     let result = TransactionOutput::insert_many(
@@ -162,6 +162,7 @@ async fn insert_byron_outputs(
                             &output.address.encode_fragment().unwrap(),
                         ))
                         .unwrap()
+                        .model
                         .id),
                     tx_id: Set(tx_id.id),
                     output_index: Set(output_index as i32),

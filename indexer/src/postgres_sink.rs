@@ -136,26 +136,23 @@ async fn insert_block(
     let block = block.insert(txn).await?;
 
     perf_aggregator.block_insertion += time_counter.elapsed();
-    time_counter = std::time::Instant::now();
 
     match &multi_block {
         MultiEraBlock::Byron(byron_block) => {
-            crate::byron::process_byron_block(
+            crate::tasks::byron::byron_executor::process_byron_block(
                 txn,
-                (byron_block, &block),
+                (&block_record.cbor_hex.unwrap(), byron_block, &block),
                 &exec_plan,
                 task_perf_aggregator.clone(),
             )
             .await?
         }
         MultiEraBlock::Compatible(alonzo_block) => {
-            crate::multiera::process_multiera_block(
-                &mut perf_aggregator,
-                &mut time_counter,
+            crate::tasks::multiera::multiera_executor::process_multiera_block(
                 txn,
-                &block_record,
-                &block,
-                alonzo_block,
+                (&block_record.cbor_hex.unwrap(), alonzo_block, &block),
+                &exec_plan,
+                task_perf_aggregator.clone(),
             )
             .await?
         }

@@ -1,8 +1,14 @@
 use crate::tasks::utils::TaskPerfAggregator;
 use entity::{prelude::*, sea_orm::DatabaseTransaction};
-use pallas::ledger::primitives::byron;
+use pallas::ledger::primitives::{alonzo, byron};
 use shred::DispatcherBuilder;
 use std::sync::{Arc, Mutex};
+
+pub type BlockInfo<'a, BlockType> = (
+    &'a str, // cbor
+    &'a BlockType,
+    &'a BlockModel,
+);
 
 pub trait DatabaseTaskMeta<'a, BlockType> {
     const TASK_NAME: &'static str;
@@ -10,7 +16,7 @@ pub trait DatabaseTaskMeta<'a, BlockType> {
 
     fn new(
         db_tx: &'a DatabaseTransaction,
-        block: (&'a BlockType, &'a BlockModel),
+        block: BlockInfo<'a, BlockType>,
         handle: &'a tokio::runtime::Handle,
         perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
     ) -> Self;
@@ -28,7 +34,7 @@ pub trait TaskBuilder<'a, BlockType> {
         &self,
         dispatcher_builder: &mut DispatcherBuilder<'a, 'c>,
         db_tx: &'a DatabaseTransaction,
-        block: (&'a BlockType, &'a BlockModel),
+        block: BlockInfo<'a, BlockType>,
         handle: &'a tokio::runtime::Handle,
         perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
         properties: &ini::Properties,
@@ -38,11 +44,18 @@ pub trait TaskBuilder<'a, BlockType> {
 #[derive(Copy, Clone)]
 pub enum TaskRegistryEntry {
     Byron(ByronTaskRegistryEntry),
+    Multiera(MultieraTaskRegistryEntry),
 }
 #[derive(Copy, Clone)]
 pub struct ByronTaskRegistryEntry {
     pub name: &'static str,
     pub builder: &'static (dyn for<'a> TaskBuilder<'a, byron::Block> + Sync),
+}
+
+#[derive(Copy, Clone)]
+pub struct MultieraTaskRegistryEntry {
+    pub name: &'static str,
+    pub builder: &'static (dyn for<'a> TaskBuilder<'a, alonzo::Block> + Sync),
 }
 
 inventory::collect!(TaskRegistryEntry);
