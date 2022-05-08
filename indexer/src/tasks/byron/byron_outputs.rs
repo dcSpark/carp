@@ -13,12 +13,15 @@ use pallas::{
         Fragment,
     },
 };
-use shred::{Read, ResourceId, System, SystemData, World, Write};
+use shred::{DispatcherBuilder, Read, ResourceId, System, SystemData, World, Write};
 use std::collections::BTreeMap;
 
 use crate::{
     era_common::get_truncated_address,
-    tasks::{database_task::DatabaseTask, utils::TaskPerfAggregator},
+    tasks::{
+        database_task::{ByronTaskRegistryEntry, DatabaseTaskMeta, TaskBuilder, TaskRegistryEntry},
+        utils::TaskPerfAggregator,
+    },
 };
 
 use super::byron_txs::ByronTransactionTask;
@@ -36,12 +39,10 @@ pub struct ByronOutputTask<'a> {
     perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
 }
 
-impl<'a> ByronOutputTask<'a> {
-    pub const NAME: &'static str = name_of_type!(ByronOutputTask);
-    pub const DEPENDENCIES: [&'static str; 1] = [name_of_type!(ByronTransactionTask)];
-}
+impl<'a> DatabaseTaskMeta<'a, byron::Block> for ByronOutputTask<'a> {
+    const NAME: &'static str = name_of_type!(ByronOutputTask);
+    const DEPENDENCIES: &'static [&'static str] = &[name_of_type!(ByronTransactionTask)];
 
-impl<'a> DatabaseTask<'a, byron::Block> for ByronOutputTask<'a> {
     fn new(
         db_tx: &'a DatabaseTransaction,
         block: (&'a byron::Block, &'a BlockModel),
@@ -55,6 +56,31 @@ impl<'a> DatabaseTask<'a, byron::Block> for ByronOutputTask<'a> {
             perf_aggregator,
         }
     }
+}
+
+struct ByronOutputTaskBuilder;
+impl<'a> TaskBuilder<'a, byron::Block> for ByronOutputTaskBuilder {
+    fn get_name() -> &'static str {
+        ByronOutputTask::NAME
+    }
+    fn get_dependencies() -> &'static [&'static str] {
+        ByronOutputTask::DEPENDENCIES
+    }
+    fn add_task<'c>(
+        &self,
+        dispatcher_builder: &mut DispatcherBuilder<'a, 'c>,
+        db_tx: &'a DatabaseTransaction,
+        block: (&'a byron::Block, &'a BlockModel),
+        handle: &'a tokio::runtime::Handle,
+        perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
+    ) {
+        let task = ByronOutputTask::new(db_tx, block, handle, perf_aggregator);
+        dispatcher_builder.add(task, Self::get_name(), Self::get_dependencies());
+    }
+}
+
+inventory::submit! {
+    TaskRegistryEntry::Byron(ByronTaskRegistryEntry {name: ByronOutputTask::NAME, builder: &ByronOutputTaskBuilder })
 }
 
 impl<'a> System<'a> for ByronOutputTask<'_> {

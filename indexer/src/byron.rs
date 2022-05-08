@@ -1,10 +1,12 @@
 use std::sync::{Arc, Mutex};
 
-use crate::tasks::byron::byron_inputs::ByronInputTask;
 use crate::tasks::byron::byron_outputs::ByronOutputTask;
-use crate::tasks::byron::byron_txs::ByronTransactionTask;
-use crate::tasks::database_task::DatabaseTask;
-use crate::tasks::utils::TaskPerfAggregator;
+use crate::tasks::database_task::DatabaseTaskMeta;
+use crate::tasks::utils::find_byron_task_builder;
+use crate::tasks::{
+    byron::{byron_inputs::ByronInputTask, byron_txs::ByronTransactionTask},
+    utils::TaskPerfAggregator,
+};
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction},
@@ -22,28 +24,30 @@ pub async fn process_byron_block(
 
     let mut world = World::empty();
 
-    let byron_input_task = ByronInputTask::new(txn, block, &handle, perf_aggregator.clone());
-    let byron_output_task = ByronOutputTask::new(txn, block, &handle, perf_aggregator.clone());
-    let byron_transaction_task =
-        ByronTransactionTask::new(txn, block, &handle, perf_aggregator.clone());
+    let tasks_to_run = vec![
+        ByronTransactionTask::NAME,
+        ByronOutputTask::NAME,
+        ByronInputTask::NAME,
+    ];
 
-    let mut dispatcher = DispatcherBuilder::new()
-        .with(
-            byron_transaction_task,
-            ByronTransactionTask::NAME,
-            &ByronTransactionTask::DEPENDENCIES,
-        )
-        .with(
-            byron_output_task,
-            ByronOutputTask::NAME,
-            &ByronOutputTask::DEPENDENCIES,
-        )
-        .with(
-            byron_input_task,
-            ByronInputTask::NAME,
-            &ByronInputTask::DEPENDENCIES,
-        )
-        .build();
+    let mut dispatcher_builder = DispatcherBuilder::new();
+    for task in tasks_to_run {
+        match find_byron_task_builder(task) {
+            Some(builder) => {
+                builder.builder.add_task(
+                    &mut dispatcher_builder,
+                    txn,
+                    block,
+                    &handle,
+                    perf_aggregator.clone(),
+                );
+            }
+            None => {
+                panic!("Could not find task named {}", task);
+            }
+        }
+    }
+    let mut dispatcher = dispatcher_builder.build();
     dispatcher.setup(&mut world);
     dispatcher.dispatch(&world);
 
