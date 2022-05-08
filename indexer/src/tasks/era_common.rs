@@ -161,9 +161,9 @@ pub async fn get_outputs_for_inputs(
         .collect())
 }
 
-pub fn gen_input_to_output_map<'a>(
-    outputs_for_inputs: &'a Vec<(TransactionOutputModel, TransactionModel)>,
-) -> BTreeMap<&'a Vec<u8>, BTreeMap<i64, i64>> {
+pub fn gen_input_to_output_map(
+    outputs_for_inputs: &'_ [(TransactionOutputModel, TransactionModel)],
+) -> BTreeMap<&'_ Vec<u8>, BTreeMap<i64, i64>> {
     let mut input_to_output_map = BTreeMap::<&Vec<u8>, BTreeMap<i64, i64>>::default();
     for output in outputs_for_inputs {
         input_to_output_map
