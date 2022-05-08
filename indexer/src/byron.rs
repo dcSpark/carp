@@ -38,6 +38,7 @@ pub async fn process_byron_block(
                         block,
                         &handle,
                         perf_aggregator.clone(),
+                        exec_plan.0.section(Some(task_name)).unwrap(),
                     );
                 }
             }

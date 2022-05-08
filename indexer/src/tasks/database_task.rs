@@ -31,6 +31,7 @@ pub trait TaskBuilder<'a, BlockType> {
         block: (&'a BlockType, &'a BlockModel),
         handle: &'a tokio::runtime::Handle,
         perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
+        properties: &ini::Properties,
     );
 }
 

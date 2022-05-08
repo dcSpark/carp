@@ -62,6 +62,7 @@ impl<'a> TaskBuilder<'a, byron::Block> for ByronTransactionTaskBuilder {
         block: (&'a byron::Block, &'a BlockModel),
         handle: &'a tokio::runtime::Handle,
         perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
+        _properties: &ini::Properties,
     ) {
         let task = ByronTransactionTask::new(db_tx, block, handle, perf_aggregator);
         dispatcher_builder.add(task, Self::get_name(), Self::get_dependencies());
