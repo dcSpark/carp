@@ -40,7 +40,7 @@ pub struct ByronOutputTask<'a> {
 }
 
 impl<'a> DatabaseTaskMeta<'a, byron::Block> for ByronOutputTask<'a> {
-    const NAME: &'static str = name_of_type!(ByronOutputTask);
+    const TASK_NAME: &'static str = name_of_type!(ByronOutputTask);
     const DEPENDENCIES: &'static [&'static str] = &[name_of_type!(ByronTransactionTask)];
 
     fn new(
@@ -61,7 +61,7 @@ impl<'a> DatabaseTaskMeta<'a, byron::Block> for ByronOutputTask<'a> {
 struct ByronOutputTaskBuilder;
 impl<'a> TaskBuilder<'a, byron::Block> for ByronOutputTaskBuilder {
     fn get_name() -> &'static str {
-        ByronOutputTask::NAME
+        ByronOutputTask::TASK_NAME
     }
     fn get_dependencies() -> &'static [&'static str] {
         ByronOutputTask::DEPENDENCIES
@@ -80,7 +80,7 @@ impl<'a> TaskBuilder<'a, byron::Block> for ByronOutputTaskBuilder {
 }
 
 inventory::submit! {
-    TaskRegistryEntry::Byron(ByronTaskRegistryEntry {name: ByronOutputTask::NAME, builder: &ByronOutputTaskBuilder })
+    TaskRegistryEntry::Byron(ByronTaskRegistryEntry {name: ByronOutputTask::TASK_NAME, builder: &ByronOutputTaskBuilder })
 }
 
 impl<'a> System<'a> for ByronOutputTask<'_> {
@@ -102,7 +102,7 @@ impl<'a> System<'a> for ByronOutputTask<'_> {
         self.perf_aggregator
             .lock()
             .unwrap()
-            .update(Self::NAME, time_counter.elapsed());
+            .update(Self::TASK_NAME, time_counter.elapsed());
     }
 }
 

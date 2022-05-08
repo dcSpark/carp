@@ -2,7 +2,7 @@ use std::{collections::BTreeMap, time::Duration};
 
 use cryptoxide::blake2b::Blake2b;
 
-use super::database_task::{ByronTaskRegistryEntry, TaskRegistryEntry};
+use super::database_task::TaskRegistryEntry;
 
 pub fn blake2b256(data: &[u8]) -> [u8; 32] {
     let mut out = [0; 32];
@@ -21,11 +21,13 @@ impl TaskPerfAggregator {
     }
 }
 
-pub fn find_byron_task_builder(task_name: &str) -> Option<ByronTaskRegistryEntry> {
+pub fn find_task_registry_entry(task_name: &str) -> Option<TaskRegistryEntry> {
     for registry_entry in inventory::iter::<TaskRegistryEntry> {
-        if let TaskRegistryEntry::Byron(entry) = registry_entry {
-            if entry.name == task_name {
-                return Some(*entry);
+        match registry_entry {
+            TaskRegistryEntry::Byron(entry) => {
+                if entry.name == task_name {
+                    return Some(*registry_entry);
+                }
             }
         }
     }

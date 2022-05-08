@@ -5,7 +5,7 @@ use shred::DispatcherBuilder;
 use std::sync::{Arc, Mutex};
 
 pub trait DatabaseTaskMeta<'a, BlockType> {
-    const NAME: &'static str;
+    const TASK_NAME: &'static str;
     const DEPENDENCIES: &'static [&'static str];
 
     fn new(
@@ -34,6 +34,7 @@ pub trait TaskBuilder<'a, BlockType> {
     );
 }
 
+#[derive(Copy, Clone)]
 pub enum TaskRegistryEntry {
     Byron(ByronTaskRegistryEntry),
 }

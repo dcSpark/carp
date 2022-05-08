@@ -1,9 +1,13 @@
+use std::sync::Arc;
+
 use anyhow::anyhow;
 use dotenv::dotenv;
 
 use entity::sea_orm::Database;
 use oura::sources::IntersectArg;
 use tracing_subscriber::prelude::*;
+
+use crate::tasks::execution_plan::ExecutionPlan;
 
 mod byron;
 mod era_common;
@@ -72,11 +76,14 @@ async fn main() -> anyhow::Result<()> {
         }
     };
 
+    // TODO: use a cmd line argument to override
+    let exec_plan = Arc::new(ExecutionPlan::load_from_file("execution_plans/default.ini"));
+
     let (handles, input) = setup::oura_bootstrap(intersect, &network, socket)?;
 
     let sink_setup = postgres_sink::Config { conn: &conn };
 
-    sink_setup.bootstrap(input).await?;
+    sink_setup.start(input, exec_plan).await?;
 
     for handle in handles {
         handle.join().map_err(|_| anyhow!(""))?;

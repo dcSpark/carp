@@ -1,12 +1,9 @@
 use std::sync::{Arc, Mutex};
 
-use crate::tasks::byron::byron_outputs::ByronOutputTask;
-use crate::tasks::database_task::DatabaseTaskMeta;
-use crate::tasks::utils::find_byron_task_builder;
-use crate::tasks::{
-    byron::{byron_inputs::ByronInputTask, byron_txs::ByronTransactionTask},
-    utils::TaskPerfAggregator,
-};
+use crate::tasks::database_task::TaskRegistryEntry;
+use crate::tasks::execution_plan::ExecutionPlan;
+use crate::tasks::utils::find_task_registry_entry;
+use crate::tasks::utils::TaskPerfAggregator;
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction},
@@ -18,32 +15,31 @@ use tokio::runtime::Handle;
 pub async fn process_byron_block(
     txn: &DatabaseTransaction,
     block: (&byron::Block, &BlockModel),
+    exec_plan: &ExecutionPlan,
     perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
 ) -> Result<(), DbErr> {
     let handle = Handle::current();
 
     let mut world = World::empty();
 
-    let tasks_to_run = vec![
-        ByronTransactionTask::NAME,
-        ByronOutputTask::NAME,
-        ByronInputTask::NAME,
-    ];
-
     let mut dispatcher_builder = DispatcherBuilder::new();
-    for task in tasks_to_run {
-        match find_byron_task_builder(task) {
-            Some(builder) => {
-                builder.builder.add_task(
-                    &mut dispatcher_builder,
-                    txn,
-                    block,
-                    &handle,
-                    perf_aggregator.clone(),
-                );
-            }
+
+    for task_name in exec_plan.0.sections().flatten() {
+        let entry = find_task_registry_entry(task_name);
+        match &entry {
             None => {
-                panic!("Could not find task named {}", task);
+                panic!("Could not find task named {}", task_name);
+            }
+            Some(task) => {
+                if let TaskRegistryEntry::Byron(entry) = task {
+                    entry.builder.add_task(
+                        &mut dispatcher_builder,
+                        txn,
+                        block,
+                        &handle,
+                        perf_aggregator.clone(),
+                    );
+                }
             }
         }
     }

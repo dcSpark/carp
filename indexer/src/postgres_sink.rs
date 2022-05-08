@@ -9,7 +9,9 @@ use pallas::ledger::primitives::{
 };
 use std::sync::{Arc, Mutex};
 
-use crate::{perf_aggregator::PerfAggregator, types::EraValue};
+use crate::{
+    perf_aggregator::PerfAggregator, tasks::execution_plan::ExecutionPlan, types::EraValue,
+};
 use crate::{tasks::utils::TaskPerfAggregator, types::MultiEraBlock};
 use entity::{
     prelude::*,
@@ -22,7 +24,11 @@ pub struct Config<'a> {
 }
 
 impl<'a> Config<'a> {
-    pub async fn bootstrap(&self, input: StageReceiver) -> anyhow::Result<()> {
+    pub async fn start(
+        &self,
+        input: StageReceiver,
+        exec_plan: Arc<ExecutionPlan>,
+    ) -> anyhow::Result<()> {
         tracing::info!("{}", "Starting to process blocks");
 
         let mut last_epoch: i128 = -1;
@@ -77,6 +83,7 @@ impl<'a> Config<'a> {
                             Box::pin(insert_block(
                                 block_record.clone(),
                                 txn,
+                                exec_plan.clone(),
                                 task_perf_aggregator.clone(),
                             ))
                         })
@@ -103,6 +110,7 @@ impl<'a> Config<'a> {
 async fn insert_block(
     block_record: BlockRecord,
     txn: &DatabaseTransaction,
+    exec_plan: Arc<ExecutionPlan>,
     task_perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
 ) -> Result<(), DbErr> {
     let mut perf_aggregator = PerfAggregator::new();
@@ -135,6 +143,7 @@ async fn insert_block(
             crate::byron::process_byron_block(
                 txn,
                 (byron_block, &block),
+                &exec_plan,
                 task_perf_aggregator.clone(),
             )
             .await?
