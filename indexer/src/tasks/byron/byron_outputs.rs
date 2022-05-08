@@ -1,9 +1,11 @@
 extern crate shred;
+use std::sync::{Arc, Mutex};
 
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction, Set},
 };
+use nameof::name_of_type;
 use pallas::{
     codec::utils::MaybeIndefArray,
     ledger::primitives::{
@@ -14,7 +16,12 @@ use pallas::{
 use shred::{Read, ResourceId, System, SystemData, World, Write};
 use std::collections::BTreeMap;
 
-use crate::era_common::get_truncated_address;
+use crate::{
+    era_common::get_truncated_address,
+    tasks::{database_task::DatabaseTask, utils::TaskPerfAggregator},
+};
+
+use super::byron_txs::ByronTransactionTask;
 
 #[derive(SystemData)]
 pub struct Data<'a> {
@@ -23,15 +30,39 @@ pub struct Data<'a> {
 }
 
 pub struct ByronOutputTask<'a> {
-    pub db_tx: &'a DatabaseTransaction,
-    pub block: (&'a byron::Block, &'a BlockModel),
-    pub handle: &'a tokio::runtime::Handle,
+    db_tx: &'a DatabaseTransaction,
+    block: (&'a byron::Block, &'a BlockModel),
+    handle: &'a tokio::runtime::Handle,
+    perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
+}
+
+impl<'a> ByronOutputTask<'a> {
+    pub const NAME: &'static str = name_of_type!(ByronOutputTask);
+    pub const DEPENDENCIES: [&'static str; 1] = [name_of_type!(ByronTransactionTask)];
+}
+
+impl<'a> DatabaseTask<'a, byron::Block> for ByronOutputTask<'a> {
+    fn new(
+        db_tx: &'a DatabaseTransaction,
+        block: (&'a byron::Block, &'a BlockModel),
+        handle: &'a tokio::runtime::Handle,
+        perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
+    ) -> Self {
+        Self {
+            db_tx,
+            block,
+            handle,
+            perf_aggregator,
+        }
+    }
 }
 
 impl<'a> System<'a> for ByronOutputTask<'_> {
     type SystemData = Data<'a>;
 
     fn run(&mut self, mut bundle: Data<'a>) {
+        let time_counter = std::time::Instant::now();
+
         let result = self
             .handle
             .block_on(handle_outputs(
@@ -41,6 +72,11 @@ impl<'a> System<'a> for ByronOutputTask<'_> {
             ))
             .unwrap();
         *bundle.outputs = result;
+
+        self.perf_aggregator
+            .lock()
+            .unwrap()
+            .update(Self::NAME, time_counter.elapsed());
     }
 }
 

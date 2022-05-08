@@ -1,13 +1,19 @@
 extern crate shred;
 
+use std::sync::{Arc, Mutex};
+
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction, Set},
 };
+use nameof::name_of_type;
 use pallas::ledger::primitives::{byron, Fragment};
 use shred::{ResourceId, System, SystemData, World, Write};
 
-use crate::tasks::utils::blake2b256;
+use crate::tasks::{
+    database_task::DatabaseTask,
+    utils::{blake2b256, TaskPerfAggregator},
+};
 
 #[derive(SystemData)]
 pub struct Data<'a> {
@@ -18,17 +24,46 @@ pub struct ByronTransactionTask<'a> {
     pub db_tx: &'a DatabaseTransaction,
     pub block: (&'a byron::Block, &'a BlockModel),
     pub handle: &'a tokio::runtime::Handle,
+    pub perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
+}
+
+impl<'a> ByronTransactionTask<'a> {
+    pub const NAME: &'static str = name_of_type!(ByronTransactionTask);
+    pub const DEPENDENCIES: [&'static str; 0] = [];
+}
+
+impl<'a> DatabaseTask<'a, byron::Block> for ByronTransactionTask<'a> {
+    fn new(
+        db_tx: &'a DatabaseTransaction,
+        block: (&'a byron::Block, &'a BlockModel),
+        handle: &'a tokio::runtime::Handle,
+        perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
+    ) -> Self {
+        Self {
+            db_tx,
+            block,
+            handle,
+            perf_aggregator,
+        }
+    }
 }
 
 impl<'a> System<'a> for ByronTransactionTask<'_> {
     type SystemData = Data<'a>;
 
     fn run(&mut self, mut bundle: Data<'a>) {
+        let time_counter = std::time::Instant::now();
+
         let result = self
             .handle
             .block_on(handle_tx(self.db_tx, self.block))
             .unwrap();
         *bundle.byron_txs = result;
+
+        self.perf_aggregator
+            .lock()
+            .unwrap()
+            .update(Self::NAME, time_counter.elapsed());
     }
 }
 
