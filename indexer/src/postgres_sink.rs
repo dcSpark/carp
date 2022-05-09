@@ -7,10 +7,7 @@ use pallas::ledger::primitives::{
     alonzo::{self},
     Fragment,
 };
-use std::{
-    sync::{Arc, Mutex},
-    time::Duration,
-};
+use std::sync::{Arc, Mutex};
 use tasks::{
     byron::byron_executor::process_byron_block, execution_plan::ExecutionPlan,
     multiera::multiera_executor::process_multiera_block, utils::TaskPerfAggregator,

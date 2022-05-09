@@ -1,11 +1,12 @@
 use crate::utils::TaskPerfAggregator;
+use cardano_multiplatform_lib::genesis::byron::config::GenesisData;
 use entity::{prelude::*, sea_orm::DatabaseTransaction};
 use pallas::ledger::primitives::{alonzo, byron};
 use shred::DispatcherBuilder;
 use std::sync::{Arc, Mutex};
 
 pub type BlockInfo<'a, BlockType> = (
-    &'a str, // cbor
+    &'a str, // cbor. Empty for genesis
     &'a BlockType,
     &'a BlockModel,
 );
@@ -39,9 +40,16 @@ pub trait TaskBuilder<'a, BlockType> {
 
 #[derive(Copy, Clone)]
 pub enum TaskRegistryEntry {
+    Genesis(GenesisTaskRegistryEntry),
     Byron(ByronTaskRegistryEntry),
     Multiera(MultieraTaskRegistryEntry),
 }
+
+#[derive(Copy, Clone)]
+pub struct GenesisTaskRegistryEntry {
+    pub builder: &'static (dyn for<'a> TaskBuilder<'a, GenesisData> + Sync),
+}
+
 #[derive(Copy, Clone)]
 pub struct ByronTaskRegistryEntry {
     pub builder: &'static (dyn for<'a> TaskBuilder<'a, byron::Block> + Sync),

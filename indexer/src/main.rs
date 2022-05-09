@@ -51,6 +51,9 @@ async fn main() -> anyhow::Result<()> {
 
     let postgres_url = std::env::var("DATABASE_URL").expect("env DATABASE_URL not found");
 
+    tracing::info!("Execution plan {}", args.plan);
+    let exec_plan = Arc::new(ExecutionPlan::load_from_file(&args.plan));
+
     tracing::info!("{}", "Connecting to database...");
     let conn = Database::connect(&postgres_url).await?;
 
@@ -60,7 +63,7 @@ async fn main() -> anyhow::Result<()> {
     let intersect = match &setup::get_latest_points(&conn).await? {
         points if points.is_empty() => {
             // insert genesis then fetch points again
-            genesis::process_genesis(&conn, &network).await?;
+            genesis::process_genesis(&conn, &network, exec_plan.clone()).await?;
             // we need a special intersection type when bootstrapping from genesis
             IntersectArg::Origin
         }
@@ -79,9 +82,6 @@ async fn main() -> anyhow::Result<()> {
             }
         }
     };
-
-    tracing::info!("Execution plan {}", args.plan);
-    let exec_plan = Arc::new(ExecutionPlan::load_from_file(&args.plan));
 
     let (handles, input) = setup::oura_bootstrap(intersect, &network, socket)?;
 

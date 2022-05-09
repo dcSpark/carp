@@ -25,7 +25,6 @@ use pallas::ledger::primitives::Fragment;
 
 use super::{
     multiera_address::MultieraAddressTask, multiera_stake_credentials::MultieraStakeCredentialTask,
-    multiera_unused_input::MultieraUnusedInputTask, multiera_used_inputs::MultieraUsedInputTask,
     relation_map::RelationMap,
 };
 
@@ -48,8 +47,6 @@ impl<'a> DatabaseTaskMeta<'a, alonzo::Block> for MultieraTxCredentialRelation<'a
     const DEPENDENCIES: &'static [&'static str] = &[
         name_of_type!(MultieraAddressTask),
         name_of_type!(MultieraStakeCredentialTask),
-        name_of_type!(MultieraUnusedInputTask),
-        name_of_type!(MultieraUsedInputTask),
     ];
 
     fn new(

@@ -38,6 +38,13 @@ pub fn generate(exec_plan: &ExecutionPlan, plan_name: &str) -> Graph {
                         entry.builder.get_dependencies(),
                     );
                 }
+                TaskRegistryEntry::Genesis(entry) => {
+                    add_node(
+                        task_name,
+                        entry.builder.get_name(),
+                        entry.builder.get_dependencies(),
+                    );
+                }
             },
         }
     }

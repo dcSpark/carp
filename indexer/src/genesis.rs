@@ -1,34 +1,24 @@
-use std::fs;
-
 use anyhow::anyhow;
+use std::fs;
+use std::sync::{Arc, Mutex};
 
-use cardano_multiplatform_lib::{
-    address::ByronAddress,
-    genesis::byron::{
-        config::GenesisData,
-        parse::{parse, redeem_pubkey_to_txid},
-    },
-    utils::Value,
-};
-use cryptoxide::blake2b::Blake2b;
-use entity::sea_orm::Iterable;
+use cardano_multiplatform_lib::genesis::byron::{config::GenesisData, parse::parse};
 use entity::{
-    prelude::{
-        Address, AddressActiveModel, BlockActiveModel, Transaction, TransactionActiveModel,
-        TransactionModel, TransactionOutput, TransactionOutputActiveModel,
-    },
-    sea_orm::{
-        ActiveModelTrait, DatabaseConnection, DatabaseTransaction, EntityTrait, Set,
-        TransactionTrait,
-    },
+    prelude::BlockActiveModel,
+    sea_orm::{ActiveModelTrait, DatabaseConnection, DatabaseTransaction, Set, TransactionTrait},
 };
-use futures::future::try_join;
 use migration::DbErr;
+use tasks::utils::TaskPerfAggregator;
+use tasks::{execution_plan::ExecutionPlan, genesis::genesis_executor::process_genesis_block};
 
 const GENESIS_MAINNET: &str = "./genesis/mainnet-byron-genesis.json";
 const GENESIS_TESTNET: &str = "./genesis/testnet-byron-genesis.json";
 
-pub async fn process_genesis(conn: &DatabaseConnection, network: &str) -> anyhow::Result<()> {
+pub async fn process_genesis(
+    conn: &DatabaseConnection,
+    network: &str,
+    exec_plan: Arc<ExecutionPlan>,
+) -> anyhow::Result<()> {
     let genesis_path = match network {
         "mainnet" => GENESIS_MAINNET,
         "testnet" => GENESIS_TESTNET,
@@ -39,6 +29,8 @@ pub async fn process_genesis(conn: &DatabaseConnection, network: &str) -> anyhow
             ))
         }
     };
+
+    let task_perf_aggregator = Arc::new(Mutex::new(TaskPerfAggregator::default()));
 
     tracing::info!("Parsing genesis file...");
     let mut time_counter = std::time::Instant::now();
@@ -53,12 +45,23 @@ pub async fn process_genesis(conn: &DatabaseConnection, network: &str) -> anyhow
     time_counter = std::time::Instant::now();
 
     tracing::info!("Inserting genesis data into database...");
-    conn.transaction(|txn| Box::pin(insert_genesis(txn, genesis_file)))
-        .await?;
+    conn.transaction(|txn| {
+        Box::pin(insert_genesis(
+            txn,
+            genesis_file,
+            exec_plan.clone(),
+            task_perf_aggregator.clone(),
+        ))
+    })
+    .await?;
 
     tracing::info!(
         "Finished inserting genesis data after {:?}",
         time_counter.elapsed()
+    );
+    tracing::trace!(
+        "Genesis task-wise time spent:\n{:#?}",
+        task_perf_aggregator.lock().unwrap()
     );
 
     Ok(())
@@ -67,6 +70,8 @@ pub async fn process_genesis(conn: &DatabaseConnection, network: &str) -> anyhow
 pub async fn insert_genesis(
     txn: &DatabaseTransaction,
     genesis_file: Box<GenesisData>,
+    exec_plan: Arc<ExecutionPlan>,
+    task_perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
 ) -> Result<(), DbErr> {
     let genesis_hash = genesis_file.genesis_prev.to_bytes();
     tracing::info!(
@@ -87,122 +92,13 @@ pub async fn insert_genesis(
 
     let block = block.insert(txn).await?;
 
-    // note: avvm added before non-avvm
-    // https://github.com/input-output-hk/cardano-ledger/blob/ac51494e151af0ad99b937a787458ce71db0aaea/eras/byron/ledger/impl/src/Cardano/Chain/UTxO/GenesisUTxO.hs#L21
-
-    let mut transactions: Vec<TransactionActiveModel> = vec![];
-    // note: genesis file is a JSON structure, so there shouldn't be duplicate addresses
-    // even across avvm and non-avvm it should be unique, otherwise two txs with the same tx hash would exist
-    let mut addresses: Vec<AddressActiveModel> = vec![];
-    let mut outputs: Vec<cardano_multiplatform_lib::TransactionOutput> = vec![];
-
-    for (pub_key, amount) in genesis_file.avvm_distr.iter() {
-        let (tx_hash, extended_addr) =
-            redeem_pubkey_to_txid(pub_key, Some(genesis_file.protocol_magic));
-        let byron_addr =
-            ByronAddress::from_bytes(extended_addr.to_address().as_ref().to_vec()).unwrap();
-
-        transactions.push(TransactionActiveModel {
-            block_id: Set(block.id),
-            hash: Set(tx_hash.to_bytes().to_vec()),
-            is_valid: Set(true),
-            payload: Set(byron_addr.to_bytes()),
-            // note: strictly speaking, genesis txs are unordered so there is no defined index
-            tx_index: Set(transactions.len() as i32),
-            ..Default::default()
-        });
-
-        addresses.push(AddressActiveModel {
-            payload: Set(byron_addr.to_bytes()),
-            ..Default::default()
-        });
-
-        // TODO: this is actually wrong. CML uses the Shelley format, but this should be the Byron format
-        outputs.push(cardano_multiplatform_lib::TransactionOutput::new(
-            &byron_addr.to_address(),
-            &Value::new(amount),
-        ));
-    }
-
-    // note: empty on mainnet
-    for (addr, amount) in genesis_file.non_avvm_balances.iter() {
-        let byron_addr = ByronAddress::from_bytes(addr.as_ref().to_vec()).unwrap();
-
-        let tx_hash = blake2b256(addr.as_ref());
-
-        // println!("{}", amount.to_str());
-        // println!("{}", byron_addr.to_base58());
-        // println!("{}", hex::encode(tx_hash));
-
-        transactions.push(TransactionActiveModel {
-            block_id: Set(block.id),
-            hash: Set(tx_hash.to_vec()),
-            is_valid: Set(true),
-            payload: Set(byron_addr.to_bytes()),
-            // note: strictly speaking, genesis txs are unordered so there is no defined index
-            tx_index: Set(transactions.len() as i32),
-            ..Default::default()
-        });
-
-        addresses.push(AddressActiveModel {
-            payload: Set(byron_addr.to_bytes()),
-            ..Default::default()
-        });
-
-        // TODO: this is actually wrong. CML uses the Shelley format, but this should be the Byron format
-        outputs.push(cardano_multiplatform_lib::TransactionOutput::new(
-            &byron_addr.to_address(),
-            &Value::new(amount),
-        ));
-    }
-
-    let (inserted_txs, inserted_addresses) = try_join(
-        bulk_insert_txs(txn, &transactions),
-        Address::insert_many(addresses).exec_many_with_returning(txn),
+    process_genesis_block(
+        txn,
+        (&"", &genesis_file, &block),
+        &exec_plan,
+        task_perf_aggregator.clone(),
     )
     .await?;
 
-    let outputs_to_add =
-        inserted_txs
-            .iter()
-            .zip(inserted_addresses)
-            .enumerate()
-            .map(|(i, (tx, addr))| TransactionOutputActiveModel {
-                address_id: Set(addr.id),
-                tx_id: Set(tx.id),
-                payload: Set(outputs[i].to_bytes()),
-                // recall: genesis txs are hashes of addresses
-                // so all txs have a single output
-                output_index: Set(0),
-                ..Default::default()
-            });
-    TransactionOutput::insert_many(outputs_to_add)
-        .exec_many_with_returning(txn)
-        .await?;
-
     Ok(())
-}
-
-// https://github.com/SeaQL/sea-orm/issues/691
-async fn bulk_insert_txs(
-    txn: &DatabaseTransaction,
-    transactions: &[TransactionActiveModel],
-) -> Result<Vec<TransactionModel>, DbErr> {
-    let mut result: Vec<TransactionModel> = vec![];
-    for chunk in transactions
-        .chunks((u16::MAX / <Transaction as EntityTrait>::Column::iter().count() as u16) as usize)
-    {
-        result.extend(
-            Transaction::insert_many(chunk.to_vec())
-                .exec_many_with_returning(txn)
-                .await?,
-        );
-    }
-    Ok(result)
-}
-
-pub fn blake2b256(data: &[u8]) -> [u8; 32] {
-    let mut out = [0; 32];
-    Blake2b::blake2b(&mut out, data, &[]);
-    out
 }
