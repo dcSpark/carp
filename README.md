@@ -1,4 +1,4 @@
-# Oura Postgres Sink
+# Carp (Cardano Postges Indexer)
 
 Syncs Cardano blockchain information a Postgres database.
 
@@ -36,6 +36,6 @@ This project contains two different parts to it:
 
 You may also be interested in:
 
-1. The webserver [swagger API](https://dcspark.github.io/oura-postgres-sink/#/)
+1. The webserver [swagger API](https://dcspark.github.io/carp/#/)
 2. The [generated SQL](./webserver/server/bin/schema.sql) if you want to run your own queries
 3. A [visualization](./webserver/server/bin/graph.png) of the generated SQL

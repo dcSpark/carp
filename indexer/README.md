@@ -1,6 +1,6 @@
-# oura-postgres-sink Indexer
+# Carp Indexer
 
-`cargo run` will start oura-postgres-sink.
+`cargo run` will start Carp.
 
 ## Database setup
 
@@ -8,10 +8,10 @@ This repo, by default, is setup to work with a local node. If you want to run on
 
 Note: steps assume mainnet
 
-1. `sudo -u postgres createdb oura_postgres_mainnet`
-1. `sudo -u postgres psql -c 'ALTER DATABASE oura_postgres_mainnet SET jit_above_cost = -1;'`
-1. `sudo -u postgres createuser oura`
-1. `sudo -u postgres psql -c "\password oura"`
+1. `sudo -u postgres createdb carp_mainnet`
+1. `sudo -u postgres psql -c 'ALTER DATABASE carp_mainnet SET jit_above_cost = -1;'`
+1. `sudo -u postgres createuser carp`
+1. `sudo -u postgres psql -c "\password carp"`
 1. Add your database name & user password to `secrets/.pgpass`
 1. `chmod 600 secrets/.pgpass`
 1. Modify the env variables in `.env` if needed (ex: connecting to local node instead of remote)

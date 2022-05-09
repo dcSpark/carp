@@ -395,6 +395,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "carp"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "base64",
+ "bs58",
+ "cardano-multiplatform-lib",
+ "clap 3.1.8",
+ "cryptoxide",
+ "dotenv",
+ "entity",
+ "hex",
+ "migration",
+ "oura",
+ "pallas",
+ "serde",
+ "serde_json",
+ "tasks",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "cbor_event"
 version = "2.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1454,30 +1478,6 @@ dependencies = [
  "serde_json",
  "strum",
  "strum_macros",
-]
-
-[[package]]
-name = "oura-postgres-sink"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "base64",
- "bs58",
- "cardano-multiplatform-lib",
- "clap 3.1.8",
- "cryptoxide",
- "dotenv",
- "entity",
- "hex",
- "migration",
- "oura",
- "pallas",
- "serde",
- "serde_json",
- "tasks",
- "tokio",
- "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]

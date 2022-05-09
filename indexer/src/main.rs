@@ -32,7 +32,7 @@ async fn main() -> anyhow::Result<()> {
         // sqlx logs every SQL query and how long it took which is very noisy
         .with_target("sqlx", tracing::Level::WARN)
         .with_target("oura", tracing::Level::WARN)
-        .with_target("oura_postgres_sink", tracing::Level::TRACE)
+        .with_target("carp", tracing::Level::TRACE)
         .with_default(tracing_subscriber::fmt::Subscriber::DEFAULT_MAX_LEVEL);
 
     tracing_subscriber::registry()
@@ -41,7 +41,7 @@ async fn main() -> anyhow::Result<()> {
         .init();
     // End logging setup block
 
-    tracing::info!("{}", "Starting oura-postgres-sink");
+    tracing::info!("{}", "Starting Carp");
 
     dotenv().ok();
     let args = Args::parse();

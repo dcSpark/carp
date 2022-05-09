@@ -2,7 +2,7 @@
 members = [".", "entity", "migration", "rollback", "reparse", "tasks", "plan-visualizer"]
 
 [package]
-name = "oura-postgres-sink"
+name = "carp"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"

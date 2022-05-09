@@ -21,7 +21,7 @@ async fn main() -> anyhow::Result<()> {
         .init();
     // End logging setup block
 
-    tracing::info!("{}", "Starting oura-postgres-sink reparse");
+    tracing::info!("{}", "Starting Carp reparse");
 
     dotenv().ok();
 

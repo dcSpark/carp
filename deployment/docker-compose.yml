@@ -35,13 +35,13 @@ services:
         max-size: "200k"
         max-file: "10"
 
-  oura-postgres-sink:
+  carp:
     restart: unless-stopped
 
     build:
       context: ../
       dockerfile: Dockerfile
-      target: oura-postgres-sink
+      target: carp
       args:
         - APP=/app
     environment:
@@ -57,7 +57,7 @@ services:
       - -c
       - |
         /app/migration up ;
-        /app/oura-postgres-sink ;
+        /app/carp ;
     depends_on:
       - postgres
       - cardano-node
@@ -67,8 +67,6 @@ services:
         max-size: "1m"
         max-file: "10"
 
-
 secrets:
   pgpass:
     file: ./config/secrets/${NETWORK:-testnet}/.pgpass
-
