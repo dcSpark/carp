@@ -6,8 +6,8 @@ use serde::{Deserialize, Serialize};
 pub struct Model {
     #[sea_orm(primary_key, column_type = "BigInteger")]
     pub tx_id: i64,
-    #[sea_orm(primary_key, column_type = "BigUnsigned")]
-    pub label: u64,
+    #[sea_orm(primary_key)]
+    pub label: Vec<u8>, // little-endian u64 ([u8; 8]) (https://github.com/launchbadge/sqlx/issues/1374)
     pub payload: Vec<u8>,
 }
 

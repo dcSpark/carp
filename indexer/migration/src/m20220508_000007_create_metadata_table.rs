@@ -27,7 +27,7 @@ impl MigrationTrait for Migration {
                             .to(Transaction, TransactionColumn::Id)
                             .on_delete(ForeignKeyAction::Cascade),
                     )
-                    .col(ColumnDef::new(Column::Label).big_unsigned().not_null())
+                    .col(ColumnDef::new(Column::Label).binary().not_null())
                     .col(
                         ColumnDef::new(Column::Payload)
                             .binary()

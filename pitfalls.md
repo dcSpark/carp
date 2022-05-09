@@ -7,6 +7,7 @@
   - Transactions don't contain any transaction body. Instead, the address is the transaction in a sense and the transaction hash is just the has of the address.
 - We store StakeCredentials and not key hashes. StakeCredentials are defined in the Cardano CDDL as a hash and a tag the defines what kind of hash it is (ex: key hash or script hash)
 - Transactions can fail on-chain in Cardano. Whether or not the transaction was valid is stored in the Transaction table. The TransactionInput table contains the input which was consumed (which depends on whether or not the transaction failed)
+- Transaction metadata labels are stored as a byte array because u64 is [not supported in sqlx](https://github.com/launchbadge/sqlx/issues/1374)
 
 # Risks with using this codebase:
 

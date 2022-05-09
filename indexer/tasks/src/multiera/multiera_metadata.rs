@@ -139,7 +139,7 @@ async fn handle_metadata(
             .map(
                 |((label, metadata), tx_id)| TransactionMetadataActiveModel {
                     tx_id: Set(*tx_id),
-                    label: Set(u64::from(label)),
+                    label: Set(u64::from(label).to_le_bytes().to_vec()),
                     payload: Set(metadata.encode_fragment().unwrap()),
                 },
             ),
