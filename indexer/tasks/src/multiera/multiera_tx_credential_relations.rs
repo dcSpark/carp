@@ -35,15 +35,15 @@ pub struct Data<'a> {
     vkey_relation_map: Write<'a, RelationMap>,
 }
 
-pub struct MultieraTxCredentialRelation<'a> {
+pub struct MultieraTxCredentialRelationTask<'a> {
     pub db_tx: &'a DatabaseTransaction,
     pub block: BlockInfo<'a, alonzo::Block>,
     pub handle: &'a tokio::runtime::Handle,
     pub perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
 }
 
-impl<'a> DatabaseTaskMeta<'a, alonzo::Block> for MultieraTxCredentialRelation<'a> {
-    const TASK_NAME: &'static str = name_of_type!(MultieraTxCredentialRelation);
+impl<'a> DatabaseTaskMeta<'a, alonzo::Block> for MultieraTxCredentialRelationTask<'a> {
+    const TASK_NAME: &'static str = name_of_type!(MultieraTxCredentialRelationTask);
     const DEPENDENCIES: &'static [&'static str] = &[
         name_of_type!(MultieraAddressTask),
         name_of_type!(MultieraStakeCredentialTask),
@@ -64,13 +64,13 @@ impl<'a> DatabaseTaskMeta<'a, alonzo::Block> for MultieraTxCredentialRelation<'a
     }
 }
 
-struct MultieraTxCredentialRelationBuilder;
-impl<'a> TaskBuilder<'a, alonzo::Block> for MultieraTxCredentialRelationBuilder {
+struct MultieraTxCredentialRelationTaskBuilder;
+impl<'a> TaskBuilder<'a, alonzo::Block> for MultieraTxCredentialRelationTaskBuilder {
     fn get_name(&self) -> &'static str {
-        MultieraTxCredentialRelation::TASK_NAME
+        MultieraTxCredentialRelationTask::TASK_NAME
     }
     fn get_dependencies(&self) -> &'static [&'static str] {
-        MultieraTxCredentialRelation::DEPENDENCIES
+        MultieraTxCredentialRelationTask::DEPENDENCIES
     }
 
     fn add_task<'c>(
@@ -82,16 +82,16 @@ impl<'a> TaskBuilder<'a, alonzo::Block> for MultieraTxCredentialRelationBuilder 
         perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
         _properties: &ini::Properties,
     ) {
-        let task = MultieraTxCredentialRelation::new(db_tx, block, handle, perf_aggregator);
+        let task = MultieraTxCredentialRelationTask::new(db_tx, block, handle, perf_aggregator);
         dispatcher_builder.add(task, self.get_name(), self.get_dependencies());
     }
 }
 
 inventory::submit! {
-    TaskRegistryEntry::Multiera(MultieraTaskRegistryEntry { builder: &MultieraTxCredentialRelationBuilder })
+    TaskRegistryEntry::Multiera(MultieraTaskRegistryEntry { builder: &MultieraTxCredentialRelationTaskBuilder })
 }
 
-impl<'a> System<'a> for MultieraTxCredentialRelation<'_> {
+impl<'a> System<'a> for MultieraTxCredentialRelationTask<'_> {
     type SystemData = Data<'a>;
 
     fn run(&mut self, mut bundle: Data<'a>) {

@@ -33,15 +33,15 @@ pub struct Data<'a> {
     multiera_addresses: Read<'a, BTreeMap<Vec<u8>, AddressInBlock>>,
 }
 
-pub struct MultieraAddressCredentialRelation<'a> {
+pub struct MultieraAddressCredentialRelationTask<'a> {
     pub db_tx: &'a DatabaseTransaction,
     pub block: BlockInfo<'a, alonzo::Block>,
     pub handle: &'a tokio::runtime::Handle,
     pub perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
 }
 
-impl<'a> DatabaseTaskMeta<'a, alonzo::Block> for MultieraAddressCredentialRelation<'a> {
-    const TASK_NAME: &'static str = name_of_type!(MultieraAddressCredentialRelation);
+impl<'a> DatabaseTaskMeta<'a, alonzo::Block> for MultieraAddressCredentialRelationTask<'a> {
+    const TASK_NAME: &'static str = name_of_type!(MultieraAddressCredentialRelationTask);
     const DEPENDENCIES: &'static [&'static str] = &[
         name_of_type!(MultieraAddressTask),
         name_of_type!(MultieraStakeCredentialTask),
@@ -62,13 +62,13 @@ impl<'a> DatabaseTaskMeta<'a, alonzo::Block> for MultieraAddressCredentialRelati
     }
 }
 
-struct MultieraAddressCredentialRelationTaskBuilder;
-impl<'a> TaskBuilder<'a, alonzo::Block> for MultieraAddressCredentialRelationTaskBuilder {
+struct MultieraAddressCredentialRelationTaskTaskBuilder;
+impl<'a> TaskBuilder<'a, alonzo::Block> for MultieraAddressCredentialRelationTaskTaskBuilder {
     fn get_name(&self) -> &'static str {
-        MultieraAddressCredentialRelation::TASK_NAME
+        MultieraAddressCredentialRelationTask::TASK_NAME
     }
     fn get_dependencies(&self) -> &'static [&'static str] {
-        MultieraAddressCredentialRelation::DEPENDENCIES
+        MultieraAddressCredentialRelationTask::DEPENDENCIES
     }
 
     fn add_task<'c>(
@@ -80,16 +80,17 @@ impl<'a> TaskBuilder<'a, alonzo::Block> for MultieraAddressCredentialRelationTas
         perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
         _properties: &ini::Properties,
     ) {
-        let task = MultieraAddressCredentialRelation::new(db_tx, block, handle, perf_aggregator);
+        let task =
+            MultieraAddressCredentialRelationTask::new(db_tx, block, handle, perf_aggregator);
         dispatcher_builder.add(task, self.get_name(), self.get_dependencies());
     }
 }
 
 inventory::submit! {
-    TaskRegistryEntry::Multiera(MultieraTaskRegistryEntry { builder: &MultieraAddressCredentialRelationTaskBuilder })
+    TaskRegistryEntry::Multiera(MultieraTaskRegistryEntry { builder: &MultieraAddressCredentialRelationTaskTaskBuilder })
 }
 
-impl<'a> System<'a> for MultieraAddressCredentialRelation<'_> {
+impl<'a> System<'a> for MultieraAddressCredentialRelationTask<'_> {
     type SystemData = Data<'a>;
 
     fn run(&mut self, bundle: Data<'a>) {
