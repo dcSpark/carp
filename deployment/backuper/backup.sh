@@ -22,9 +22,11 @@ fi
 
 if [[ "${CURRENT_EPOCH}" -gt "${LAST_BACKUP_EPOCH}" ]]; then
     # Password is in env variable PGPASSFILE
-    pg_dumpall \
+    pg_dump \
         -h postgres \
-        -U postgres > backup_${CURRENT_EPOCH}.sql
+        -U ${POSTGRES_USER:-oura} \
+        -d ${POSTGRES_DB:-cardano} \
+        > backup_${CURRENT_EPOCH}.sql
 
     s3cmd put backup_${CURRENT_EPOCH}.sql s3://${S3_BUCKET}/${S3_FOLDER}/
     rm -rf backup_${CURRENT_EPOCH}.sql

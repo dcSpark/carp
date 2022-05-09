@@ -51,6 +51,7 @@ services:
       - SOCKET=/app/node-ipc/node.socket
       - PGPASSFILE=/run/secrets/.pgpass
       - DATABASE_URL=postgresql://oura:ouradb@postgres:5432/cardano
+      - RUST_BACKTRACE=full
     secrets:
       - pgpass
     volumes:
@@ -83,11 +84,14 @@ services:
     - POSTGRES_DB=cardano
     - PGPASSFILE=/run/secrets/.pgpass
     - S3_BUCKET=${S3_BUCKET:?Please set me}
-    - S3_FOLDER=${S3_BUCKET:?Recommend as hostname}
+    - S3_FOLDER=${S3_FOLDER:?Recommend as hostname}
     - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:?Please set me}
-    - AWS_SECRET_ACCESS_KEY=${AWS_ACCESS_KEY_ID:?Please set me}
+    - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:?Please set me}
+    volumes:
+    - ./${NETWORK:-testnet}/node-ipc:/app/node-ipc:rw
     secrets:
-    - pgpass
+    - source: pgpass
+      target: .pgpass
     logging:
       driver: "json-file"
       options:
