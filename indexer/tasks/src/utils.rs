@@ -23,7 +23,10 @@ impl TaskPerfAggregator {
     }
 
     pub fn get_total(&mut self) -> Duration {
-        *self.0.get(TaskPerfAggregator::TOTAL_TIME).unwrap()
+        self.0
+            .get(TaskPerfAggregator::TOTAL_TIME)
+            .copied()
+            .unwrap_or_else(|| Duration::new(0, 0))
     }
     pub fn add_to_total(&mut self, duration: &Duration) {
         self.0.insert(TaskPerfAggregator::TOTAL_TIME, *duration);
