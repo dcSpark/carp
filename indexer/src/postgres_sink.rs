@@ -65,11 +65,8 @@ impl<'a> Config<'a> {
                                 );
 
                                 tracing::trace!(
-                                    "Epoch non-task time spent:\n{:#?}",
-                                    perf_aggregator
-                                );
-                                tracing::trace!(
-                                    "Epoch task-wise time spent:\n{:#?}",
+                                    "Epoch non-task time spent:\n{:#?}\nEpoch task-wise time spent:\n{:#?}",
+                                    perf_aggregator,
                                     task_perf_aggregator.lock().unwrap()
                                 );
                             }
