@@ -22,6 +22,8 @@ Note: steps assume mainnet
 
 `cargo run -- --plan execution_plans/default.ini`
 
+Note: you can visualize the execution plan using `cargo plan-visualizer --plan execution_plans/default.ini`
+
 # IDE setup
 
 1. Install `rust-analyzer`
