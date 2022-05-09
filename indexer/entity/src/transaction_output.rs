@@ -28,7 +28,7 @@ pub enum Relation {
         to = "super::transaction::Column::Id"
     )]
     Transaction,
-    #[sea_orm(has_many = "super::transaction_input::Entity")]
+    #[sea_orm(has_one = "super::transaction_input::Entity")]
     TransactionInput,
 }
 

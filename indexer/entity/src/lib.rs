@@ -8,3 +8,4 @@ pub mod transaction_input;
 pub mod transaction_output;
 pub mod tx_credential;
 pub use sea_orm;
+pub mod transaction_metadata;

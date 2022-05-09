@@ -26,6 +26,11 @@ pub use super::transaction_input::{
     Entity as TransactionInput, Model as TransactionInputModel,
     PrimaryKey as TransactionInputPrimaryKey, Relation as TransactionInputRelation,
 };
+pub use super::transaction_metadata::{
+    ActiveModel as TransactionMetadataActiveModel, Column as TransactionMetadataColumn,
+    Entity as TransactionMetadata, Model as TransactionMetadataModel,
+    PrimaryKey as TransactionMetadataPrimaryKey, Relation as TransactionMetadataRelation,
+};
 pub use super::transaction_output::{
     ActiveModel as TransactionOutputActiveModel, Column as TransactionOutputColumn,
     Entity as TransactionOutput, Model as TransactionOutputModel,
