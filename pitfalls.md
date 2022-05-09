@@ -13,6 +13,7 @@
 
 - Project does not currently store any off-chain information
 - Project does not store ledger state (ex: reward history)
+- Only provides CBOR and not parsed data (so this project isn't useful for languages that don't have a good implementation of Cardano's binary specification)
 
 # Risks with using this codebase:
 
