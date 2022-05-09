@@ -9,6 +9,11 @@
 - Transactions can fail on-chain in Cardano. Whether or not the transaction was valid is stored in the Transaction table. The TransactionInput table contains the input which was consumed (which depends on whether or not the transaction failed)
 - Transaction metadata labels are stored as a byte array because u64 is [not supported in sqlx](https://github.com/launchbadge/sqlx/issues/1374)
 
+# Limitations
+
+- Project does not currently store any off-chain information
+- Project does not store ledger state (ex: reward history)
+
 # Risks with using this codebase:
 
 - **Missing functionality in binary data parsing libraries**: This codebase parses raw CBOR (binary data) from the Cardano blockchain using two libraries: Pallas and CML. It has happened in the past that one of these libraries is missing some feature of the Cardano blockchain which could cause Carp to fail if these ever appear on-chain
