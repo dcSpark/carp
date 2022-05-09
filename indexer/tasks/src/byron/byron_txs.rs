@@ -10,7 +10,7 @@ use nameof::name_of_type;
 use pallas::ledger::primitives::{byron, Fragment};
 use shred::{DispatcherBuilder, ResourceId, System, SystemData, World, Write};
 
-use crate::tasks::{
+use crate::{
     database_task::{
         BlockInfo, ByronTaskRegistryEntry, DatabaseTaskMeta, TaskBuilder, TaskRegistryEntry,
     },
@@ -50,10 +50,10 @@ impl<'a> DatabaseTaskMeta<'a, byron::Block> for ByronTransactionTask<'a> {
 
 struct ByronTransactionTaskBuilder;
 impl<'a> TaskBuilder<'a, byron::Block> for ByronTransactionTaskBuilder {
-    fn get_name() -> &'static str {
+    fn get_name(&self) -> &'static str {
         ByronTransactionTask::TASK_NAME
     }
-    fn get_dependencies() -> &'static [&'static str] {
+    fn get_dependencies(&self) -> &'static [&'static str] {
         ByronTransactionTask::DEPENDENCIES
     }
 
@@ -67,12 +67,12 @@ impl<'a> TaskBuilder<'a, byron::Block> for ByronTransactionTaskBuilder {
         _properties: &ini::Properties,
     ) {
         let task = ByronTransactionTask::new(db_tx, block, handle, perf_aggregator);
-        dispatcher_builder.add(task, Self::get_name(), Self::get_dependencies());
+        dispatcher_builder.add(task, self.get_name(), self.get_dependencies());
     }
 }
 
 inventory::submit! {
-    TaskRegistryEntry::Byron(ByronTaskRegistryEntry {name: ByronTransactionTask::TASK_NAME, builder: &ByronTransactionTaskBuilder })
+    TaskRegistryEntry::Byron(ByronTaskRegistryEntry { builder: &ByronTransactionTaskBuilder })
 }
 
 impl<'a> System<'a> for ByronTransactionTask<'_> {

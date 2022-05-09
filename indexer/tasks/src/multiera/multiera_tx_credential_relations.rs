@@ -15,20 +15,18 @@ use pallas::ledger::primitives::alonzo::{self, TransactionBodyComponent};
 use shred::{DispatcherBuilder, Read, ResourceId, System, SystemData, World, Write};
 
 use crate::{
-    relation_map::RelationMap,
-    tasks::{
-        database_task::{
-            BlockInfo, DatabaseTaskMeta, MultieraTaskRegistryEntry, TaskBuilder, TaskRegistryEntry,
-        },
-        utils::TaskPerfAggregator,
+    database_task::{
+        BlockInfo, DatabaseTaskMeta, MultieraTaskRegistryEntry, TaskBuilder, TaskRegistryEntry,
     },
     types::TxCredentialRelationValue,
+    utils::TaskPerfAggregator,
 };
 use pallas::ledger::primitives::Fragment;
 
 use super::{
     multiera_address::MultieraAddressTask, multiera_stake_credentials::MultieraStakeCredentialTask,
     multiera_unused_input::MultieraUnusedInputTask, multiera_used_inputs::MultieraUsedInputTask,
+    relation_map::RelationMap,
 };
 
 #[derive(SystemData)]
@@ -71,10 +69,10 @@ impl<'a> DatabaseTaskMeta<'a, alonzo::Block> for MultieraTxCredentialRelation<'a
 
 struct MultieraTxCredentialRelationBuilder;
 impl<'a> TaskBuilder<'a, alonzo::Block> for MultieraTxCredentialRelationBuilder {
-    fn get_name() -> &'static str {
+    fn get_name(&self) -> &'static str {
         MultieraTxCredentialRelation::TASK_NAME
     }
-    fn get_dependencies() -> &'static [&'static str] {
+    fn get_dependencies(&self) -> &'static [&'static str] {
         MultieraTxCredentialRelation::DEPENDENCIES
     }
 
@@ -88,12 +86,12 @@ impl<'a> TaskBuilder<'a, alonzo::Block> for MultieraTxCredentialRelationBuilder 
         _properties: &ini::Properties,
     ) {
         let task = MultieraTxCredentialRelation::new(db_tx, block, handle, perf_aggregator);
-        dispatcher_builder.add(task, Self::get_name(), Self::get_dependencies());
+        dispatcher_builder.add(task, self.get_name(), self.get_dependencies());
     }
 }
 
 inventory::submit! {
-    TaskRegistryEntry::Multiera(MultieraTaskRegistryEntry {name: MultieraTxCredentialRelation::TASK_NAME, builder: &MultieraTxCredentialRelationBuilder })
+    TaskRegistryEntry::Multiera(MultieraTaskRegistryEntry { builder: &MultieraTxCredentialRelationBuilder })
 }
 
 impl<'a> System<'a> for MultieraTxCredentialRelation<'_> {

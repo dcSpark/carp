@@ -17,17 +17,14 @@ use pallas::ledger::primitives::alonzo::{self, TransactionBodyComponent};
 use shred::{DispatcherBuilder, Read, ResourceId, System, SystemData, World, Write};
 
 use crate::{
-    relation_map::RelationMap,
-    tasks::{
-        database_task::{
-            BlockInfo, DatabaseTaskMeta, MultieraTaskRegistryEntry, TaskBuilder, TaskRegistryEntry,
-        },
-        utils::TaskPerfAggregator,
+    database_task::{
+        BlockInfo, DatabaseTaskMeta, MultieraTaskRegistryEntry, TaskBuilder, TaskRegistryEntry,
     },
     types::TxCredentialRelationValue,
+    utils::TaskPerfAggregator,
 };
 
-use super::multiera_outputs::MultieraOutputTask;
+use super::{multiera_outputs::MultieraOutputTask, relation_map::RelationMap};
 
 #[derive(SystemData)]
 pub struct Data<'a> {
@@ -65,10 +62,10 @@ impl<'a> DatabaseTaskMeta<'a, alonzo::Block> for MultieraUsedInputTask<'a> {
 
 struct MultieraUsedInputTaskBuilder;
 impl<'a> TaskBuilder<'a, alonzo::Block> for MultieraUsedInputTaskBuilder {
-    fn get_name() -> &'static str {
+    fn get_name(&self) -> &'static str {
         MultieraUsedInputTask::TASK_NAME
     }
-    fn get_dependencies() -> &'static [&'static str] {
+    fn get_dependencies(&self) -> &'static [&'static str] {
         MultieraUsedInputTask::DEPENDENCIES
     }
 
@@ -82,12 +79,12 @@ impl<'a> TaskBuilder<'a, alonzo::Block> for MultieraUsedInputTaskBuilder {
         _properties: &ini::Properties,
     ) {
         let task = MultieraUsedInputTask::new(db_tx, block, handle, perf_aggregator);
-        dispatcher_builder.add(task, Self::get_name(), Self::get_dependencies());
+        dispatcher_builder.add(task, self.get_name(), self.get_dependencies());
     }
 }
 
 inventory::submit! {
-    TaskRegistryEntry::Multiera(MultieraTaskRegistryEntry {name: MultieraUsedInputTask::TASK_NAME, builder: &MultieraUsedInputTaskBuilder })
+    TaskRegistryEntry::Multiera(MultieraTaskRegistryEntry { builder: &MultieraUsedInputTaskBuilder })
 }
 
 impl<'a> System<'a> for MultieraUsedInputTask<'_> {
@@ -147,9 +144,9 @@ async fn handle_input(
         true => Ok(vec![]),
         false => {
             let outputs_for_inputs =
-                crate::tasks::era_common::get_outputs_for_inputs(&queued_inputs, db_tx).await?;
+                crate::era_common::get_outputs_for_inputs(&queued_inputs, db_tx).await?;
             let input_to_output_map =
-                crate::tasks::era_common::gen_input_to_output_map(&outputs_for_inputs);
+                crate::era_common::gen_input_to_output_map(&outputs_for_inputs);
 
             add_input_relations(
                 vkey_relation_map,
@@ -162,12 +159,8 @@ async fn handle_input(
                 &input_to_output_map,
             );
             Ok(
-                crate::tasks::era_common::insert_inputs(
-                    &queued_inputs,
-                    &input_to_output_map,
-                    db_tx,
-                )
-                .await?,
+                crate::era_common::insert_inputs(&queued_inputs, &input_to_output_map, db_tx)
+                    .await?,
             )
         }
     }

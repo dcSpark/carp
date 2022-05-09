@@ -11,7 +11,7 @@ use pallas::ledger::primitives::alonzo::{self};
 use pallas::ledger::primitives::Fragment;
 use shred::{DispatcherBuilder, ResourceId, System, SystemData, World, Write};
 
-use crate::tasks::{
+use crate::{
     database_task::{
         BlockInfo, DatabaseTaskMeta, MultieraTaskRegistryEntry, TaskBuilder, TaskRegistryEntry,
     },
@@ -51,10 +51,10 @@ impl<'a> DatabaseTaskMeta<'a, alonzo::Block> for MultieraTransactionTask<'a> {
 
 struct MultieraTransactionTaskBuilder;
 impl<'a> TaskBuilder<'a, alonzo::Block> for MultieraTransactionTaskBuilder {
-    fn get_name() -> &'static str {
+    fn get_name(&self) -> &'static str {
         MultieraTransactionTask::TASK_NAME
     }
-    fn get_dependencies() -> &'static [&'static str] {
+    fn get_dependencies(&self) -> &'static [&'static str] {
         MultieraTransactionTask::DEPENDENCIES
     }
 
@@ -68,12 +68,12 @@ impl<'a> TaskBuilder<'a, alonzo::Block> for MultieraTransactionTaskBuilder {
         _properties: &ini::Properties,
     ) {
         let task = MultieraTransactionTask::new(db_tx, block, handle, perf_aggregator);
-        dispatcher_builder.add(task, Self::get_name(), Self::get_dependencies());
+        dispatcher_builder.add(task, self.get_name(), self.get_dependencies());
     }
 }
 
 inventory::submit! {
-    TaskRegistryEntry::Multiera(MultieraTaskRegistryEntry {name: MultieraTransactionTask::TASK_NAME, builder: &MultieraTransactionTaskBuilder })
+    TaskRegistryEntry::Multiera(MultieraTaskRegistryEntry { builder: &MultieraTransactionTaskBuilder })
 }
 
 impl<'a> System<'a> for MultieraTransactionTask<'_> {

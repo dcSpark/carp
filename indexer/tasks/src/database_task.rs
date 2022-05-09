@@ -1,4 +1,4 @@
-use crate::tasks::utils::TaskPerfAggregator;
+use crate::utils::TaskPerfAggregator;
 use entity::{prelude::*, sea_orm::DatabaseTransaction};
 use pallas::ledger::primitives::{alonzo, byron};
 use shred::DispatcherBuilder;
@@ -23,12 +23,8 @@ pub trait DatabaseTaskMeta<'a, BlockType> {
 }
 
 pub trait TaskBuilder<'a, BlockType> {
-    fn get_name() -> &'static str
-    where
-        Self: Sized;
-    fn get_dependencies() -> &'static [&'static str]
-    where
-        Self: Sized;
+    fn get_name(&self) -> &'static str;
+    fn get_dependencies(&self) -> &'static [&'static str];
 
     fn add_task<'c>(
         &self,
@@ -48,13 +44,11 @@ pub enum TaskRegistryEntry {
 }
 #[derive(Copy, Clone)]
 pub struct ByronTaskRegistryEntry {
-    pub name: &'static str,
     pub builder: &'static (dyn for<'a> TaskBuilder<'a, byron::Block> + Sync),
 }
 
 #[derive(Copy, Clone)]
 pub struct MultieraTaskRegistryEntry {
-    pub name: &'static str,
     pub builder: &'static (dyn for<'a> TaskBuilder<'a, alonzo::Block> + Sync),
 }
 

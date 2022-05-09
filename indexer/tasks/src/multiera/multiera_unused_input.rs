@@ -11,16 +11,16 @@ use pallas::ledger::primitives::alonzo::{self, TransactionBodyComponent};
 use shred::{DispatcherBuilder, Read, ResourceId, System, SystemData, World, Write};
 
 use crate::{
-    relation_map::RelationMap,
-    tasks::{
-        database_task::{
-            BlockInfo, DatabaseTaskMeta, MultieraTaskRegistryEntry, TaskBuilder, TaskRegistryEntry,
-        },
-        utils::TaskPerfAggregator,
+    database_task::{
+        BlockInfo, DatabaseTaskMeta, MultieraTaskRegistryEntry, TaskBuilder, TaskRegistryEntry,
     },
+    utils::TaskPerfAggregator,
 };
 
-use super::{multiera_outputs::MultieraOutputTask, multiera_used_inputs::add_input_relations};
+use super::{
+    multiera_outputs::MultieraOutputTask, multiera_used_inputs::add_input_relations,
+    relation_map::RelationMap,
+};
 
 #[derive(SystemData)]
 pub struct Data<'a> {
@@ -57,10 +57,10 @@ impl<'a> DatabaseTaskMeta<'a, alonzo::Block> for MultieraUnusedInputTask<'a> {
 
 struct MultieraUnusedInputTaskBuilder;
 impl<'a> TaskBuilder<'a, alonzo::Block> for MultieraUnusedInputTaskBuilder {
-    fn get_name() -> &'static str {
+    fn get_name(&self) -> &'static str {
         MultieraUnusedInputTask::TASK_NAME
     }
-    fn get_dependencies() -> &'static [&'static str] {
+    fn get_dependencies(&self) -> &'static [&'static str] {
         MultieraUnusedInputTask::DEPENDENCIES
     }
 
@@ -74,12 +74,12 @@ impl<'a> TaskBuilder<'a, alonzo::Block> for MultieraUnusedInputTaskBuilder {
         _properties: &ini::Properties,
     ) {
         let task = MultieraUnusedInputTask::new(db_tx, block, handle, perf_aggregator);
-        dispatcher_builder.add(task, Self::get_name(), Self::get_dependencies());
+        dispatcher_builder.add(task, self.get_name(), self.get_dependencies());
     }
 }
 
 inventory::submit! {
-    TaskRegistryEntry::Multiera(MultieraTaskRegistryEntry {name: MultieraUnusedInputTask::TASK_NAME, builder: &MultieraUnusedInputTaskBuilder })
+    TaskRegistryEntry::Multiera(MultieraTaskRegistryEntry { builder: &MultieraUnusedInputTaskBuilder })
 }
 
 impl<'a> System<'a> for MultieraUnusedInputTask<'_> {
@@ -135,9 +135,8 @@ async fn handle_unused_input(
 
     if !queued_unused_inputs.is_empty() {
         let outputs_for_inputs =
-            crate::tasks::era_common::get_outputs_for_inputs(&queued_unused_inputs, db_tx).await?;
-        let input_to_output_map =
-            crate::tasks::era_common::gen_input_to_output_map(&outputs_for_inputs);
+            crate::era_common::get_outputs_for_inputs(&queued_unused_inputs, db_tx).await?;
+        let input_to_output_map = crate::era_common::gen_input_to_output_map(&outputs_for_inputs);
 
         add_input_relations(
             vkey_relation_map,

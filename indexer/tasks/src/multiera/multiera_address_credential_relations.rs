@@ -14,14 +14,12 @@ use pallas::ledger::primitives::alonzo::{self};
 use shred::{DispatcherBuilder, Read, ResourceId, System, SystemData, World};
 
 use crate::{
-    tasks::{
-        database_task::{
-            BlockInfo, DatabaseTaskMeta, MultieraTaskRegistryEntry, TaskBuilder, TaskRegistryEntry,
-        },
-        era_common::AddressInBlock,
-        utils::TaskPerfAggregator,
+    database_task::{
+        BlockInfo, DatabaseTaskMeta, MultieraTaskRegistryEntry, TaskBuilder, TaskRegistryEntry,
     },
+    era_common::AddressInBlock,
     types::AddressCredentialRelationValue,
+    utils::TaskPerfAggregator,
 };
 
 use super::{
@@ -66,10 +64,10 @@ impl<'a> DatabaseTaskMeta<'a, alonzo::Block> for MultieraAddressCredentialRelati
 
 struct MultieraAddressCredentialRelationTaskBuilder;
 impl<'a> TaskBuilder<'a, alonzo::Block> for MultieraAddressCredentialRelationTaskBuilder {
-    fn get_name() -> &'static str {
+    fn get_name(&self) -> &'static str {
         MultieraAddressCredentialRelation::TASK_NAME
     }
-    fn get_dependencies() -> &'static [&'static str] {
+    fn get_dependencies(&self) -> &'static [&'static str] {
         MultieraAddressCredentialRelation::DEPENDENCIES
     }
 
@@ -83,12 +81,12 @@ impl<'a> TaskBuilder<'a, alonzo::Block> for MultieraAddressCredentialRelationTas
         _properties: &ini::Properties,
     ) {
         let task = MultieraAddressCredentialRelation::new(db_tx, block, handle, perf_aggregator);
-        dispatcher_builder.add(task, Self::get_name(), Self::get_dependencies());
+        dispatcher_builder.add(task, self.get_name(), self.get_dependencies());
     }
 }
 
 inventory::submit! {
-    TaskRegistryEntry::Multiera(MultieraTaskRegistryEntry {name: MultieraAddressCredentialRelation::TASK_NAME, builder: &MultieraAddressCredentialRelationTaskBuilder })
+    TaskRegistryEntry::Multiera(MultieraTaskRegistryEntry { builder: &MultieraAddressCredentialRelationTaskBuilder })
 }
 
 impl<'a> System<'a> for MultieraAddressCredentialRelation<'_> {

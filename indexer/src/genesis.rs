@@ -10,6 +10,7 @@ use cardano_multiplatform_lib::{
     },
     utils::Value,
 };
+use cryptoxide::blake2b::Blake2b;
 use entity::sea_orm::Iterable;
 use entity::{
     prelude::{
@@ -23,8 +24,6 @@ use entity::{
 };
 use futures::future::try_join;
 use migration::DbErr;
-
-use crate::tasks::utils::blake2b256;
 
 const GENESIS_MAINNET: &str = "./genesis/mainnet-byron-genesis.json";
 const GENESIS_TESTNET: &str = "./genesis/testnet-byron-genesis.json";
@@ -200,4 +199,10 @@ async fn bulk_insert_txs(
         );
     }
     Ok(result)
+}
+
+pub fn blake2b256(data: &[u8]) -> [u8; 32] {
+    let mut out = [0; 32];
+    Blake2b::blake2b(&mut out, data, &[]);
+    out
 }

@@ -9,7 +9,7 @@ use pallas::ledger::primitives::byron::{self, TxIn};
 use shred::{DispatcherBuilder, Read, ResourceId, System, SystemData, World, Write};
 use std::sync::{Arc, Mutex};
 
-use crate::tasks::{
+use crate::{
     database_task::{
         BlockInfo, ByronTaskRegistryEntry, DatabaseTaskMeta, TaskBuilder, TaskRegistryEntry,
     },
@@ -52,10 +52,10 @@ impl<'a> DatabaseTaskMeta<'a, byron::Block> for ByronInputTask<'a> {
 
 struct ByronInputTaskBuilder;
 impl<'a> TaskBuilder<'a, byron::Block> for ByronInputTaskBuilder {
-    fn get_name() -> &'static str {
+    fn get_name(&self) -> &'static str {
         ByronInputTask::TASK_NAME
     }
-    fn get_dependencies() -> &'static [&'static str] {
+    fn get_dependencies(&self) -> &'static [&'static str] {
         ByronInputTask::DEPENDENCIES
     }
     fn add_task<'c>(
@@ -68,12 +68,12 @@ impl<'a> TaskBuilder<'a, byron::Block> for ByronInputTaskBuilder {
         _properties: &ini::Properties,
     ) {
         let task = ByronInputTask::new(db_tx, block, handle, perf_aggregator);
-        dispatcher_builder.add(task, Self::get_name(), Self::get_dependencies());
+        dispatcher_builder.add(task, self.get_name(), self.get_dependencies());
     }
 }
 
 inventory::submit! {
-    TaskRegistryEntry::Byron(ByronTaskRegistryEntry {name: ByronInputTask::TASK_NAME, builder: &ByronInputTaskBuilder })
+    TaskRegistryEntry::Byron(ByronTaskRegistryEntry { builder: &ByronInputTaskBuilder })
 }
 
 impl<'a> System<'a> for ByronInputTask<'_> {
@@ -137,16 +137,13 @@ async fn handle_inputs(
                 .map(|inputs| (&inputs.0, inputs.1))
                 .collect();
             let outputs_for_inputs =
-                crate::tasks::era_common::get_outputs_for_inputs(&flattened_inputs, db_tx).await?;
+                crate::era_common::get_outputs_for_inputs(&flattened_inputs, db_tx).await?;
 
             let input_to_output_map =
-                crate::tasks::era_common::gen_input_to_output_map(&outputs_for_inputs);
-            let result = crate::tasks::era_common::insert_inputs(
-                &flattened_inputs,
-                &input_to_output_map,
-                db_tx,
-            )
-            .await?;
+                crate::era_common::gen_input_to_output_map(&outputs_for_inputs);
+            let result =
+                crate::era_common::insert_inputs(&flattened_inputs, &input_to_output_map, db_tx)
+                    .await?;
             Ok(result)
         }
     }

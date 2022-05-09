@@ -1,10 +1,10 @@
 use std::sync::{Arc, Mutex};
 
-use crate::tasks::database_task::BlockInfo;
-use crate::tasks::database_task::TaskRegistryEntry;
-use crate::tasks::execution_plan::ExecutionPlan;
-use crate::tasks::utils::find_task_registry_entry;
-use crate::tasks::utils::TaskPerfAggregator;
+use crate::database_task::BlockInfo;
+use crate::database_task::TaskRegistryEntry;
+use crate::execution_plan::ExecutionPlan;
+use crate::utils::find_task_registry_entry;
+use crate::utils::TaskPerfAggregator;
 use entity::sea_orm::{prelude::*, DatabaseTransaction};
 use pallas::ledger::primitives::byron::{self};
 use shred::{DispatcherBuilder, World};
@@ -16,6 +16,8 @@ pub async fn process_byron_block(
     exec_plan: &ExecutionPlan,
     perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
 ) -> Result<(), DbErr> {
+    let ep_start_time = std::time::Instant::now();
+
     let handle = Handle::current();
 
     let mut world = World::empty();
@@ -45,6 +47,11 @@ pub async fn process_byron_block(
     let mut dispatcher = dispatcher_builder.build();
     dispatcher.setup(&mut world);
     dispatcher.dispatch(&world);
+
+    perf_aggregator
+        .lock()
+        .unwrap()
+        .add_to_total(&ep_start_time.elapsed());
 
     Ok(())
 }

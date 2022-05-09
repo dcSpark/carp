@@ -18,9 +18,9 @@ impl PerfAggregator {
             overhead: Duration::new(0, 0),
         }
     }
-    pub fn set_overhead(&mut self, total_duration: &Duration, tasks: Duration) {
+    pub fn set_overhead(&mut self, total_duration: &Duration, tasks: &Duration) {
         let non_duration_sum =
-            self.block_fetch + self.block_parse + self.block_insertion + self.rollback + tasks;
+            self.block_fetch + self.block_parse + self.block_insertion + self.rollback + *tasks;
         self.overhead = *total_duration - non_duration_sum
     }
 }

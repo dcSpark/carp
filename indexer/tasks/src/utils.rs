@@ -13,11 +13,20 @@ pub fn blake2b256(data: &[u8]) -> [u8; 32] {
 #[derive(Default, Debug)]
 pub struct TaskPerfAggregator(pub BTreeMap<&'static str, Duration>);
 impl TaskPerfAggregator {
+    const TOTAL_TIME: &'static str = "TotalPlanExecutionTime";
+
     pub fn update(&mut self, task: &'static str, duration: Duration) {
         self.0
             .entry(task)
             .and_modify(|old| *old += duration)
             .or_insert_with(|| duration);
+    }
+
+    pub fn get_total(&mut self) -> Duration {
+        *self.0.get(TaskPerfAggregator::TOTAL_TIME).unwrap()
+    }
+    pub fn add_to_total(&mut self, duration: &Duration) {
+        self.0.insert(TaskPerfAggregator::TOTAL_TIME, *duration);
     }
 }
 
@@ -25,12 +34,12 @@ pub fn find_task_registry_entry(task_name: &str) -> Option<TaskRegistryEntry> {
     for registry_entry in inventory::iter::<TaskRegistryEntry> {
         match registry_entry {
             TaskRegistryEntry::Byron(entry) => {
-                if entry.name == task_name {
+                if entry.builder.get_name() == task_name {
                     return Some(*registry_entry);
                 }
             }
             TaskRegistryEntry::Multiera(entry) => {
-                if entry.name == task_name {
+                if entry.builder.get_name() == task_name {
                     return Some(*registry_entry);
                 }
             }

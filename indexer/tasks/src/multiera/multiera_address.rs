@@ -21,20 +21,17 @@ use shred::{DispatcherBuilder, Read, ResourceId, System, SystemData, World, Writ
 use std::ops::Deref;
 
 use crate::{
-    relation_map::RelationMap,
-    tasks::{
-        database_task::{
-            BlockInfo, DatabaseTaskMeta, MultieraTaskRegistryEntry, TaskBuilder, TaskRegistryEntry,
-        },
-        era_common::AddressInBlock,
-        utils::TaskPerfAggregator,
+    database_task::{
+        BlockInfo, DatabaseTaskMeta, MultieraTaskRegistryEntry, TaskBuilder, TaskRegistryEntry,
     },
+    era_common::AddressInBlock,
     types::{AddressCredentialRelationValue, TxCredentialRelationValue},
+    utils::TaskPerfAggregator,
 };
 
 use super::{
     multiera_address_credential_relations::QueuedAddressCredentialRelation,
-    multiera_txs::MultieraTransactionTask,
+    multiera_txs::MultieraTransactionTask, relation_map::RelationMap,
 };
 
 #[derive(SystemData)]
@@ -73,10 +70,10 @@ impl<'a> DatabaseTaskMeta<'a, alonzo::Block> for MultieraAddressTask<'a> {
 
 struct MultieraAddressTaskBuilder;
 impl<'a> TaskBuilder<'a, alonzo::Block> for MultieraAddressTaskBuilder {
-    fn get_name() -> &'static str {
+    fn get_name(&self) -> &'static str {
         MultieraAddressTask::TASK_NAME
     }
-    fn get_dependencies() -> &'static [&'static str] {
+    fn get_dependencies(&self) -> &'static [&'static str] {
         MultieraAddressTask::DEPENDENCIES
     }
 
@@ -90,12 +87,12 @@ impl<'a> TaskBuilder<'a, alonzo::Block> for MultieraAddressTaskBuilder {
         _properties: &ini::Properties,
     ) {
         let task = MultieraAddressTask::new(db_tx, block, handle, perf_aggregator);
-        dispatcher_builder.add(task, Self::get_name(), Self::get_dependencies());
+        dispatcher_builder.add(task, self.get_name(), self.get_dependencies());
     }
 }
 
 inventory::submit! {
-    TaskRegistryEntry::Multiera(MultieraTaskRegistryEntry {name: MultieraAddressTask::TASK_NAME, builder: &MultieraAddressTaskBuilder })
+    TaskRegistryEntry::Multiera(MultieraTaskRegistryEntry { builder: &MultieraAddressTaskBuilder })
 }
 
 impl<'a> System<'a> for MultieraAddressTask<'_> {
@@ -190,7 +187,7 @@ async fn handle_addresses(
         }
     }
 
-    let addresses = crate::tasks::era_common::insert_addresses(&queued_address, db_tx).await?;
+    let addresses = crate::era_common::insert_addresses(&queued_address, db_tx).await?;
 
     Ok((addresses, queued_address_credential))
 }

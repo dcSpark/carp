@@ -5,16 +5,13 @@ use dotenv::dotenv;
 
 use entity::sea_orm::Database;
 use oura::sources::IntersectArg;
+use tasks::execution_plan::ExecutionPlan;
 use tracing_subscriber::prelude::*;
-
-use crate::tasks::execution_plan::ExecutionPlan;
 
 mod genesis;
 mod perf_aggregator;
 mod postgres_sink;
-mod relation_map;
 mod setup;
-mod tasks;
 mod types;
 use clap::Parser;
 

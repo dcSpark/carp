@@ -14,17 +14,15 @@ use pallas::ledger::primitives::alonzo::{self};
 use shred::{DispatcherBuilder, Read, ResourceId, System, SystemData, World, Write};
 
 use crate::{
-    relation_map::RelationMap,
-    tasks::{
-        database_task::{
-            BlockInfo, DatabaseTaskMeta, MultieraTaskRegistryEntry, TaskBuilder, TaskRegistryEntry,
-        },
-        utils::TaskPerfAggregator,
+    database_task::{
+        BlockInfo, DatabaseTaskMeta, MultieraTaskRegistryEntry, TaskBuilder, TaskRegistryEntry,
     },
+    utils::TaskPerfAggregator,
 };
 
 use super::{
     multiera_unused_input::MultieraUnusedInputTask, multiera_used_inputs::MultieraUsedInputTask,
+    relation_map::RelationMap,
 };
 
 #[derive(SystemData)]
@@ -65,10 +63,10 @@ impl<'a> DatabaseTaskMeta<'a, alonzo::Block> for MultieraStakeCredentialTask<'a>
 
 struct MultieraStakeCredentialTaskBuilder;
 impl<'a> TaskBuilder<'a, alonzo::Block> for MultieraStakeCredentialTaskBuilder {
-    fn get_name() -> &'static str {
+    fn get_name(&self) -> &'static str {
         MultieraStakeCredentialTask::TASK_NAME
     }
-    fn get_dependencies() -> &'static [&'static str] {
+    fn get_dependencies(&self) -> &'static [&'static str] {
         MultieraStakeCredentialTask::DEPENDENCIES
     }
 
@@ -82,12 +80,12 @@ impl<'a> TaskBuilder<'a, alonzo::Block> for MultieraStakeCredentialTaskBuilder {
         _properties: &ini::Properties,
     ) {
         let task = MultieraStakeCredentialTask::new(db_tx, block, handle, perf_aggregator);
-        dispatcher_builder.add(task, Self::get_name(), Self::get_dependencies());
+        dispatcher_builder.add(task, self.get_name(), self.get_dependencies());
     }
 }
 
 inventory::submit! {
-    TaskRegistryEntry::Multiera(MultieraTaskRegistryEntry {name: MultieraStakeCredentialTask::TASK_NAME, builder: &MultieraStakeCredentialTaskBuilder })
+    TaskRegistryEntry::Multiera(MultieraTaskRegistryEntry { builder: &MultieraStakeCredentialTaskBuilder })
 }
 
 impl<'a> System<'a> for MultieraStakeCredentialTask<'_> {

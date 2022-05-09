@@ -16,7 +16,7 @@ use pallas::{
 use shred::{DispatcherBuilder, Read, ResourceId, System, SystemData, World, Write};
 use std::collections::BTreeMap;
 
-use crate::tasks::{
+use crate::{
     database_task::{
         BlockInfo, ByronTaskRegistryEntry, DatabaseTaskMeta, TaskBuilder, TaskRegistryEntry,
     },
@@ -64,10 +64,10 @@ impl<'a> DatabaseTaskMeta<'a, byron::Block> for ByronOutputTask<'a> {
 
 struct ByronOutputTaskBuilder;
 impl<'a> TaskBuilder<'a, byron::Block> for ByronOutputTaskBuilder {
-    fn get_name() -> &'static str {
+    fn get_name(&self) -> &'static str {
         ByronOutputTask::TASK_NAME
     }
-    fn get_dependencies() -> &'static [&'static str] {
+    fn get_dependencies(&self) -> &'static [&'static str] {
         ByronOutputTask::DEPENDENCIES
     }
     fn add_task<'c>(
@@ -80,12 +80,12 @@ impl<'a> TaskBuilder<'a, byron::Block> for ByronOutputTaskBuilder {
         _properties: &ini::Properties,
     ) {
         let task = ByronOutputTask::new(db_tx, block, handle, perf_aggregator);
-        dispatcher_builder.add(task, Self::get_name(), Self::get_dependencies());
+        dispatcher_builder.add(task, self.get_name(), self.get_dependencies());
     }
 }
 
 inventory::submit! {
-    TaskRegistryEntry::Byron(ByronTaskRegistryEntry {name: ByronOutputTask::TASK_NAME, builder: &ByronOutputTaskBuilder })
+    TaskRegistryEntry::Byron(ByronTaskRegistryEntry { builder: &ByronOutputTaskBuilder })
 }
 
 impl<'a> System<'a> for ByronOutputTask<'_> {
