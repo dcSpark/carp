@@ -28,12 +28,7 @@ impl MigrationTrait for Migration {
                             .on_delete(ForeignKeyAction::Cascade),
                     )
                     .col(ColumnDef::new(Column::Label).binary().not_null())
-                    .col(
-                        ColumnDef::new(Column::Payload)
-                            .binary()
-                            .unique_key()
-                            .not_null(),
-                    )
+                    .col(ColumnDef::new(Column::Payload).binary().not_null())
                     .primary_key(
                         Index::create()
                             .table(Entity)
