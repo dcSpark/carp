@@ -1,8 +1,8 @@
 FROM rust:1.59 AS x-builder
 
-RUN USER=root cargo new --bin oura-postgres-sink
+RUN USER=root cargo new --bin carp
 
-WORKDIR /oura-postgres-sink
+WORKDIR /carp
 
 COPY ./entity ./entity
 COPY ./migration ./migration
@@ -13,7 +13,7 @@ COPY ./Cargo.lock ./Cargo.lock
 RUN cargo build --release
 
 RUN rm -rf ./src/*.rs
-RUN rm ./target/release/oura-postgres-sink
+RUN rm ./target/release/carp
 
 COPY ./genesis ./genesis
 COPY ./src ./src
@@ -24,21 +24,21 @@ RUN echo 'fn main() {}' > ./build.rs
 #ARG GIT_BRANCH
 #ARG GIT_COMMIT
 
-RUN cargo build --release -p oura-postgres-sink -p migration
+RUN cargo build --release -p carp -p migration
 
 # trick for "COPY --chown" on distroless
 WORKDIR /ops
-RUN cp /oura-postgres-sink/target/release/oura-postgres-sink .
-RUN cp /oura-postgres-sink/target/release/migration .
+RUN cp /carp/target/release/carp .
+RUN cp /carp/target/release/migration .
 
 ############################################################
 
-# FROM gcr.io/distroless/cc:nonroot AS oura-postgres-sink
-FROM debian:stable-slim AS oura-postgres-sink
+# FROM gcr.io/distroless/cc:nonroot AS carp
+FROM debian:stable-slim AS carp
 ENV TZ=Etc/UTC
 ARG APP=/app
 # COPY --chown=nonroot:nonroot --from=x-builder /ops ${APP}
 COPY --from=x-builder /ops ${APP}
 WORKDIR ${APP}
 #USER nonroot
-ENTRYPOINT ["./oura-postgres-sink"]
+ENTRYPOINT ["./carp"]

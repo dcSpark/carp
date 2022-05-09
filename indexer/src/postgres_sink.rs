@@ -7,6 +7,11 @@ use pallas::ledger::primitives::{
     alonzo::{self},
     Fragment,
 };
+use std::sync::{Arc, Mutex};
+use tasks::{
+    byron::byron_executor::process_byron_block, execution_plan::ExecutionPlan,
+    multiera::multiera_executor::process_multiera_block, utils::TaskPerfAggregator,
+};
 
 use crate::types::MultiEraBlock;
 use crate::{perf_aggregator::PerfAggregator, types::EraValue};
@@ -21,12 +26,17 @@ pub struct Config<'a> {
 }
 
 impl<'a> Config<'a> {
-    pub async fn bootstrap(&self, input: StageReceiver) -> anyhow::Result<()> {
+    pub async fn start(
+        &self,
+        input: StageReceiver,
+        exec_plan: Arc<ExecutionPlan>,
+    ) -> anyhow::Result<()> {
         tracing::info!("{}", "Starting to process blocks");
 
         let mut last_epoch: i128 = -1;
         let mut epoch_start_time = std::time::Instant::now();
         let mut perf_aggregator = PerfAggregator::new();
+        let mut task_perf_aggregator = Arc::new(Mutex::new(TaskPerfAggregator::default()));
 
         loop {
             let event_fetch_start = std::time::Instant::now();
@@ -38,7 +48,10 @@ impl<'a> Config<'a> {
                     match block_record.epoch {
                         Some(epoch) if epoch as i128 > last_epoch => {
                             let epoch_duration = epoch_start_time.elapsed();
-                            perf_aggregator.set_overhead(&epoch_duration);
+                            perf_aggregator.set_overhead(
+                                &epoch_duration,
+                                &task_perf_aggregator.lock().unwrap().get_total(),
+                            );
 
                             // skip posting stats if last_epoch == -1 (went application just launched)
                             if last_epoch >= 0 {
@@ -52,12 +65,17 @@ impl<'a> Config<'a> {
                                 );
 
                                 tracing::trace!(
-                                    "Epoch part-wise time spent:\n{:#?}",
+                                    "Epoch non-task time spent:\n{:#?}",
                                     perf_aggregator
+                                );
+                                tracing::trace!(
+                                    "Epoch task-wise time spent:\n{:#?}",
+                                    task_perf_aggregator.lock().unwrap()
                                 );
                             }
                             epoch_start_time = std::time::Instant::now();
-                            perf_aggregator = PerfAggregator::new();
+                            task_perf_aggregator =
+                                Arc::new(Mutex::new(TaskPerfAggregator::default()));
 
                             tracing::info!(
                                 "Starting epoch {} at block #{} ({})",
@@ -69,10 +87,14 @@ impl<'a> Config<'a> {
                         }
                         _ => (),
                     };
-                    perf_aggregator += self
-                        .conn
-                        .transaction::<_, PerfAggregator, DbErr>(|txn| {
-                            Box::pin(insert_block(block_record.clone(), txn))
+                    self.conn
+                        .transaction::<_, (), DbErr>(|txn| {
+                            Box::pin(insert_block(
+                                block_record.clone(),
+                                txn,
+                                exec_plan.clone(),
+                                task_perf_aggregator.clone(),
+                            ))
                         })
                         .await?;
                 }
@@ -97,17 +119,20 @@ impl<'a> Config<'a> {
 async fn insert_block(
     block_record: BlockRecord,
     txn: &DatabaseTransaction,
-) -> Result<PerfAggregator, DbErr> {
+    exec_plan: Arc<ExecutionPlan>,
+    task_perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
+) -> Result<(), DbErr> {
     let mut perf_aggregator = PerfAggregator::new();
-    let mut time_counter = std::time::Instant::now();
+
+    let block_parse_counter = std::time::Instant::now();
 
     let hash = hex::decode(&block_record.hash).unwrap();
     let block_payload = hex::decode(block_record.cbor_hex.as_ref().unwrap()).unwrap();
-
-    perf_aggregator.block_parse += time_counter.elapsed();
-    time_counter = std::time::Instant::now();
-
     let (multi_block, era) = block_with_era(block_record.era, &block_payload).unwrap();
+
+    perf_aggregator.block_parse += block_parse_counter.elapsed();
+
+    let block_insert_counter = std::time::Instant::now();
 
     let block = BlockActiveModel {
         era: Set(era.into()),
@@ -120,34 +145,30 @@ async fn insert_block(
 
     let block = block.insert(txn).await?;
 
-    perf_aggregator.block_insertion += time_counter.elapsed();
-    time_counter = std::time::Instant::now();
+    perf_aggregator.block_insertion += block_insert_counter.elapsed();
 
     match &multi_block {
         MultiEraBlock::Byron(byron_block) => {
-            crate::byron::process_byron_block(
-                &mut perf_aggregator,
-                &mut time_counter,
+            process_byron_block(
                 txn,
-                &block,
-                byron_block,
+                (&block_record.cbor_hex.unwrap(), byron_block, &block),
+                &exec_plan,
+                task_perf_aggregator.clone(),
             )
             .await?
         }
         MultiEraBlock::Compatible(alonzo_block) => {
-            crate::multiera::process_multiera_block(
-                &mut perf_aggregator,
-                &mut time_counter,
+            process_multiera_block(
                 txn,
-                &block_record,
-                &block,
-                alonzo_block,
+                (&block_record.cbor_hex.unwrap(), alonzo_block, &block),
+                &exec_plan,
+                task_perf_aggregator.clone(),
             )
             .await?
         }
     }
 
-    Ok(perf_aggregator)
+    Ok(())
 }
 
 fn block_with_era(era: Era, payload: &[u8]) -> anyhow::Result<(MultiEraBlock, EraValue)> {

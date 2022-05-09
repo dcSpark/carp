@@ -1,0 +1,53 @@
+use std::{path::Path, process::Command};
+
+use tasks::execution_plan::ExecutionPlan;
+use tracing_subscriber::prelude::*;
+
+use clap::Parser;
+
+use crate::generate_image::generate;
+mod generate_image;
+
+#[derive(Parser, Debug)]
+#[clap(version)]
+struct Args {
+    /// Path of the execution plan to use
+    #[clap(short, long, default_value = "execution_plans/default.ini")]
+    plan: String,
+}
+
+fn main() -> anyhow::Result<()> {
+    // Start logging setup block
+    let fmt_layer = tracing_subscriber::fmt::layer().with_test_writer();
+
+    let sqlx_filter = tracing_subscriber::filter::Targets::new()
+        .with_target("carp", tracing::Level::TRACE)
+        .with_default(tracing_subscriber::fmt::Subscriber::DEFAULT_MAX_LEVEL);
+
+    tracing_subscriber::registry()
+        .with(fmt_layer)
+        .with(sqlx_filter)
+        .init();
+    // End logging setup block
+
+    let args = Args::parse();
+
+    tracing::info!("Execution plan {}", args.plan);
+    let exec_plan = ExecutionPlan::load_from_file(&args.plan);
+    let plan_name = Path::new(&args.plan).file_stem().unwrap().to_str().unwrap();
+
+    let graph = generate(&exec_plan, plan_name);
+
+    use std::fs::File;
+
+    let dot_file = format!("plan-visualizer/out/{}.dot", plan_name);
+    let svg_file = format!("plan-visualizer/out/{}.svg", plan_name);
+    let mut output = File::create(&dot_file).unwrap();
+    dot::render(&graph, &mut output).unwrap();
+    Command::new("dot")
+        .args(["-Tsvg", &dot_file, "-o", &svg_file])
+        .output()
+        .expect("failed to execute process");
+
+    Ok(())
+}

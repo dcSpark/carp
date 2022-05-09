@@ -12,12 +12,17 @@ pub fn get_truncated_address(addr_bytes: &[u8]) -> &[u8] {
     &addr_bytes[0..(std::cmp::min(addr_bytes.len(), ADDRESS_TRUNCATE))]
 }
 
+pub struct AddressInBlock {
+    pub model: AddressModel,
+    pub is_new: bool,
+}
+
 pub async fn insert_addresses(
     addresses: &BTreeSet<Vec<u8>>,
     txn: &DatabaseTransaction,
-) -> Result<(Vec<AddressModel>, BTreeMap<Vec<u8>, AddressModel>), DbErr> {
+) -> Result<BTreeMap<Vec<u8>, AddressInBlock>, DbErr> {
     if addresses.is_empty() {
-        return Ok((vec![], BTreeMap::default()));
+        return Ok(BTreeMap::default());
     }
     // During the Byron era of Cardano,
     // Addresses had a feature where you could add extra metadata in them
@@ -42,7 +47,7 @@ pub async fn insert_addresses(
     // useful not only as a perf improvement, but also avoids parallel queries writing to the same row
     let deduplicated = BTreeSet::<_>::from_iter(truncated_addrs.clone());
 
-    let mut result_map = BTreeMap::<Vec<u8>, AddressModel>::default();
+    let mut result_map = BTreeMap::<Vec<u8>, AddressInBlock>::default();
 
     // 1) Add addresses that were already in the DB
     {
@@ -58,15 +63,18 @@ pub async fn insert_addresses(
             .await?;
 
         // add addresses that already existed previously directly to the result
-        result_map.extend(
-            found_addresses
-                .drain(..)
-                .map(|model| (model.payload.clone(), model)),
-        );
+        result_map.extend(found_addresses.drain(..).map(|model| {
+            (
+                model.payload.clone(),
+                AddressInBlock {
+                    model,
+                    is_new: false,
+                },
+            )
+        }));
     }
 
     // 2) Add addresses that weren't in the DB
-    let mut additions: Vec<AddressModel> = vec![];
     {
         // check which addresses weren't found in the DB and prepare to add them
         let addrs_to_add: Vec<AddressActiveModel> = deduplicated
@@ -80,18 +88,23 @@ pub async fn insert_addresses(
 
         // add the new entires into the DB, then add them to our result mapping
         if !addrs_to_add.is_empty() {
-            additions.extend(
-                Address::insert_many(addrs_to_add)
-                    .exec_many_with_returning(txn)
-                    .await?,
-            );
-            additions.iter().for_each(|model| {
-                result_map.insert(model.payload.clone(), model.clone());
-            });
+            Address::insert_many(addrs_to_add)
+                .exec_many_with_returning(txn)
+                .await?
+                .iter()
+                .for_each(|model| {
+                    result_map.insert(
+                        model.payload.clone(),
+                        AddressInBlock {
+                            model: model.clone(),
+                            is_new: true,
+                        },
+                    );
+                });
         }
     }
 
-    Ok((additions, result_map))
+    Ok(result_map)
 }
 
 pub async fn get_outputs_for_inputs(
@@ -148,9 +161,9 @@ pub async fn get_outputs_for_inputs(
         .collect())
 }
 
-pub fn gen_input_to_output_map<'a>(
-    outputs_for_inputs: &'a Vec<(TransactionOutputModel, TransactionModel)>,
-) -> BTreeMap<&'a Vec<u8>, BTreeMap<i64, i64>> {
+pub fn gen_input_to_output_map(
+    outputs_for_inputs: &'_ [(TransactionOutputModel, TransactionModel)],
+) -> BTreeMap<&'_ Vec<u8>, BTreeMap<i64, i64>> {
     let mut input_to_output_map = BTreeMap::<&Vec<u8>, BTreeMap<i64, i64>>::default();
     for output in outputs_for_inputs {
         input_to_output_map
@@ -177,15 +190,15 @@ pub async fn insert_inputs(
     )],
     input_to_output_map: &BTreeMap<&Vec<u8>, BTreeMap<i64, i64>>,
     txn: &DatabaseTransaction,
-) -> Result<(), DbErr> {
+) -> Result<Vec<TransactionInputModel>, DbErr> {
     // avoid querying the DB if there were no inputs
     let has_input = inputs.iter().any(|input| !input.0.is_empty());
     if !has_input {
-        return Ok(());
+        return Ok(vec![]);
     }
 
     // 3) Add inputs themselves
-    TransactionInput::insert_many(
+    let result = TransactionInput::insert_many(
         inputs
             .iter()
             .flat_map(|pair| pair.0.iter().enumerate().zip(std::iter::repeat(pair.1)))
@@ -198,8 +211,8 @@ pub async fn insert_inputs(
                 ..Default::default()
             }),
     )
-    .exec(txn)
+    .exec_many_with_returning(txn)
     .await?;
 
-    Ok(())
+    Ok(result)
 }
