@@ -1,0 +1,8 @@
+{
+  "label": "Carp Webserver",
+  "position": 3,
+  "link": {
+    "type": "generated-index",
+    "description": "Webserver and client for Carp"
+  }
+}

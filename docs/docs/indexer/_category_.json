@@ -1,0 +1,8 @@
+{
+  "label": "Carp Indexer",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "description": "Indexer for Cardano blockchain information"
+  }
+}
