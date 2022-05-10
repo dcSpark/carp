@@ -125,7 +125,16 @@ async fn handle_metadata(
             } => Some(transaction_metadata),
             AuxiliaryData::Alonzo(data) => data.metadata.as_ref(),
         };
-        opt_entries.and_then(|entries| metadata_map.insert(*tx_id, entries));
+
+        opt_entries.and_then(|entries| {
+            if !entries.is_empty() {
+                // it's possible for metadata to just be an empty list (no labels)
+                // ex: tx hash 3fd58bb02af554c0653be693386525b521ca586cbeb6b2e2cc782ab9a1041708
+                metadata_map.insert(*tx_id, entries)
+            } else {
+                None
+            }
+        });
     }
 
     if metadata_map.is_empty() {
