@@ -41,6 +41,23 @@ const config = {
         },
       }),
     ],
+    [
+      'redocusaurus',
+      {
+        // Plugin Options for loading OpenAPI files
+        specs: [
+          {
+            spec: 'bin/openapi.json',
+            route: '/openapi',
+          },
+        ],
+        // Theme Options for modifying how redoc renders them
+        theme: {
+          // Change with your site colors
+          primaryColor: '#1890ff',
+        },
+      },
+    ]
   ],
 
   themeConfig:
@@ -59,6 +76,7 @@ const config = {
             position: 'left',
             label: 'Tutorial',
           },
+          {to: '/openapi', label: 'OpenAPI / Swagger', position: 'left'},
           {
             href: 'https://github.com/dcSpark/carp/',
             label: 'GitHub',

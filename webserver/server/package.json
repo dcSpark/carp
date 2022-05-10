@@ -12,7 +12,7 @@
     "parse-db": "pg_dump --no-owner --schema-only -d $DATABASE_URL > bin/schema.sql && npx pgtyped --uri -c config.json && npx zapatos && cd bin && . ./gen-graph.sh && cd ..",
     "prettier": "prettier --write \"**/*.tsx\"",
     "query": "psql -U $PGUSER -h $POSTGRES_HOST -d $POSTGRES_DB -f ./test_query.sql",
-    "publish:swagger": "yarn build && cp ./build/server/build/swagger.json ../gh-pages/swagger.json && gh-pages -d ../gh-pages"
+    "publish:openapi": "yarn build && cp ./build/server/build/swagger.json ../../docs/bin/openapi.json"
   },
   "repository": {
     "type": "git",

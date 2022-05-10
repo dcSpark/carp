@@ -1,0 +1,555 @@
+{
+    "components": {
+        "examples": {},
+        "headers": {},
+        "parameters": {},
+        "requestBodies": {},
+        "responses": {},
+        "schemas": {
+            "Address": {
+                "type": "string",
+                "description": "Supported types:\n- Credential hex (8200581c...) - note this is not a keyhash (it contains a credential type prefix)\n- Bech32 full address (`addr` / `addr_test` / `stake` / `stake_test`)\n- Bech32 credentials ( `addr_vkh`, `script`, etc.) - this is the recommended approach\n- Legacy Byron format (Ae2, Dd, etc.)\n\nNote: we recommend avoiding to query base addresses history using bech32\nAs Cardano UTXO spendability depends only on the payment credential and not the full base address\nThe result will also miss transactions that are only related to the payment key of the address\nex: the payment key is used in a multisig\n\nNote: using two different address representations in the same query will hurt performance (ex: addr1 and addr_vkh1)\nThis because under-the-hood this will run multiple independent SQL queries for the different formats\n\nWarning: querying reward bech32 addresses is equivalent to querying the stake credential inside it\nThis may return more results than expected (ex: a multisig containing the staking key of the wallet)"
+            },
+            "AddressUsedResponse": {
+                "properties": {
+                    "addresses": {
+                        "items": {
+                            "$ref": "#/components/schemas/Address"
+                        },
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "addresses"
+                ],
+                "type": "object"
+            },
+            "RelationFilter": {
+                "type": "number",
+                "format": "double",
+                "description": "Filter which uses of the address are considered relevant for the query.\n\nThis is a bitmask, so you can combine multiple options\nex: `RelationFilterType.Input & RelationFilterType.Output`\n\nNote: relations only apply to credentials and not to full bech32 addresses"
+            },
+            "Pagination": {
+                "properties": {
+                    "untilBlock": {
+                        "type": "string",
+                        "description": "block hash - inclusive"
+                    },
+                    "after": {
+                        "properties": {
+                            "tx": {
+                                "type": "string",
+                                "description": "tx hash"
+                            },
+                            "block": {
+                                "type": "string",
+                                "description": "block hash"
+                            }
+                        },
+                        "required": [
+                            "tx",
+                            "block"
+                        ],
+                        "type": "object",
+                        "description": "Omitting \"after\" means you query starting from the genesis block\nNote: the reason you have to specify both a tx hash AND a block hash in the \"after\" for pagination\nis because this is the only way to make sure your pagination doesn't get affected by rollbacks\nex: a rollback could cause a tx to be removed from one block and appear in a totally different block\nSpecifying the block hash as well allows making sure you're paginating on the right tx in the right block"
+                    }
+                },
+                "required": [
+                    "untilBlock"
+                ],
+                "type": "object"
+            },
+            "AddressUsedRequest": {
+                "allOf": [
+                    {
+                        "properties": {
+                            "relationFilter": {
+                                "$ref": "#/components/schemas/RelationFilter",
+                                "description": "Defaults to `RelationFilterType.NO_FILTER`"
+                            },
+                            "addresses": {
+                                "items": {
+                                    "$ref": "#/components/schemas/Address"
+                                },
+                                "type": "array"
+                            }
+                        },
+                        "required": [
+                            "addresses"
+                        ],
+                        "type": "object"
+                    },
+                    {
+                        "$ref": "#/components/schemas/Pagination"
+                    }
+                ]
+            },
+            "ErrorShape": {
+                "properties": {
+                    "reason": {
+                        "type": "string"
+                    },
+                    "code": {
+                        "type": "number",
+                        "format": "double"
+                    }
+                },
+                "required": [
+                    "reason",
+                    "code"
+                ],
+                "type": "object"
+            },
+            "BlockLatestResponse": {
+                "properties": {
+                    "block": {
+                        "properties": {
+                            "slot": {
+                                "type": "number",
+                                "format": "double"
+                            },
+                            "epoch": {
+                                "type": "number",
+                                "format": "double"
+                            },
+                            "height": {
+                                "type": "number",
+                                "format": "double"
+                            },
+                            "hash": {
+                                "type": "string"
+                            },
+                            "era": {
+                                "type": "number",
+                                "format": "double"
+                            }
+                        },
+                        "required": [
+                            "slot",
+                            "epoch",
+                            "height",
+                            "hash",
+                            "era"
+                        ],
+                        "type": "object"
+                    }
+                },
+                "required": [
+                    "block"
+                ],
+                "type": "object"
+            },
+            "BlockLatestRequest": {
+                "properties": {
+                    "offset": {
+                        "type": "number",
+                        "format": "double",
+                        "description": "Note: an offset of -1 is treated the same as an offset of +1\n\nIt's usually best to avoid pagination on the latest block.\n\nIn Cardano, small rollbacks of 1~2 block are very frequent and expected (read Ouroboros for why)\nThat means that using this block for pagination will often lead to your pagination being invalidated by a rollback\nTo avoid this, you can pass an `offset` from the tip for more stable pagination"
+                    }
+                },
+                "required": [
+                    "offset"
+                ],
+                "type": "object"
+            },
+            "BlockInfo": {
+                "properties": {
+                    "isValid": {
+                        "type": "boolean"
+                    },
+                    "indexInBlock": {
+                        "type": "number",
+                        "format": "double",
+                        "description": "index of tx in block"
+                    },
+                    "era": {
+                        "type": "number",
+                        "format": "double",
+                        "description": "Era of block this transaction was submitted in"
+                    },
+                    "slot": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "epoch": {
+                        "type": "number",
+                        "format": "double",
+                        "description": "timestamp with timezone"
+                    },
+                    "hash": {
+                        "type": "string"
+                    },
+                    "height": {
+                        "type": "number",
+                        "format": "double"
+                    }
+                },
+                "required": [
+                    "isValid",
+                    "indexInBlock",
+                    "era",
+                    "slot",
+                    "epoch",
+                    "hash",
+                    "height"
+                ],
+                "type": "object"
+            },
+            "TransactionInfo": {
+                "properties": {
+                    "payload": {
+                        "type": "string",
+                        "description": "cbor-encoded transaction"
+                    },
+                    "hash": {
+                        "type": "string",
+                        "description": "Strictly speaking, you can calculate this by hashing the payload\nIt's just provided for convenience"
+                    }
+                },
+                "required": [
+                    "payload",
+                    "hash"
+                ],
+                "type": "object"
+            },
+            "TxAndBlockInfo": {
+                "properties": {
+                    "transaction": {
+                        "$ref": "#/components/schemas/TransactionInfo"
+                    },
+                    "block": {
+                        "$ref": "#/components/schemas/BlockInfo"
+                    }
+                },
+                "required": [
+                    "transaction",
+                    "block"
+                ],
+                "type": "object"
+            },
+            "TransactionHistoryResponse": {
+                "properties": {
+                    "transactions": {
+                        "items": {
+                            "$ref": "#/components/schemas/TxAndBlockInfo"
+                        },
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "transactions"
+                ],
+                "type": "object"
+            },
+            "TransactionHistoryRequest": {
+                "allOf": [
+                    {
+                        "properties": {
+                            "limit": {
+                                "type": "number",
+                                "format": "double",
+                                "description": "Defaults to `ADDRESS_LIMIT.RESPONSE`"
+                            },
+                            "relationFilter": {
+                                "$ref": "#/components/schemas/RelationFilter",
+                                "description": "Defaults to `RelationFilterType.NO_FILTER`"
+                            },
+                            "addresses": {
+                                "items": {
+                                    "$ref": "#/components/schemas/Address"
+                                },
+                                "type": "array"
+                            }
+                        },
+                        "required": [
+                            "addresses"
+                        ],
+                        "type": "object"
+                    },
+                    {
+                        "$ref": "#/components/schemas/Pagination"
+                    }
+                ]
+            },
+            "UtxoPointer": {
+                "properties": {
+                    "index": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "txHash": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "index",
+                    "txHash"
+                ],
+                "type": "object"
+            },
+            "TransactionOutputResponse": {
+                "properties": {
+                    "utxos": {
+                        "items": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/components/schemas/UtxoPointer"
+                                },
+                                {
+                                    "properties": {
+                                        "payload": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "payload"
+                                    ],
+                                    "type": "object"
+                                }
+                            ]
+                        },
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "utxos"
+                ],
+                "type": "object"
+            },
+            "TransactionOutputRequest": {
+                "properties": {
+                    "utxoPointers": {
+                        "items": {
+                            "$ref": "#/components/schemas/UtxoPointer"
+                        },
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "utxoPointers"
+                ],
+                "type": "object"
+            }
+        },
+        "securitySchemes": {}
+    },
+    "info": {
+        "title": "carp",
+        "version": "1.0.0",
+        "description": "API for the Postgres database generated by Carp",
+        "license": {
+            "name": "MIT"
+        },
+        "contact": {
+            "name": "https://github.com/dcSpark"
+        }
+    },
+    "openapi": "3.0.0",
+    "paths": {
+        "/address/used": {
+            "post": {
+                "operationId": "AddressUsed",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AddressUsedResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    },
+                    "428": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Ordered lexicographically (order is not maintained)\nNote: this endpoint only returns addresses that are in a block. Use another tool to see mempool information",
+                "security": [],
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AddressUsedRequest"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/block/latest": {
+            "post": {
+                "operationId": "BlockLatest",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BlockLatestResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    },
+                    "428": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Get the latest block. Useful for checking synchronization process and pagination",
+                "security": [],
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/BlockLatestRequest"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/transaction/history": {
+            "post": {
+                "operationId": "TransactionHistory",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TransactionHistoryResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    },
+                    "428": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Ordered by `<block.height, transaction.tx_index>`\nNote: this endpoint only returns txs that are in a block. Use another tool to see mempool for txs not in a block",
+                "security": [],
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TransactionHistoryRequest"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/transaction/output": {
+            "post": {
+                "operationId": "TransactionOutput",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TransactionOutputResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    },
+                    "428": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Get the outputs for given `<tx hash, output index>` pairs\n\nNote: this endpoint only returns txs that are in a block. Use another tool to see mempool for txs not in a block",
+                "security": [],
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TransactionOutputRequest"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "servers": [
+        {
+            "url": "/"
+        }
+    ]
+}
