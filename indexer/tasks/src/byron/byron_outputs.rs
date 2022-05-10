@@ -24,7 +24,7 @@ use crate::{
     utils::TaskPerfAggregator,
 };
 
-use super::{byron_address::ByronAddressTask, byron_txs::ByronTransactionTask};
+use super::byron_address::ByronAddressTask;
 
 #[derive(SystemData)]
 pub struct Data<'a> {
@@ -42,10 +42,7 @@ pub struct ByronOutputTask<'a> {
 
 impl<'a> DatabaseTaskMeta<'a, byron::Block> for ByronOutputTask<'a> {
     const TASK_NAME: &'static str = name_of_type!(ByronOutputTask);
-    const DEPENDENCIES: &'static [&'static str] = &[
-        name_of_type!(ByronTransactionTask),
-        name_of_type!(ByronAddressTask),
-    ];
+    const DEPENDENCIES: &'static [&'static str] = &[name_of_type!(ByronAddressTask)];
 
     fn new(
         db_tx: &'a DatabaseTransaction,
