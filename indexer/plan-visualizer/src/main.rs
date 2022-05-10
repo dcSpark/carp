@@ -14,6 +14,10 @@ struct Args {
     /// Path of the execution plan to use
     #[clap(short, long, default_value = "execution_plans/default.ini")]
     plan: String,
+
+    /// Output directory
+    #[clap(short, long)]
+    output: String,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -40,12 +44,19 @@ fn main() -> anyhow::Result<()> {
 
     use std::fs::File;
 
-    let dot_file = format!("plan-visualizer/out/{}.dot", plan_name);
-    let svg_file = format!("plan-visualizer/out/{}.svg", plan_name);
+    let base_path = Path::new(&args.output);
+    let dot_file = base_path.join(format!("{}.dot", plan_name));
+    let svg_file = base_path.join(format!("{}.svg", plan_name));
+
     let mut output = File::create(&dot_file).unwrap();
     dot::render(&graph, &mut output).unwrap();
     Command::new("dot")
-        .args(["-Tsvg", &dot_file, "-o", &svg_file])
+        .args([
+            "-Tsvg",
+            dot_file.to_str().unwrap(),
+            "-o",
+            svg_file.to_str().unwrap(),
+        ])
         .output()
         .expect("failed to execute process");
 
