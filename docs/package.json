@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "prepare": "bin:refresh-ep && yarn bin:openapi",
+    "prepare": "yarn bin:refresh-ep && yarn bin:openapi",
     "bin:openapi": "yarn --cwd ../webserver/server publish:openapi",
     "bin:refresh-ep": "cargo run --manifest-path ../indexer/plan-visualizer/Cargo.toml -- --plan ../indexer/execution_plans/default.ini -o ./bin",
     "docusaurus": "docusaurus",
