@@ -169,6 +169,17 @@ ALTER SEQUENCE public."TransactionInput_id_seq" OWNED BY public."TransactionInpu
 
 
 --
+-- Name: TransactionMetadata; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public."TransactionMetadata" (
+    tx_id bigint NOT NULL,
+    label bytea NOT NULL,
+    payload bytea NOT NULL
+);
+
+
+--
 -- Name: TransactionOutput; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -363,6 +374,14 @@ ALTER TABLE ONLY public."AddressCredentialRelation"
 
 
 --
+-- Name: TransactionMetadata metadata-pk; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."TransactionMetadata"
+    ADD CONSTRAINT "metadata-pk" PRIMARY KEY (tx_id, label);
+
+
+--
 -- Name: seaql_migrations seaql_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -376,6 +395,20 @@ ALTER TABLE ONLY public.seaql_migrations
 
 ALTER TABLE ONLY public."TxCredentialRelation"
     ADD CONSTRAINT "tx_credential-pk" PRIMARY KEY (tx_id, credential_id);
+
+
+--
+-- Name: index-address_credential-credential; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "index-address_credential-credential" ON public."AddressCredentialRelation" USING btree (credential_id);
+
+
+--
+-- Name: index-metadata-label; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "index-metadata-label" ON public."TransactionMetadata" USING btree (label);
 
 
 --
@@ -414,6 +447,13 @@ CREATE INDEX "index-transaction_output-transaction" ON public."TransactionOutput
 
 
 --
+-- Name: index-tx_credential-credential; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "index-tx_credential-credential" ON public."TxCredentialRelation" USING btree (credential_id);
+
+
+--
 -- Name: AddressCredentialRelation fk-address_credential-address_id; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -427,6 +467,14 @@ ALTER TABLE ONLY public."AddressCredentialRelation"
 
 ALTER TABLE ONLY public."AddressCredentialRelation"
     ADD CONSTRAINT "fk-address_credential-credential_id" FOREIGN KEY (credential_id) REFERENCES public."StakeCredential"(id);
+
+
+--
+-- Name: TransactionMetadata fk-metadata-tx_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."TransactionMetadata"
+    ADD CONSTRAINT "fk-metadata-tx_id" FOREIGN KEY (tx_id) REFERENCES public."Transaction"(id) ON DELETE CASCADE;
 
 
 --

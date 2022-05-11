@@ -1,0 +1,20 @@
+---
+sidebar_position: 6
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import SqlFile from "!!raw-loader!../../bin/schema.sql";
+
+# SQL Format
+
+Although Carp comes with a webserver and client, users may want to run their own SQL queries.
+
+Here is the table format used by Carp
+
+![schema](../../bin/sql-graph.svg)
+
+More concretely, the full SQL schema can be seen below
+
+<CodeBlock language="sql" title="schema.sql" showLineNumbers>
+  {SqlFile}
+</CodeBlock>

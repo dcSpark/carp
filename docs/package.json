@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "prepare": "yarn bin:refresh-ep && yarn bin:openapi",
+    "bin:sql": "pg_dump --no-owner --schema-only -d $DATABASE_URL > bin/schema.sql && cd bin && . ./gen-sql-graph.sh && cd ..",
     "bin:openapi": "yarn --cwd ../webserver/server publish:openapi",
     "bin:refresh-ep": "cargo run --manifest-path ../indexer/plan-visualizer/Cargo.toml -- --plan ../indexer/execution_plans/default.ini -o ./bin",
     "docusaurus": "docusaurus",
