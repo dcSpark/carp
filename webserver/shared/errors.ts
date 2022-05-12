@@ -1,5 +1,3 @@
-import type { PaginationType } from "../server/app/services/PaginationService";
-
 export enum ErrorCodes {
   // we explicitly add the numbers to this enum
   // that way removing an entry in the future isn't a breaking change

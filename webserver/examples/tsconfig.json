@@ -3,12 +3,14 @@
   "compilerOptions": {
     "noEmit": true,
     "typeRoots": [
-      "../types",
       "./node_modules/@types",
+    ],
+    "types": [
+      "node",
+      "mocha",
     ],
   },
   "include": [
-    "./src/**/*",
-    "../shared/**/*"
+    "./tests/**/*",
   ]
 }

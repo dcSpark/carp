@@ -1,15 +1,15 @@
 import axios from "axios";
 import type { AxiosError, AxiosResponse } from "axios";
 import { expect } from "chai";
-import { Errors } from "../../shared/errors";
-import type { ErrorShape } from "../../shared/errors";
-import type { EndpointTypes } from "../../shared/routes";
-import { Routes } from "../../shared/routes";
+import { Errors } from "@dcspark/carp-client/shared/errors";
+import type { ErrorShape } from "@dcspark/carp-client/shared/errors";
+import type { EndpointTypes } from "@dcspark/carp-client/shared/routes";
+import { Routes } from "@dcspark/carp-client/shared/routes";
 import { StatusCodes } from "http-status-codes";
 import sortBy from "lodash/sortBy";
 import { bech32 } from "bech32";
 import Cip5 from "@dcspark/cip5-js";
-import { RelationFilterType } from "../../shared/models/common";
+import { RelationFilterType } from "@dcspark/carp-client/shared/models/common";
 
 const urlBase = "http://localhost:3000";
 type HistoryQuery = EndpointTypes[Routes.transactionHistory];
@@ -37,7 +37,7 @@ function getErrorResponse(
 
 // eslint-disable-next-line mocha/no-setup-in-describe
 describe(`/${Routes.transactionHistory}`, function () {
-  this.timeout(10000);
+  this.timeout(20_000);
   it("should return empty if addresses do not exist", async function () {
     const result = await query({
       addresses: [
@@ -326,7 +326,7 @@ describe(`/${Routes.transactionHistory}`, function () {
         slot: 4107844,
         era: 0,
         indexInBlock: 0,
-        is_valid: true,
+        isValid: true,
       },
       transaction: {
         hash: "ccea6f32d0a6145efb07839f82fe6dc1f2adc0395b6806c84165828c3b01c416",

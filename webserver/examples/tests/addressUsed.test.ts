@@ -1,14 +1,14 @@
 import axios from "axios";
 import type { AxiosError, AxiosResponse } from "axios";
 import { expect } from "chai";
-import { Errors } from "../../shared/errors";
-import type { ErrorShape } from "../../shared/errors";
-import type { EndpointTypes } from "../../shared/routes";
-import { Routes } from "../../shared/routes";
+import { Errors } from "@dcspark/carp-client/shared/errors";
+import type { ErrorShape } from "@dcspark/carp-client/shared/errors";
+import type { EndpointTypes } from "@dcspark/carp-client/shared/routes";
+import { Routes } from "@dcspark/carp-client/shared/routes";
 import { StatusCodes } from "http-status-codes";
 import { bech32 } from "bech32";
 import Cip5 from "@dcspark/cip5-js";
-import { RelationFilterType } from "../../shared/models/common";
+import { RelationFilterType } from "@dcspark/carp-client/shared/models/common";
 
 const urlBase = "http://localhost:3000";
 type AddressUsedQuery = EndpointTypes[Routes.addressUsed];
