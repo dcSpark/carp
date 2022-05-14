@@ -23,7 +23,9 @@
     "url": "https://github.com/dcSpark/carp/issues"
   },
   "homepage": "https://github.com/dcSpark/carp#readme",
-  "dependencies": {},
+  "dependencies": {
+    "axios": "^0.27.2"
+  },
   "devDependencies": {
     "@types/eslint": "8.4.1",
     "@types/eslint-plugin-prettier": "3.1.0",

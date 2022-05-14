@@ -7,8 +7,17 @@ WITH pointers AS (
       (:output_index)::int[]
     ) x(tx_hash,output_index)
 )
-SELECT "TransactionOutput".payload
+SELECT
+  "TransactionOutput".payload as utxo_payload,
+  "Transaction".is_valid,
+  "Transaction".tx_index,
+  "Block".hash AS block_hash,
+  "Block".epoch,
+  "Block".slot,
+  "Block".era,
+  "Block".height
 FROM
   "Transaction"
   INNER JOIN "TransactionOutput" ON "Transaction".id = "TransactionOutput".tx_id
+  INNER JOIN "Block" on "Block".id = "Transaction".block_id
 WHERE ("Transaction".hash, "TransactionOutput".output_index) in (SELECT tx_hash, output_index FROM pointers);

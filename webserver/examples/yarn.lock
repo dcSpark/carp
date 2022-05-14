@@ -21,6 +21,8 @@
 
 "@dcspark/carp-client@../client/dist":
   version "1.0.0"
+  dependencies:
+    axios "^0.27.2"
 
 "@dcspark/cip5-js@^1.0.0":
   version "1.0.0"

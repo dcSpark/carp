@@ -2,6 +2,9 @@
 sidebar_position: 2
 ---
 
+import CodeBlock from "@theme/CodeBlock";
+import MyComponentSource from "!!raw-loader!../../../webserver/examples/tests/example.ts";
+
 # Client API
 
 ### You can find the OpenAPI / swagger definition [here](/openapi)
@@ -15,4 +18,8 @@ We provide a Typescript client for ease of use from Javascript, we also provide 
 
 ## Example
 
-TODO: NPM-based example
+Here is an example where we get the transaction history for an address
+
+<CodeBlock language="typescript" title="example.ts" showLineNumbers>
+  {MyComponentSource}
+</CodeBlock>
