@@ -1,45 +1,23 @@
-import axios from "axios";
-import type { AxiosError, AxiosResponse } from "axios";
 import { expect } from "chai";
 import { Errors } from "@dcspark/carp-client/shared/errors";
-import type { ErrorShape } from "@dcspark/carp-client/shared/errors";
-import type { EndpointTypes } from "@dcspark/carp-client/shared/routes";
 import { Routes } from "@dcspark/carp-client/shared/routes";
 import { StatusCodes } from "http-status-codes";
 import sortBy from "lodash/sortBy";
 import { bech32 } from "bech32";
 import Cip5 from "@dcspark/cip5-js";
 import { RelationFilterType } from "@dcspark/carp-client/shared/models/common";
+import { query, getErrorResponse } from "@dcspark/carp-client/client/src/index";
 
 const urlBase = "http://localhost:3000";
-type HistoryQuery = EndpointTypes[Routes.transactionHistory];
 
 const hashForUntilBlock =
   "5fc6a3d84cbd3a1fab3d0f1228e0e788a1ba28f682a3a2ea7b2d49ad99645a2c";
-
-async function query(
-  data: HistoryQuery["input"]
-): Promise<HistoryQuery["response"]> {
-  const result = await axios.post<
-    HistoryQuery["response"],
-    AxiosResponse<HistoryQuery["response"]>,
-    HistoryQuery["input"]
-  >(`${urlBase}/${Routes.transactionHistory}`, data);
-  return result.data;
-}
-
-function getErrorResponse(
-  err: AxiosError<ErrorShape, unknown>
-): AxiosResponse<ErrorShape, unknown> {
-  if (err.response == null) throw new Error(`Unexpected null response`);
-  return err.response;
-}
 
 // eslint-disable-next-line mocha/no-setup-in-describe
 describe(`/${Routes.transactionHistory}`, function () {
   this.timeout(20_000);
   it("should return empty if addresses do not exist", async function () {
-    const result = await query({
+    const result = await query<Routes.transactionHistory>(urlBase, {
       addresses: [
         "DdzFFzCqrhsfYMUNRxtQ5NNKbWVw3ZJBNcMLLZSoqmD5trHHPBDwsjonoBgw1K6e8Qi8bEMs5Y62yZfReEVSFFMncFYDUHUTMM436KjQ",
         "DdzFFzCqrht4s7speawymCPkm9waYHFSv2zwxhmFqHHQK5FDFt7fd9EBVvm64CrELzxaRGMcygh3gnBrXCtJzzodvzJqVR8VTZqW4rKJ",
@@ -50,7 +28,7 @@ describe(`/${Routes.transactionHistory}`, function () {
   });
 
   it("should return empty if there are no tx after the given address", async function () {
-    const result = await query({
+    const result = await query<Routes.transactionHistory>(urlBase, {
       addresses: [
         "DdzFFzCqrhsqW5ZTDVX3sR9eEuBr5uPvWoBGaT5GjBQuA2gFL8aRvnecCr73xBsjWnSsebgHAFxEczaUDgW3pMs9Yx4CedeBemyqa1Rr",
       ],
@@ -66,7 +44,7 @@ describe(`/${Routes.transactionHistory}`, function () {
 
   it("should throw reference errors for a until block that doesn't exist.", async function () {
     try {
-      await query({
+      await query<Routes.transactionHistory>(urlBase, {
         addresses: [
           "Ae2tdPwUPEZHu3NZa6kCwet2msq4xrBXKHBDvogFKwMsF18Jca8JHLRBas7",
         ],
@@ -86,7 +64,7 @@ describe(`/${Routes.transactionHistory}`, function () {
 
   it("should throw reference errors for a tx that doesn't exist.", async function () {
     try {
-      await query({
+      await query<Routes.transactionHistory>(urlBase, {
         addresses: [
           "Ae2tdPwUPEZHu3NZa6kCwet2msq4xrBXKHBDvogFKwMsF18Jca8JHLRBas7",
         ],
@@ -110,7 +88,7 @@ describe(`/${Routes.transactionHistory}`, function () {
 
   it("should throw reference errors for a tx that doesn't match the block in after.", async function () {
     try {
-      await query({
+      await query<Routes.transactionHistory>(urlBase, {
         addresses: [
           "Ae2tdPwUPEZHu3NZa6kCwet2msq4xrBXKHBDvogFKwMsF18Jca8JHLRBas7",
         ],
@@ -133,7 +111,7 @@ describe(`/${Routes.transactionHistory}`, function () {
   });
 
   it("should not include a transaction twice if an address appears in both the input & the output", async function () {
-    const result = await query({
+    const result = await query<Routes.transactionHistory>(urlBase, {
       addresses: [
         "DdzFFzCqrht3UrnL3bCK5QMi9XtmkqGG3G2tmuY17tWyhq63S7EzMpJPogoPKx15drcnJkH4A7QdqYgs4h3XD1zXb3zkDyBuAZcaqYDS",
       ],
@@ -149,7 +127,7 @@ describe(`/${Routes.transactionHistory}`, function () {
   });
 
   it("should return elements sorted asc block height", async function () {
-    const result = await query({
+    const result = await query<Routes.transactionHistory>(urlBase, {
       addresses: [
         "DdzFFzCqrht6pqNhrJwDYh8gchg1h45C2bJRTFKmQbsv1T1EX63kpWtrwYVPTAAmpt29jYoTGBZSTDJfjA3w54kCMmsjKvsnGjnAraoB",
       ],
@@ -168,7 +146,7 @@ describe(`/${Routes.transactionHistory}`, function () {
   });
 
   it("should return history for input and output addresses", async function () {
-    const result = await query({
+    const result = await query<Routes.transactionHistory>(urlBase, {
       addresses: [
         "DdzFFzCqrhsnUbJho1ERJsuZxkevYTofBFMuQo5Uaxmb2dHUQX7TzK4C9gN5Yc5Hc4ok4o4wj1krZrgvQWGfd4BgpYFRQUQBgLzZxFi6",
         "DdzFFzCqrht33HAPd4PyqRAhmry5gsSgvZjh8dWdZPuHYchXPbP1W3Rw5A2zwgftbeU9rMu3znnpNib3oFGkmBy3LL8i8VTZhNG9qnwN",
@@ -199,7 +177,7 @@ describe(`/${Routes.transactionHistory}`, function () {
   });
 
   it("should allow limiting the number of transactions returned", async function () {
-    const result = await query({
+    const result = await query<Routes.transactionHistory>(urlBase, {
       addresses: [
         "DdzFFzCqrhsnUbJho1ERJsuZxkevYTofBFMuQo5Uaxmb2dHUQX7TzK4C9gN5Yc5Hc4ok4o4wj1krZrgvQWGfd4BgpYFRQUQBgLzZxFi6",
         "DdzFFzCqrht33HAPd4PyqRAhmry5gsSgvZjh8dWdZPuHYchXPbP1W3Rw5A2zwgftbeU9rMu3znnpNib3oFGkmBy3LL8i8VTZhNG9qnwN",
@@ -219,13 +197,13 @@ describe(`/${Routes.transactionHistory}`, function () {
   });
 
   it("should do same history even if addresses sent twice", async function () {
-    const resultUnique = await query({
+    const resultUnique = await query<Routes.transactionHistory>(urlBase, {
       addresses: [
         "DdzFFzCqrhsnUbJho1ERJsuZxkevYTofBFMuQo5Uaxmb2dHUQX7TzK4C9gN5Yc5Hc4ok4o4wj1krZrgvQWGfd4BgpYFRQUQBgLzZxFi6",
       ],
       untilBlock: hashForUntilBlock,
     });
-    const resultDuplicate = await query({
+    const resultDuplicate = await query<Routes.transactionHistory>(urlBase, {
       addresses: [
         "DdzFFzCqrhsnUbJho1ERJsuZxkevYTofBFMuQo5Uaxmb2dHUQX7TzK4C9gN5Yc5Hc4ok4o4wj1krZrgvQWGfd4BgpYFRQUQBgLzZxFi6",
         "DdzFFzCqrhsnUbJho1ERJsuZxkevYTofBFMuQo5Uaxmb2dHUQX7TzK4C9gN5Yc5Hc4ok4o4wj1krZrgvQWGfd4BgpYFRQUQBgLzZxFi6",
@@ -236,7 +214,7 @@ describe(`/${Routes.transactionHistory}`, function () {
   });
 
   it("Pagination mid-block should be supported", async function () {
-    const result = await query({
+    const result = await query<Routes.transactionHistory>(urlBase, {
       addresses: [
         "addr1q84shx6jr9s258r9m45ujeyde7u4z7tthkedezjm5kdr4um64gv6jqqncjd205c540fgu5450tzvu27n9lk8ulm3s99spva2ru",
       ],
@@ -260,7 +238,7 @@ describe(`/${Routes.transactionHistory}`, function () {
   it("Transaction-era transactions should be marked properly", async function () {
     // Byron era
     {
-      const result = await query({
+      const result = await query<Routes.transactionHistory>(urlBase, {
         addresses: [
           "Ae2tdPwUPEZLs4HtbuNey7tK4hTKrwNwYtGqp7bDfCy2WdR3P6735W5Yfpe",
         ],
@@ -280,7 +258,7 @@ describe(`/${Routes.transactionHistory}`, function () {
     }
     // Shelley era
     {
-      const result = await query({
+      const result = await query<Routes.transactionHistory>(urlBase, {
         addresses: [
           "addr1q9ya8v4pe33nlkgftyd70nhhp407pvnjjcsddhf64sh9gegwtvyxm7r69gx9cwvtg82p87zpwmzj0kj7tjmyraze3pzqe6zxzv",
         ],
@@ -296,7 +274,7 @@ describe(`/${Routes.transactionHistory}`, function () {
   });
 
   it("untilBlock should limit the response", async function () {
-    const result = await query({
+    const result = await query<Routes.transactionHistory>(urlBase, {
       addresses: [
         "DdzFFzCqrhsnUbJho1ERJsuZxkevYTofBFMuQo5Uaxmb2dHUQX7TzK4C9gN5Yc5Hc4ok4o4wj1krZrgvQWGfd4BgpYFRQUQBgLzZxFi6",
         "DdzFFzCqrht33HAPd4PyqRAhmry5gsSgvZjh8dWdZPuHYchXPbP1W3Rw5A2zwgftbeU9rMu3znnpNib3oFGkmBy3LL8i8VTZhNG9qnwN",
@@ -311,7 +289,7 @@ describe(`/${Routes.transactionHistory}`, function () {
   });
 
   it("Response should have the right shape", async function () {
-    const result = await query({
+    const result = await query<Routes.transactionHistory>(urlBase, {
       addresses: [
         "DdzFFzCqrhsnUbJho1ERJsuZxkevYTofBFMuQo5Uaxmb2dHUQX7TzK4C9gN5Yc5Hc4ok4o4wj1krZrgvQWGfd4BgpYFRQUQBgLzZxFi6",
       ],
@@ -337,7 +315,7 @@ describe(`/${Routes.transactionHistory}`, function () {
   });
 
   it("order of tx objects should be by block_num asc, indexInBlock asc", async function () {
-    const result = await query({
+    const result = await query<Routes.transactionHistory>(urlBase, {
       addresses: [
         "Ae2tdPwUPEYynjShTL8D2L2GGggTH3AGtMteb7r65oLar1vzZ4JPfxob4b8",
       ],
@@ -351,7 +329,7 @@ describe(`/${Routes.transactionHistory}`, function () {
   });
 
   it("Get payment key that only occurs in input", async function () {
-    const result = await query({
+    const result = await query<Routes.transactionHistory>(urlBase, {
       addresses: [
         bech32.encode(
           Cip5.hashes.addr_vkh,
@@ -378,7 +356,7 @@ describe(`/${Routes.transactionHistory}`, function () {
   });
 
   it("Get payment key that only occurs in output", async function () {
-    const result = await query({
+    const result = await query<Routes.transactionHistory>(urlBase, {
       addresses: [
         bech32.encode(
           Cip5.hashes.addr_vkh,
@@ -400,7 +378,7 @@ describe(`/${Routes.transactionHistory}`, function () {
   });
 
   it("Get tx using base address bech32", async function () {
-    const result = await query({
+    const result = await query<Routes.transactionHistory>(urlBase, {
       addresses: [
         "addr1qxz6hulv54gzf2suy2u5gkvmt6ysasfdlvvegy3fmf969y7r3y3kdut55a40jff00qmg74686vz44v6k363md06qkq0q8eqdws",
       ],
@@ -414,7 +392,7 @@ describe(`/${Routes.transactionHistory}`, function () {
   });
 
   it("Get tx only related by its staking key", async function () {
-    const result = await query({
+    const result = await query<Routes.transactionHistory>(urlBase, {
       addresses: [
         "stake1uydrhuvnrhlzpkzrkukp3h4n0fp5dzqzcz36t5thkmfezyc47wa2x",
       ],
@@ -433,7 +411,7 @@ describe(`/${Routes.transactionHistory}`, function () {
   });
 
   it("Gets tx only related by its staking key with explicit filter", async function () {
-    const result = await query({
+    const result = await query<Routes.transactionHistory>(urlBase, {
       addresses: [
         "stake1uydrhuvnrhlzpkzrkukp3h4n0fp5dzqzcz36t5thkmfezyc47wa2x",
       ],
@@ -453,7 +431,7 @@ describe(`/${Routes.transactionHistory}`, function () {
   });
 
   it("Fail to find tx only related by its staking key with strict filter", async function () {
-    const result = await query({
+    const result = await query<Routes.transactionHistory>(urlBase, {
       addresses: [
         "stake1uydrhuvnrhlzpkzrkukp3h4n0fp5dzqzcz36t5thkmfezyc47wa2x",
       ],
@@ -470,7 +448,7 @@ describe(`/${Routes.transactionHistory}`, function () {
   });
 
   it("Get tx using script hash", async function () {
-    const result = await query({
+    const result = await query<Routes.transactionHistory>(urlBase, {
       addresses: [
         // note: this is the jpg.store contract address
         // so this is also a test one of the largest joins you could end up doing
@@ -492,7 +470,7 @@ describe(`/${Routes.transactionHistory}`, function () {
   });
 
   it("Two bech32 addresses in the same tx don't result in the tx being duplicated", async function () {
-    const result = await query({
+    const result = await query<Routes.transactionHistory>(urlBase, {
       addresses: [
         "addr1q95ldat52vp36p9awxsge5lnre7kr0af8yph7rj50h59pcm85l8qxaqez4dsa7xqdmr83cmzsg2xl4cz8yfljexuj3cqgf6zhz",
         "addr1qx967jynr3gc0n2elhj48a88mghp524fyqhvdenczh9nlzsra34p9pswlrq86nq63hna7p4vkrcrxznqslkta9eqs2nsr793vd",
@@ -514,7 +492,7 @@ describe(`/${Routes.transactionHistory}`, function () {
   });
 
   it("Two credentials in the same tx don't result in the tx being duplicated", async function () {
-    const result = await query({
+    const result = await query<Routes.transactionHistory>(urlBase, {
       addresses: [
         "8200581c69f6f57453031d04bd71a08cd3f31e7d61bfa939037f0e547de850e3",
         "8200581c8baf48931c5187cd59fde553f4e7da2e1a2aa9202ec6e67815cb3f8a",

@@ -1,39 +1,17 @@
-import axios from "axios";
-import type { AxiosError, AxiosResponse } from "axios";
 import { expect } from "chai";
 import { Errors } from "@dcspark/carp-client/shared/errors";
-import type { ErrorShape } from "@dcspark/carp-client/shared/errors";
-import type { EndpointTypes } from "@dcspark/carp-client/shared/routes";
 import { Routes } from "@dcspark/carp-client/shared/routes";
 import { StatusCodes } from "http-status-codes";
+import { query, getErrorResponse } from "@dcspark/carp-client/client/src/index";
 
 const urlBase = "http://localhost:3000";
-type TransactionOutputQuery = EndpointTypes[Routes.transactionOutput];
-
-async function query(
-  data: TransactionOutputQuery["input"]
-): Promise<TransactionOutputQuery["response"]> {
-  const result = await axios.post<
-    TransactionOutputQuery["response"],
-    AxiosResponse<TransactionOutputQuery["response"]>,
-    TransactionOutputQuery["input"]
-  >(`${urlBase}/${Routes.transactionOutput}`, data);
-  return result.data;
-}
-
-function getErrorResponse(
-  err: AxiosError<ErrorShape, unknown>
-): AxiosResponse<ErrorShape, unknown> {
-  if (err.response == null) throw new Error(`Unexpected null response`);
-  return err.response;
-}
 
 // eslint-disable-next-line mocha/no-setup-in-describe
 describe(`/${Routes.addressUsed}`, function () {
   this.timeout(10000);
 
   it("should find outputs given utxo pointers", async function () {
-    const result = await query({
+    const result = await query<Routes.transactionOutput>(urlBase, {
       utxoPointers: [
         {
           txHash:
@@ -68,7 +46,7 @@ describe(`/${Routes.addressUsed}`, function () {
 
   it("should reject invalid tx hashes", async function () {
     try {
-      await query({
+      await query<Routes.transactionOutput>(urlBase, {
         utxoPointers: [
           {
             txHash: "777",

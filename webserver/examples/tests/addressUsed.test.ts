@@ -1,38 +1,16 @@
-import axios from "axios";
-import type { AxiosError, AxiosResponse } from "axios";
 import { expect } from "chai";
 import { Errors } from "@dcspark/carp-client/shared/errors";
-import type { ErrorShape } from "@dcspark/carp-client/shared/errors";
-import type { EndpointTypes } from "@dcspark/carp-client/shared/routes";
 import { Routes } from "@dcspark/carp-client/shared/routes";
 import { StatusCodes } from "http-status-codes";
 import { bech32 } from "bech32";
 import Cip5 from "@dcspark/cip5-js";
 import { RelationFilterType } from "@dcspark/carp-client/shared/models/common";
+import { query, getErrorResponse } from "@dcspark/carp-client/client/src/index";
 
 const urlBase = "http://localhost:3000";
-type AddressUsedQuery = EndpointTypes[Routes.addressUsed];
 
 const hashForUntilBlock =
   "5fc6a3d84cbd3a1fab3d0f1228e0e788a1ba28f682a3a2ea7b2d49ad99645a2c";
-
-async function query(
-  data: AddressUsedQuery["input"]
-): Promise<AddressUsedQuery["response"]> {
-  const result = await axios.post<
-    AddressUsedQuery["response"],
-    AxiosResponse<AddressUsedQuery["response"]>,
-    AddressUsedQuery["input"]
-  >(`${urlBase}/${Routes.addressUsed}`, data);
-  return result.data;
-}
-
-function getErrorResponse(
-  err: AxiosError<ErrorShape, unknown>
-): AxiosResponse<ErrorShape, unknown> {
-  if (err.response == null) throw new Error(`Unexpected null response`);
-  return err.response;
-}
 
 // eslint-disable-next-line mocha/no-setup-in-describe
 describe(`/${Routes.addressUsed}`, function () {
@@ -40,7 +18,7 @@ describe(`/${Routes.addressUsed}`, function () {
 
   it("should throw on invalid address", async function () {
     try {
-      await query({
+      await query<Routes.addressUsed>(urlBase, {
         addresses: [
           "Ae2tdPwUPEZHu3NZa6kCwet2msq4xrBXKHBDvogFKwMs8Jca8JHLRBas7",
         ],
@@ -58,7 +36,7 @@ describe(`/${Routes.addressUsed}`, function () {
   });
 
   it("should return empty if addresses do not exist", async function () {
-    const result = await query({
+    const result = await query<Routes.addressUsed>(urlBase, {
       addresses: [
         "DdzFFzCqrhsfYMUNRxtQ5NNKbWVw3ZJBNcMLLZSoqmD5trHHPBDwsjonoBgw1K6e8Qi8bEMs5Y62yZfReEVSFFMncFYDUHUTMM436KjQ",
         "DdzFFzCqrht4s7speawymCPkm9waYHFSv2zwxhmFqHHQK5FDFt7fd9EBVvm64CrELzxaRGMcygh3gnBrXCtJzzodvzJqVR8VTZqW4rKJ",
@@ -69,7 +47,7 @@ describe(`/${Routes.addressUsed}`, function () {
   });
 
   it("filters for legacy addresses", async function () {
-    const result = await query({
+    const result = await query<Routes.addressUsed>(urlBase, {
       addresses: [
         "DdzFFzCqrht4wFnWC5TJA5UUVE54JC9xZWq589iKyCrWa6hek3KKevyaXzQt6FsdunbkZGzBFQhwZi1MDpijwRoC7kj1MkEPh2Uu5Ssz",
         "DdzFFzCqrhtBBX4VvncQ6Zxn8UHawaqSB4jf9EELRBuWUT9gZTmCDWCNTVMotEdof1g26qbrDc8qcHZvtntxR4FaBN1iKxQ5ttjZSZoj",
@@ -88,7 +66,7 @@ describe(`/${Routes.addressUsed}`, function () {
   });
 
   it("filters with pagination for legacy addresses", async function () {
-    const result = await query({
+    const result = await query<Routes.addressUsed>(urlBase, {
       addresses: [
         "DdzFFzCqrht4wFnWC5TJA5UUVE54JC9xZWq589iKyCrWa6hek3KKevyaXzQt6FsdunbkZGzBFQhwZi1MDpijwRoC7kj1MkEPh2Uu5Ssz",
         "DdzFFzCqrhtBBX4VvncQ6Zxn8UHawaqSB4jf9EELRBuWUT9gZTmCDWCNTVMotEdof1g26qbrDc8qcHZvtntxR4FaBN1iKxQ5ttjZSZoj",
@@ -111,7 +89,7 @@ describe(`/${Routes.addressUsed}`, function () {
   });
 
   it("should not include an address twice if an address appears multiple times on-chain", async function () {
-    const result = await query({
+    const result = await query<Routes.addressUsed>(urlBase, {
       addresses: [
         "DdzFFzCqrht3UrnL3bCK5QMi9XtmkqGG3G2tmuY17tWyhq63S7EzMpJPogoPKx15drcnJkH4A7QdqYgs4h3XD1zXb3zkDyBuAZcaqYDS",
       ],
@@ -133,7 +111,7 @@ describe(`/${Routes.addressUsed}`, function () {
       "DdzFFzCqrht4wFnWC5TJA5UUVE54JC9xZWq589iKyCrWa6hek3KKevyaXzQt6FsdunbkZGzBFQhwZi1MDpijwRoC7kj1MkEPh2Uu5Ssz",
       "DdzFFzCqrht2Hw9qp1YcqsMJfwjMXiJR46RXU8KFALErRXnjHnjwBPCP8FDjwgUQkZeGghu69YP71ZU67EDsXa5G3g8D2Kr5XZ7Jc42b",
     ];
-    const result = await query({
+    const result = await query<Routes.addressUsed>(urlBase, {
       addresses,
       untilBlock: hashForUntilBlock,
     });
@@ -143,7 +121,7 @@ describe(`/${Routes.addressUsed}`, function () {
   });
 
   it("should return the same result if an address is sent twice", async function () {
-    const result = await query({
+    const result = await query<Routes.addressUsed>(urlBase, {
       addresses: [
         "DdzFFzCqrht62k6YFcieBUwxkq2CLSi4Pdvt3bd6ghq5P7fTgp8n5pRyQK45gN8A2Udyaj9mFRdK1eUoxy1QjcU5AuCix5uJB3zdBgkf",
         "DdzFFzCqrht62k6YFcieBUwxkq2CLSi4Pdvt3bd6ghq5P7fTgp8n5pRyQK45gN8A2Udyaj9mFRdK1eUoxy1QjcU5AuCix5uJB3zdBgkf",
@@ -179,7 +157,7 @@ describe(`/${Routes.addressUsed}`, function () {
         )
       ),
     ];
-    const result = await query({
+    const result = await query<Routes.addressUsed>(urlBase, {
       addresses,
       untilBlock:
         "a8269def34ff4dcb9801934e8a6ea22ed081a1991c5900282c9236a04cff5c3d",
@@ -191,21 +169,24 @@ describe(`/${Routes.addressUsed}`, function () {
   it("gets filters out addresses using filters", async function () {
     const address =
       "stake1uydrhuvnrhlzpkzrkukp3h4n0fp5dzqzcz36t5thkmfezyc47wa2x";
-    const filterToWithdrawal = await query({
-      addresses: [address],
-      after: {
-        tx: "193c753a090fa0e7248590d407137e9439622e2fe818688186aeb47ac9b58fa4",
-        block:
-          "42b95a9ce5b17f02aa00f99c3bca0a9eccbdbe0942fa246b5376af66979c8c0c",
-      },
-      untilBlock:
-        "d62a740622c27a501697c90fdbdba7ff4931a1ff2ffccdbb5c85bdaa2bec9539",
-      relationFilter: RelationFilterType.Withdrawal,
-    });
+    const filterToWithdrawal = await query<Routes.addressUsed>(
+      Routes.addressUsed,
+      {
+        addresses: [address],
+        after: {
+          tx: "193c753a090fa0e7248590d407137e9439622e2fe818688186aeb47ac9b58fa4",
+          block:
+            "42b95a9ce5b17f02aa00f99c3bca0a9eccbdbe0942fa246b5376af66979c8c0c",
+        },
+        untilBlock:
+          "d62a740622c27a501697c90fdbdba7ff4931a1ff2ffccdbb5c85bdaa2bec9539",
+        relationFilter: RelationFilterType.Withdrawal,
+      }
+    );
 
     expect(filterToWithdrawal.addresses).to.be.eql([address]);
 
-    const filterAll = await query({
+    const filterAll = await query<Routes.addressUsed>(urlBase, {
       addresses: [address],
       after: {
         tx: "193c753a090fa0e7248590d407137e9439622e2fe818688186aeb47ac9b58fa4",
