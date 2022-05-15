@@ -26,6 +26,6 @@ base64 = "0.13.0"
 bs58 = "0.4.0"
 oura = "1.4.1"
 clap = { version = "3.1", features = ["derive"] }
-cardano-multiplatform-lib = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "expand-whitelist" }
+cardano-multiplatform-lib = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "long-addr-fix" }
 pallas = "0.9.1"
 cryptoxide = "0.4.2"
