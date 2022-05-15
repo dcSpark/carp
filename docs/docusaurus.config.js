@@ -8,8 +8,8 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 const config = {
   title: 'Carp Documentation',
   tagline: 'Cardano Postgres Indexer',
-  url: 'https://your-docusaurus-test-site.com',
-  baseUrl: '/',
+  url: 'https://dcspark.github.io',
+  baseUrl: '/carp/',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
   favicon: 'img/favicon.ico',
@@ -48,7 +48,7 @@ const config = {
         specs: [
           {
             spec: 'bin/openapi.json',
-            route: '/openapi',
+            route: '/openapi/',
           },
         ],
         // Theme Options for modifying how redoc renders them

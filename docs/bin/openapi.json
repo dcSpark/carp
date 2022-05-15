@@ -287,26 +287,41 @@
                 ],
                 "type": "object"
             },
+            "UtxoAndBlockInfo": {
+                "properties": {
+                    "utxo": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/UtxoPointer"
+                            },
+                            {
+                                "properties": {
+                                    "payload": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "payload"
+                                ],
+                                "type": "object"
+                            }
+                        ]
+                    },
+                    "block": {
+                        "$ref": "#/components/schemas/BlockInfo"
+                    }
+                },
+                "required": [
+                    "utxo",
+                    "block"
+                ],
+                "type": "object"
+            },
             "TransactionOutputResponse": {
                 "properties": {
                     "utxos": {
                         "items": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/components/schemas/UtxoPointer"
-                                },
-                                {
-                                    "properties": {
-                                        "payload": {
-                                            "type": "string"
-                                        }
-                                    },
-                                    "required": [
-                                        "payload"
-                                    ],
-                                    "type": "object"
-                                }
-                            ]
+                            "$ref": "#/components/schemas/UtxoAndBlockInfo"
                         },
                         "type": "array"
                     }
