@@ -2,7 +2,6 @@ use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction},
 };
-use nameof::name_of_type;
 use pallas::ledger::primitives::alonzo::{self, TransactionBodyComponent};
 
 use super::{
@@ -21,7 +20,7 @@ carp_task! {
   dependencies [MultieraOutputTask];
   read [multiera_txs];
   write [vkey_relation_map];
-  should_add_task |block, properties| -> MultieraUnusedInputPrerunData {
+  should_add_task |_block, _properties| -> MultieraUnusedInputPrerunData {
     PrerunResult::RunTaskWith(MultieraUnusedInputPrerunData())
   };
   execute |previous_data, task| handle_unused_input(
@@ -30,7 +29,7 @@ carp_task! {
       &previous_data.multiera_txs,
       &mut previous_data.vkey_relation_map,
   );
-  merge_result |previous_data, result| {
+  merge_result |previous_data, _result| {
   };
 }
 

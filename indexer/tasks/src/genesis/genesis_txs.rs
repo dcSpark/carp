@@ -32,7 +32,7 @@ carp_task! {
   dependencies [];
   read [];
   write [genesis_txs, genesis_addresses, genesis_outputs];
-  should_add_task |block, properties| -> GenesisTaskPrerunData {
+  should_add_task |_block, _properties| -> GenesisTaskPrerunData {
     PrerunResult::RunTaskWith(GenesisTaskPrerunData())
   };
   execute |previous_data, task| handle_txs(

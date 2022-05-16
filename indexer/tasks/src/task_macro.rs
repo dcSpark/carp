@@ -167,6 +167,7 @@ macro_rules! carp_task {
         impl<'a> System<'a> for $name<'_> {
             type SystemData = Data<'a>;
 
+            #[allow(unused_mut)]
             fn run(&mut self, mut $previous_data: Data<'a>) {
                 let time_counter = std::time::Instant::now();
 

@@ -15,7 +15,7 @@ carp_task! {
   dependencies [ByronTransactionTask];
   read [byron_txs];
   write [byron_addresses];
-  should_add_task |block, properties| -> ByronAddressPrerunData {
+  should_add_task |_block, _properties| -> ByronAddressPrerunData {
     PrerunResult::RunTaskWith(ByronAddressPrerunData())
   };
   execute |previous_data, task| handle_outputs(

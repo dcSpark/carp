@@ -19,8 +19,8 @@ use std::sync::{Arc, Mutex};
 pub struct ExampleTaskPrerunData();
 
 async fn handle_dummy(
-    db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, alonzo::Block>,
+    _db_tx: &DatabaseTransaction,
+    _block: BlockInfo<'_, alonzo::Block>,
 ) -> Result<(), DbErr> {
     Ok(())
 }
@@ -31,13 +31,13 @@ carp_task! {
   dependencies [];
   read [multiera_txs];
   write [multiera_addresses];
-  should_add_task |block, properties| -> ExampleTaskPrerunData {
+  should_add_task |_block, _properties| -> ExampleTaskPrerunData {
     PrerunResult::RunTaskWith(ExampleTaskPrerunData())
   };
-  execute |previous_data, task| handle_dummy(
+  execute |_previous_data, task| handle_dummy(
       task.db_tx,
       task.block,
   );
-  merge_result |data, result| {
+  merge_result |data, _result| {
   };
 }

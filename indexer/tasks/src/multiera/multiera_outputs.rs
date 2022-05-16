@@ -6,7 +6,6 @@ use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction, Set},
 };
-use nameof::name_of_type;
 use pallas::ledger::primitives::alonzo::{self, TransactionBody, TransactionBodyComponent};
 use pallas::ledger::primitives::Fragment;
 
@@ -27,7 +26,7 @@ carp_task! {
   dependencies [MultieraAddressTask];
   read [multiera_txs, multiera_addresses];
   write [multiera_outputs];
-  should_add_task |block, properties| -> MultieraOutputPrerunData {
+  should_add_task |_block, _properties| -> MultieraOutputPrerunData {
     PrerunResult::RunTaskWith(MultieraOutputPrerunData())
   };
   execute |previous_data, task| handle_output(

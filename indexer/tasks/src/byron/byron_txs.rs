@@ -11,7 +11,7 @@ carp_task! {
   dependencies [];
   read [];
   write [byron_txs];
-  should_add_task |block, properties| -> ByronTransactionPrerunData {
+  should_add_task |_block, _properties| -> ByronTransactionPrerunData {
     PrerunResult::RunTaskWith(ByronTransactionPrerunData())
   };
   execute |previous_data, task| handle_tx(

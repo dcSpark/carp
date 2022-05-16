@@ -9,7 +9,6 @@ use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction},
 };
-use nameof::name_of_type;
 use pallas::ledger::primitives::alonzo::{self, TransactionBodyComponent};
 
 use crate::{
@@ -29,7 +28,7 @@ carp_task! {
   dependencies [MultieraOutputTask];
   read [multiera_txs];
   write [vkey_relation_map, multiera_used_inputs];
-  should_add_task |block, properties| -> MultieraUsedInputPrerunData {
+  should_add_task |_block, _properties| -> MultieraUsedInputPrerunData {
     PrerunResult::RunTaskWith(MultieraUsedInputPrerunData())
   };
   execute |previous_data, task| handle_input(

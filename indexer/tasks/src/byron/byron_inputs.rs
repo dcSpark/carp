@@ -12,7 +12,7 @@ carp_task! {
   dependencies [ByronOutputTask];
   read [byron_txs];
   write [byron_inputs];
-  should_add_task |block, properties| -> ByronInputPrerunData {
+  should_add_task |_block, _properties| -> ByronInputPrerunData {
     PrerunResult::RunTaskWith(ByronInputPrerunData())
   };
   execute |previous_data, task| handle_inputs(

@@ -9,7 +9,6 @@ use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction, Set},
 };
-use nameof::name_of_type;
 use pallas::ledger::primitives::alonzo::{self};
 
 use super::{
@@ -28,7 +27,7 @@ carp_task! {
   dependencies [MultieraAddressTask, MultieraStakeCredentialTask];
   read [multiera_stake_credential, vkey_relation_map];
   write [];
-  should_add_task |block, properties| -> MultieraTxCredentialRelationPrerunData {
+  should_add_task |_block, _properties| -> MultieraTxCredentialRelationPrerunData {
     PrerunResult::RunTaskWith(MultieraTxCredentialRelationPrerunData())
   };
   execute |previous_data, task| handle_tx_credential_relations(
@@ -36,7 +35,7 @@ carp_task! {
       &previous_data.multiera_stake_credential,
       &previous_data.vkey_relation_map,
   );
-  merge_result |previous_data, result| {
+  merge_result |previous_data, _result| {
   };
 }
 

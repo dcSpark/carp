@@ -2,7 +2,6 @@ use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction, Set},
 };
-use nameof::name_of_type;
 use pallas::ledger::primitives::alonzo::{self};
 use pallas::ledger::primitives::Fragment;
 use crate::{database_task::PrerunResult, task_macro::*};
@@ -16,7 +15,7 @@ carp_task! {
   dependencies [];
   read [];
   write [multiera_txs];
-  should_add_task |block, properties| -> MultieraTransactionPrerunData {
+  should_add_task |_block, _properties| -> MultieraTransactionPrerunData {
     PrerunResult::RunTaskWith(MultieraTransactionPrerunData())
   };
   execute |previous_data, task| handle_tx(

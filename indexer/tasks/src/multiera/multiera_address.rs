@@ -9,7 +9,6 @@ use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction},
 };
-use nameof::name_of_type;
 use pallas::ledger::primitives::alonzo::{
     self, Certificate, TransactionBody, TransactionBodyComponent,
 };
@@ -36,7 +35,7 @@ carp_task! {
   dependencies [MultieraTransactionTask];
   read [multiera_txs];
   write [vkey_relation_map, multiera_addresses, multiera_queued_addresses_relations];
-  should_add_task |block, properties| -> MultieraAddressPrerunData {
+  should_add_task |_block, _properties| -> MultieraAddressPrerunData {
     PrerunResult::RunTaskWith(MultieraAddressPrerunData())
   };
   execute |previous_data, task| handle_addresses(

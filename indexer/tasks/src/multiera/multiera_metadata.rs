@@ -6,7 +6,6 @@ use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction, Set},
 };
-use nameof::name_of_type;
 use pallas::ledger::primitives::Fragment;
 use pallas::{
     codec::utils::KeyValuePairs,
@@ -26,7 +25,7 @@ carp_task! {
   dependencies [MultieraTransactionTask];
   read [multiera_txs];
   write [multiera_metadata];
-  should_add_task |block, properties| -> MultieraMetadataPrerunData {
+  should_add_task |_block, _properties| -> MultieraMetadataPrerunData {
     PrerunResult::RunTaskWith(MultieraMetadataPrerunData())
   };
   execute |previous_data, task| handle_metadata(

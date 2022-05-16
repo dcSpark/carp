@@ -4,7 +4,6 @@ use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction, Set},
 };
-use nameof::name_of_type;
 use pallas::ledger::primitives::alonzo::{self};
 
 use crate::{
@@ -26,7 +25,7 @@ carp_task! {
   dependencies [MultieraAddressTask, MultieraStakeCredentialTask];
   read [multiera_queued_addresses_relations, multiera_stake_credential];
   write [multiera_addresses];
-  should_add_task |block, properties| -> MultieraAddressCredentialRelationPrerunData {
+  should_add_task |_block, _properties| -> MultieraAddressCredentialRelationPrerunData {
     PrerunResult::RunTaskWith(MultieraAddressCredentialRelationPrerunData())
   };
   execute |previous_data, task| handle_address_credential_relation(
@@ -35,7 +34,7 @@ carp_task! {
       &previous_data.multiera_addresses,
       &previous_data.multiera_queued_addresses_relations,
   );
-  merge_result |previous_data, result| {
+  merge_result |previous_data, _result| {
   };
 }
 

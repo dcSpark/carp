@@ -7,7 +7,6 @@ use entity::{
     prelude::*,
     sea_orm::{prelude::*, Condition, DatabaseTransaction, Set},
 };
-use nameof::name_of_type;
 use pallas::ledger::primitives::alonzo::{self, TransactionBodyComponent};
 
 use crate::{
@@ -31,7 +30,7 @@ carp_task! {
   dependencies [MultieraUsedInputTask, MultieraUnusedInputTask];
   read [multiera_txs];
   write [vkey_relation_map, multiera_stake_credential];
-  should_add_task |block, properties| -> MultieraStakeCredentialPrerunData {
+  should_add_task |_block, _properties| -> MultieraStakeCredentialPrerunData {
     PrerunResult::RunTaskWith(MultieraStakeCredentialPrerunData())
   };
   execute |previous_data, task| handle_stake_credentials(
