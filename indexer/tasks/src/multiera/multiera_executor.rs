@@ -32,7 +32,7 @@ pub async fn process_multiera_block(
             }
             Some(task) => {
                 if let TaskRegistryEntry::Multiera(entry) = task {
-                    entry.builder.add_task(
+                    entry.builder.maybe_add_task(
                         &mut dispatcher_builder,
                         txn,
                         block,
@@ -44,9 +44,11 @@ pub async fn process_multiera_block(
             }
         }
     }
-    let mut dispatcher = dispatcher_builder.build();
-    dispatcher.setup(&mut world);
-    dispatcher.dispatch(&world);
+    if !dispatcher_builder.is_empty() {
+        let mut dispatcher = dispatcher_builder.build();
+        dispatcher.setup(&mut world);
+        dispatcher.dispatch(&world);
+    }
 
     perf_aggregator
         .lock()

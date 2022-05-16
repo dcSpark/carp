@@ -13,7 +13,7 @@ use entity::{
 };
 use shred::{DispatcherBuilder, ResourceId, System, SystemData, World, Write};
 
-use crate::{database_task::PrerunResult, task_macro::*};
+use crate::task_macro::*;
 use crate::{
     database_task::{
         BlockInfo, DatabaseTaskMeta, GenesisTaskRegistryEntry, TaskBuilder, TaskRegistryEntry,
@@ -23,17 +23,14 @@ use crate::{
 use entity::sea_orm::Iterable;
 use futures::future::try_join;
 
-#[derive(Copy, Clone)]
-pub struct GenesisTaskPrerunData();
-
 carp_task! {
   name GenesisTransactionTask;
   era genesis;
   dependencies [];
   read [];
   write [genesis_txs, genesis_addresses, genesis_outputs];
-  should_add_task |_block, _properties| -> GenesisTaskPrerunData {
-    PrerunResult::RunTaskWith(GenesisTaskPrerunData())
+  should_add_task |block, _properties| {
+    !block.1.avvm_distr.is_empty() || !block.1.non_avvm_balances.is_empty()
   };
   execute |previous_data, task| handle_txs(
       task.db_tx,

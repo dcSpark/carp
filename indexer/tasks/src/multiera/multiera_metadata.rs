@@ -1,6 +1,4 @@
-use std::{
-    collections::BTreeMap,
-};
+use std::collections::BTreeMap;
 
 use entity::{
     prelude::*,
@@ -14,10 +12,7 @@ use pallas::{
 
 use super::multiera_txs::MultieraTransactionTask;
 
-use crate::{database_task::PrerunResult, task_macro::*};
-
-#[derive(Copy, Clone)]
-pub struct MultieraMetadataPrerunData();
+use crate::task_macro::*;
 
 carp_task! {
   name MultieraMetadataTask;
@@ -25,8 +20,8 @@ carp_task! {
   dependencies [MultieraTransactionTask];
   read [multiera_txs];
   write [multiera_metadata];
-  should_add_task |_block, _properties| -> MultieraMetadataPrerunData {
-    PrerunResult::RunTaskWith(MultieraMetadataPrerunData())
+  should_add_task |block, _properties| {
+    block.1.auxiliary_data_set.len() > 0
   };
   execute |previous_data, task| handle_metadata(
       task.db_tx,

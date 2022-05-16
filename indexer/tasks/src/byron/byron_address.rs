@@ -4,10 +4,7 @@ use pallas::ledger::primitives::{
 };
 
 use super::byron_txs::ByronTransactionTask;
-use crate::{database_task::PrerunResult, task_macro::*};
-
-#[derive(Copy, Clone)]
-pub struct ByronAddressPrerunData();
+use crate::task_macro::*;
 
 carp_task! {
   name ByronAddressTask;
@@ -15,10 +12,18 @@ carp_task! {
   dependencies [ByronTransactionTask];
   read [byron_txs];
   write [byron_addresses];
-  should_add_task |_block, _properties| -> ByronAddressPrerunData {
-    PrerunResult::RunTaskWith(ByronAddressPrerunData())
+  should_add_task |block, _properties| {
+    // recall: txs may have no outputs if they just burn all inputs as fee
+    match block.1 {
+        byron::Block::MainBlock(main_block) => {
+            main_block
+                .body
+                .tx_payload.iter().any(|payload| payload.transaction.outputs.len() > 0)
+        }
+        _ => false,
+    }
   };
-  execute |previous_data, task| handle_outputs(
+  execute |previous_data, task| handle_addresses(
       task.db_tx,
       task.block,
       previous_data.byron_txs.as_slice(),
@@ -28,7 +33,7 @@ carp_task! {
   };
 }
 
-async fn handle_outputs(
+async fn handle_addresses(
     db_tx: &DatabaseTransaction,
     block: BlockInfo<'_, byron::Block>,
     byron_txs: &[TransactionModel],

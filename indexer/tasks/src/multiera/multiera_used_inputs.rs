@@ -1,6 +1,4 @@
-use std::{
-    collections::BTreeMap,
-};
+use std::collections::BTreeMap;
 
 use cardano_multiplatform_lib::address::{
     BaseAddress, ByronAddress, EnterpriseAddress, PointerAddress, RewardAddress,
@@ -11,16 +9,11 @@ use entity::{
 };
 use pallas::ledger::primitives::alonzo::{self, TransactionBodyComponent};
 
-use crate::{
-    types::TxCredentialRelationValue,
-};
+use crate::{dsl::default_impl::has_transaction_multiera, types::TxCredentialRelationValue};
 
 use super::{multiera_outputs::MultieraOutputTask, relation_map::RelationMap};
 
-use crate::{database_task::PrerunResult, task_macro::*};
-
-#[derive(Copy, Clone)]
-pub struct MultieraUsedInputPrerunData();
+use crate::task_macro::*;
 
 carp_task! {
   name MultieraUsedInputTask;
@@ -28,8 +21,9 @@ carp_task! {
   dependencies [MultieraOutputTask];
   read [multiera_txs];
   write [vkey_relation_map, multiera_used_inputs];
-  should_add_task |_block, _properties| -> MultieraUsedInputPrerunData {
-    PrerunResult::RunTaskWith(MultieraUsedInputPrerunData())
+  should_add_task |block, _properties| {
+    // txs always have at least one input (even if tx fails)
+    has_transaction_multiera(block.1)
   };
   execute |previous_data, task| handle_input(
       task.db_tx,

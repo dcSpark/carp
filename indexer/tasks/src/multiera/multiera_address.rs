@@ -1,6 +1,4 @@
-use std::{
-    collections::{BTreeMap, BTreeSet},
-};
+use std::collections::{BTreeMap, BTreeSet};
 
 use cardano_multiplatform_lib::address::{
     BaseAddress, ByronAddress, EnterpriseAddress, PointerAddress, RewardAddress,
@@ -16,6 +14,7 @@ use pallas::ledger::primitives::Fragment;
 use std::ops::Deref;
 
 use crate::{
+    dsl::default_impl::has_transaction_multiera,
     types::{AddressCredentialRelationValue, TxCredentialRelationValue},
 };
 
@@ -24,10 +23,7 @@ use super::{
     multiera_txs::MultieraTransactionTask, relation_map::RelationMap,
 };
 
-use crate::{database_task::PrerunResult, task_macro::*};
-
-#[derive(Copy, Clone)]
-pub struct MultieraAddressPrerunData();
+use crate::task_macro::*;
 
 carp_task! {
   name MultieraAddressTask;
@@ -35,8 +31,10 @@ carp_task! {
   dependencies [MultieraTransactionTask];
   read [multiera_txs];
   write [vkey_relation_map, multiera_addresses, multiera_queued_addresses_relations];
-  should_add_task |_block, _properties| -> MultieraAddressPrerunData {
-    PrerunResult::RunTaskWith(MultieraAddressPrerunData())
+  should_add_task |block, _properties| {
+    // recall: txs may have no outputs if they just burn all inputs as fee
+    // TODO: this runs slightly more than it should
+    has_transaction_multiera(block.1)
   };
   execute |previous_data, task| handle_addresses(
       task.db_tx,

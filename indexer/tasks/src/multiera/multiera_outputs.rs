@@ -1,6 +1,4 @@
-use std::{
-    collections::BTreeMap,
-};
+use std::collections::BTreeMap;
 
 use entity::{
     prelude::*,
@@ -9,16 +7,11 @@ use entity::{
 use pallas::ledger::primitives::alonzo::{self, TransactionBody, TransactionBodyComponent};
 use pallas::ledger::primitives::Fragment;
 
-use crate::{
-    era_common::{get_truncated_address},
-};
+use crate::era_common::get_truncated_address;
 
 use super::multiera_address::MultieraAddressTask;
 
-use crate::{database_task::PrerunResult, task_macro::*};
-
-#[derive(Copy, Clone)]
-pub struct MultieraOutputPrerunData();
+use crate::task_macro::*;
 
 carp_task! {
   name MultieraOutputTask;
@@ -26,8 +19,14 @@ carp_task! {
   dependencies [MultieraAddressTask];
   read [multiera_txs, multiera_addresses];
   write [multiera_outputs];
-  should_add_task |_block, _properties| -> MultieraOutputPrerunData {
-    PrerunResult::RunTaskWith(MultieraOutputPrerunData())
+  should_add_task |block, _properties| {
+    // recall: txs may have no outputs if they just burn all inputs as fee
+    block.1.transaction_bodies.iter().flat_map(|payload| payload.iter()).any(|component| match component {
+        TransactionBodyComponent::Outputs(outputs) => {
+            outputs.len() > 0
+        },
+        _ => false,
+    })
   };
   execute |previous_data, task| handle_output(
       task.db_tx,
