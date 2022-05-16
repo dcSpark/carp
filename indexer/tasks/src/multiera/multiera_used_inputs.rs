@@ -1,8 +1,5 @@
-extern crate shred;
-
 use std::{
     collections::BTreeMap,
-    sync::{Arc, Mutex},
 };
 
 use cardano_multiplatform_lib::address::{
@@ -14,101 +11,36 @@ use entity::{
 };
 use nameof::name_of_type;
 use pallas::ledger::primitives::alonzo::{self, TransactionBodyComponent};
-use shred::{DispatcherBuilder, Read, ResourceId, System, SystemData, World, Write};
 
 use crate::{
-    database_task::{
-        BlockInfo, DatabaseTaskMeta, MultieraTaskRegistryEntry, TaskBuilder, TaskRegistryEntry,
-    },
     types::TxCredentialRelationValue,
-    utils::TaskPerfAggregator,
 };
 
 use super::{multiera_outputs::MultieraOutputTask, relation_map::RelationMap};
 
-#[derive(SystemData)]
-pub struct Data<'a> {
-    multiera_txs: Read<'a, Vec<TransactionModel>>,
-    vkey_relation_map: Write<'a, RelationMap>,
-    multiera_used_inputs: Write<'a, Vec<TransactionInputModel>>,
-}
+use crate::{database_task::PrerunResult, task_macro::*};
 
-pub struct MultieraUsedInputTask<'a> {
-    pub db_tx: &'a DatabaseTransaction,
-    pub block: BlockInfo<'a, alonzo::Block>,
-    pub handle: &'a tokio::runtime::Handle,
-    pub perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-}
+#[derive(Copy, Clone)]
+pub struct MultieraUsedInputPrerunData();
 
-impl<'a> DatabaseTaskMeta<'a, alonzo::Block> for MultieraUsedInputTask<'a> {
-    const TASK_NAME: &'static str = name_of_type!(MultieraUsedInputTask);
-    // note: inputs have to be added AFTER outputs added to DB
-    const DEPENDENCIES: &'static [&'static str] = &[name_of_type!(MultieraOutputTask)];
-
-    fn new(
-        db_tx: &'a DatabaseTransaction,
-        block: BlockInfo<'a, alonzo::Block>,
-        handle: &'a tokio::runtime::Handle,
-        perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-    ) -> Self {
-        Self {
-            db_tx,
-            block,
-            handle,
-            perf_aggregator,
-        }
-    }
-}
-
-struct MultieraUsedInputTaskBuilder;
-impl<'a> TaskBuilder<'a, alonzo::Block> for MultieraUsedInputTaskBuilder {
-    fn get_name(&self) -> &'static str {
-        MultieraUsedInputTask::TASK_NAME
-    }
-    fn get_dependencies(&self) -> &'static [&'static str] {
-        MultieraUsedInputTask::DEPENDENCIES
-    }
-
-    fn add_task<'c>(
-        &self,
-        dispatcher_builder: &mut DispatcherBuilder<'a, 'c>,
-        db_tx: &'a DatabaseTransaction,
-        block: BlockInfo<'a, alonzo::Block>,
-        handle: &'a tokio::runtime::Handle,
-        perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-        _properties: &ini::Properties,
-    ) {
-        let task = MultieraUsedInputTask::new(db_tx, block, handle, perf_aggregator);
-        dispatcher_builder.add(task, self.get_name(), self.get_dependencies());
-    }
-}
-
-inventory::submit! {
-    TaskRegistryEntry::Multiera(MultieraTaskRegistryEntry { builder: &MultieraUsedInputTaskBuilder })
-}
-
-impl<'a> System<'a> for MultieraUsedInputTask<'_> {
-    type SystemData = Data<'a>;
-
-    fn run(&mut self, mut bundle: Data<'a>) {
-        let time_counter = std::time::Instant::now();
-
-        let result = self
-            .handle
-            .block_on(handle_input(
-                self.db_tx,
-                self.block,
-                &bundle.multiera_txs,
-                &mut bundle.vkey_relation_map,
-            ))
-            .unwrap();
-        *bundle.multiera_used_inputs = result;
-
-        self.perf_aggregator
-            .lock()
-            .unwrap()
-            .update(Self::TASK_NAME, time_counter.elapsed());
-    }
+carp_task! {
+  name MultieraUsedInputTask;
+  era multiera;
+  dependencies [MultieraOutputTask];
+  read [multiera_txs];
+  write [vkey_relation_map, multiera_used_inputs];
+  should_add_task |block, properties| -> MultieraUsedInputPrerunData {
+    PrerunResult::RunTaskWith(MultieraUsedInputPrerunData())
+  };
+  execute |previous_data, task| handle_input(
+      task.db_tx,
+      task.block,
+      &previous_data.multiera_txs,
+      &mut previous_data.vkey_relation_map,
+  );
+  merge_result |previous_data, result| {
+    *previous_data.multiera_used_inputs = result;
+  };
 }
 
 type QueuedInputs<'a> = Vec<(

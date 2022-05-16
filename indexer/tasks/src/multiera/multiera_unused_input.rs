@@ -1,108 +1,39 @@
-extern crate shred;
-
-use std::sync::{Arc, Mutex};
-
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction},
 };
 use nameof::name_of_type;
 use pallas::ledger::primitives::alonzo::{self, TransactionBodyComponent};
-use shred::{DispatcherBuilder, Read, ResourceId, System, SystemData, World, Write};
-
-use crate::{
-    database_task::{
-        BlockInfo, DatabaseTaskMeta, MultieraTaskRegistryEntry, TaskBuilder, TaskRegistryEntry,
-    },
-    utils::TaskPerfAggregator,
-};
 
 use super::{
     multiera_outputs::MultieraOutputTask, multiera_used_inputs::add_input_relations,
     relation_map::RelationMap,
 };
 
-#[derive(SystemData)]
-pub struct Data<'a> {
-    multiera_txs: Read<'a, Vec<TransactionModel>>,
-    vkey_relation_map: Write<'a, RelationMap>,
+use crate::{database_task::PrerunResult, task_macro::*};
+
+#[derive(Copy, Clone)]
+pub struct MultieraUnusedInputPrerunData();
+
+carp_task! {
+  name MultieraUnusedInputTask;
+  era multiera;
+  dependencies [MultieraOutputTask];
+  read [multiera_txs];
+  write [vkey_relation_map];
+  should_add_task |block, properties| -> MultieraUnusedInputPrerunData {
+    PrerunResult::RunTaskWith(MultieraUnusedInputPrerunData())
+  };
+  execute |previous_data, task| handle_unused_input(
+      task.db_tx,
+      task.block,
+      &previous_data.multiera_txs,
+      &mut previous_data.vkey_relation_map,
+  );
+  merge_result |previous_data, result| {
+  };
 }
 
-pub struct MultieraUnusedInputTask<'a> {
-    pub db_tx: &'a DatabaseTransaction,
-    pub block: BlockInfo<'a, alonzo::Block>,
-    pub handle: &'a tokio::runtime::Handle,
-    pub perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-}
-
-impl<'a> DatabaseTaskMeta<'a, alonzo::Block> for MultieraUnusedInputTask<'a> {
-    const TASK_NAME: &'static str = name_of_type!(MultieraUnusedInputTask);
-    // note: inputs have to be added AFTER outputs added to DB
-    const DEPENDENCIES: &'static [&'static str] = &[name_of_type!(MultieraOutputTask)];
-
-    fn new(
-        db_tx: &'a DatabaseTransaction,
-        block: BlockInfo<'a, alonzo::Block>,
-        handle: &'a tokio::runtime::Handle,
-        perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-    ) -> Self {
-        Self {
-            db_tx,
-            block,
-            handle,
-            perf_aggregator,
-        }
-    }
-}
-
-struct MultieraUnusedInputTaskBuilder;
-impl<'a> TaskBuilder<'a, alonzo::Block> for MultieraUnusedInputTaskBuilder {
-    fn get_name(&self) -> &'static str {
-        MultieraUnusedInputTask::TASK_NAME
-    }
-    fn get_dependencies(&self) -> &'static [&'static str] {
-        MultieraUnusedInputTask::DEPENDENCIES
-    }
-
-    fn add_task<'c>(
-        &self,
-        dispatcher_builder: &mut DispatcherBuilder<'a, 'c>,
-        db_tx: &'a DatabaseTransaction,
-        block: BlockInfo<'a, alonzo::Block>,
-        handle: &'a tokio::runtime::Handle,
-        perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-        _properties: &ini::Properties,
-    ) {
-        let task = MultieraUnusedInputTask::new(db_tx, block, handle, perf_aggregator);
-        dispatcher_builder.add(task, self.get_name(), self.get_dependencies());
-    }
-}
-
-inventory::submit! {
-    TaskRegistryEntry::Multiera(MultieraTaskRegistryEntry { builder: &MultieraUnusedInputTaskBuilder })
-}
-
-impl<'a> System<'a> for MultieraUnusedInputTask<'_> {
-    type SystemData = Data<'a>;
-
-    fn run(&mut self, mut bundle: Data<'a>) {
-        let time_counter = std::time::Instant::now();
-
-        self.handle
-            .block_on(handle_unused_input(
-                self.db_tx,
-                self.block,
-                &bundle.multiera_txs,
-                &mut bundle.vkey_relation_map,
-            ))
-            .unwrap();
-
-        self.perf_aggregator
-            .lock()
-            .unwrap()
-            .update(Self::TASK_NAME, time_counter.elapsed());
-    }
-}
 
 type QueuedInputs<'a> = Vec<(
     &'a Vec<pallas::ledger::primitives::alonzo::TransactionInput>,

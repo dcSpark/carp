@@ -1,8 +1,5 @@
-extern crate shred;
-
 use std::{
     collections::{BTreeMap, BTreeSet},
-    sync::{Arc, Mutex},
 };
 
 use cardano_multiplatform_lib::address::{
@@ -17,16 +14,10 @@ use pallas::ledger::primitives::alonzo::{
     self, Certificate, TransactionBody, TransactionBodyComponent,
 };
 use pallas::ledger::primitives::Fragment;
-use shred::{DispatcherBuilder, Read, ResourceId, System, SystemData, World, Write};
 use std::ops::Deref;
 
 use crate::{
-    database_task::{
-        BlockInfo, DatabaseTaskMeta, MultieraTaskRegistryEntry, TaskBuilder, TaskRegistryEntry,
-    },
-    era_common::AddressInBlock,
     types::{AddressCredentialRelationValue, TxCredentialRelationValue},
-    utils::TaskPerfAggregator,
 };
 
 use super::{
@@ -34,90 +25,30 @@ use super::{
     multiera_txs::MultieraTransactionTask, relation_map::RelationMap,
 };
 
-#[derive(SystemData)]
-pub struct Data<'a> {
-    multiera_txs: Read<'a, Vec<TransactionModel>>,
-    vkey_relation_map: Write<'a, RelationMap>,
-    multiera_addresses: Write<'a, BTreeMap<Vec<u8>, AddressInBlock>>,
-    multiera_queued_addresses_relations: Write<'a, BTreeSet<QueuedAddressCredentialRelation>>,
-}
+use crate::{database_task::PrerunResult, task_macro::*};
 
-pub struct MultieraAddressTask<'a> {
-    pub db_tx: &'a DatabaseTransaction,
-    pub block: BlockInfo<'a, alonzo::Block>,
-    pub handle: &'a tokio::runtime::Handle,
-    pub perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-}
+#[derive(Copy, Clone)]
+pub struct MultieraAddressPrerunData();
 
-impl<'a> DatabaseTaskMeta<'a, alonzo::Block> for MultieraAddressTask<'a> {
-    const TASK_NAME: &'static str = name_of_type!(MultieraAddressTask);
-    const DEPENDENCIES: &'static [&'static str] = &[name_of_type!(MultieraTransactionTask)];
-
-    fn new(
-        db_tx: &'a DatabaseTransaction,
-        block: BlockInfo<'a, alonzo::Block>,
-        handle: &'a tokio::runtime::Handle,
-        perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-    ) -> Self {
-        Self {
-            db_tx,
-            block,
-            handle,
-            perf_aggregator,
-        }
-    }
-}
-
-struct MultieraAddressTaskBuilder;
-impl<'a> TaskBuilder<'a, alonzo::Block> for MultieraAddressTaskBuilder {
-    fn get_name(&self) -> &'static str {
-        MultieraAddressTask::TASK_NAME
-    }
-    fn get_dependencies(&self) -> &'static [&'static str] {
-        MultieraAddressTask::DEPENDENCIES
-    }
-
-    fn add_task<'c>(
-        &self,
-        dispatcher_builder: &mut DispatcherBuilder<'a, 'c>,
-        db_tx: &'a DatabaseTransaction,
-        block: BlockInfo<'a, alonzo::Block>,
-        handle: &'a tokio::runtime::Handle,
-        perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-        _properties: &ini::Properties,
-    ) {
-        let task = MultieraAddressTask::new(db_tx, block, handle, perf_aggregator);
-        dispatcher_builder.add(task, self.get_name(), self.get_dependencies());
-    }
-}
-
-inventory::submit! {
-    TaskRegistryEntry::Multiera(MultieraTaskRegistryEntry { builder: &MultieraAddressTaskBuilder })
-}
-
-impl<'a> System<'a> for MultieraAddressTask<'_> {
-    type SystemData = Data<'a>;
-
-    fn run(&mut self, mut bundle: Data<'a>) {
-        let time_counter = std::time::Instant::now();
-
-        let result = self
-            .handle
-            .block_on(handle_addresses(
-                self.db_tx,
-                self.block,
-                &bundle.multiera_txs,
-                &mut bundle.vkey_relation_map,
-            ))
-            .unwrap();
-        *bundle.multiera_addresses = result.0;
-        *bundle.multiera_queued_addresses_relations = result.1;
-
-        self.perf_aggregator
-            .lock()
-            .unwrap()
-            .update(Self::TASK_NAME, time_counter.elapsed());
-    }
+carp_task! {
+  name MultieraAddressTask;
+  era multiera;
+  dependencies [MultieraTransactionTask];
+  read [multiera_txs];
+  write [vkey_relation_map, multiera_addresses, multiera_queued_addresses_relations];
+  should_add_task |block, properties| -> MultieraAddressPrerunData {
+    PrerunResult::RunTaskWith(MultieraAddressPrerunData())
+  };
+  execute |previous_data, task| handle_addresses(
+      task.db_tx,
+      task.block,
+      &previous_data.multiera_txs,
+      &mut previous_data.vkey_relation_map,
+  );
+  merge_result |previous_data, result| {
+    *previous_data.multiera_addresses = result.0;
+    *previous_data.multiera_queued_addresses_relations = result.1;
+  };
 }
 
 async fn handle_addresses(

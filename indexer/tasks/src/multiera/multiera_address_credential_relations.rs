@@ -1,9 +1,4 @@
-extern crate shred;
-
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    sync::{Arc, Mutex},
-};
+use std::collections::BTreeSet;
 
 use entity::{
     prelude::*,
@@ -11,105 +6,37 @@ use entity::{
 };
 use nameof::name_of_type;
 use pallas::ledger::primitives::alonzo::{self};
-use shred::{DispatcherBuilder, Read, ResourceId, System, SystemData, World};
 
 use crate::{
-    database_task::{
-        BlockInfo, DatabaseTaskMeta, MultieraTaskRegistryEntry, TaskBuilder, TaskRegistryEntry,
-    },
-    era_common::AddressInBlock,
     types::AddressCredentialRelationValue,
-    utils::TaskPerfAggregator,
 };
 
 use super::{
     multiera_address::MultieraAddressTask, multiera_stake_credentials::MultieraStakeCredentialTask,
 };
 
-#[derive(SystemData)]
-pub struct Data<'a> {
-    multiera_queued_addresses_relations: Read<'a, BTreeSet<QueuedAddressCredentialRelation>>,
-    multiera_stake_credential: Read<'a, BTreeMap<Vec<u8>, StakeCredentialModel>>,
-    multiera_addresses: Read<'a, BTreeMap<Vec<u8>, AddressInBlock>>,
-}
+use crate::{database_task::PrerunResult, task_macro::*};
 
-pub struct MultieraAddressCredentialRelationTask<'a> {
-    pub db_tx: &'a DatabaseTransaction,
-    pub block: BlockInfo<'a, alonzo::Block>,
-    pub handle: &'a tokio::runtime::Handle,
-    pub perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-}
+#[derive(Copy, Clone)]
+pub struct MultieraAddressCredentialRelationPrerunData();
 
-impl<'a> DatabaseTaskMeta<'a, alonzo::Block> for MultieraAddressCredentialRelationTask<'a> {
-    const TASK_NAME: &'static str = name_of_type!(MultieraAddressCredentialRelationTask);
-    const DEPENDENCIES: &'static [&'static str] = &[
-        name_of_type!(MultieraAddressTask),
-        name_of_type!(MultieraStakeCredentialTask),
-    ];
-
-    fn new(
-        db_tx: &'a DatabaseTransaction,
-        block: BlockInfo<'a, alonzo::Block>,
-        handle: &'a tokio::runtime::Handle,
-        perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-    ) -> Self {
-        Self {
-            db_tx,
-            block,
-            handle,
-            perf_aggregator,
-        }
-    }
-}
-
-struct MultieraAddressCredentialRelationTaskTaskBuilder;
-impl<'a> TaskBuilder<'a, alonzo::Block> for MultieraAddressCredentialRelationTaskTaskBuilder {
-    fn get_name(&self) -> &'static str {
-        MultieraAddressCredentialRelationTask::TASK_NAME
-    }
-    fn get_dependencies(&self) -> &'static [&'static str] {
-        MultieraAddressCredentialRelationTask::DEPENDENCIES
-    }
-
-    fn add_task<'c>(
-        &self,
-        dispatcher_builder: &mut DispatcherBuilder<'a, 'c>,
-        db_tx: &'a DatabaseTransaction,
-        block: BlockInfo<'a, alonzo::Block>,
-        handle: &'a tokio::runtime::Handle,
-        perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-        _properties: &ini::Properties,
-    ) {
-        let task =
-            MultieraAddressCredentialRelationTask::new(db_tx, block, handle, perf_aggregator);
-        dispatcher_builder.add(task, self.get_name(), self.get_dependencies());
-    }
-}
-
-inventory::submit! {
-    TaskRegistryEntry::Multiera(MultieraTaskRegistryEntry { builder: &MultieraAddressCredentialRelationTaskTaskBuilder })
-}
-
-impl<'a> System<'a> for MultieraAddressCredentialRelationTask<'_> {
-    type SystemData = Data<'a>;
-
-    fn run(&mut self, bundle: Data<'a>) {
-        let time_counter = std::time::Instant::now();
-
-        self.handle
-            .block_on(handle_address_credential_relation(
-                self.db_tx,
-                &bundle.multiera_stake_credential,
-                &bundle.multiera_addresses,
-                &bundle.multiera_queued_addresses_relations,
-            ))
-            .unwrap();
-
-        self.perf_aggregator
-            .lock()
-            .unwrap()
-            .update(Self::TASK_NAME, time_counter.elapsed());
-    }
+carp_task! {
+  name MultieraAddressCredentialRelationTask;
+  era multiera;
+  dependencies [MultieraAddressTask, MultieraStakeCredentialTask];
+  read [multiera_queued_addresses_relations, multiera_stake_credential];
+  write [multiera_addresses];
+  should_add_task |block, properties| -> MultieraAddressCredentialRelationPrerunData {
+    PrerunResult::RunTaskWith(MultieraAddressCredentialRelationPrerunData())
+  };
+  execute |previous_data, task| handle_address_credential_relation(
+      task.db_tx,
+      &previous_data.multiera_stake_credential,
+      &previous_data.multiera_addresses,
+      &previous_data.multiera_queued_addresses_relations,
+  );
+  merge_result |previous_data, result| {
+  };
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord)]

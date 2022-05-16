@@ -1,7 +1,3 @@
-extern crate shred;
-
-use std::sync::{Arc, Mutex};
-
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction, Set},
@@ -9,90 +5,27 @@ use entity::{
 use nameof::name_of_type;
 use pallas::ledger::primitives::alonzo::{self};
 use pallas::ledger::primitives::Fragment;
-use shred::{DispatcherBuilder, ResourceId, System, SystemData, World, Write};
+use crate::{database_task::PrerunResult, task_macro::*};
 
-use crate::{
-    database_task::{
-        BlockInfo, DatabaseTaskMeta, MultieraTaskRegistryEntry, TaskBuilder, TaskRegistryEntry,
-    },
-    utils::TaskPerfAggregator,
-};
+#[derive(Copy, Clone)]
+pub struct MultieraTransactionPrerunData();
 
-#[derive(SystemData)]
-pub struct Data<'a> {
-    multiera_txs: Write<'a, Vec<TransactionModel>>,
-}
-
-pub struct MultieraTransactionTask<'a> {
-    pub db_tx: &'a DatabaseTransaction,
-    pub block: BlockInfo<'a, alonzo::Block>,
-    pub handle: &'a tokio::runtime::Handle,
-    pub perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-}
-
-impl<'a> DatabaseTaskMeta<'a, alonzo::Block> for MultieraTransactionTask<'a> {
-    const TASK_NAME: &'static str = name_of_type!(MultieraTransactionTask);
-    const DEPENDENCIES: &'static [&'static str] = &[];
-
-    fn new(
-        db_tx: &'a DatabaseTransaction,
-        block: BlockInfo<'a, alonzo::Block>,
-        handle: &'a tokio::runtime::Handle,
-        perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-    ) -> Self {
-        Self {
-            db_tx,
-            block,
-            handle,
-            perf_aggregator,
-        }
-    }
-}
-
-struct MultieraTransactionTaskBuilder;
-impl<'a> TaskBuilder<'a, alonzo::Block> for MultieraTransactionTaskBuilder {
-    fn get_name(&self) -> &'static str {
-        MultieraTransactionTask::TASK_NAME
-    }
-    fn get_dependencies(&self) -> &'static [&'static str] {
-        MultieraTransactionTask::DEPENDENCIES
-    }
-
-    fn add_task<'c>(
-        &self,
-        dispatcher_builder: &mut DispatcherBuilder<'a, 'c>,
-        db_tx: &'a DatabaseTransaction,
-        block: BlockInfo<'a, alonzo::Block>,
-        handle: &'a tokio::runtime::Handle,
-        perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-        _properties: &ini::Properties,
-    ) {
-        let task = MultieraTransactionTask::new(db_tx, block, handle, perf_aggregator);
-        dispatcher_builder.add(task, self.get_name(), self.get_dependencies());
-    }
-}
-
-inventory::submit! {
-    TaskRegistryEntry::Multiera(MultieraTaskRegistryEntry { builder: &MultieraTransactionTaskBuilder })
-}
-
-impl<'a> System<'a> for MultieraTransactionTask<'_> {
-    type SystemData = Data<'a>;
-
-    fn run(&mut self, mut bundle: Data<'a>) {
-        let time_counter = std::time::Instant::now();
-
-        let result = self
-            .handle
-            .block_on(handle_tx(self.db_tx, self.block))
-            .unwrap();
-        *bundle.multiera_txs = result;
-
-        self.perf_aggregator
-            .lock()
-            .unwrap()
-            .update(Self::TASK_NAME, time_counter.elapsed());
-    }
+carp_task! {
+  name MultieraTransactionTask;
+  era multiera;
+  dependencies [];
+  read [];
+  write [multiera_txs];
+  should_add_task |block, properties| -> MultieraTransactionPrerunData {
+    PrerunResult::RunTaskWith(MultieraTransactionPrerunData())
+  };
+  execute |previous_data, task| handle_tx(
+      task.db_tx,
+      task.block,
+  );
+  merge_result |previous_data, result| {
+    *previous_data.multiera_txs = result;
+  };
 }
 
 async fn handle_tx(

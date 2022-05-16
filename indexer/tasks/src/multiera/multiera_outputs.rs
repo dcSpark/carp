@@ -1,8 +1,5 @@
-extern crate shred;
-
 use std::{
     collections::BTreeMap,
-    sync::{Arc, Mutex},
 };
 
 use entity::{
@@ -12,100 +9,36 @@ use entity::{
 use nameof::name_of_type;
 use pallas::ledger::primitives::alonzo::{self, TransactionBody, TransactionBodyComponent};
 use pallas::ledger::primitives::Fragment;
-use shred::{DispatcherBuilder, Read, ResourceId, System, SystemData, World, Write};
 
 use crate::{
-    database_task::{
-        BlockInfo, DatabaseTaskMeta, MultieraTaskRegistryEntry, TaskBuilder, TaskRegistryEntry,
-    },
-    era_common::{get_truncated_address, AddressInBlock},
-    utils::TaskPerfAggregator,
+    era_common::{get_truncated_address},
 };
 
 use super::multiera_address::MultieraAddressTask;
 
-#[derive(SystemData)]
-pub struct Data<'a> {
-    multiera_txs: Read<'a, Vec<TransactionModel>>,
-    multiera_addresses: Read<'a, BTreeMap<Vec<u8>, AddressInBlock>>,
-    multiera_outputs: Write<'a, Vec<TransactionOutputModel>>,
-}
+use crate::{database_task::PrerunResult, task_macro::*};
 
-pub struct MultieraOutputTask<'a> {
-    pub db_tx: &'a DatabaseTransaction,
-    pub block: BlockInfo<'a, alonzo::Block>,
-    pub handle: &'a tokio::runtime::Handle,
-    pub perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-}
+#[derive(Copy, Clone)]
+pub struct MultieraOutputPrerunData();
 
-impl<'a> DatabaseTaskMeta<'a, alonzo::Block> for MultieraOutputTask<'a> {
-    const TASK_NAME: &'static str = name_of_type!(MultieraOutputTask);
-    const DEPENDENCIES: &'static [&'static str] = &[name_of_type!(MultieraAddressTask)];
-
-    fn new(
-        db_tx: &'a DatabaseTransaction,
-        block: BlockInfo<'a, alonzo::Block>,
-        handle: &'a tokio::runtime::Handle,
-        perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-    ) -> Self {
-        Self {
-            db_tx,
-            block,
-            handle,
-            perf_aggregator,
-        }
-    }
-}
-
-struct MultieraOutputTaskBuilder;
-impl<'a> TaskBuilder<'a, alonzo::Block> for MultieraOutputTaskBuilder {
-    fn get_name(&self) -> &'static str {
-        MultieraOutputTask::TASK_NAME
-    }
-    fn get_dependencies(&self) -> &'static [&'static str] {
-        MultieraOutputTask::DEPENDENCIES
-    }
-
-    fn add_task<'c>(
-        &self,
-        dispatcher_builder: &mut DispatcherBuilder<'a, 'c>,
-        db_tx: &'a DatabaseTransaction,
-        block: BlockInfo<'a, alonzo::Block>,
-        handle: &'a tokio::runtime::Handle,
-        perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-        _properties: &ini::Properties,
-    ) {
-        let task = MultieraOutputTask::new(db_tx, block, handle, perf_aggregator);
-        dispatcher_builder.add(task, self.get_name(), self.get_dependencies());
-    }
-}
-
-inventory::submit! {
-    TaskRegistryEntry::Multiera(MultieraTaskRegistryEntry { builder: &MultieraOutputTaskBuilder })
-}
-
-impl<'a> System<'a> for MultieraOutputTask<'_> {
-    type SystemData = Data<'a>;
-
-    fn run(&mut self, mut bundle: Data<'a>) {
-        let time_counter = std::time::Instant::now();
-
-        let result = self
-            .handle
-            .block_on(handle_output(
-                self.db_tx,
-                self.block,
-                &bundle.multiera_txs,
-                &bundle.multiera_addresses,
-            ))
-            .unwrap();
-        *bundle.multiera_outputs = result;
-
-        self.perf_aggregator
-            .lock()
-            .unwrap()
-            .update(Self::TASK_NAME, time_counter.elapsed());
-    }
+carp_task! {
+  name MultieraOutputTask;
+  era multiera;
+  dependencies [MultieraAddressTask];
+  read [multiera_txs, multiera_addresses];
+  write [multiera_outputs];
+  should_add_task |block, properties| -> MultieraOutputPrerunData {
+    PrerunResult::RunTaskWith(MultieraOutputPrerunData())
+  };
+  execute |previous_data, task| handle_output(
+      task.db_tx,
+      task.block,
+      &previous_data.multiera_txs,
+      &previous_data.multiera_addresses,
+  );
+  merge_result |previous_data, result| {
+    *previous_data.multiera_outputs = result;
+  };
 }
 
 struct QueuedOutput {
