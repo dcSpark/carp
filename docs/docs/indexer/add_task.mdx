@@ -1,0 +1,30 @@
+---
+sidebar_position: 5
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import ExampleTaskCode from "!!raw-loader!../../../indexer/tasks/src/dsl/example_task.rs";
+import ExecutionContextCode from "!!raw-loader!../../../indexer/tasks/src/dsl/execution_context.rs";
+
+# Adding your own task
+
+If you want to develop a new task, here are the steps to follow:
+
+1. (if needed) add a new entity for your schema definition in `indexer/entity`
+2. (if needed) add a new migration to add your new table to `indexer/migration`
+3. Add a new task to `indexer/tasks`
+4. Add the new task to your execution plan in `indexer/execution_plan`
+
+Tasks are easiest to write using the `carp_task` [DSL](https://en.wikipedia.org/wiki/Domain-specific_language).
+
+Here is an example task that you can use as reference
+
+<CodeBlock language="rust" title="example_task.rs" showLineNumbers>
+  {ExampleTaskCode}
+</CodeBlock>
+
+As you can see, tasks all share access to an execution context that holds which variables you can read and write from. This context usually contains things like database IDs of the recently added data so that it can be properly references from other tables.
+
+<CodeBlock language="rust" title="execution_context.rs" showLineNumbers>
+  {ExecutionContextCode}
+</CodeBlock>

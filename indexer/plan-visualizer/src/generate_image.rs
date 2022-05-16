@@ -2,7 +2,7 @@ use std::{borrow::Cow, collections::BTreeMap};
 
 use dot::LabelText;
 use tasks::{
-    database_task::TaskRegistryEntry, execution_plan::ExecutionPlan,
+    dsl::database_task::TaskRegistryEntry, execution_plan::ExecutionPlan,
     utils::find_task_registry_entry,
 };
 

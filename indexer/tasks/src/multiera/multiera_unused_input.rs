@@ -9,7 +9,7 @@ use super::{
     relation_map::RelationMap,
 };
 
-use crate::task_macro::*;
+use crate::dsl::task_macro::*;
 
 carp_task! {
   name MultieraUnusedInputTask;

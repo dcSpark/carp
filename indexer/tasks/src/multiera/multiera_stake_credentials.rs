@@ -15,7 +15,7 @@ use super::{
 };
 use pallas::ledger::primitives::Fragment;
 
-use crate::task_macro::*;
+use crate::dsl::task_macro::*;
 
 carp_task! {
   name MultieraStakeCredentialTask;

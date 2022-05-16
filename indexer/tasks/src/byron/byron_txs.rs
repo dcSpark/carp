@@ -1,4 +1,4 @@
-use crate::{dsl::default_impl::has_transaction_byron, task_macro::*, utils::blake2b256};
+use crate::{dsl::default_impl::has_transaction_byron, dsl::task_macro::*, utils::blake2b256};
 use entity::sea_orm::Set;
 use pallas::ledger::primitives::{byron, Fragment};
 

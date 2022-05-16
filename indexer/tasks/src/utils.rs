@@ -2,7 +2,7 @@ use std::{collections::BTreeMap, time::Duration};
 
 use cryptoxide::blake2b::Blake2b;
 
-use super::database_task::TaskRegistryEntry;
+use super::dsl::database_task::TaskRegistryEntry;
 
 pub fn blake2b256(data: &[u8]) -> [u8; 32] {
     let mut out = [0; 32];

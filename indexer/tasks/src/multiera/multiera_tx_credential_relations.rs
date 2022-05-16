@@ -16,7 +16,7 @@ use super::{
     relation_map::RelationMap,
 };
 
-use crate::{dsl::default_impl::has_transaction_multiera, task_macro::*};
+use crate::{dsl::default_impl::has_transaction_multiera, dsl::task_macro::*};
 
 carp_task! {
   name MultieraTxCredentialRelationTask;

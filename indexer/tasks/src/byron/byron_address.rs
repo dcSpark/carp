@@ -4,7 +4,7 @@ use pallas::ledger::primitives::{
 };
 
 use super::byron_txs::ByronTransactionTask;
-use crate::task_macro::*;
+use crate::dsl::task_macro::*;
 
 carp_task! {
   name ByronAddressTask;

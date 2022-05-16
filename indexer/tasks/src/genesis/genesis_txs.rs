@@ -13,13 +13,8 @@ use entity::{
 };
 use shred::{DispatcherBuilder, ResourceId, System, SystemData, World, Write};
 
-use crate::task_macro::*;
-use crate::{
-    database_task::{
-        BlockInfo, DatabaseTaskMeta, GenesisTaskRegistryEntry, TaskBuilder, TaskRegistryEntry,
-    },
-    utils::{blake2b256, TaskPerfAggregator},
-};
+use crate::dsl::task_macro::*;
+use crate::utils::{blake2b256, TaskPerfAggregator};
 use entity::sea_orm::Iterable;
 use futures::future::try_join;
 

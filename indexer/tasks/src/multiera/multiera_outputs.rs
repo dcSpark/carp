@@ -11,7 +11,7 @@ use crate::era_common::get_truncated_address;
 
 use super::multiera_address::MultieraAddressTask;
 
-use crate::task_macro::*;
+use crate::dsl::task_macro::*;
 
 carp_task! {
   name MultieraOutputTask;

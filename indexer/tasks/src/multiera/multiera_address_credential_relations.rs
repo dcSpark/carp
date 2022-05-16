@@ -7,7 +7,7 @@ use entity::{
 
 use crate::{dsl::default_impl::has_transaction_multiera, types::AddressCredentialRelationValue};
 
-use crate::task_macro::*;
+use crate::dsl::task_macro::*;
 
 use super::{
     multiera_address::MultieraAddressTask, multiera_stake_credentials::MultieraStakeCredentialTask,

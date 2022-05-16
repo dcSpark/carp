@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
-use crate::database_task::BlockInfo;
-use crate::database_task::TaskRegistryEntry;
+use crate::dsl::database_task::BlockInfo;
+use crate::dsl::database_task::TaskRegistryEntry;
 use crate::execution_plan::ExecutionPlan;
 use crate::utils::find_task_registry_entry;
 use crate::utils::TaskPerfAggregator;

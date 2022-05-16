@@ -1,4 +1,4 @@
-use crate::{dsl::default_impl::has_transaction_byron, task_macro::*};
+use crate::{dsl::default_impl::has_transaction_byron, dsl::task_macro::*};
 use pallas::ledger::primitives::byron::{self, TxIn};
 
 use super::byron_outputs::ByronOutputTask;

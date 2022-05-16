@@ -13,7 +13,7 @@ use crate::{dsl::default_impl::has_transaction_multiera, types::TxCredentialRela
 
 use super::{multiera_outputs::MultieraOutputTask, relation_map::RelationMap};
 
-use crate::task_macro::*;
+use crate::dsl::task_macro::*;
 
 carp_task! {
   name MultieraUsedInputTask;

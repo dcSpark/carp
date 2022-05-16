@@ -113,6 +113,7 @@ const config = {
         copyright: `Copyright © ${new Date().getFullYear()} dcSpark`,
       },
       prism: {
+        additionalLanguages: ['rust', 'ini'],
         theme: lightCodeTheme,
         darkTheme: darkCodeTheme,
       },

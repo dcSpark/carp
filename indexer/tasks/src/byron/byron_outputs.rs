@@ -1,5 +1,5 @@
 use super::byron_address::ByronAddressTask;
-use crate::{era_common::get_truncated_address, task_macro::*};
+use crate::{dsl::task_macro::*, era_common::get_truncated_address};
 use entity::sea_orm::Set;
 use pallas::{
     codec::utils::MaybeIndefArray,

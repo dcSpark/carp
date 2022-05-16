@@ -12,7 +12,7 @@ use pallas::{
 
 use super::multiera_txs::MultieraTransactionTask;
 
-use crate::task_macro::*;
+use crate::dsl::task_macro::*;
 
 carp_task! {
   name MultieraMetadataTask;
