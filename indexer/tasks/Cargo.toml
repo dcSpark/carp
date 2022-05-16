@@ -7,7 +7,7 @@ edition = "2021"
 name = "tasks"
 
 [dependencies]
-shred = "0.12.0"
+shred = { git = "https://github.com/dcSpark/shred", branch = "builder-getters" }
 nameof = "1.2.2"
 inventory = "0.2.3"
 cardano-multiplatform-lib = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "long-addr-fix" }

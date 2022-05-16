@@ -1,3 +1,4 @@
+pub use crate::utils::find_task_registry_entry;
 pub use crate::{
     database_task::{
         BlockInfo, ByronTaskRegistryEntry, DatabaseTaskMeta, GenesisTaskRegistryEntry,
@@ -152,7 +153,20 @@ macro_rules! carp_task {
                 false => false,
                 true => {
                   let task = $name::new(db_tx, block, handle, perf_aggregator);
-                  dispatcher_builder.add(task, self.get_name(), self.get_dependencies());
+
+                  // 1) Check that all dependencies are registered tasks
+                  for dep in self.get_dependencies().iter() {
+                    if find_task_registry_entry(dep).is_none() {
+                        panic!("Could not find task named {} in dependencies of {}", dep, self.get_name());
+                    }
+                  }
+                  // 2) Filter out any dependency that got skipped
+                  let filtered_deps: Vec<&str> = self.get_dependencies().iter()
+                    .map(|&dep| dep)
+                    .filter(|&dep| dispatcher_builder.has_system(dep))
+                    .collect();
+                   // check all tasks are registered, then remove skipped ones
+                  dispatcher_builder.add(task, self.get_name(), filtered_deps.as_slice());
                   true
                 }
               }

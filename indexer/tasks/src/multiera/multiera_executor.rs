@@ -24,7 +24,6 @@ pub async fn process_multiera_block(
 
     let mut dispatcher_builder = DispatcherBuilder::new();
 
-    let mut has_task = false;
     for task_name in exec_plan.0.sections().flatten() {
         let entry = find_task_registry_entry(task_name);
         match &entry {
@@ -33,20 +32,19 @@ pub async fn process_multiera_block(
             }
             Some(task) => {
                 if let TaskRegistryEntry::Multiera(entry) = task {
-                    has_task = has_task
-                        || entry.builder.maybe_add_task(
-                            &mut dispatcher_builder,
-                            txn,
-                            block,
-                            &handle,
-                            perf_aggregator.clone(),
-                            exec_plan.0.section(Some(task_name)).unwrap(),
-                        );
+                    entry.builder.maybe_add_task(
+                        &mut dispatcher_builder,
+                        txn,
+                        block,
+                        &handle,
+                        perf_aggregator.clone(),
+                        exec_plan.0.section(Some(task_name)).unwrap(),
+                    );
                 }
             }
         }
     }
-    if has_task {
+    if !dispatcher_builder.is_empty() {
         let mut dispatcher = dispatcher_builder.build();
         dispatcher.setup(&mut world);
         dispatcher.dispatch(&world);

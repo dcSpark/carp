@@ -2300,8 +2300,7 @@ dependencies = [
 [[package]]
 name = "shred"
 version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb0210289d693217926314867c807e0b7b42f7e23c136adb31f8697f5bf242d3"
+source = "git+https://github.com/dcSpark/shred?branch=builder-getters#1b4cdd1d8e2349dfc005c1db8aa720e730a8a2e2"
 dependencies = [
  "arrayvec 0.5.2",
  "hashbrown 0.11.2",
@@ -2315,8 +2314,7 @@ dependencies = [
 [[package]]
 name = "shred-derive"
 version = "0.6.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d5404c36bd155e41a54276ab6aafedad2fb627e5e5849d36ec439c9ddc044a2f"
+source = "git+https://github.com/dcSpark/shred?branch=builder-getters#1b4cdd1d8e2349dfc005c1db8aa720e730a8a2e2"
 dependencies = [
  "proc-macro2",
  "quote",
