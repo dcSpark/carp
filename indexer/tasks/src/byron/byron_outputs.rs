@@ -1,3 +1,5 @@
+use super::byron_address::ByronAddressTask;
+use crate::{era_common::get_truncated_address, task_macro::*};
 use entity::sea_orm::Set;
 use pallas::{
     codec::utils::MaybeIndefArray,
@@ -6,11 +8,6 @@ use pallas::{
         Fragment,
     },
 };
-use super::byron_address::ByronAddressTask;
-use crate::{database_task::PrerunResult, task_macro::*, era_common::get_truncated_address};
-
-#[derive(Copy, Clone)]
-pub struct ByronOutputPrerunData();
 
 carp_task! {
   name ByronOutputTask;
@@ -18,8 +15,16 @@ carp_task! {
   dependencies [ByronAddressTask];
   read [byron_txs, byron_addresses];
   write [byron_outputs];
-  should_add_task |_block, _properties| -> ByronOutputPrerunData {
-    PrerunResult::RunTaskWith(ByronOutputPrerunData())
+  should_add_task |block, _properties| {
+    // recall: txs may have no outputs if they just burn all inputs as fee
+    match block.1 {
+        byron::Block::MainBlock(main_block) => {
+            main_block
+                .body
+                .tx_payload.iter().any(|payload| payload.transaction.outputs.len() > 0)
+        }
+        _ => false,
+    }
   };
   execute |previous_data, task| handle_outputs(
       task.db_tx,

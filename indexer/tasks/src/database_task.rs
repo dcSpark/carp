@@ -3,9 +3,7 @@ use cardano_multiplatform_lib::genesis::byron::config::GenesisData;
 use entity::{prelude::*, sea_orm::DatabaseTransaction};
 use pallas::ledger::primitives::{alonzo, byron};
 use shred::DispatcherBuilder;
-use std::{
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 
 pub type BlockInfo<'a, BlockType> = (
     &'a str, // cbor. Empty for genesis
@@ -13,7 +11,7 @@ pub type BlockInfo<'a, BlockType> = (
     &'a BlockModel,
 );
 
-pub trait DatabaseTaskMeta<'a, BlockType, PrerunData> {
+pub trait DatabaseTaskMeta<'a, BlockType> {
     const TASK_NAME: &'static str;
     const DEPENDENCIES: &'static [&'static str];
 
@@ -22,25 +20,16 @@ pub trait DatabaseTaskMeta<'a, BlockType, PrerunData> {
         block: BlockInfo<'a, BlockType>,
         handle: &'a tokio::runtime::Handle,
         perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-        prerun_data: &PrerunData,
     ) -> Self;
 
-    fn should_add_task(
-        block: BlockInfo<'a, BlockType>,
-        properties: &ini::Properties,
-    ) -> PrerunResult<PrerunData>;
-}
-
-pub enum PrerunResult<T> {
-    SkipTask,
-    RunTaskWith(T),
+    fn should_add_task(block: BlockInfo<'a, BlockType>, properties: &ini::Properties) -> bool;
 }
 
 pub trait TaskBuilder<'a, BlockType> {
     fn get_name(&self) -> &'static str;
     fn get_dependencies(&self) -> &'static [&'static str];
 
-    fn add_task<'c>(
+    fn maybe_add_task<'c>(
         &self,
         dispatcher_builder: &mut DispatcherBuilder<'a, 'c>,
         db_tx: &'a DatabaseTransaction,
@@ -48,7 +37,7 @@ pub trait TaskBuilder<'a, BlockType> {
         handle: &'a tokio::runtime::Handle,
         perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
         properties: &ini::Properties,
-    );
+    ) -> bool;
 }
 
 #[derive(Copy, Clone)]

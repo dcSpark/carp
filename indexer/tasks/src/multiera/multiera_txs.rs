@@ -1,13 +1,10 @@
+use crate::{dsl::default_impl::has_transaction_multiera, task_macro::*};
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction, Set},
 };
 use pallas::ledger::primitives::alonzo::{self};
 use pallas::ledger::primitives::Fragment;
-use crate::{database_task::PrerunResult, task_macro::*};
-
-#[derive(Copy, Clone)]
-pub struct MultieraTransactionPrerunData();
 
 carp_task! {
   name MultieraTransactionTask;
@@ -15,8 +12,8 @@ carp_task! {
   dependencies [];
   read [];
   write [multiera_txs];
-  should_add_task |_block, _properties| -> MultieraTransactionPrerunData {
-    PrerunResult::RunTaskWith(MultieraTransactionPrerunData())
+  should_add_task |block, _properties| {
+    has_transaction_multiera(block.1)
   };
   execute |previous_data, task| handle_tx(
       task.db_tx,

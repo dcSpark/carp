@@ -1,19 +1,22 @@
-pub use paste::paste;
-pub use entity::{
-    prelude::*,
-    sea_orm::{prelude::*, DatabaseTransaction},
-};
-pub use std::sync::{Arc, Mutex};
-pub use shred::{DispatcherBuilder, Read, ResourceId, System, SystemData, World, Write};
-pub use std::collections::BTreeMap;
 pub use crate::{
     database_task::{
-        BlockInfo, GenesisTaskRegistryEntry, ByronTaskRegistryEntry, MultieraTaskRegistryEntry, DatabaseTaskMeta, TaskBuilder, TaskRegistryEntry,
+        BlockInfo, ByronTaskRegistryEntry, DatabaseTaskMeta, GenesisTaskRegistryEntry,
+        MultieraTaskRegistryEntry, TaskBuilder, TaskRegistryEntry,
     },
     era_common::AddressInBlock,
     utils::TaskPerfAggregator,
 };
-pub use crate::{database_task::PrerunResult};
+pub use cardano_multiplatform_lib::genesis::byron::config::GenesisData;
+pub use entity::{
+    prelude::*,
+    sea_orm::{prelude::*, DatabaseTransaction},
+};
+pub use pallas::ledger::primitives::alonzo::{self};
+pub use pallas::ledger::primitives::byron::{self};
+pub use paste::paste;
+pub use shred::{DispatcherBuilder, Read, ResourceId, System, SystemData, World, Write};
+pub use std::collections::BTreeMap;
+pub use std::sync::{Arc, Mutex};
 
 #[macro_export]
 macro_rules! data_to_type {
@@ -76,7 +79,7 @@ macro_rules! carp_task {
       dependencies [ $( $dep:ty ),* ];
       read [ $( $read_name:ident ),* ];
       write [ $( $write_name:ident ),* ];
-      should_add_task |$block:ident, $properties:ident| -> $prerun_type:ty { $($should_add_task:tt)* };
+      should_add_task |$block:ident, $properties:ident| { $($should_add_task:tt)* };
       execute |$previous_data:ident, $task:ident| $execute:expr;
       merge_result |$next_data:ident, $execution_result:ident| $merge_closure:expr;
     ) => {
@@ -95,10 +98,9 @@ macro_rules! carp_task {
             pub block: BlockInfo<'a, era_to_block!($era)>,
             pub handle: &'a tokio::runtime::Handle,
             pub perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-            pub prerun_data: $prerun_type,
         }
 
-        impl<'a> DatabaseTaskMeta<'a, era_to_block!($era), $prerun_type> for $name<'a> {
+        impl<'a> DatabaseTaskMeta<'a, era_to_block!($era)> for $name<'a> {
             const TASK_NAME: &'static str = stringify!($name);
             const DEPENDENCIES: &'static [&'static str] = &[
                 $(
@@ -111,21 +113,19 @@ macro_rules! carp_task {
                 block: BlockInfo<'a, era_to_block!($era)>,
                 handle: &'a tokio::runtime::Handle,
                 perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-                prerun_data: &$prerun_type,
             ) -> Self {
                 Self {
                     db_tx,
                     block,
                     handle,
                     perf_aggregator,
-                    prerun_data: *prerun_data,
                 }
             }
 
             fn should_add_task(
                 $block: BlockInfo<'a, era_to_block!($era)>,
                 $properties: &ini::Properties,
-            ) -> PrerunResult<$prerun_type> {
+            ) -> bool {
                 $($should_add_task)*
             }
         }
@@ -139,7 +139,7 @@ macro_rules! carp_task {
                 $name::DEPENDENCIES
             }
 
-            fn add_task<'c>(
+            fn maybe_add_task<'c>(
                 &self,
                 dispatcher_builder: &mut DispatcherBuilder<'a, 'c>,
                 db_tx: &'a DatabaseTransaction,
@@ -147,12 +147,13 @@ macro_rules! carp_task {
                 handle: &'a tokio::runtime::Handle,
                 perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
                 properties: &ini::Properties,
-            ) {
+            ) -> bool {
               match &$name::should_add_task(block, properties) {
-                PrerunResult::SkipTask => (),
-                PrerunResult::RunTaskWith(data) => {
-                  let task = $name::new(db_tx, block, handle, perf_aggregator, data);
+                false => false,
+                true => {
+                  let task = $name::new(db_tx, block, handle, perf_aggregator);
                   dispatcher_builder.add(task, self.get_name(), self.get_dependencies());
+                  true
                 }
               }
             }

@@ -1,10 +1,7 @@
+use crate::{dsl::default_impl::has_transaction_byron, task_macro::*};
 use pallas::ledger::primitives::byron::{self, TxIn};
-use crate::{database_task::PrerunResult, task_macro::*};
 
 use super::byron_outputs::ByronOutputTask;
-
-#[derive(Copy, Clone)]
-pub struct ByronInputPrerunData();
 
 carp_task! {
   name ByronInputTask;
@@ -12,8 +9,9 @@ carp_task! {
   dependencies [ByronOutputTask];
   read [byron_txs];
   write [byron_inputs];
-  should_add_task |_block, _properties| -> ByronInputPrerunData {
-    PrerunResult::RunTaskWith(ByronInputPrerunData())
+  should_add_task |block, _properties| {
+    // recall: all txs must have at least 1 input
+    has_transaction_byron(block.1)
   };
   execute |previous_data, task| handle_inputs(
       task.db_tx,
@@ -24,7 +22,6 @@ carp_task! {
     *previous_data.byron_inputs = result;
   };
 }
-
 
 async fn handle_inputs(
     db_tx: &DatabaseTransaction,

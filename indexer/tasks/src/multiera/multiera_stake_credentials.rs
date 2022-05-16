@@ -1,6 +1,4 @@
-use std::{
-    collections::{BTreeMap, BTreeSet},
-};
+use std::collections::{BTreeMap, BTreeSet};
 
 use cardano_multiplatform_lib::{utils::ScriptHashNamespace, RequiredSignersSet};
 use entity::{
@@ -9,9 +7,7 @@ use entity::{
 };
 use pallas::ledger::primitives::alonzo::{self, TransactionBodyComponent};
 
-use crate::{
-    types::TxCredentialRelationValue,
-};
+use crate::{dsl::default_impl::has_transaction_multiera, types::TxCredentialRelationValue};
 
 use super::{
     multiera_unused_input::MultieraUnusedInputTask, multiera_used_inputs::MultieraUsedInputTask,
@@ -19,10 +15,7 @@ use super::{
 };
 use pallas::ledger::primitives::Fragment;
 
-use crate::{database_task::PrerunResult, task_macro::*};
-
-#[derive(Copy, Clone)]
-pub struct MultieraStakeCredentialPrerunData();
+use crate::task_macro::*;
 
 carp_task! {
   name MultieraStakeCredentialTask;
@@ -30,8 +23,8 @@ carp_task! {
   dependencies [MultieraUsedInputTask, MultieraUnusedInputTask];
   read [multiera_txs];
   write [vkey_relation_map, multiera_stake_credential];
-  should_add_task |_block, _properties| -> MultieraStakeCredentialPrerunData {
-    PrerunResult::RunTaskWith(MultieraStakeCredentialPrerunData())
+  should_add_task |block, _properties| {
+    has_transaction_multiera(block.1)
   };
   execute |previous_data, task| handle_stake_credentials(
       task.db_tx,

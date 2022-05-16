@@ -9,10 +9,7 @@ use super::{
     relation_map::RelationMap,
 };
 
-use crate::{database_task::PrerunResult, task_macro::*};
-
-#[derive(Copy, Clone)]
-pub struct MultieraUnusedInputPrerunData();
+use crate::task_macro::*;
 
 carp_task! {
   name MultieraUnusedInputTask;
@@ -20,8 +17,14 @@ carp_task! {
   dependencies [MultieraOutputTask];
   read [multiera_txs];
   write [vkey_relation_map];
-  should_add_task |_block, _properties| -> MultieraUnusedInputPrerunData {
-    PrerunResult::RunTaskWith(MultieraUnusedInputPrerunData())
+  should_add_task |block, _properties| {
+    // if any txs has collateral defined, then it has some unused input (either collateral or main inputs if tx failed)
+    block.1.transaction_bodies.iter().flat_map(|payload| payload.iter()).any(|component| match component {
+        TransactionBodyComponent::Collateral(inputs) => {
+            inputs.len() > 0
+        },
+        _ => false,
+    })
   };
   execute |previous_data, task| handle_unused_input(
       task.db_tx,
@@ -32,7 +35,6 @@ carp_task! {
   merge_result |previous_data, _result| {
   };
 }
-
 
 type QueuedInputs<'a> = Vec<(
     &'a Vec<pallas::ledger::primitives::alonzo::TransactionInput>,

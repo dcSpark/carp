@@ -76,7 +76,7 @@ pub fn oura_bootstrap(
 
     let (source_handle, source_rx) = source_setup.bootstrap().map_err(|e| {
         tracing::error!("{}", e);
-        anyhow!("failed to bootstrap source")
+        anyhow!("failed to bootstrap source. Are you sure cardano-node is running?")
     })?;
 
     tracing::info!("{}", "Connection to node established");

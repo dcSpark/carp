@@ -4,20 +4,14 @@ use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction, Set},
 };
-use pallas::ledger::primitives::alonzo::{self};
 
-use crate::{
-    types::AddressCredentialRelationValue,
-};
+use crate::{dsl::default_impl::has_transaction_multiera, types::AddressCredentialRelationValue};
+
+use crate::task_macro::*;
 
 use super::{
     multiera_address::MultieraAddressTask, multiera_stake_credentials::MultieraStakeCredentialTask,
 };
-
-use crate::{database_task::PrerunResult, task_macro::*};
-
-#[derive(Copy, Clone)]
-pub struct MultieraAddressCredentialRelationPrerunData();
 
 carp_task! {
   name MultieraAddressCredentialRelationTask;
@@ -25,8 +19,8 @@ carp_task! {
   dependencies [MultieraAddressTask, MultieraStakeCredentialTask];
   read [multiera_queued_addresses_relations, multiera_stake_credential];
   write [multiera_addresses];
-  should_add_task |_block, _properties| -> MultieraAddressCredentialRelationPrerunData {
-    PrerunResult::RunTaskWith(MultieraAddressCredentialRelationPrerunData())
+  should_add_task |block, _properties| {
+    has_transaction_multiera(block.1)
   };
   execute |previous_data, task| handle_address_credential_relation(
       task.db_tx,

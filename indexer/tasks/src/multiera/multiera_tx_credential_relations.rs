@@ -16,10 +16,7 @@ use super::{
     relation_map::RelationMap,
 };
 
-use crate::{database_task::PrerunResult, task_macro::*};
-
-#[derive(Copy, Clone)]
-pub struct MultieraTxCredentialRelationPrerunData();
+use crate::{dsl::default_impl::has_transaction_multiera, task_macro::*};
 
 carp_task! {
   name MultieraTxCredentialRelationTask;
@@ -27,8 +24,8 @@ carp_task! {
   dependencies [MultieraAddressTask, MultieraStakeCredentialTask];
   read [multiera_stake_credential, vkey_relation_map];
   write [];
-  should_add_task |_block, _properties| -> MultieraTxCredentialRelationPrerunData {
-    PrerunResult::RunTaskWith(MultieraTxCredentialRelationPrerunData())
+  should_add_task |block, _properties| {
+    has_transaction_multiera(block.1)
   };
   execute |previous_data, task| handle_tx_credential_relations(
       task.db_tx,

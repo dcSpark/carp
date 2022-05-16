@@ -1,8 +1,7 @@
 use crate::task_macro::*;
 use crate::{
     database_task::{
-        BlockInfo, DatabaseTaskMeta, MultieraTaskRegistryEntry, PrerunResult, TaskBuilder,
-        TaskRegistryEntry,
+        BlockInfo, DatabaseTaskMeta, MultieraTaskRegistryEntry, TaskBuilder, TaskRegistryEntry,
     },
     utils::TaskPerfAggregator,
 };
@@ -14,9 +13,6 @@ use pallas::ledger::primitives::alonzo::{self};
 use paste::paste;
 use shred::{DispatcherBuilder, Read, ResourceId, System, SystemData, World, Write};
 use std::sync::{Arc, Mutex};
-
-#[derive(Copy, Clone)]
-pub struct ExampleTaskPrerunData();
 
 async fn handle_dummy(
     _db_tx: &DatabaseTransaction,
@@ -31,8 +27,8 @@ carp_task! {
   dependencies [];
   read [multiera_txs];
   write [multiera_addresses];
-  should_add_task |_block, _properties| -> ExampleTaskPrerunData {
-    PrerunResult::RunTaskWith(ExampleTaskPrerunData())
+  should_add_task |_block, _properties| {
+    true
   };
   execute |_previous_data, task| handle_dummy(
       task.db_tx,

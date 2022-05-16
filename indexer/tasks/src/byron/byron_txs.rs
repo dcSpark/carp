@@ -1,9 +1,6 @@
+use crate::{dsl::default_impl::has_transaction_byron, task_macro::*, utils::blake2b256};
 use entity::sea_orm::Set;
 use pallas::ledger::primitives::{byron, Fragment};
-use crate::{database_task::PrerunResult, task_macro::*, utils::blake2b256};
-
-#[derive(Copy, Clone)]
-pub struct ByronTransactionPrerunData();
 
 carp_task! {
   name ByronTransactionTask;
@@ -11,8 +8,8 @@ carp_task! {
   dependencies [];
   read [];
   write [byron_txs];
-  should_add_task |_block, _properties| -> ByronTransactionPrerunData {
-    PrerunResult::RunTaskWith(ByronTransactionPrerunData())
+  should_add_task |block, _properties| {
+    has_transaction_byron(block.1)
   };
   execute |previous_data, task| handle_tx(
       task.db_tx,
