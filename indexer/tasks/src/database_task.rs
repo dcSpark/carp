@@ -3,7 +3,9 @@ use cardano_multiplatform_lib::genesis::byron::config::GenesisData;
 use entity::{prelude::*, sea_orm::DatabaseTransaction};
 use pallas::ledger::primitives::{alonzo, byron};
 use shred::DispatcherBuilder;
-use std::sync::{Arc, Mutex};
+use std::{
+    sync::{Arc, Mutex},
+};
 
 pub type BlockInfo<'a, BlockType> = (
     &'a str, // cbor. Empty for genesis
@@ -11,7 +13,7 @@ pub type BlockInfo<'a, BlockType> = (
     &'a BlockModel,
 );
 
-pub trait DatabaseTaskMeta<'a, BlockType> {
+pub trait DatabaseTaskMeta<'a, BlockType, PrerunData> {
     const TASK_NAME: &'static str;
     const DEPENDENCIES: &'static [&'static str];
 
@@ -20,7 +22,18 @@ pub trait DatabaseTaskMeta<'a, BlockType> {
         block: BlockInfo<'a, BlockType>,
         handle: &'a tokio::runtime::Handle,
         perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
+        prerun_data: &PrerunData,
     ) -> Self;
+
+    fn should_add_task(
+        block: BlockInfo<'a, BlockType>,
+        properties: &ini::Properties,
+    ) -> PrerunResult<PrerunData>;
+}
+
+pub enum PrerunResult<T> {
+    SkipTask,
+    RunTaskWith(T),
 }
 
 pub trait TaskBuilder<'a, BlockType> {

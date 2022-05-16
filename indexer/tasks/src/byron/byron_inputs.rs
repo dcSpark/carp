@@ -1,103 +1,30 @@
-extern crate shred;
-
-use entity::{
-    prelude::*,
-    sea_orm::{prelude::*, DatabaseTransaction},
-};
-use nameof::name_of_type;
 use pallas::ledger::primitives::byron::{self, TxIn};
-use shred::{DispatcherBuilder, Read, ResourceId, System, SystemData, World, Write};
-use std::sync::{Arc, Mutex};
-
-use crate::{
-    database_task::{
-        BlockInfo, ByronTaskRegistryEntry, DatabaseTaskMeta, TaskBuilder, TaskRegistryEntry,
-    },
-    utils::TaskPerfAggregator,
-};
+use crate::{database_task::PrerunResult, task_macro::*};
 
 use super::byron_outputs::ByronOutputTask;
 
-#[derive(SystemData)]
-pub struct Data<'a> {
-    byron_txs: Read<'a, Vec<TransactionModel>>,
-    byron_inputs: Write<'a, Vec<TransactionInputModel>>,
+#[derive(Copy, Clone)]
+pub struct ByronInputPrerunData();
+
+carp_task! {
+  name ByronInputTask;
+  era byron;
+  dependencies [ByronOutputTask];
+  read [byron_txs];
+  write [byron_inputs];
+  should_add_task |_block, _properties| -> ByronInputPrerunData {
+    PrerunResult::RunTaskWith(ByronInputPrerunData())
+  };
+  execute |previous_data, task| handle_inputs(
+      task.db_tx,
+      task.block,
+      previous_data.byron_txs.as_slice(),
+  );
+  merge_result |previous_data, result| {
+    *previous_data.byron_inputs = result;
+  };
 }
 
-pub struct ByronInputTask<'a> {
-    db_tx: &'a DatabaseTransaction,
-    block: BlockInfo<'a, byron::Block>,
-    handle: &'a tokio::runtime::Handle,
-    perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-}
-
-impl<'a> DatabaseTaskMeta<'a, byron::Block> for ByronInputTask<'a> {
-    const TASK_NAME: &'static str = name_of_type!(ByronInputTask);
-    const DEPENDENCIES: &'static [&'static str] = &[name_of_type!(ByronOutputTask)];
-
-    fn new(
-        db_tx: &'a DatabaseTransaction,
-        block: BlockInfo<'a, byron::Block>,
-        handle: &'a tokio::runtime::Handle,
-        perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-    ) -> Self {
-        Self {
-            db_tx,
-            block,
-            handle,
-            perf_aggregator,
-        }
-    }
-}
-
-struct ByronInputTaskBuilder;
-impl<'a> TaskBuilder<'a, byron::Block> for ByronInputTaskBuilder {
-    fn get_name(&self) -> &'static str {
-        ByronInputTask::TASK_NAME
-    }
-    fn get_dependencies(&self) -> &'static [&'static str] {
-        ByronInputTask::DEPENDENCIES
-    }
-    fn add_task<'c>(
-        &self,
-        dispatcher_builder: &mut DispatcherBuilder<'a, 'c>,
-        db_tx: &'a DatabaseTransaction,
-        block: BlockInfo<'a, byron::Block>,
-        handle: &'a tokio::runtime::Handle,
-        perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-        _properties: &ini::Properties,
-    ) {
-        let task = ByronInputTask::new(db_tx, block, handle, perf_aggregator);
-        dispatcher_builder.add(task, self.get_name(), self.get_dependencies());
-    }
-}
-
-inventory::submit! {
-    TaskRegistryEntry::Byron(ByronTaskRegistryEntry { builder: &ByronInputTaskBuilder })
-}
-
-impl<'a> System<'a> for ByronInputTask<'_> {
-    type SystemData = Data<'a>;
-
-    fn run(&mut self, mut bundle: Data<'a>) {
-        let time_counter = std::time::Instant::now();
-
-        let result = self
-            .handle
-            .block_on(handle_inputs(
-                self.db_tx,
-                self.block,
-                bundle.byron_txs.as_slice(),
-            ))
-            .unwrap();
-        *bundle.byron_inputs = result;
-
-        self.perf_aggregator
-            .lock()
-            .unwrap()
-            .update(Self::TASK_NAME, time_counter.elapsed());
-    }
-}
 
 async fn handle_inputs(
     db_tx: &DatabaseTransaction,

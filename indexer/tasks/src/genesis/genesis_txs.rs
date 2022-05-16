@@ -11,9 +11,9 @@ use entity::{
     prelude::*,
     sea_orm::{DatabaseTransaction, DbErr, EntityTrait, Set},
 };
-use nameof::name_of_type;
 use shred::{DispatcherBuilder, ResourceId, System, SystemData, World, Write};
 
+use crate::{database_task::PrerunResult, task_macro::*};
 use crate::{
     database_task::{
         BlockInfo, DatabaseTaskMeta, GenesisTaskRegistryEntry, TaskBuilder, TaskRegistryEntry,
@@ -23,85 +23,27 @@ use crate::{
 use entity::sea_orm::Iterable;
 use futures::future::try_join;
 
-#[derive(SystemData)]
-pub struct Data<'a> {
-    genesis_txs: Write<'a, Vec<TransactionModel>>,
-    genesis_addresses: Write<'a, Vec<AddressModel>>,
-    genesis_outputs: Write<'a, Vec<TransactionOutputModel>>,
-}
+#[derive(Copy, Clone)]
+pub struct GenesisTaskPrerunData();
 
-pub struct GenesisTransactionTask<'a> {
-    pub db_tx: &'a DatabaseTransaction,
-    pub block: BlockInfo<'a, GenesisData>,
-    pub handle: &'a tokio::runtime::Handle,
-    pub perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-}
-
-impl<'a> DatabaseTaskMeta<'a, GenesisData> for GenesisTransactionTask<'a> {
-    const TASK_NAME: &'static str = name_of_type!(GenesisTransactionTask);
-    const DEPENDENCIES: &'static [&'static str] = &[];
-
-    fn new(
-        db_tx: &'a DatabaseTransaction,
-        block: BlockInfo<'a, GenesisData>,
-        handle: &'a tokio::runtime::Handle,
-        perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-    ) -> Self {
-        Self {
-            db_tx,
-            block,
-            handle,
-            perf_aggregator,
-        }
-    }
-}
-
-struct GenesisTransactionTaskBuilder;
-impl<'a> TaskBuilder<'a, GenesisData> for GenesisTransactionTaskBuilder {
-    fn get_name(&self) -> &'static str {
-        GenesisTransactionTask::TASK_NAME
-    }
-    fn get_dependencies(&self) -> &'static [&'static str] {
-        GenesisTransactionTask::DEPENDENCIES
-    }
-
-    fn add_task<'c>(
-        &self,
-        dispatcher_builder: &mut DispatcherBuilder<'a, 'c>,
-        db_tx: &'a DatabaseTransaction,
-        block: BlockInfo<'a, GenesisData>,
-        handle: &'a tokio::runtime::Handle,
-        perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-        _properties: &ini::Properties,
-    ) {
-        let task = GenesisTransactionTask::new(db_tx, block, handle, perf_aggregator);
-        dispatcher_builder.add(task, self.get_name(), self.get_dependencies());
-    }
-}
-
-inventory::submit! {
-    TaskRegistryEntry::Genesis(GenesisTaskRegistryEntry { builder: &GenesisTransactionTaskBuilder })
-}
-
-impl<'a> System<'a> for GenesisTransactionTask<'_> {
-    type SystemData = Data<'a>;
-
-    fn run(&mut self, mut bundle: Data<'a>) {
-        let time_counter = std::time::Instant::now();
-
-        let result = self
-            .handle
-            .block_on(handle_txs(self.db_tx, self.block))
-            .unwrap();
-        *bundle.genesis_txs = result.0;
-        *bundle.genesis_addresses = result.1;
-        *bundle.genesis_outputs = result.2;
-
-        self.perf_aggregator
-            .lock()
-            .unwrap()
-            .update(Self::TASK_NAME, time_counter.elapsed());
-    }
+carp_task! {
+  name GenesisTransactionTask;
+  era genesis;
+  dependencies [];
+  read [];
+  write [genesis_txs, genesis_addresses, genesis_outputs];
+  should_add_task |_block, _properties| -> GenesisTaskPrerunData {
+    PrerunResult::RunTaskWith(GenesisTaskPrerunData())
+  };
+  execute |previous_data, task| handle_txs(
+      task.db_tx,
+      task.block,
+  );
+  merge_result |previous_data, result| {
+    *previous_data.genesis_txs = result.0;
+    *previous_data.genesis_addresses = result.1;
+    *previous_data.genesis_outputs = result.2;
+  };
 }
 
 async fn handle_txs(

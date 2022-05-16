@@ -1,8 +1,5 @@
-extern crate shred;
-
 use std::{
     collections::{BTreeMap, BTreeSet},
-    sync::{Arc, Mutex},
 };
 
 use cardano_multiplatform_lib::{utils::ScriptHashNamespace, RequiredSignersSet};
@@ -10,16 +7,10 @@ use entity::{
     prelude::*,
     sea_orm::{prelude::*, Condition, DatabaseTransaction, Set},
 };
-use nameof::name_of_type;
 use pallas::ledger::primitives::alonzo::{self, TransactionBodyComponent};
-use shred::{DispatcherBuilder, Read, ResourceId, System, SystemData, World, Write};
 
 use crate::{
-    database_task::{
-        BlockInfo, DatabaseTaskMeta, MultieraTaskRegistryEntry, TaskBuilder, TaskRegistryEntry,
-    },
     types::TxCredentialRelationValue,
-    utils::TaskPerfAggregator,
 };
 
 use super::{
@@ -28,92 +19,29 @@ use super::{
 };
 use pallas::ledger::primitives::Fragment;
 
-#[derive(SystemData)]
-pub struct Data<'a> {
-    multiera_txs: Read<'a, Vec<TransactionModel>>,
-    vkey_relation_map: Write<'a, RelationMap>,
-    multiera_stake_credential: Write<'a, BTreeMap<Vec<u8>, StakeCredentialModel>>,
-}
+use crate::{database_task::PrerunResult, task_macro::*};
 
-pub struct MultieraStakeCredentialTask<'a> {
-    pub db_tx: &'a DatabaseTransaction,
-    pub block: BlockInfo<'a, alonzo::Block>,
-    pub handle: &'a tokio::runtime::Handle,
-    pub perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-}
+#[derive(Copy, Clone)]
+pub struct MultieraStakeCredentialPrerunData();
 
-impl<'a> DatabaseTaskMeta<'a, alonzo::Block> for MultieraStakeCredentialTask<'a> {
-    const TASK_NAME: &'static str = name_of_type!(MultieraStakeCredentialTask);
-    // note: has to be done after inputs as they may add new creds
-    const DEPENDENCIES: &'static [&'static str] = &[
-        name_of_type!(MultieraUsedInputTask),
-        name_of_type!(MultieraUnusedInputTask),
-    ];
-
-    fn new(
-        db_tx: &'a DatabaseTransaction,
-        block: BlockInfo<'a, alonzo::Block>,
-        handle: &'a tokio::runtime::Handle,
-        perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-    ) -> Self {
-        Self {
-            db_tx,
-            block,
-            handle,
-            perf_aggregator,
-        }
-    }
-}
-
-struct MultieraStakeCredentialTaskBuilder;
-impl<'a> TaskBuilder<'a, alonzo::Block> for MultieraStakeCredentialTaskBuilder {
-    fn get_name(&self) -> &'static str {
-        MultieraStakeCredentialTask::TASK_NAME
-    }
-    fn get_dependencies(&self) -> &'static [&'static str] {
-        MultieraStakeCredentialTask::DEPENDENCIES
-    }
-
-    fn add_task<'c>(
-        &self,
-        dispatcher_builder: &mut DispatcherBuilder<'a, 'c>,
-        db_tx: &'a DatabaseTransaction,
-        block: BlockInfo<'a, alonzo::Block>,
-        handle: &'a tokio::runtime::Handle,
-        perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-        _properties: &ini::Properties,
-    ) {
-        let task = MultieraStakeCredentialTask::new(db_tx, block, handle, perf_aggregator);
-        dispatcher_builder.add(task, self.get_name(), self.get_dependencies());
-    }
-}
-
-inventory::submit! {
-    TaskRegistryEntry::Multiera(MultieraTaskRegistryEntry { builder: &MultieraStakeCredentialTaskBuilder })
-}
-
-impl<'a> System<'a> for MultieraStakeCredentialTask<'_> {
-    type SystemData = Data<'a>;
-
-    fn run(&mut self, mut bundle: Data<'a>) {
-        let time_counter = std::time::Instant::now();
-
-        let result = self
-            .handle
-            .block_on(handle_stake_credentials(
-                self.db_tx,
-                self.block,
-                &bundle.multiera_txs,
-                &mut bundle.vkey_relation_map,
-            ))
-            .unwrap();
-        *bundle.multiera_stake_credential = result;
-
-        self.perf_aggregator
-            .lock()
-            .unwrap()
-            .update(Self::TASK_NAME, time_counter.elapsed());
-    }
+carp_task! {
+  name MultieraStakeCredentialTask;
+  era multiera;
+  dependencies [MultieraUsedInputTask, MultieraUnusedInputTask];
+  read [multiera_txs];
+  write [vkey_relation_map, multiera_stake_credential];
+  should_add_task |_block, _properties| -> MultieraStakeCredentialPrerunData {
+    PrerunResult::RunTaskWith(MultieraStakeCredentialPrerunData())
+  };
+  execute |previous_data, task| handle_stake_credentials(
+      task.db_tx,
+      task.block,
+      &previous_data.multiera_txs,
+      &mut previous_data.vkey_relation_map,
+  );
+  merge_result |previous_data, result| {
+    *previous_data.multiera_stake_credential = result;
+  };
 }
 
 async fn handle_stake_credentials(

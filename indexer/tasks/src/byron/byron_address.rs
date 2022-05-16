@@ -1,107 +1,31 @@
-extern crate shred;
-use std::sync::{Arc, Mutex};
-
-use entity::{
-    prelude::*,
-    sea_orm::{prelude::*, DatabaseTransaction},
-};
-use nameof::name_of_type;
 use pallas::ledger::primitives::{
     byron::{self},
     Fragment,
 };
-use shred::{DispatcherBuilder, Read, ResourceId, System, SystemData, World, Write};
-use std::collections::BTreeMap;
-
-use crate::{
-    database_task::{
-        BlockInfo, ByronTaskRegistryEntry, DatabaseTaskMeta, TaskBuilder, TaskRegistryEntry,
-    },
-    era_common::AddressInBlock,
-    utils::TaskPerfAggregator,
-};
 
 use super::byron_txs::ByronTransactionTask;
+use crate::{database_task::PrerunResult, task_macro::*};
 
-#[derive(SystemData)]
-pub struct Data<'a> {
-    byron_txs: Read<'a, Vec<TransactionModel>>,
-    byron_addresses: Write<'a, BTreeMap<Vec<u8>, AddressInBlock>>,
-}
+#[derive(Copy, Clone)]
+pub struct ByronAddressPrerunData();
 
-pub struct ByronAddressTask<'a> {
-    db_tx: &'a DatabaseTransaction,
-    block: BlockInfo<'a, byron::Block>,
-    handle: &'a tokio::runtime::Handle,
-    perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-}
-
-impl<'a> DatabaseTaskMeta<'a, byron::Block> for ByronAddressTask<'a> {
-    const TASK_NAME: &'static str = name_of_type!(ByronAddressTask);
-    const DEPENDENCIES: &'static [&'static str] = &[name_of_type!(ByronTransactionTask)];
-
-    fn new(
-        db_tx: &'a DatabaseTransaction,
-        block: BlockInfo<'a, byron::Block>,
-        handle: &'a tokio::runtime::Handle,
-        perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-    ) -> Self {
-        Self {
-            db_tx,
-            block,
-            handle,
-            perf_aggregator,
-        }
-    }
-}
-
-struct ByronOutputTaskBuilder;
-impl<'a> TaskBuilder<'a, byron::Block> for ByronOutputTaskBuilder {
-    fn get_name(&self) -> &'static str {
-        ByronAddressTask::TASK_NAME
-    }
-    fn get_dependencies(&self) -> &'static [&'static str] {
-        ByronAddressTask::DEPENDENCIES
-    }
-    fn add_task<'c>(
-        &self,
-        dispatcher_builder: &mut DispatcherBuilder<'a, 'c>,
-        db_tx: &'a DatabaseTransaction,
-        block: BlockInfo<'a, byron::Block>,
-        handle: &'a tokio::runtime::Handle,
-        perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-        _properties: &ini::Properties,
-    ) {
-        let task = ByronAddressTask::new(db_tx, block, handle, perf_aggregator);
-        dispatcher_builder.add(task, self.get_name(), self.get_dependencies());
-    }
-}
-
-inventory::submit! {
-    TaskRegistryEntry::Byron(ByronTaskRegistryEntry { builder: &ByronOutputTaskBuilder })
-}
-
-impl<'a> System<'a> for ByronAddressTask<'_> {
-    type SystemData = Data<'a>;
-
-    fn run(&mut self, mut bundle: Data<'a>) {
-        let time_counter = std::time::Instant::now();
-
-        let result = self
-            .handle
-            .block_on(handle_outputs(
-                self.db_tx,
-                self.block,
-                bundle.byron_txs.as_slice(),
-            ))
-            .unwrap();
-        *bundle.byron_addresses = result;
-
-        self.perf_aggregator
-            .lock()
-            .unwrap()
-            .update(Self::TASK_NAME, time_counter.elapsed());
-    }
+carp_task! {
+  name ByronAddressTask;
+  era byron;
+  dependencies [ByronTransactionTask];
+  read [byron_txs];
+  write [byron_addresses];
+  should_add_task |_block, _properties| -> ByronAddressPrerunData {
+    PrerunResult::RunTaskWith(ByronAddressPrerunData())
+  };
+  execute |previous_data, task| handle_outputs(
+      task.db_tx,
+      task.block,
+      previous_data.byron_txs.as_slice(),
+  );
+  merge_result |previous_data, result| {
+    *previous_data.byron_addresses = result;
+  };
 }
 
 async fn handle_outputs(
