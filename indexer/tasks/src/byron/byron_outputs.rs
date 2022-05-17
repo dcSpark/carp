@@ -11,6 +11,7 @@ use pallas::{
 
 carp_task! {
   name ByronOutputTask;
+  doc "Adds the transaction outputs to the database";
   era byron;
   dependencies [ByronAddressTask];
   read [byron_txs, byron_addresses];

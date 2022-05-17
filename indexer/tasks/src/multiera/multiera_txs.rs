@@ -5,6 +5,7 @@ use pallas::ledger::primitives::Fragment;
 
 carp_task! {
   name MultieraTransactionTask;
+  doc "Adds the transactions in the block to the database";
   era multiera;
   dependencies [];
   read [];

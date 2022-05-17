@@ -5,6 +5,7 @@ use super::byron_outputs::ByronOutputTask;
 
 carp_task! {
   name ByronInputTask;
+  doc "Adds the transaction inputs to the database";
   era byron;
   dependencies [ByronOutputTask];
   read [byron_txs];

@@ -15,6 +15,7 @@ use crate::dsl::task_macro::*;
 
 carp_task! {
   name MultieraOutputTask;
+  doc "Adds the transaction outputs to the database";
   era multiera;
   dependencies [MultieraAddressTask];
   read [multiera_txs, multiera_addresses];

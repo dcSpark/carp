@@ -20,6 +20,7 @@ use futures::future::try_join;
 
 carp_task! {
   name GenesisTransactionTask;
+  doc "Parses Genesis transactions (avvm & non-avvm balances from genesis)";
   era genesis;
   dependencies [];
   read [];

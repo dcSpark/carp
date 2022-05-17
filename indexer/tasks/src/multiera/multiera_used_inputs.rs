@@ -17,6 +17,7 @@ use crate::dsl::task_macro::*;
 
 carp_task! {
   name MultieraUsedInputTask;
+  doc "Adds the used inputs to the database (regular inputs in most cases, collateral inputs if tx fails";
   era multiera;
   dependencies [MultieraOutputTask];
   read [multiera_txs];

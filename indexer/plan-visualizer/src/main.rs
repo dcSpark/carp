@@ -25,7 +25,6 @@ fn main() -> anyhow::Result<()> {
     let fmt_layer = tracing_subscriber::fmt::layer().with_test_writer();
 
     let sqlx_filter = tracing_subscriber::filter::Targets::new()
-        .with_target("carp", tracing::Level::TRACE)
         .with_default(tracing_subscriber::fmt::Subscriber::DEFAULT_MAX_LEVEL);
 
     tracing_subscriber::registry()

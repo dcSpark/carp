@@ -1,3 +1,5 @@
+#![allow(dead_code, unused_imports, unused_macros)]
+
 pub mod byron;
 pub mod dsl;
 pub mod era_common;

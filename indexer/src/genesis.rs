@@ -94,7 +94,7 @@ pub async fn insert_genesis(
 
     process_genesis_block(
         txn,
-        (&"", &genesis_file, &block),
+        ("", &genesis_file, &block),
         &exec_plan,
         task_perf_aggregator.clone(),
     )

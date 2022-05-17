@@ -1,5 +1,5 @@
 [workspace]
-members = [".", "entity", "migration", "rollback", "reparse", "tasks", "plan-visualizer"]
+members = [".", "entity", "migration", "rollback", "reparse", "tasks", "plan-visualizer", "task-docgen"]
 
 [package]
 name = "carp"

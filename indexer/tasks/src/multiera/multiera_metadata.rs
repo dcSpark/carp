@@ -16,6 +16,7 @@ use crate::dsl::task_macro::*;
 
 carp_task! {
   name MultieraMetadataTask;
+  doc "Adds the transaction metadata to the database as a series of <metadata_label, cbor> pair";
   era multiera;
   dependencies [MultieraTransactionTask];
   read [multiera_txs];

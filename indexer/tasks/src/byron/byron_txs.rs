@@ -4,6 +4,7 @@ use pallas::ledger::primitives::{byron, Fragment};
 
 carp_task! {
   name ByronTransactionTask;
+  doc "Adds the transactions in the block to the database";
   era byron;
   dependencies [];
   read [];

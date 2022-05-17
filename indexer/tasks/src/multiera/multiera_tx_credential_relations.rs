@@ -20,6 +20,7 @@ use crate::{dsl::default_impl::has_transaction_multiera, dsl::task_macro::*};
 
 carp_task! {
   name MultieraTxCredentialRelationTask;
+  doc "Adds the relation between transactions and credentials that appear within the tx to the database";
   era multiera;
   dependencies [MultieraAddressTask, MultieraStakeCredentialTask];
   read [multiera_stake_credential, vkey_relation_map];

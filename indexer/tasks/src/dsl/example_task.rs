@@ -4,6 +4,7 @@ carp_task! {
   // The task name. This is what will show up in the task graph
   // and this is how you specify dependencies
   name ExampleTask;
+  doc "An example task to help people learn how to write custom Carp tasks";
   // The era your task operates on. Note: different eras have different block representations
   era multiera;
   // List of dependencies for this task. This is an array of names of other tasks

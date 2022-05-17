@@ -8,6 +8,7 @@ use crate::dsl::task_macro::*;
 
 carp_task! {
   name ByronAddressTask;
+  doc "Adds the address raw bytes to the database";
   era byron;
   dependencies [ByronTransactionTask];
   read [byron_txs];

@@ -13,6 +13,7 @@ use crate::dsl::task_macro::*;
 
 carp_task! {
   name MultieraUnusedInputTask;
+  doc "Adds the unused inputs to the database (collateral inputs if tx succeeds, collateral inputs otherwise";
   era multiera;
   dependencies [MultieraOutputTask];
   read [multiera_txs];

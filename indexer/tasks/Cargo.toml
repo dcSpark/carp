@@ -19,3 +19,11 @@ hex = "0.4.3"
 cryptoxide = "0.4.2"
 futures = "0.3"
 paste = "1.0"
+cfg-if = "0.1"
+markdown-gen = { git = "https://github.com/dcSpark/markdown-gen-rs", branch = "hbina-add-ability-to-write-raw-str" }
+urlencoding = "2.1.0"
+
+[features]
+default = ["build_rust_task"]
+build_rust_task = []
+build_markdown_task = []

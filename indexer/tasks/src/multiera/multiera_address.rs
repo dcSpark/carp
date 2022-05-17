@@ -27,6 +27,7 @@ use crate::dsl::task_macro::*;
 
 carp_task! {
   name MultieraAddressTask;
+  doc "Adds the address raw bytes to the database";
   era multiera;
   dependencies [MultieraTransactionTask];
   read [multiera_txs];
