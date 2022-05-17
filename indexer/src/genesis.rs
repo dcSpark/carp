@@ -1,12 +1,11 @@
 use anyhow::anyhow;
+use entity::block::EraValue;
 use std::fs;
 use std::sync::{Arc, Mutex};
+use tasks::dsl::database_task::BlockGlobalInfo;
 
 use cardano_multiplatform_lib::genesis::byron::{config::GenesisData, parse::parse};
-use entity::{
-    prelude::BlockActiveModel,
-    sea_orm::{ActiveModelTrait, DatabaseConnection, DatabaseTransaction, Set, TransactionTrait},
-};
+use entity::sea_orm::{DatabaseConnection, DatabaseTransaction, TransactionTrait};
 use migration::DbErr;
 use tasks::utils::TaskPerfAggregator;
 use tasks::{execution_plan::ExecutionPlan, genesis::genesis_executor::process_genesis_block};
@@ -79,22 +78,15 @@ pub async fn insert_genesis(
         hex::encode(genesis_hash.clone())
     );
 
-    // note: strictly speaking, the epoch, height, etc. isn't defined for the genesis block
-    // since it comes before the first Epoch Boundary Block (EBB)
-    let block = BlockActiveModel {
-        era: Set(0),
-        hash: Set(genesis_hash),
-        height: Set(0),
-        epoch: Set(0),
-        slot: Set(0),
-        ..Default::default()
+    let block_global_info = BlockGlobalInfo {
+        era: EraValue::Byron,
+        epoch: None,
+        epoch_slot: None,
     };
-
-    let block = block.insert(txn).await?;
 
     process_genesis_block(
         txn,
-        ("", &genesis_file, &block),
+        ("", &genesis_file, &block_global_info),
         &exec_plan,
         task_perf_aggregator.clone(),
     )

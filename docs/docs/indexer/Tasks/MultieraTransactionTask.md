@@ -4,7 +4,17 @@ Adds the transactions in the block to the database
 ## Era
 ` multiera `
 
+## Dependencies
+
+   * [MultieraBlockTask](./MultieraBlockTask)
+
+
 ## Data accessed
+#### Reads from
+
+   * ` multiera_block `
+
+
 #### Writes to
 
    * ` multiera_txs `

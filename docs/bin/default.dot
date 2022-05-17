@@ -4,6 +4,7 @@ label="Genesis";
 color="grey85";
 
 N0;
+N1;
 
 }
 
@@ -11,10 +12,11 @@ subgraph cluster_Byron {
 label="Byron";
 color="grey85";
 
-N1;
 N2;
 N3;
 N4;
+N5;
+N6;
 
 }
 
@@ -22,8 +24,6 @@ subgraph cluster_Multiera {
 label="Multiera";
 color="grey85";
 
-N5;
-N6;
 N7;
 N8;
 N9;
@@ -31,35 +31,44 @@ N10;
 N11;
 N12;
 N13;
+N14;
+N15;
+N16;
 
 }
 
-    N0[label="GenesisTransactionTask"][shape="box"];
-    N1[label="ByronTransactionTask"][shape="box"];
-    N2[label="ByronAddressTask"][shape="box"];
-    N3[label="ByronOutputTask"][shape="box"];
-    N4[label="ByronInputTask"][shape="box"];
-    N5[label="MultieraTransactionTask"][shape="box"];
-    N6[label="MultieraMetadataTask"][shape="box"];
-    N7[label="MultieraAddressTask"][shape="box"];
-    N8[label="MultieraOutputTask"][shape="box"];
-    N9[label="MultieraUsedInputTask"][shape="box"];
-    N10[label="MultieraUnusedInputTask"][shape="box"];
-    N11[label="MultieraStakeCredentialTask"][shape="box"];
-    N12[label="MultieraAddressCredentialRelationTask"][shape="box"];
-    N13[label="MultieraTxCredentialRelationTask"][shape="box"];
-    N1 -> N2[label=""];
+    N0[label="GenesisBlockTask"][shape="box"];
+    N1[label="GenesisTransactionTask"][shape="box"];
+    N2[label="ByronBlockTask"][shape="box"];
+    N3[label="ByronTransactionTask"][shape="box"];
+    N4[label="ByronAddressTask"][shape="box"];
+    N5[label="ByronOutputTask"][shape="box"];
+    N6[label="ByronInputTask"][shape="box"];
+    N7[label="MultieraBlockTask"][shape="box"];
+    N8[label="MultieraTransactionTask"][shape="box"];
+    N9[label="MultieraMetadataTask"][shape="box"];
+    N10[label="MultieraAddressTask"][shape="box"];
+    N11[label="MultieraOutputTask"][shape="box"];
+    N12[label="MultieraUsedInputTask"][shape="box"];
+    N13[label="MultieraUnusedInputTask"][shape="box"];
+    N14[label="MultieraStakeCredentialTask"][shape="box"];
+    N15[label="MultieraAddressCredentialRelationTask"][shape="box"];
+    N16[label="MultieraTxCredentialRelationTask"][shape="box"];
+    N0 -> N1[label=""];
     N2 -> N3[label=""];
     N3 -> N4[label=""];
+    N4 -> N5[label=""];
     N5 -> N6[label=""];
-    N5 -> N7[label=""];
     N7 -> N8[label=""];
     N8 -> N9[label=""];
     N8 -> N10[label=""];
-    N9 -> N11[label=""];
     N10 -> N11[label=""];
-    N7 -> N12[label=""];
     N11 -> N12[label=""];
-    N7 -> N13[label=""];
     N11 -> N13[label=""];
+    N12 -> N14[label=""];
+    N13 -> N14[label=""];
+    N10 -> N15[label=""];
+    N14 -> N15[label=""];
+    N10 -> N16[label=""];
+    N14 -> N16[label=""];
 }

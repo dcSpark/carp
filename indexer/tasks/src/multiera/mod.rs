@@ -1,5 +1,6 @@
 pub mod multiera_address;
 pub mod multiera_address_credential_relations;
+pub mod multiera_block;
 pub mod multiera_executor;
 pub mod multiera_metadata;
 pub mod multiera_outputs;

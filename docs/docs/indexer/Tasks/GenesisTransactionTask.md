@@ -4,7 +4,17 @@ Parses Genesis transactions \(avvm & non\-avvm balances from genesis\)
 ## Era
 ` genesis `
 
+## Dependencies
+
+   * [GenesisBlockTask](./GenesisBlockTask)
+
+
 ## Data accessed
+#### Reads from
+
+   * ` genesis_block `
+
+
 #### Writes to
 
    * ` genesis_txs `

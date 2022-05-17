@@ -18,12 +18,14 @@ use crate::utils::{blake2b256, TaskPerfAggregator};
 use entity::sea_orm::Iterable;
 use futures::future::try_join;
 
+use super::genesis_block::GenesisBlockTask;
+
 carp_task! {
   name GenesisTransactionTask;
   doc "Parses Genesis transactions (avvm & non-avvm balances from genesis)";
   era genesis;
-  dependencies [];
-  read [];
+  dependencies [GenesisBlockTask];
+  read [genesis_block];
   write [genesis_txs, genesis_addresses, genesis_outputs];
   should_add_task |block, _properties| {
     !block.1.avvm_distr.is_empty() || !block.1.non_avvm_balances.is_empty()
@@ -31,6 +33,7 @@ carp_task! {
   execute |previous_data, task| handle_txs(
       task.db_tx,
       task.block,
+      &previous_data.genesis_block.as_ref().unwrap()
   );
   merge_result |previous_data, result| {
     *previous_data.genesis_txs = result.0;
@@ -42,6 +45,7 @@ carp_task! {
 async fn handle_txs(
     db_tx: &DatabaseTransaction,
     block: BlockInfo<'_, GenesisData>,
+    database_block: &BlockModel,
 ) -> Result<
     (
         Vec<TransactionModel>,
@@ -65,7 +69,7 @@ async fn handle_txs(
             ByronAddress::from_bytes(extended_addr.to_address().as_ref().to_vec()).unwrap();
 
         transactions.push(TransactionActiveModel {
-            block_id: Set(block.2.id),
+            block_id: Set(database_block.id),
             hash: Set(tx_hash.to_bytes().to_vec()),
             is_valid: Set(true),
             payload: Set(byron_addr.to_bytes()),
@@ -97,7 +101,7 @@ async fn handle_txs(
         // println!("{}", hex::encode(tx_hash));
 
         transactions.push(TransactionActiveModel {
-            block_id: Set(block.2.id),
+            block_id: Set(database_block.id),
             hash: Set(tx_hash.to_vec()),
             is_valid: Set(true),
             payload: Set(byron_addr.to_bytes()),

@@ -3,12 +3,14 @@ use entity::sea_orm::{DatabaseTransaction, Set};
 use pallas::ledger::primitives::alonzo::{self};
 use pallas::ledger::primitives::Fragment;
 
+use super::multiera_block::MultieraBlockTask;
+
 carp_task! {
   name MultieraTransactionTask;
   doc "Adds the transactions in the block to the database";
   era multiera;
-  dependencies [];
-  read [];
+  dependencies [MultieraBlockTask];
+  read [multiera_block];
   write [multiera_txs];
   should_add_task |block, _properties| {
     has_transaction_multiera(block.1)
@@ -16,6 +18,7 @@ carp_task! {
   execute |previous_data, task| handle_tx(
       task.db_tx,
       task.block,
+      &previous_data.multiera_block.as_ref().unwrap()
   );
   merge_result |previous_data, result| {
     *previous_data.multiera_txs = result;
@@ -25,6 +28,7 @@ carp_task! {
 async fn handle_tx(
     db_tx: &DatabaseTransaction,
     block: BlockInfo<'_, alonzo::Block>,
+    database_block: &BlockModel,
 ) -> Result<Vec<TransactionModel>, DbErr> {
     let txs: Vec<TransactionActiveModel> = block
         .1
@@ -92,7 +96,7 @@ async fn handle_tx(
 
             TransactionActiveModel {
                 hash: Set(tx_body.to_hash().to_vec()),
-                block_id: Set(block.2.id),
+                block_id: Set(database_block.id),
                 tx_index: Set(idx as i32),
                 payload: Set(temp_tx.to_bytes()),
                 is_valid: Set(is_valid),

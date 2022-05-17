@@ -2,12 +2,14 @@ use crate::{dsl::default_impl::has_transaction_byron, dsl::task_macro::*, utils:
 use entity::sea_orm::Set;
 use pallas::ledger::primitives::{byron, Fragment};
 
+use super::byron_block::ByronBlockTask;
+
 carp_task! {
   name ByronTransactionTask;
   doc "Adds the transactions in the block to the database";
   era byron;
-  dependencies [];
-  read [];
+  dependencies [ByronBlockTask];
+  read [byron_block];
   write [byron_txs];
   should_add_task |block, _properties| {
     has_transaction_byron(block.1)
@@ -15,6 +17,7 @@ carp_task! {
   execute |previous_data, task| handle_tx(
       task.db_tx,
       task.block,
+      &previous_data.byron_block.as_ref().unwrap()
   );
   merge_result |previous_data, result| {
     *previous_data.byron_txs = result;
@@ -24,6 +27,7 @@ carp_task! {
 async fn handle_tx(
     db_tx: &DatabaseTransaction,
     block: BlockInfo<'_, byron::Block>,
+    database_block: &BlockModel,
 ) -> Result<Vec<TransactionModel>, DbErr> {
     match &block.1 {
         // Byron era had Epoch-boundary blocks for calculating stake distribution changes
@@ -43,7 +47,7 @@ async fn handle_tx(
 
                         TransactionActiveModel {
                             hash: Set(tx_hash.to_vec()),
-                            block_id: Set(block.2.id),
+                            block_id: Set(database_block.id),
                             tx_index: Set(idx as i32),
                             payload: Set(tx_payload),
                             is_valid: Set(true), // always true in Byron

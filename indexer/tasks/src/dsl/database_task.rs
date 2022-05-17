@@ -1,14 +1,21 @@
 use crate::utils::TaskPerfAggregator;
 use cardano_multiplatform_lib::genesis::byron::config::GenesisData;
-use entity::{prelude::*, sea_orm::DatabaseTransaction};
+use entity::{block::EraValue, prelude::*, sea_orm::DatabaseTransaction};
 use pallas::ledger::primitives::{alonzo, byron};
 use shred::DispatcherBuilder;
 use std::sync::{Arc, Mutex};
 
+/// Misc information about blocks that can't be computed from just the block data itself
+pub struct BlockGlobalInfo {
+    pub era: EraValue,
+    pub epoch: Option<u64>,
+    pub epoch_slot: Option<u64>,
+}
+
 pub type BlockInfo<'a, BlockType> = (
     &'a str, // cbor. Empty for genesis
     &'a BlockType,
-    &'a BlockModel,
+    &'a BlockGlobalInfo,
 );
 
 pub trait DatabaseTaskMeta<'a, BlockType> {

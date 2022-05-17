@@ -9,15 +9,17 @@ use pallas::ledger::primitives::{
 };
 use std::sync::{Arc, Mutex};
 use tasks::{
-    byron::byron_executor::process_byron_block, execution_plan::ExecutionPlan,
-    multiera::multiera_executor::process_multiera_block, utils::TaskPerfAggregator,
+    byron::byron_executor::process_byron_block, dsl::database_task::BlockGlobalInfo,
+    execution_plan::ExecutionPlan, multiera::multiera_executor::process_multiera_block,
+    utils::TaskPerfAggregator,
 };
 
+use crate::perf_aggregator::PerfAggregator;
 use crate::types::MultiEraBlock;
-use crate::{perf_aggregator::PerfAggregator, types::EraValue};
 use entity::{
+    block::EraValue,
     prelude::*,
-    sea_orm::{prelude::*, ColumnTrait, DatabaseTransaction, Set, TransactionTrait},
+    sea_orm::{prelude::*, ColumnTrait, DatabaseTransaction, TransactionTrait},
 };
 use migration::DbErr;
 
@@ -125,32 +127,26 @@ async fn insert_block(
 
     let block_parse_counter = std::time::Instant::now();
 
-    let hash = hex::decode(&block_record.hash).unwrap();
     let block_payload = hex::decode(block_record.cbor_hex.as_ref().unwrap()).unwrap();
     let (multi_block, era) = block_with_era(block_record.era, &block_payload).unwrap();
 
-    perf_aggregator.block_parse += block_parse_counter.elapsed();
-
-    let block_insert_counter = std::time::Instant::now();
-
-    let block = BlockActiveModel {
-        era: Set(era.into()),
-        hash: Set(hash),
-        height: Set(block_record.number as i32),
-        epoch: Set(block_record.epoch.unwrap() as i32),
-        slot: Set(block_record.slot as i32),
-        ..Default::default()
+    let block_global_info = BlockGlobalInfo {
+        era,
+        epoch: block_record.epoch,
+        epoch_slot: block_record.epoch_slot,
     };
 
-    let block = block.insert(txn).await?;
-
-    perf_aggregator.block_insertion += block_insert_counter.elapsed();
+    perf_aggregator.block_parse += block_parse_counter.elapsed();
 
     match &multi_block {
         MultiEraBlock::Byron(byron_block) => {
             process_byron_block(
                 txn,
-                (&block_record.cbor_hex.unwrap(), byron_block, &block),
+                (
+                    &block_record.cbor_hex.unwrap(),
+                    byron_block,
+                    &block_global_info,
+                ),
                 &exec_plan,
                 task_perf_aggregator.clone(),
             )
@@ -159,7 +155,11 @@ async fn insert_block(
         MultiEraBlock::Compatible(alonzo_block) => {
             process_multiera_block(
                 txn,
-                (&block_record.cbor_hex.unwrap(), alonzo_block, &block),
+                (
+                    &block_record.cbor_hex.unwrap(),
+                    alonzo_block,
+                    &block_global_info,
+                ),
                 &exec_plan,
                 task_perf_aggregator.clone(),
             )

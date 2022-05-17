@@ -4,7 +4,6 @@ use std::time::Duration;
 pub struct PerfAggregator {
     pub block_fetch: Duration,
     pub block_parse: Duration,
-    pub block_insertion: Duration,
     pub rollback: Duration,
     pub overhead: Duration,
 }
@@ -13,14 +12,12 @@ impl PerfAggregator {
         Self {
             block_fetch: Duration::new(0, 0),
             block_parse: Duration::new(0, 0),
-            block_insertion: Duration::new(0, 0),
             rollback: Duration::new(0, 0),
             overhead: Duration::new(0, 0),
         }
     }
     pub fn set_overhead(&mut self, total_duration: &Duration, tasks: &Duration) {
-        let non_duration_sum =
-            self.block_fetch + self.block_parse + self.block_insertion + self.rollback + *tasks;
+        let non_duration_sum = self.block_fetch + self.block_parse + self.rollback + *tasks;
         if *total_duration > non_duration_sum {
             self.overhead = *total_duration - non_duration_sum;
         } else {
@@ -41,7 +38,6 @@ impl std::ops::Add for PerfAggregator {
         Self {
             block_fetch: self.block_fetch + other.block_fetch,
             block_parse: self.block_parse + other.block_parse,
-            block_insertion: self.block_insertion + other.block_insertion,
             rollback: self.rollback + other.rollback,
             overhead: self.overhead + other.overhead,
         }

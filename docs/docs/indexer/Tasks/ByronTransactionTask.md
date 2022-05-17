@@ -4,7 +4,17 @@ Adds the transactions in the block to the database
 ## Era
 ` byron `
 
+## Dependencies
+
+   * [ByronBlockTask](./ByronBlockTask)
+
+
 ## Data accessed
+#### Reads from
+
+   * ` byron_block `
+
+
 #### Writes to
 
    * ` byron_txs `
