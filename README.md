@@ -1,4 +1,4 @@
-# Carp (Cardano Postges Indexer)
+# Carp (Cardano Postgres Indexer)
 
 # Running
 
