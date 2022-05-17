@@ -56,12 +56,13 @@ impl<'a> Config<'a> {
                             // skip posting stats if last_epoch == -1 (went application just launched)
                             if last_epoch >= 0 {
                                 tracing::info!(
-                                    "Finished processing epoch {} after {:?} (+{:?})",
+                                    "Finished processing epoch {} after {:?}s (+{:?}s)",
                                     last_epoch,
                                     epoch_duration
                                         .checked_sub(perf_aggregator.block_fetch)
-                                        .unwrap_or(std::time::Duration::new(0, 0)),
-                                    perf_aggregator.block_fetch
+                                        .unwrap_or(std::time::Duration::new(0, 0))
+                                        .as_secs(),
+                                    perf_aggregator.block_fetch.as_secs()
                                 );
 
                                 tracing::trace!(
@@ -71,6 +72,7 @@ impl<'a> Config<'a> {
                                 );
                             }
                             epoch_start_time = std::time::Instant::now();
+                            perf_aggregator = PerfAggregator::new();
                             task_perf_aggregator =
                                 Arc::new(Mutex::new(TaskPerfAggregator::default()));
 

@@ -21,7 +21,17 @@ impl PerfAggregator {
     pub fn set_overhead(&mut self, total_duration: &Duration, tasks: &Duration) {
         let non_duration_sum =
             self.block_fetch + self.block_parse + self.block_insertion + self.rollback + *tasks;
-        self.overhead = *total_duration - non_duration_sum
+        if *total_duration > non_duration_sum {
+            self.overhead = *total_duration - non_duration_sum;
+        } else {
+            tracing::error!(
+                "Unexpected negative overheard {} ({:?} - {:?})",
+                (total_duration.as_secs() as i64 - non_duration_sum.as_secs() as i64),
+                total_duration,
+                non_duration_sum
+            );
+            self.overhead = Duration::new(0, 0);
+        }
     }
 }
 impl std::ops::Add for PerfAggregator {
