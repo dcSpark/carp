@@ -310,6 +310,14 @@ ALTER TABLE ONLY public."Address"
 
 
 --
+-- Name: Block Block_hash_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."Block"
+    ADD CONSTRAINT "Block_hash_key" UNIQUE (hash);
+
+
+--
 -- Name: Block Block_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 

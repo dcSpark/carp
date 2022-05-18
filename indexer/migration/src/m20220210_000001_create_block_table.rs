@@ -26,7 +26,12 @@ impl MigrationTrait for Migration {
                             .primary_key(),
                     )
                     .col(ColumnDef::new(Column::Era).integer().not_null())
-                    .col(ColumnDef::new(Column::Hash).binary().not_null())
+                    .col(
+                        ColumnDef::new(Column::Hash)
+                            .binary()
+                            .not_null()
+                            .unique_key(),
+                    )
                     .col(ColumnDef::new(Column::Height).integer().not_null())
                     .col(ColumnDef::new(Column::Epoch).integer().not_null())
                     .col(ColumnDef::new(Column::Slot).integer().not_null())

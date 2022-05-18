@@ -21,6 +21,11 @@ struct Args {
     /// Path of the execution plan to use
     #[clap(short, long, default_value = "execution_plans/default.ini")]
     plan: String,
+
+    /// Starting block hash. This will NOT rollback the database (use the rollback util for that)
+    /// This is instead meant to make it easier to write database migrations
+    #[clap(short, long)]
+    start_block: Option<String>,
 }
 
 #[tokio::main]
@@ -60,7 +65,11 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("{}", "Getting the latest block synced from DB");
 
     // For rollbacks
-    let intersect = match &setup::get_latest_points(&conn).await? {
+    let points = &match &args.start_block {
+        None => setup::get_latest_points(&conn).await?,
+        Some(block) => setup::get_specific_point(&conn, block).await?,
+    };
+    let intersect = match points {
         points if points.is_empty() => {
             // insert genesis then fetch points again
             genesis::process_genesis(&conn, &network, exec_plan.clone()).await?;
@@ -87,7 +96,8 @@ async fn main() -> anyhow::Result<()> {
 
     let sink_setup = postgres_sink::Config { conn: &conn };
 
-    sink_setup.start(input, exec_plan).await?;
+    let initial_point = args.start_block.as_ref().map(|_| points.first().unwrap());
+    sink_setup.start(input, exec_plan, initial_point).await?;
 
     for handle in handles {
         handle.join().map_err(|_| anyhow!(""))?;

@@ -2,6 +2,12 @@ use std::{str::FromStr, sync::Arc, thread::JoinHandle};
 
 use anyhow::anyhow;
 
+use entity::sea_orm::ColumnTrait;
+use entity::sea_orm::QueryFilter;
+use entity::{
+    prelude::{Block, BlockColumn},
+    sea_orm::{DatabaseConnection, EntityTrait, QueryOrder, QuerySelect},
+};
 use oura::{
     filters::selection::{self, Predicate},
     mapper,
@@ -10,11 +16,7 @@ use oura::{
     utils::{ChainWellKnownInfo, Utils, WithUtils},
 };
 
-use entity::{
-    prelude::{Block, BlockColumn},
-    sea_orm::{DatabaseConnection, EntityTrait, QueryOrder, QuerySelect},
-};
-
+/// note: points are sorted from newest to oldest
 pub async fn get_latest_points(conn: &DatabaseConnection) -> anyhow::Result<Vec<PointArg>> {
     let points: Vec<PointArg> = Block::find()
         .order_by_desc(BlockColumn::Id)
@@ -31,6 +33,35 @@ pub async fn get_latest_points(conn: &DatabaseConnection) -> anyhow::Result<Vec<
     //     4924680,
     //     "0dbe461fb5f981c0d01615332b8666340eb1a692b3034f46bcb5f5ea4172b2ed".to_owned(),
     // )])
+}
+
+pub async fn get_specific_point(
+    conn: &DatabaseConnection,
+    block_hash: &str,
+) -> anyhow::Result<Vec<PointArg>> {
+    let provided_point = Block::find()
+        .filter(BlockColumn::Hash.eq(hex::decode(block_hash).unwrap()))
+        .one(conn)
+        .await?;
+
+    if provided_point.is_none() {
+        panic!("Block not found in database: {}", block_hash);
+    }
+
+    // for the intersection, we need to provide the block BEFORE the one the user passed in
+    // since for cardano-node the block represents the last known point
+    // so it will start after the point passed in
+
+    // note: may be empty is user passed in genesis block hash
+    let points: Vec<PointArg> = Block::find()
+        .filter(BlockColumn::Id.lt(provided_point.unwrap().id))
+        .one(conn)
+        .await?
+        .iter()
+        .map(|block| PointArg(block.slot as u64, hex::encode(&block.hash)))
+        .collect();
+
+    Ok(points)
 }
 
 pub fn oura_bootstrap(

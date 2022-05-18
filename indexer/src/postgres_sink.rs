@@ -2,6 +2,7 @@ use anyhow::anyhow;
 use oura::{
     model::{BlockRecord, Era, EventData},
     pipelining::StageReceiver,
+    sources::PointArg,
 };
 use pallas::ledger::primitives::{
     alonzo::{self},
@@ -32,8 +33,10 @@ impl<'a> Config<'a> {
         &self,
         input: StageReceiver,
         exec_plan: Arc<ExecutionPlan>,
+        initial_point: Option<&PointArg>,
     ) -> anyhow::Result<()> {
         tracing::info!("{}", "Starting to process blocks");
+        let mut expected_rollback = initial_point;
 
         let mut last_epoch: i128 = -1;
         let mut epoch_start_time = std::time::Instant::now();
@@ -99,16 +102,51 @@ impl<'a> Config<'a> {
                         })
                         .await?;
                 }
-                EventData::RollBack { block_slot, .. } => {
+                EventData::RollBack {
+                    block_slot,
+                    block_hash,
+                } => {
+                    // cardano-node always triggers a rollback event when you connect to it
+                    // if all the intersection points existed, if will return the most recent point you gave it
+                    // to avoid this causing a rollback when applying a migration starting from an old block, we skip this rollback
+                    if let Some(expected) = expected_rollback {
+                        if expected.1 == *block_hash {
+                            expected_rollback = None;
+                            continue;
+                        }
+                    };
                     match block_slot {
-                        0 => tracing::info!("Rolling back to genesis"),
-                        _ => tracing::info!("Rolling back to slot {}", block_slot - 1),
+                        0 => tracing::info!("Rolling back to genesis ({})", block_hash),
+                        _ => tracing::info!(
+                            "Rolling back to block {} at slot {}",
+                            block_hash,
+                            block_slot - 1
+                        ),
                     };
                     let rollback_start = std::time::Instant::now();
-                    Block::delete_many()
-                        .filter(BlockColumn::Slot.gt(*block_slot))
-                        .exec(self.conn)
+
+                    let point = Block::find()
+                        .filter(BlockColumn::Hash.eq(hex::decode(block_hash).unwrap()))
+                        .one(self.conn)
                         .await?;
+                    match &point {
+                        None => {
+                            // note: potentially caused by https://github.com/txpipe/oura/issues/304
+                            let count = Block::find().count(self.conn).await?;
+                            if count > 1 {
+                                panic!(
+                                "Rollback destination did not exist. Maybe you're stuck on a fork?"
+                            );
+                            }
+                        }
+                        Some(point) => {
+                            Block::delete_many()
+                                .filter(BlockColumn::Id.gt(point.id))
+                                .exec(self.conn)
+                                .await?;
+                        }
+                    }
+
                     perf_aggregator.rollback += rollback_start.elapsed();
                 }
                 _ => (),
