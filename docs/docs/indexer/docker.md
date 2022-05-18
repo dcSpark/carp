@@ -11,6 +11,7 @@ Carp can be run using `docker-compose`. It creates 3(+1 optional) services:
 - carp - container build locally with carp
 
 ### Backup service
+
 There is an optional container that can perform back of the database to an s3 bucket.
 It check every hour the cardano-node tip epoch and if it changes, an SQL backup is being generated.
 By defaul the backup service is commented out.
@@ -21,12 +22,11 @@ Backup service will upload file to path:
 **WARNING:**
 Starting Carp with backup service from scratch will create a dozens of backups until cardano-node fully synchronizes.
 
-
 ### Environment setup
 
 For Your convenience You can create a `.env` file alongside `docker-compose.yml` file with:
 
-```
+```bash
 NETWORK=<network type: mainnet or testnet>
 
 POSTGRES_USER=<user used for carp logging into DB>
