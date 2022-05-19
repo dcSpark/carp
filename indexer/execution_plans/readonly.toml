@@ -1,0 +1,11 @@
+[ByronBlockTask]
+readonly=true
+
+[ByronTransactionTask]
+readonly=true
+
+[MultieraBlockTask]
+readonly=true
+
+[MultieraTransactionTask]
+readonly=true

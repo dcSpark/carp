@@ -1,0 +1,47 @@
+# This file defines which tasks are used when parsing blocks
+# Creating your own execution plan with the tasks you need for your application
+# Format follows the TOML format: https://toml.io/en/
+
+# Note: the order you specify tasks in this file matters
+#       ex: if task Foo depends on task Bar, place Bar first in the list
+
+# You can find task the task name by looking at the TASK_NAME field inside the task
+# Some tasks may allow extra parameters that you can specify in this file
+
+[GenesisBlockTask]
+
+[GenesisTransactionTask]
+
+[ByronBlockTask]
+readonly=false
+
+[ByronTransactionTask]
+readonly=false
+
+[ByronAddressTask]
+
+[ByronOutputTask]
+
+[ByronInputTask]
+
+[MultieraBlockTask]
+readonly=false
+
+[MultieraTransactionTask]
+readonly=false
+
+[MultieraMetadataTask]
+
+[MultieraAddressTask]
+
+[MultieraOutputTask]
+
+[MultieraUsedInputTask]
+
+[MultieraUnusedInputTask]
+
+[MultieraStakeCredentialTask]
+
+[MultieraAddressCredentialRelationTask]
+
+[MultieraTxCredentialRelationTask]
