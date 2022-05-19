@@ -14,7 +14,7 @@ cardano-multiplatform-lib = { git = "https://github.com/dcSpark/cardano-multipla
 entity = { path = "../entity" }
 tokio = { version = "1.16.1", features = ["full"] }
 pallas = "0.9.1"
-rust-ini = "0.18"
+toml = "0.5"
 hex = "0.4.3"
 cryptoxide = "0.4.2"
 futures = "0.3"
@@ -22,6 +22,9 @@ paste = "1.0"
 cfg-if = "0.1"
 markdown-gen = { git = "https://github.com/dcSpark/markdown-gen-rs", branch = "hbina-add-ability-to-write-raw-str" }
 urlencoding = "2.1.0"
+serde = { version = "1.0", features = ["derive"] }
+tracing-subscriber = "0.3.9"
+tracing = "0.1.31"
 
 [features]
 default = ["build_rust_task"]

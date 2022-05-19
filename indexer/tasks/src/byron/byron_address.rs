@@ -4,10 +4,12 @@ use pallas::ledger::primitives::{
 };
 
 use super::byron_txs::ByronTransactionTask;
+use crate::dsl::default_impl::EmptyConfiguration;
 use crate::dsl::task_macro::*;
 
 carp_task! {
   name ByronAddressTask;
+  configuration EmptyConfiguration;
   doc "Adds the address raw bytes to the database";
   era byron;
   dependencies [ByronTransactionTask];

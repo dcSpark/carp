@@ -12,7 +12,7 @@ mod generate_image;
 #[clap(version)]
 struct Args {
     /// Path of the execution plan to use
-    #[clap(short, long, default_value = "execution_plans/default.ini")]
+    #[clap(short, long, default_value = "execution_plans/default.toml")]
     plan: String,
 
     /// Output directory

@@ -35,38 +35,40 @@ pub fn generate(exec_plan: &ExecutionPlan, plan_name: &str) -> Graph {
             }
         }
     };
-    for task_name in exec_plan.0.sections().flatten() {
-        let entry = find_task_registry_entry(task_name);
-        match &entry {
-            None => {
-                panic!("Could not find task named {}", task_name);
+    for (task_name, val) in exec_plan.0.iter() {
+        if let toml::value::Value::Table(_task_props) = val {
+            let entry = find_task_registry_entry(task_name);
+            match &entry {
+                None => {
+                    panic!("Could not find task named {}", task_name);
+                }
+                Some(task) => match task {
+                    TaskRegistryEntry::Genesis(entry) => {
+                        add_node(
+                            SubgraphNames::Genesis,
+                            task_name,
+                            entry.builder.get_name(),
+                            entry.builder.get_dependencies(),
+                        );
+                    }
+                    TaskRegistryEntry::Byron(entry) => {
+                        add_node(
+                            SubgraphNames::Byron,
+                            task_name,
+                            entry.builder.get_name(),
+                            entry.builder.get_dependencies(),
+                        );
+                    }
+                    TaskRegistryEntry::Multiera(entry) => {
+                        add_node(
+                            SubgraphNames::Multiera,
+                            task_name,
+                            entry.builder.get_name(),
+                            entry.builder.get_dependencies(),
+                        );
+                    }
+                },
             }
-            Some(task) => match task {
-                TaskRegistryEntry::Genesis(entry) => {
-                    add_node(
-                        SubgraphNames::Genesis,
-                        task_name,
-                        entry.builder.get_name(),
-                        entry.builder.get_dependencies(),
-                    );
-                }
-                TaskRegistryEntry::Byron(entry) => {
-                    add_node(
-                        SubgraphNames::Byron,
-                        task_name,
-                        entry.builder.get_name(),
-                        entry.builder.get_dependencies(),
-                    );
-                }
-                TaskRegistryEntry::Multiera(entry) => {
-                    add_node(
-                        SubgraphNames::Multiera,
-                        task_name,
-                        entry.builder.get_name(),
-                        entry.builder.get_dependencies(),
-                    );
-                }
-            },
         }
     }
 

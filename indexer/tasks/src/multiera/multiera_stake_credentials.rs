@@ -13,12 +13,13 @@ use super::{
     multiera_unused_input::MultieraUnusedInputTask, multiera_used_inputs::MultieraUsedInputTask,
     relation_map::RelationMap,
 };
-use pallas::ledger::primitives::Fragment;
-
+use crate::dsl::default_impl::EmptyConfiguration;
 use crate::dsl::task_macro::*;
+use pallas::ledger::primitives::Fragment;
 
 carp_task! {
   name MultieraStakeCredentialTask;
+  configuration EmptyConfiguration;
   doc "Adds the stake credentials to the database.
        Note: `stake credentials` are an unfortunately poorly named type in the Cardano binary specification.
        A stake credential has nothing to do with staking. It's just a hash with an prefix to specify what kind of hash it is (ex: payment vs script)";

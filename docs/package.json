@@ -7,7 +7,7 @@
     "bin:sql": "pg_dump --no-owner --schema-only -d $DATABASE_URL > bin/schema.sql && cd bin && . ./gen-sql-graph.sh && cd ..",
     "bin:openapi": "yarn --cwd ../webserver/server publish:openapi",
     "bin:refresh-task-docs": "rm -f ./docs/indexer/Tasks/* && cargo run --manifest-path ../indexer/task-docgen/Cargo.toml -- -o ./docs/indexer/Tasks",
-    "bin:refresh-ep": "cargo run --manifest-path ../indexer/plan-visualizer/Cargo.toml -- --plan ../indexer/execution_plans/default.ini -o ./bin",
+    "bin:refresh-ep": "cargo run --manifest-path ../indexer/plan-visualizer/Cargo.toml -- --plan ../indexer/execution_plans/default.toml -o ./bin",
     "docusaurus": "docusaurus",
     "start": "docusaurus start",
     "build": "docusaurus build",

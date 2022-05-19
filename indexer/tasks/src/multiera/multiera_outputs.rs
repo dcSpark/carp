@@ -7,14 +7,15 @@ use entity::{
 use pallas::ledger::primitives::alonzo::{self, TransactionBody, TransactionBodyComponent};
 use pallas::ledger::primitives::Fragment;
 
-use crate::era_common::get_truncated_address;
-
 use super::multiera_address::MultieraAddressTask;
+use crate::dsl::default_impl::EmptyConfiguration;
+use crate::era_common::get_truncated_address;
 
 use crate::dsl::task_macro::*;
 
 carp_task! {
   name MultieraOutputTask;
+  configuration EmptyConfiguration;
   doc "Adds the transaction outputs to the database";
   era multiera;
   dependencies [MultieraAddressTask];

@@ -1,5 +1,7 @@
 use std::collections::BTreeMap;
 
+use crate::dsl::default_impl::EmptyConfiguration;
+use crate::{dsl::default_impl::has_transaction_multiera, types::TxCredentialRelationValue};
 use cardano_multiplatform_lib::address::{
     BaseAddress, ByronAddress, EnterpriseAddress, PointerAddress, RewardAddress,
 };
@@ -9,14 +11,13 @@ use entity::{
 };
 use pallas::ledger::primitives::alonzo::{self, TransactionBodyComponent};
 
-use crate::{dsl::default_impl::has_transaction_multiera, types::TxCredentialRelationValue};
-
 use super::{multiera_outputs::MultieraOutputTask, relation_map::RelationMap};
 
 use crate::dsl::task_macro::*;
 
 carp_task! {
   name MultieraUsedInputTask;
+  configuration EmptyConfiguration;
   doc "Adds the used inputs to the database (regular inputs in most cases, collateral inputs if tx fails";
   era multiera;
   dependencies [MultieraOutputTask];

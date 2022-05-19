@@ -1,11 +1,11 @@
 use std::collections::BTreeSet;
 
+use crate::dsl::default_impl::EmptyConfiguration;
+use crate::{dsl::default_impl::has_transaction_multiera, types::AddressCredentialRelationValue};
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction, Set},
 };
-
-use crate::{dsl::default_impl::has_transaction_multiera, types::AddressCredentialRelationValue};
 
 use crate::dsl::task_macro::*;
 
@@ -15,6 +15,7 @@ use super::{
 
 carp_task! {
   name MultieraAddressCredentialRelationTask;
+  configuration EmptyConfiguration;
   doc "Adds to the database the relation between addresses and the credentials part of the addresses (ex: payment key + staking key)";
   era multiera;
   dependencies [MultieraAddressTask, MultieraStakeCredentialTask];

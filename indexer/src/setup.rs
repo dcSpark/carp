@@ -55,6 +55,7 @@ pub async fn get_specific_point(
     // note: may be empty is user passed in genesis block hash
     let points: Vec<PointArg> = Block::find()
         .filter(BlockColumn::Id.lt(provided_point.unwrap().id))
+        .order_by_desc(BlockColumn::Id)
         .one(conn)
         .await?
         .iter()

@@ -15,11 +15,13 @@ use super::{
     multiera_address::MultieraAddressTask, multiera_stake_credentials::MultieraStakeCredentialTask,
     relation_map::RelationMap,
 };
+use crate::dsl::default_impl::EmptyConfiguration;
 
 use crate::{dsl::default_impl::has_transaction_multiera, dsl::task_macro::*};
 
 carp_task! {
   name MultieraTxCredentialRelationTask;
+  configuration EmptyConfiguration;
   doc "Adds the relation between transactions and credentials that appear within the tx to the database";
   era multiera;
   dependencies [MultieraAddressTask, MultieraStakeCredentialTask];

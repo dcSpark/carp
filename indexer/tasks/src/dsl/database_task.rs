@@ -18,7 +18,7 @@ pub type BlockInfo<'a, BlockType> = (
     &'a BlockGlobalInfo,
 );
 
-pub trait DatabaseTaskMeta<'a, BlockType> {
+pub trait DatabaseTaskMeta<'a, BlockType, Configuration> {
     const TASK_NAME: &'static str;
     const DEPENDENCIES: &'static [&'static str];
 
@@ -27,9 +27,12 @@ pub trait DatabaseTaskMeta<'a, BlockType> {
         block: BlockInfo<'a, BlockType>,
         handle: &'a tokio::runtime::Handle,
         perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
+        config: &Configuration,
     ) -> Self;
 
-    fn should_add_task(block: BlockInfo<'a, BlockType>, properties: &ini::Properties) -> bool;
+    fn get_configuration(&self) -> &Configuration;
+
+    fn should_add_task(block: BlockInfo<'a, BlockType>, properties: &toml::value::Value) -> bool;
 }
 
 pub trait TaskBuilder<'a, BlockType> {
@@ -43,7 +46,7 @@ pub trait TaskBuilder<'a, BlockType> {
         block: BlockInfo<'a, BlockType>,
         handle: &'a tokio::runtime::Handle,
         perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-        properties: &ini::Properties,
+        properties: &toml::value::Value,
     ) -> bool;
 }
 

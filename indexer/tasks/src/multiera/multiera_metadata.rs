@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use crate::dsl::default_impl::EmptyConfiguration;
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction, Set},
@@ -16,6 +17,7 @@ use crate::dsl::task_macro::*;
 
 carp_task! {
   name MultieraMetadataTask;
+  configuration EmptyConfiguration;
   doc "Adds the transaction metadata to the database as a series of <metadata_label, cbor> pair";
   era multiera;
   dependencies [MultieraTransactionTask];

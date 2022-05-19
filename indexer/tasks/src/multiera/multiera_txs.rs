@@ -1,12 +1,16 @@
+use std::collections::BTreeSet;
+
+use super::multiera_block::MultieraBlockTask;
+use crate::dsl::default_impl::ReadonlyConfig;
+use crate::era_common::transactions_from_hashes;
 use crate::{dsl::default_impl::has_transaction_multiera, dsl::task_macro::*};
-use entity::sea_orm::{DatabaseTransaction, Set};
+use entity::sea_orm::{DatabaseTransaction, QueryOrder, Set};
 use pallas::ledger::primitives::alonzo::{self};
 use pallas::ledger::primitives::Fragment;
 
-use super::multiera_block::MultieraBlockTask;
-
 carp_task! {
   name MultieraTransactionTask;
+  configuration ReadonlyConfig;
   doc "Adds the transactions in the block to the database";
   era multiera;
   dependencies [MultieraBlockTask];
@@ -18,7 +22,8 @@ carp_task! {
   execute |previous_data, task| handle_tx(
       task.db_tx,
       task.block,
-      &previous_data.multiera_block.as_ref().unwrap()
+      &previous_data.multiera_block.as_ref().unwrap(),
+      task.config.readonly
   );
   merge_result |previous_data, result| {
     *previous_data.multiera_txs = result;
@@ -29,7 +34,23 @@ async fn handle_tx(
     db_tx: &DatabaseTransaction,
     block: BlockInfo<'_, alonzo::Block>,
     database_block: &BlockModel,
+    readonly: bool,
 ) -> Result<Vec<TransactionModel>, DbErr> {
+    if readonly {
+        let txs = transactions_from_hashes(
+            db_tx,
+            block
+                .1
+                .transaction_bodies
+                .iter()
+                .map(|tx_body| tx_body.to_hash().to_vec())
+                .collect::<Vec<_>>()
+                .as_slice(),
+        )
+        .await;
+        return txs;
+    }
+
     let txs: Vec<TransactionActiveModel> = block
         .1
         .transaction_bodies

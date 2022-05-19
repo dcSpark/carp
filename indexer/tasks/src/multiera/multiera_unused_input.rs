@@ -1,18 +1,19 @@
+use super::{
+    multiera_outputs::MultieraOutputTask, multiera_used_inputs::add_input_relations,
+    relation_map::RelationMap,
+};
+use crate::dsl::default_impl::EmptyConfiguration;
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction},
 };
 use pallas::ledger::primitives::alonzo::{self, TransactionBodyComponent};
 
-use super::{
-    multiera_outputs::MultieraOutputTask, multiera_used_inputs::add_input_relations,
-    relation_map::RelationMap,
-};
-
 use crate::dsl::task_macro::*;
 
 carp_task! {
   name MultieraUnusedInputTask;
+  configuration EmptyConfiguration;
   doc "Adds the unused inputs to the database (collateral inputs if tx succeeds, collateral inputs otherwise";
   era multiera;
   dependencies [MultieraOutputTask];

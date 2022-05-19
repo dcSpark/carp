@@ -2,6 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::dsl::database_task::BlockInfo;
 use crate::dsl::database_task::TaskRegistryEntry;
+use crate::dsl::default_impl::EmptyConfiguration;
 use crate::execution_plan::ExecutionPlan;
 use crate::utils::find_task_registry_entry;
 use crate::utils::TaskPerfAggregator;
@@ -24,22 +25,24 @@ pub async fn process_multiera_block(
 
     let mut dispatcher_builder = DispatcherBuilder::new();
 
-    for task_name in exec_plan.0.sections().flatten() {
-        let entry = find_task_registry_entry(task_name);
-        match &entry {
-            None => {
-                panic!("Could not find task named {}", task_name);
-            }
-            Some(task) => {
-                if let TaskRegistryEntry::Multiera(entry) = task {
-                    entry.builder.maybe_add_task(
-                        &mut dispatcher_builder,
-                        txn,
-                        block,
-                        &handle,
-                        perf_aggregator.clone(),
-                        exec_plan.0.section(Some(task_name)).unwrap(),
-                    );
+    for (task_name, val) in exec_plan.0.iter() {
+        if let toml::value::Value::Table(_task_props) = val {
+            let entry = find_task_registry_entry(task_name);
+            match &entry {
+                None => {
+                    panic!("Could not find task named {}", task_name);
+                }
+                Some(task) => {
+                    if let TaskRegistryEntry::Multiera(entry) = task {
+                        entry.builder.maybe_add_task(
+                            &mut dispatcher_builder,
+                            txn,
+                            block,
+                            &handle,
+                            perf_aggregator.clone(),
+                            val,
+                        );
+                    }
                 }
             }
         }

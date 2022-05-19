@@ -216,3 +216,44 @@ pub async fn insert_inputs(
 
     Ok(result)
 }
+
+pub async fn transactions_from_hashes(
+    db_tx: &DatabaseTransaction,
+    tx_hashes: &[Vec<u8>],
+) -> Result<Vec<TransactionModel>, DbErr> {
+    use entity::sea_orm::QueryOrder;
+    let txs = Transaction::find()
+        .filter(TransactionColumn::Hash.is_in(tx_hashes.to_vec()))
+        .order_by_desc(TransactionColumn::Id)
+        .all(db_tx)
+        .await?;
+    if txs.len() != tx_hashes.len() {
+        let mut remaining = BTreeSet::<_>::from_iter(tx_hashes.iter());
+        for tx in &txs {
+            remaining.remove(&tx.hash);
+        }
+        if !remaining.is_empty() {
+            panic!(
+                "Transaction(s) not found in database: {:?}",
+                remaining.iter().map(hex::encode)
+            );
+        }
+    }
+    Ok(txs)
+}
+
+pub async fn block_from_hash(
+    db_tx: &DatabaseTransaction,
+    hash: &[u8],
+) -> Result<BlockModel, DbErr> {
+    let block = Block::find()
+        .filter(BlockColumn::Hash.eq(hash.to_vec()))
+        .one(db_tx)
+        .await?;
+    Ok(match block {
+        None => {
+            panic!("Block not found in database: {}", hex::encode(hash));
+        }
+        Some(block) => block,
+    })
+}

@@ -22,11 +22,13 @@ use super::{
     multiera_address_credential_relations::QueuedAddressCredentialRelation,
     multiera_txs::MultieraTransactionTask, relation_map::RelationMap,
 };
+use crate::dsl::default_impl::EmptyConfiguration;
 
 use crate::dsl::task_macro::*;
 
 carp_task! {
   name MultieraAddressTask;
+  configuration EmptyConfiguration;
   doc "Adds the address raw bytes to the database";
   era multiera;
   dependencies [MultieraTransactionTask];

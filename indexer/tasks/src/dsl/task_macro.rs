@@ -50,6 +50,7 @@ cfg_if::cfg_if! {
         macro_rules! carp_task {
             (
                 name $name:ident;
+                configuration $config:ty;
                 doc $doc:expr;
                 era $era:ident;
                 dependencies [ $( $dep:ty ),* ];
@@ -174,6 +175,7 @@ cfg_if::cfg_if! {
             };
         }
     } else if #[cfg(feature = "build_rust_task")] {
+
         macro_rules! era_to_registry {
             (genesis $task_builder:expr) => {
                 TaskRegistryEntry::Genesis(GenesisTaskRegistryEntry {
@@ -195,6 +197,7 @@ cfg_if::cfg_if! {
         macro_rules! carp_task {
             (
               name $name:ident;
+              configuration $config:ty;
               doc $doc:expr;
               era $era:ident;
               dependencies [ $( $dep:ty ),* ];
@@ -219,9 +222,10 @@ cfg_if::cfg_if! {
                     pub block: BlockInfo<'a, era_to_block!($era)>,
                     pub handle: &'a tokio::runtime::Handle,
                     pub perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
+                    pub config: $config,
                 }
 
-                impl<'a> DatabaseTaskMeta<'a, era_to_block!($era)> for $name<'a> {
+                impl<'a> DatabaseTaskMeta<'a, era_to_block!($era), $config> for $name<'a> {
                     const TASK_NAME: &'static str = stringify!($name);
                     const DEPENDENCIES: &'static [&'static str] = &[
                         $(
@@ -234,18 +238,24 @@ cfg_if::cfg_if! {
                         block: BlockInfo<'a, era_to_block!($era)>,
                         handle: &'a tokio::runtime::Handle,
                         perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
+                        config: &$config,
                     ) -> Self {
                         Self {
                             db_tx,
                             block,
                             handle,
                             perf_aggregator,
+                            config: *config
                         }
+                    }
+
+                    fn get_configuration(&self) -> &$config {
+                        &self.config
                     }
 
                     fn should_add_task(
                         $block: BlockInfo<'a, era_to_block!($era)>,
-                        $properties: &ini::Properties,
+                        $properties: &toml::value::Value,
                     ) -> bool {
                         $($should_add_task)*
                     }
@@ -267,12 +277,13 @@ cfg_if::cfg_if! {
                         block: BlockInfo<'a, era_to_block!($era)>,
                         handle: &'a tokio::runtime::Handle,
                         perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-                        properties: &ini::Properties,
+                        configuration: &toml::value::Value,
                     ) -> bool {
-                      match &$name::should_add_task(block, properties) {
+                      match &$name::should_add_task(block, configuration) {
                         false => false,
                         true => {
-                          let task = $name::new(db_tx, block, handle, perf_aggregator);
+                          let config: $config = configuration.clone().try_into::<$config>().unwrap();
+                          let task = $name::new(db_tx, block, handle, perf_aggregator, &config);
 
                           // 1) Check that all dependencies are registered tasks
                           for dep in self.get_dependencies().iter() {

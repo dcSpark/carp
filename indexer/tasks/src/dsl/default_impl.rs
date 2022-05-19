@@ -10,3 +10,11 @@ pub fn has_transaction_byron(block: &byron::Block) -> bool {
 pub fn has_transaction_multiera(block: &alonzo::Block) -> bool {
     block.transaction_bodies.len() > 0
 }
+
+#[derive(Debug, Clone, Copy, serde::Deserialize, serde::Serialize)]
+pub struct EmptyConfiguration {}
+
+#[derive(Debug, Clone, Copy, serde::Deserialize, serde::Serialize)]
+pub struct ReadonlyConfig {
+    pub readonly: bool,
+}

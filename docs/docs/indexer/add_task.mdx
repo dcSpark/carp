@@ -8,7 +8,12 @@ import ExecutionContextCode from "!!raw-loader!../../../indexer/tasks/src/dsl/ex
 
 # Adding your own task
 
-If you want to develop a new task, here are the steps to follow:
+If you want to develop a new task, first think about whether or not you want to modify an existing task, or create a new task
+
+Usually, it's preferable to modify an existing task by providing a new parameter to the task that users can specify in their execution plan.
+This is because if you provide two variants of the same task (ex: InsertBlock1, InsertBlock2), it makes it harder for child tasks to define their dependencies
+
+If you still want to add a new task, here are the steps to follow:
 
 1. (if needed) add a new entity for your schema definition in `indexer/entity`
 2. (if needed) add a new migration to add your new table to `indexer/migration`

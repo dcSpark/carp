@@ -19,7 +19,7 @@ use clap::Parser;
 #[clap(version)]
 struct Args {
     /// Path of the execution plan to use
-    #[clap(short, long, default_value = "execution_plans/default.ini")]
+    #[clap(short, long, default_value = "execution_plans/default.toml")]
     plan: String,
 
     /// Starting block hash. This will NOT rollback the database (use the rollback util for that)

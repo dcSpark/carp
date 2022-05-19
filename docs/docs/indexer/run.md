@@ -26,6 +26,6 @@ Note: steps assume mainnet
 
 ## Running the indexer
 
-`cargo run -- --plan execution_plans/default.ini`
+`cargo run -- --plan execution_plans/default.toml`
 
-Reminder: you can visualize the execution plan using `cargo plan-visualizer --plan execution_plans/default.ini -o plan-visualizer/out`
+Reminder: you can visualize the execution plan using `cargo plan-visualizer --plan execution_plans/default.toml -o plan-visualizer/out`

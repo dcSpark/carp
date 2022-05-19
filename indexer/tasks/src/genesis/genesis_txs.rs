@@ -1,7 +1,6 @@
 extern crate shred;
 
-use std::sync::{Arc, Mutex};
-
+use crate::dsl::default_impl::EmptyConfiguration;
 use cardano_multiplatform_lib::{
     address::ByronAddress,
     genesis::byron::{config::GenesisData, parse::redeem_pubkey_to_txid},
@@ -12,6 +11,7 @@ use entity::{
     sea_orm::{DatabaseTransaction, DbErr, EntityTrait, Set},
 };
 use shred::{DispatcherBuilder, ResourceId, System, SystemData, World, Write};
+use std::sync::{Arc, Mutex};
 
 use crate::dsl::task_macro::*;
 use crate::utils::{blake2b256, TaskPerfAggregator};
@@ -22,6 +22,7 @@ use super::genesis_block::GenesisBlockTask;
 
 carp_task! {
   name GenesisTransactionTask;
+  configuration EmptyConfiguration;
   doc "Parses Genesis transactions (avvm & non-avvm balances from genesis)";
   era genesis;
   dependencies [GenesisBlockTask];
