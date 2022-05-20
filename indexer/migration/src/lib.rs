@@ -9,6 +9,9 @@ mod m20220211_000004_create_address_credential_table;
 mod m20220211_000005_create_transaction_output_table;
 mod m20220211_000006_create_transaction_input_table;
 mod m20220508_000007_create_metadata_table;
+mod m20220520_000008_create_native_asset_table;
+mod m20220520_000009_create_asset_mint_table;
+mod m20220520_000010_create_cip25_entry_table;
 
 pub struct Migrator;
 
@@ -25,6 +28,9 @@ impl MigratorTrait for Migrator {
             Box::new(m20220211_000005_create_transaction_output_table::Migration),
             Box::new(m20220211_000006_create_transaction_input_table::Migration),
             Box::new(m20220508_000007_create_metadata_table::Migration),
+            Box::new(m20220520_000008_create_native_asset_table::Migration),
+            Box::new(m20220520_000009_create_asset_mint_table::Migration),
+            Box::new(m20220520_000010_create_cip25_entry_table::Migration),
         ]
     }
 }

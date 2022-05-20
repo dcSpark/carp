@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "prepare": "yarn bin:refresh-ep && yarn bin:refresh-task-docs && yarn bin:openapi",
+    "prepare": "yarn bin:sql && yarn bin:refresh-ep && yarn bin:refresh-task-docs && yarn bin:openapi",
     "bin:sql": "pg_dump --no-owner --schema-only -d $DATABASE_URL > bin/schema.sql && cd bin && . ./gen-sql-graph.sh && cd ..",
     "bin:openapi": "yarn --cwd ../webserver/server publish:openapi",
     "bin:refresh-task-docs": "rm -f ./docs/indexer/Tasks/* && cargo run --manifest-path ../indexer/task-docgen/Cargo.toml -- -o ./docs/indexer/Tasks",

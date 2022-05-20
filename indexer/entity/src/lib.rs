@@ -8,4 +8,7 @@ pub mod transaction_input;
 pub mod transaction_output;
 pub mod tx_credential;
 pub use sea_orm;
+pub mod asset_mint;
+pub mod cip25_entry;
+pub mod native_asset;
 pub mod transaction_metadata;

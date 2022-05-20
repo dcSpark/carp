@@ -33,6 +33,7 @@ pub async fn get_latest_points(conn: &DatabaseConnection) -> anyhow::Result<Vec<
     //     4924680,
     //     "0dbe461fb5f981c0d01615332b8666340eb1a692b3034f46bcb5f5ea4172b2ed".to_owned(),
     // )])
+    // start of Mary: a650a3f398ba4a9427ec8c293e9f7156d81fd2f7ca849014d8d2c1156c359b3a
 }
 
 pub async fn get_specific_point(

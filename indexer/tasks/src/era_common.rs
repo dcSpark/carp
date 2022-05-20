@@ -125,6 +125,7 @@ pub async fn get_outputs_for_inputs(
 
     // note: we don't need to deduplicate the conditions because every UTXO can only be spent once
     // so we know all these pairs are disjoint amongst all transactions
+    // https://github.com/dcSpark/carp/issues/46
     for input in inputs.iter().flat_map(|inputs| inputs.0.iter()) {
         output_conditions = output_conditions.add(
             Condition::all()

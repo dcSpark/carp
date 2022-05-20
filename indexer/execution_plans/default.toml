@@ -31,6 +31,7 @@ readonly=false
 readonly=false
 
 [MultieraMetadataTask]
+readonly=false
 
 [MultieraAddressTask]
 

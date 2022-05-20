@@ -7,9 +7,22 @@ pub use super::address_credential::{
     Entity as AddressCredential, Model as AddressCredentialModel,
     PrimaryKey as AddressCredentialPrimaryKey, Relation as AddressCredentialRelation,
 };
+pub use super::asset_mint::{
+    ActiveModel as AssetMintActiveModel, Column as AssetMintColumn, Entity as AssetMint,
+    Model as AssetMintModel, PrimaryKey as AssetMintPrimaryKey, Relation as AssetMintRelation,
+};
 pub use super::block::{
     ActiveModel as BlockActiveModel, Column as BlockColumn, Entity as Block, Model as BlockModel,
     PrimaryKey as BlockPrimaryKey, Relation as BlockRelation,
+};
+pub use super::cip25_entry::{
+    ActiveModel as Cip25EntryActiveModel, Column as Cip25EntryColumn, Entity as Cip25Entry,
+    Model as Cip25EntryModel, PrimaryKey as Cip25EntryPrimaryKey, Relation as Cip25EntryRelation,
+};
+pub use super::native_asset::{
+    ActiveModel as NativeAssetActiveModel, Column as NativeAssetColumn, Entity as NativeAsset,
+    Model as NativeAssetModel, PrimaryKey as NativeAssetPrimaryKey,
+    Relation as NativeAssetRelation,
 };
 pub use super::stake_credential::{
     ActiveModel as StakeCredentialActiveModel, Column as StakeCredentialColumn,

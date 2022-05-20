@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate::dsl::default_impl::EmptyConfiguration;
+use crate::dsl::default_impl::ReadonlyConfig;
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction, Set},
@@ -17,7 +17,7 @@ use crate::dsl::task_macro::*;
 
 carp_task! {
   name MultieraMetadataTask;
-  configuration EmptyConfiguration;
+  configuration ReadonlyConfig;
   doc "Adds the transaction metadata to the database as a series of <metadata_label, cbor> pair";
   era multiera;
   dependencies [MultieraTransactionTask];
@@ -30,6 +30,7 @@ carp_task! {
       task.db_tx,
       task.block,
       &previous_data.multiera_txs,
+      task.config.readonly
   );
   merge_result |previous_data, result| {
     *previous_data.multiera_metadata = result;
@@ -40,7 +41,15 @@ async fn handle_metadata(
     db_tx: &DatabaseTransaction,
     block: BlockInfo<'_, alonzo::Block>,
     multiera_txs: &[TransactionModel],
+    readonly: bool,
 ) -> Result<Vec<TransactionMetadataModel>, DbErr> {
+    if readonly {
+        return TransactionMetadata::find()
+            .filter(TransactionMetadataColumn::TxId.is_in(multiera_txs.iter().map(|tx| tx.id)))
+            .all(db_tx)
+            .await;
+    }
+
     let mut metadata_map =
         BTreeMap::<i64 /* id */, &KeyValuePairs<MetadatumLabel, Metadatum>>::default();
     for (idx, data) in block.1.auxiliary_data_set.iter() {
