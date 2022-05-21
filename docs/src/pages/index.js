@@ -32,9 +32,9 @@ export default function Home() {
       title={siteConfig.title}
       description="Cardano Postgres Indexer">
       <HomepageHeader />
-      {/* <main>
+      <main>
         <HomepageFeatures />
-      </main> */}
+      </main>
     </Layout>
   );
 }

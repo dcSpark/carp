@@ -97,6 +97,16 @@ const config = {
             ],
           },
           {
+            title: 'Assets',
+            items: [
+              {
+                html: `
+                  <a class="footer__link-item" href="/carp/CARP-assets.zip" target="_blank" rel="noreferrer noopener">Brand assets</a>
+                `,
+              },
+            ],
+          },
+          {
             title: 'Community',
             items: [
               {
