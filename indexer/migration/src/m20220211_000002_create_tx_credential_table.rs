@@ -1,6 +1,8 @@
 use sea_schema::migration::prelude::*;
 
-use entity::prelude::{StakeCredential, StakeCredentialColumn, Transaction, TransactionColumn};
+use entity::prelude::{
+    Block, BlockColumn, StakeCredential, StakeCredentialColumn, Transaction, TransactionColumn,
+};
 use entity::tx_credential::*;
 
 pub struct Migration;
@@ -38,6 +40,13 @@ impl MigrationTrait for Migration {
                             .to(Transaction, TransactionColumn::Id)
                             .on_delete(ForeignKeyAction::Cascade),
                     )
+                    .col(ColumnDef::new(Column::BlockId).integer().not_null())
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk-tx_credential-block_id")
+                            .from(Entity, Column::BlockId)
+                            .to(Block, BlockColumn::Id),
+                    )
                     .col(ColumnDef::new(Column::Relation).integer().not_null())
                     // Note: the 2-tuple is the primary key
                     // This creates an index on <TxId> and <TxId, CredentialId> (https://stackoverflow.com/a/11352543)
@@ -49,6 +58,16 @@ impl MigrationTrait for Migration {
                             .col(Column::TxId)
                             .col(Column::CredentialId),
                     )
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .table(Entity)
+                    .name("index-tx_credential-block")
+                    .col(Column::BlockId)
                     .to_owned(),
             )
             .await?;
