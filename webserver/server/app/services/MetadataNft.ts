@@ -6,7 +6,6 @@ export async function metadataNfts(request: {
   pairs: NativeAsset[];
   dbTx: Pool;
 }): Promise<Cip25Response> {
-  console.log('Start');
   if (request.pairs.length === 0) return { cip25: {} };
   const cip25 = await sqlMetadataNft.run(
     {
@@ -19,9 +18,9 @@ export async function metadataNfts(request: {
   for (const entry of cip25) {
     const policy_hex = entry.policy_id.toString('hex');
     const for_policy = result[policy_hex] ?? {};
+
     for_policy[entry.asset_name.toString('hex')] = entry.payload.toString('hex');
     result[policy_hex] = for_policy;
   }
-  console.log(cip25);
-  return { cip25: {} };
+  return { cip25: result };
 }

@@ -16,7 +16,16 @@ const route = Routes.metadataNft;
 export class MetadataNftController extends Controller {
   /**
    * Gets the CIP25 metadata for given <policy, asset_name> pairs
+   *
    * Note: policy IDs and asset names MUST be in hex strings. Do not use UTF8 asset names.
+   *
+   * Note: This endpoint returns the NFT metadata as a CBOR object and NOT JSON.
+   * You may expect a JSON object, but actually Cardano has no concept of on-chain JSON.
+   * In fact, on-chain JSON is not even possible!
+   * Instead, Cardano stores metadata as CBOR which can then be converted to JSON
+   * The conversion of CBOR to JSON is project-dependent, and so Carp instead returns the raw cbor
+   * It's up to you to choose how you want to do the JSON conversion.
+   * The common case is handled inside the Carp client library.
    */
   @SuccessResponse(`${StatusCodes.OK}`)
   @Post()

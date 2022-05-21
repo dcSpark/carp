@@ -28,11 +28,7 @@ pub async fn get_latest_points(conn: &DatabaseConnection) -> anyhow::Result<Vec<
         .collect();
 
     Ok(points)
-    // Start of Shelley
-    // Ok(vec![PointArg(
-    //     4924680,
-    //     "0dbe461fb5f981c0d01615332b8666340eb1a692b3034f46bcb5f5ea4172b2ed".to_owned(),
-    // )])
+    // Start of Shelley: aa83acbf5904c0edfe4d79b3689d3d00fcfc553cf360fd2229b98d464c28e9de
     // start of Mary: a650a3f398ba4a9427ec8c293e9f7156d81fd2f7ca849014d8d2c1156c359b3a
 }
 

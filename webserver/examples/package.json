@@ -4,7 +4,7 @@
   "description": "Examples that leverage the Carp client",
   "scripts": {
     "eslint": "eslint tests",
-    "test": "mocha -r ts-node/register tests/**/metadataNft.test.ts --slow 0",
+    "test": "mocha -r ts-node/register tests/**/*.test.ts --slow 0",
     "typecheck": "tsc --project tsconfig.json",
     "prettier": "prettier --write \"**/*.tsx\""
   },

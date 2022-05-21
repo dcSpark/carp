@@ -51,7 +51,7 @@
                             "block"
                         ],
                         "type": "object",
-                        "description": "Omitting \"after\" means you query starting from the genesis block\nNote: the reason you have to specify both a tx hash AND a block hash in the \"after\" for pagination\nis because this is the only way to make sure your pagination doesn't get affected by rollbacks\nex: a rollback could cause a tx to be removed from one block and appear in a totally different block\nSpecifying the block hash as well allows making sure you're paginating on the right tx in the right block"
+                        "description": "Omitting \"after\" means you query starting from the genesis block\n\nNote: the reason you have to specify both a tx hash AND a block hash in the \"after\" for pagination\nis because this is the only way to make sure your pagination doesn't get affected by rollbacks.\nex: a rollback could cause a tx to be removed from one block and appear in a totally different block.\nSpecifying the block hash as well allows making sure you're paginating on the right tx in the right block."
                     }
                 },
                 "required": [
@@ -144,11 +144,48 @@
                     "offset": {
                         "type": "number",
                         "format": "double",
-                        "description": "Note: an offset of -1 is treated the same as an offset of +1\n\nIt's usually best to avoid pagination on the latest block.\n\nIn Cardano, small rollbacks of 1~2 block are very frequent and expected (read Ouroboros for why)\nThat means that using this block for pagination will often lead to your pagination being invalidated by a rollback\nTo avoid this, you can pass an `offset` from the tip for more stable pagination"
+                        "description": "Note: an offset of -1 is treated the same as an offset of +1\n\nIt's usually best to avoid pagination on the latest block as in Cardano, small rollbacks of 1~2 block are very frequent and expected (read Ouroboros for why)\nThat means that using this block for pagination will often lead to your pagination being invalidated by a rollback\nTo avoid this, you can pass an `offset` from the tip for more stable pagination"
                     }
                 },
                 "required": [
                     "offset"
+                ],
+                "type": "object"
+            },
+            "Record_PolicyId.Record_AssetName.Cip25Metadata__": {
+                "properties": {},
+                "type": "object",
+                "description": "Construct a type with a set of properties K of type T"
+            },
+            "Cip25Response": {
+                "properties": {
+                    "cip25": {
+                        "$ref": "#/components/schemas/Record_PolicyId.Record_AssetName.Cip25Metadata__"
+                    }
+                },
+                "required": [
+                    "cip25"
+                ],
+                "type": "object"
+            },
+            "AssetName": {
+                "type": "string"
+            },
+            "PolicyIdAssetMapType": {
+                "properties": {
+                    "assets": {
+                        "properties": {},
+                        "additionalProperties": {
+                            "items": {
+                                "$ref": "#/components/schemas/AssetName"
+                            },
+                            "type": "array"
+                        },
+                        "type": "object"
+                    }
+                },
+                "required": [
+                    "assets"
                 ],
                 "type": "object"
             },
@@ -396,7 +433,7 @@
                         }
                     }
                 },
-                "description": "Ordered lexicographically (order is not maintained)\nNote: this endpoint only returns addresses that are in a block. Use another tool to see mempool information",
+                "description": "Ordered lexicographically (order is not maintained)\n\nNote: this endpoint only returns addresses that are in a block. Use another tool to see mempool information",
                 "security": [],
                 "parameters": [],
                 "requestBody": {
@@ -461,6 +498,56 @@
                 }
             }
         },
+        "/metadata/nft": {
+            "post": {
+                "operationId": "MetadataNft",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Cip25Response"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    },
+                    "428": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Gets the CIP25 metadata for given <policy, asset_name> pairs\n\nNote: policy IDs and asset names MUST be in hex strings. Do not use UTF8 asset names.\n\nNote: This endpoint returns the NFT metadata as a CBOR object and NOT JSON.\nYou may expect a JSON object, but actually Cardano has no concept of on-chain JSON.\nIn fact, on-chain JSON is not even possible!\nInstead, Cardano stores metadata as CBOR which can then be converted to JSON\nThe conversion of CBOR to JSON is project-dependent, and so Carp instead returns the raw cbor\nIt's up to you to choose how you want to do the JSON conversion.\nThe common case is handled inside the Carp client library.",
+                "security": [],
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PolicyIdAssetMapType"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/transaction/history": {
             "post": {
                 "operationId": "TransactionHistory",
@@ -496,7 +583,7 @@
                         }
                     }
                 },
-                "description": "Ordered by `<block.height, transaction.tx_index>`\nNote: this endpoint only returns txs that are in a block. Use another tool to see mempool for txs not in a block",
+                "description": "Ordered by `<block.height, transaction.tx_index>`\n\nNote: this endpoint only returns txs that are in a block. Use another tool to see mempool for txs not in a block",
                 "security": [],
                 "parameters": [],
                 "requestBody": {

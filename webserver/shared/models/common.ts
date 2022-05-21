@@ -33,11 +33,12 @@ export enum RelationFilterType {
 
 export type Pagination = {
   /**
-   * Omitting "after" means you query starting from the genesis block
+   * Omitting "after" means you query starting from the genesis block.
+   *
    * Note: the reason you have to specify both a tx hash AND a block hash in the "after" for pagination
-   * is because this is the only way to make sure your pagination doesn't get affected by rollbacks
-   * ex: a rollback could cause a tx to be removed from one block and appear in a totally different block
-   * Specifying the block hash as well allows making sure you're paginating on the right tx in the right block
+   * is because this is the only way to make sure your pagination doesn't get affected by rollbacks.
+   * ex: a rollback could cause a tx to be removed from one block and appear in a totally different block.
+   * Specifying the block hash as well allows making sure you're paginating on the right tx in the right block.
    */
   after?: {
     /** block hash */

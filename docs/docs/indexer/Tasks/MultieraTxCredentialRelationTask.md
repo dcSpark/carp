@@ -13,6 +13,7 @@ Adds the relation between transactions and credentials that appear within the tx
 ## Data accessed
 #### Reads from
 
+   * ` multiera_block `
    * ` multiera_stake_credential `
    * ` vkey_relation_map `
 

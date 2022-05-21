@@ -1,6 +1,6 @@
 type PolicyId = string;
 type AssetName = string;
-type Cip25Metadata = object;
+type Cip25Metadata = string;
 
 export type PolicyIdAssetMapType = {
   // https://github.com/lukeautry/tsoa/issues/1204#issuecomment-1133229741

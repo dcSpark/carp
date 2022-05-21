@@ -3,6 +3,7 @@ import { Errors } from "@dcspark/carp-client/shared/errors";
 import { Routes } from "@dcspark/carp-client/shared/routes";
 import { StatusCodes } from "http-status-codes";
 import { query, getErrorResponse } from "@dcspark/carp-client/client/src/index";
+import cml from "@dcspark/cardano-multiplatform-lib-nodejs";
 
 const urlBase = "http://localhost:3000";
 
@@ -21,6 +22,24 @@ describe(`/${Routes.metadataNft}`, function () {
       },
     });
 
-    expect(result.cip25).to.be.eql({});
+    const metadatum = cml.TransactionMetadatum.from_bytes(
+      Buffer.from(
+        result.cip25[
+          "b863bc7369f46136ac1048adb2fa7dae3af944c3bbb2be2f216a8d4f"
+        ]["42657272794e617679"],
+        "hex"
+      )
+    );
+    const json = cml.decode_metadatum_to_json_str(
+      metadatum,
+      cml.MetadataJsonSchema.BasicConversions
+    );
+
+    // TODO: tests for other tokens, test for missing tokens, tests for errors
+    expect(JSON.parse(json)).to.be.eql({
+      color: "#000080",
+      image: "ipfs://ipfs/QmSKY1g1zSuPk56cXi2K8RNviaRkDHV3PZujttf7Ugk43y",
+      name: "Berry Navy",
+    });
   });
 });
