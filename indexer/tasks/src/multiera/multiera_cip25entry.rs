@@ -71,14 +71,14 @@ async fn handle_entries(
                 .iter()
                 .flat_map(|(policy_id, assets)| assets.iter().zip(std::iter::repeat(policy_id)))
             {
-                if let Some(native_asset_id) = pair_id_mapping
+                if let Some(asset_id) = pair_id_mapping
                     .get(&asset_name)
                     .and_then(|assets| assets.get(policy_id))
                 {
                     to_insert.push(Cip25EntryActiveModel {
-                        tx_id: Set(metadata.tx_id),
-                        label: Set(metadata.label.clone()),
-                        native_asset_id: Set(*native_asset_id),
+                        metadata_id: Set(metadata.id),
+                        asset_id: Set(*asset_id),
+                        ..Default::default()
                     });
                 }
             }

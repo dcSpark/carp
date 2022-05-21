@@ -19,6 +19,13 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Entity)
                     .if_not_exists()
+                    .col(
+                        ColumnDef::new(Column::Id)
+                            .big_integer()
+                            .primary_key()
+                            .auto_increment()
+                            .not_null(),
+                    )
                     .col(ColumnDef::new(Column::TxId).big_integer().not_null())
                     .foreign_key(
                         ForeignKey::create()
@@ -29,17 +36,19 @@ impl MigrationTrait for Migration {
                     )
                     .col(ColumnDef::new(Column::Label).binary().not_null())
                     .col(ColumnDef::new(Column::Payload).binary().not_null())
-                    .primary_key(
-                        Index::create()
-                            .table(Entity)
-                            .name("metadata-pk")
-                            .col(Column::TxId)
-                            .col(Column::Label),
-                    )
                     .to_owned(),
             )
             .await?;
 
+        manager
+            .create_index(
+                Index::create()
+                    .table(Entity)
+                    .name("index-metadata-txid")
+                    .col(Column::TxId)
+                    .to_owned(),
+            )
+            .await?;
         manager
             .create_index(
                 Index::create()
