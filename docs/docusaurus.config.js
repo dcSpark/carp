@@ -39,6 +39,9 @@ const config = {
           editUrl:
             'https://github.com/dcSpark/carp/',
         },
+        theme: {
+          customCss: [require.resolve('./src/css/custom.css')],
+        },
       }),
     ],
     [
@@ -54,7 +57,7 @@ const config = {
         // Theme Options for modifying how redoc renders them
         theme: {
           // Change with your site colors
-          primaryColor: '#1890ff',
+          primaryColor: '#052F42',
         },
       },
     ]
@@ -74,7 +77,7 @@ const config = {
             type: 'doc',
             docId: 'intro',
             position: 'left',
-            label: 'Tutorial',
+            label: 'Documentation',
           },
           {to: '/openapi', label: 'OpenAPI / Swagger', position: 'left'},
           {
