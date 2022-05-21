@@ -1,5 +1,9 @@
 import { Routes } from "@dcspark/carp-client/shared/routes";
-import { paginatedTransactionHistory } from "@dcspark/carp-client/client/src/paginated";
+import {
+  nftCborToJson,
+  paginatedMetadataNft,
+  paginatedTransactionHistory,
+} from "@dcspark/carp-client/client/src/paginated";
 import { query } from "@dcspark/carp-client/client/src/index";
 import cml from "@dcspark/cardano-multiplatform-lib-nodejs";
 import type { TransactionHistoryResponse } from "@dcspark/carp-client/shared/models/TransactionHistory";
@@ -31,4 +35,22 @@ async function getHistoryForAddress(
     untilBlock: bestBlock.block.hash,
   });
   return result;
+}
+
+async function getNftInfo(
+  policyId: string,
+  assetName: string
+): Promise<string> {
+  const nftInfo = await paginatedMetadataNft(urlBase, {
+    assets: { [policyId]: [assetName] },
+  });
+
+  const jsonInfo = nftCborToJson(
+    nftInfo,
+    cml.TransactionMetadatum,
+    cml.decode_metadatum_to_json_str,
+    cml.MetadataJsonSchema.BasicConversions
+  );
+
+  return jsonInfo.cip25[policyId][assetName];
 }
