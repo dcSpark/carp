@@ -29,6 +29,9 @@ async function getHistoryForAddress(
 
   const result = await paginatedTransactionHistory(urlBase, {
     addresses: [
+      // Note: querying both the payment key & staking key here is different from querying the base32 address directly
+      // Both methods are supported by Carp (and multiple different kinds of inputs too)
+      // Be sure to pick the method that best works for you as they will give different results
       Buffer.from(paymentKey.to_bytes()).toString("hex"),
       Buffer.from(stakingKey.to_bytes()).toString("hex"),
     ],
