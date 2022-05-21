@@ -43,6 +43,7 @@ impl MigrationTrait for Migration {
                             .from(Entity, Column::AssetId)
                             .to(NativeAsset, NativeAssetColumn::Id),
                     )
+                    .col(ColumnDef::new(Column::Payload).binary().not_null())
                     .to_owned(),
             )
             .await?;

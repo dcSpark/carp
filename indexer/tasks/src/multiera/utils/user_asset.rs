@@ -1,7 +1,8 @@
 use cardano_multiplatform_lib::crypto::ScriptHash;
 
 pub type AssetName = Vec<u8>;
-pub type PolicyId = ScriptHash;
+pub type PolicyId = Vec<u8>;
+pub type Payload = Vec<u8>;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Cip25ParseError(pub String);

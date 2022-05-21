@@ -67,17 +67,18 @@ async fn handle_entries(
         if let Ok(pairs) =
             &get_cip25_pairs(&Metadatum::decode_fragment(metadata.payload.as_slice()).unwrap())
         {
-            for (policy_id, asset_name) in pairs
+            for ((asset_name, payload), policy_id) in pairs
                 .iter()
                 .flat_map(|(policy_id, assets)| assets.iter().zip(std::iter::repeat(policy_id)))
             {
                 if let Some(asset_id) = pair_id_mapping
-                    .get(&asset_name)
-                    .and_then(|assets| assets.get(policy_id))
+                    .get(&policy_id)
+                    .and_then(|assets| assets.get(asset_name))
                 {
                     to_insert.push(Cip25EntryActiveModel {
                         metadata_id: Set(metadata.id),
                         asset_id: Set(*asset_id),
+                        payload: Set(payload.clone()),
                         ..Default::default()
                     });
                 }
