@@ -46,6 +46,8 @@ async fn handle_metadata(
     if readonly {
         return TransactionMetadata::find()
             .filter(TransactionMetadataColumn::TxId.is_in(multiera_txs.iter().map(|tx| tx.id)))
+            // TODO
+            // .order_by_asc(TransactionMetadataColumn::Id)
             .all(db_tx)
             .await;
     }

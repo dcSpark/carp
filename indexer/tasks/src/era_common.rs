@@ -225,7 +225,7 @@ pub async fn transactions_from_hashes(
     use entity::sea_orm::QueryOrder;
     let txs = Transaction::find()
         .filter(TransactionColumn::Hash.is_in(tx_hashes.to_vec()))
-        .order_by_desc(TransactionColumn::Id)
+        .order_by_asc(TransactionColumn::Id)
         .all(db_tx)
         .await?;
     if txs.len() != tx_hashes.len() {
