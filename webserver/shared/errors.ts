@@ -6,7 +6,7 @@ export enum ErrorCodes {
   BlockHashNotFound = 2,
   PageStartNotFound = 3,
   UtxoLimitExceeded = 4,
-  IncorrectTxHashFormat = 5,
+  IncorrectFormat = 5,
   BlockOffsetLimit = 6,
   OffsetBlockNotFound = 7,
   AssetLimitExceeded = 8,
@@ -36,11 +36,10 @@ export const Errors = {
     detailsGen: (details: { addresses: string[] }) =>
       JSON.stringify(details.addresses),
   },
-  IncorrectTxHashFormat: {
-    code: ErrorCodes.IncorrectTxHashFormat,
-    prefix: "Incorrectly formatted transaction hash found.",
-    detailsGen: (details: { txHash: string[] }) =>
-      JSON.stringify(details.txHash),
+  IncorrectFormat: {
+    code: ErrorCodes.IncorrectFormat,
+    prefix: "Incorrectly formatted data found.",
+    detailsGen: (details: object) => JSON.stringify(details),
   },
   BlockHashNotFound: {
     code: ErrorCodes.BlockHashNotFound,

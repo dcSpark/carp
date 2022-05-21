@@ -8,6 +8,7 @@
         "schemas": {
             "Address": {
                 "type": "string",
+                "example": "addr1qxzksn47upfu4fwqfmxx29rn5znlkw3ag98ul8rgndwm79aaql88xw6ez84k2ln6lawnt79sdqh7qwq0wcs672auktmsawshfe",
                 "description": "Supported types:\n- Credential hex (8200581c...) - note this is not a keyhash (it contains a credential type prefix)\n- Bech32 full address (`addr` / `addr_test` / `stake` / `stake_test`)\n- Bech32 credentials ( `addr_vkh`, `script`, etc.) - this is the recommended approach\n- Legacy Byron format (Ae2, Dd, etc.)\n\nNote: we recommend avoiding to query base addresses history using bech32\nAs Cardano UTXO spendability depends only on the payment credential and not the full base address\nThe result will also miss transactions that are only related to the payment key of the address\nex: the payment key is used in a multisig\n\nNote: using two different address representations in the same query will hurt performance (ex: addr1 and addr_vkh1)\nThis because under-the-hood this will run multiple independent SQL queries for the different formats\n\nWarning: querying reward bech32 addresses is equivalent to querying the stake credential inside it\nThis may return more results than expected (ex: a multisig containing the staking key of the wallet)"
             },
             "AddressUsedResponse": {
@@ -27,23 +28,31 @@
             "RelationFilter": {
                 "type": "number",
                 "format": "double",
-                "description": "Filter which uses of the address are considered relevant for the query.\n\nThis is a bitmask, so you can combine multiple options\nex: `RelationFilterType.Input & RelationFilterType.Output`\n\nNote: relations only apply to credentials and not to full bech32 addresses"
+                "example": 255,
+                "description": "Filter which uses of the address are considered relevant for the query.\n\nThis is a bitmask, so you can combine multiple options\nex: `RelationFilterType.Input & RelationFilterType.Output`\n\nNote: relations only apply to credentials and not to full bech32 addresses",
+                "pattern": "([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])"
             },
             "Pagination": {
                 "properties": {
                     "untilBlock": {
                         "type": "string",
-                        "description": "block hash - inclusive"
+                        "description": "block hash - inclusive",
+                        "example": "cf8c63a909d91776e27f7d05457e823a9dba606a7ab499ac435e7904ee70d7c8",
+                        "pattern": "[0-9a-fA-F]{64}"
                     },
                     "after": {
                         "properties": {
                             "tx": {
                                 "type": "string",
-                                "description": "tx hash"
+                                "description": "tx hash",
+                                "example": "336d520af58ff440b2f20210ddb5ef5b2c035e0ec7ec258bae4b519a87fa1696",
+                                "pattern": "[0-9a-fA-F]{64}"
                             },
                             "block": {
                                 "type": "string",
-                                "description": "block hash"
+                                "description": "block hash",
+                                "example": "2548ad5d0d9d33d50ab43151f574474454017a733e307229fa509c4987ca9782",
+                                "pattern": "[0-9a-fA-F]{64}"
                             }
                         },
                         "required": [
@@ -51,7 +60,7 @@
                             "block"
                         ],
                         "type": "object",
-                        "description": "Omitting \"after\" means you query starting from the genesis block\n\nNote: the reason you have to specify both a tx hash AND a block hash in the \"after\" for pagination\nis because this is the only way to make sure your pagination doesn't get affected by rollbacks.\nex: a rollback could cause a tx to be removed from one block and appear in a totally different block.\nSpecifying the block hash as well allows making sure you're paginating on the right tx in the right block."
+                        "description": "Omitting \"after\" means you query starting from the genesis block.\n\nNote: the reason you have to specify both a tx hash AND a block hash in the \"after\" for pagination\nis because this is the only way to make sure your pagination doesn't get affected by rollbacks.\nex: a rollback could cause a tx to be removed from one block and appear in a totally different block.\nSpecifying the block hash as well allows making sure you're paginating on the right tx in the right block."
                     }
                 },
                 "required": [
@@ -100,38 +109,47 @@
                 ],
                 "type": "object"
             },
+            "BlockSubset": {
+                "properties": {
+                    "slot": {
+                        "type": "number",
+                        "format": "double",
+                        "example": 4924800
+                    },
+                    "epoch": {
+                        "type": "number",
+                        "format": "double",
+                        "example": 209
+                    },
+                    "height": {
+                        "type": "number",
+                        "format": "double",
+                        "example": 4512067
+                    },
+                    "hash": {
+                        "type": "string",
+                        "description": "[0-9a-fA-F]{64}",
+                        "example": "cf8c63a909d91776e27f7d05457e823a9dba606a7ab499ac435e7904ee70d7c8"
+                    },
+                    "era": {
+                        "type": "number",
+                        "format": "double",
+                        "example": 1
+                    }
+                },
+                "required": [
+                    "slot",
+                    "epoch",
+                    "height",
+                    "hash",
+                    "era"
+                ],
+                "type": "object"
+            },
             "BlockLatestResponse": {
                 "properties": {
                     "block": {
-                        "properties": {
-                            "slot": {
-                                "type": "number",
-                                "format": "double"
-                            },
-                            "epoch": {
-                                "type": "number",
-                                "format": "double"
-                            },
-                            "height": {
-                                "type": "number",
-                                "format": "double"
-                            },
-                            "hash": {
-                                "type": "string"
-                            },
-                            "era": {
-                                "type": "number",
-                                "format": "double"
-                            }
-                        },
-                        "required": [
-                            "slot",
-                            "epoch",
-                            "height",
-                            "hash",
-                            "era"
-                        ],
-                        "type": "object"
+                        "$ref": "#/components/schemas/BlockSubset"
                     }
                 },
                 "required": [
@@ -152,15 +170,28 @@
                 ],
                 "type": "object"
             },
-            "Record_PolicyId.Record_AssetName.Cip25Metadata__": {
-                "properties": {},
-                "type": "object",
-                "description": "Construct a type with a set of properties K of type T"
+            "Cip25Metadata": {
+                "type": "string",
+                "example": "a365636f6c6f72672330303030383065696d616765783a697066733a2f2f697066732f516d534b593167317a5375506b3536635869324b38524e766961526b44485633505a756a7474663755676b343379646e616d656a4265727279204e617679",
+                "pattern": "[0-9a-fA-F]*"
             },
             "Cip25Response": {
                 "properties": {
                     "cip25": {
-                        "$ref": "#/components/schemas/Record_PolicyId.Record_AssetName.Cip25Metadata__"
+                        "properties": {},
+                        "additionalProperties": {
+                            "properties": {},
+                            "additionalProperties": {
+                                "$ref": "#/components/schemas/Cip25Metadata"
+                            },
+                            "type": "object"
+                        },
+                        "type": "object",
+                        "example": {
+                            "b863bc7369f46136ac1048adb2fa7dae3af944c3bbb2be2f216a8d4f": {
+                                "42657272794e617679": "a365636f6c6f72672330303030383065696d616765783a697066733a2f2f697066732f516d534b593167317a5375506b3536635869324b38524e766961526b44485633505a756a7474663755676b343379646e616d656a4265727279204e617679"
+                            }
+                        }
                     }
                 },
                 "required": [
@@ -169,7 +200,9 @@
                 "type": "object"
             },
             "AssetName": {
-                "type": "string"
+                "type": "string",
+                "example": "42657272794e617679",
+                "pattern": "[0-9a-fA-F]{0,64}"
             },
             "PolicyIdAssetMapType": {
                 "properties": {
@@ -181,7 +214,12 @@
                             },
                             "type": "array"
                         },
-                        "type": "object"
+                        "type": "object",
+                        "example": {
+                            "b863bc7369f46136ac1048adb2fa7dae3af944c3bbb2be2f216a8d4f": [
+                                "42657272794e617679"
+                            ]
+                        }
                     }
                 },
                 "required": [
@@ -190,57 +228,42 @@
                 "type": "object"
             },
             "BlockInfo": {
-                "properties": {
-                    "isValid": {
-                        "type": "boolean"
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/BlockSubset"
                     },
-                    "indexInBlock": {
-                        "type": "number",
-                        "format": "double",
-                        "description": "index of tx in block"
-                    },
-                    "era": {
-                        "type": "number",
-                        "format": "double",
-                        "description": "Era of block this transaction was submitted in"
-                    },
-                    "slot": {
-                        "type": "number",
-                        "format": "double"
-                    },
-                    "epoch": {
-                        "type": "number",
-                        "format": "double",
-                        "description": "timestamp with timezone"
-                    },
-                    "hash": {
-                        "type": "string"
-                    },
-                    "height": {
-                        "type": "number",
-                        "format": "double"
+                    {
+                        "properties": {
+                            "isValid": {
+                                "type": "boolean"
+                            },
+                            "indexInBlock": {
+                                "type": "number",
+                                "format": "double",
+                                "description": "index of tx in block"
+                            }
+                        },
+                        "required": [
+                            "isValid",
+                            "indexInBlock"
+                        ],
+                        "type": "object"
                     }
-                },
-                "required": [
-                    "isValid",
-                    "indexInBlock",
-                    "era",
-                    "slot",
-                    "epoch",
-                    "hash",
-                    "height"
-                ],
-                "type": "object"
+                ]
             },
             "TransactionInfo": {
                 "properties": {
                     "payload": {
                         "type": "string",
-                        "description": "cbor-encoded transaction"
+                        "description": "cbor-encoded transaction",
+                        "example": "84a500818258209cb4f8c2eecccc9f1e13768046f37ef56dcb5a4dc44f58907fe4ae21d7cf621d020181825839019cb581f4337a6142e477af6e00fe41b1fc4a5944a575681b8499a3c0bd07ce733b5911eb657e7aff5d35f8b0682fe0380f7621af2bbcb2f71b0000000586321393021a0002a389031a004b418c048183028200581cbd07ce733b5911eb657e7aff5d35f8b0682fe0380f7621af2bbcb2f7581c53215c471b7ac752e3ddf8f2c4c1e6ed111857bfaa675d5e31ce8bcea1008282582073e584cda9fe483fbefb81c251e616018a2b493ef56820f0095b63adede54ff758404f13df42ef1684a3fd55255d8368c9ecbd15b55e2761a2991cc4f401a753c16d6da1da158e84b87b4de9715af7d9adc0d79a7c1f2c3097228e02b20be4616a0c82582066c606974819f457ceface78ee3c4d181a84ca9927a3cfc92ef8c0b6dd4576e8584014ae9ee9ed5eb5700b6c5ac270543671f5d4f943d4726f4614dc061174ee29db44b9e7fc58e6c98c13fad8594f2633c5ec70a9a87f5cbf130308a42edb553001f5f6",
+                        "pattern": "[0-9a-fA-F]*"
                     },
                     "hash": {
                         "type": "string",
-                        "description": "Strictly speaking, you can calculate this by hashing the payload\nIt's just provided for convenience"
+                        "description": "Strictly speaking, you can calculate this by hashing the payload\nIt's just provided for convenience",
+                        "example": "011b86557367525891331b4bb985545120efc335b606d6a1c0d5a35fb330f421",
+                        "pattern": "[0-9a-fA-F]{64}"
                     }
                 },
                 "required": [
@@ -315,7 +338,9 @@
                         "format": "double"
                     },
                     "txHash": {
-                        "type": "string"
+                        "type": "string",
+                        "example": "011b86557367525891331b4bb985545120efc335b606d6a1c0d5a35fb330f421",
+                        "pattern": "[0-9a-fA-F]{64}"
                     }
                 },
                 "required": [
@@ -334,7 +359,9 @@
                             {
                                 "properties": {
                                     "payload": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "example": "825839019cb581f4337a6142e477af6e00fe41b1fc4a5944a575681b8499a3c0bd07ce733b5911eb657e7aff5d35f8b0682fe0380f7621af2bbcb2f71b0000000586321393",
+                                        "pattern": "[0-9a-fA-F]*"
                                     }
                                 },
                                 "required": [
@@ -422,7 +449,7 @@
                             }
                         }
                     },
-                    "428": {
+                    "422": {
                         "description": "",
                         "content": {
                             "application/json": {
@@ -472,7 +499,7 @@
                             }
                         }
                     },
-                    "428": {
+                    "422": {
                         "description": "",
                         "content": {
                             "application/json": {
@@ -522,7 +549,7 @@
                             }
                         }
                     },
-                    "428": {
+                    "422": {
                         "description": "",
                         "content": {
                             "application/json": {
@@ -572,7 +599,7 @@
                             }
                         }
                     },
-                    "428": {
+                    "422": {
                         "description": "",
                         "content": {
                             "application/json": {
@@ -622,7 +649,7 @@
                             }
                         }
                     },
-                    "428": {
+                    "422": {
                         "description": "",
                         "content": {
                             "application/json": {

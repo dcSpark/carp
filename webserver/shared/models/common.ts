@@ -5,6 +5,8 @@
  * ex: `RelationFilterType.Input & RelationFilterType.Output`
  *
  * Note: relations only apply to credentials and not to full bech32 addresses
+ * @pattern ([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])
+ * @example 255
  */
 export type RelationFilter = number;
 // note: keep in sync with Rust type TxCredentialRelationValue
@@ -41,16 +43,32 @@ export type Pagination = {
    * Specifying the block hash as well allows making sure you're paginating on the right tx in the right block.
    */
   after?: {
-    /** block hash */
+    /**
+     * block hash
+     * @pattern [0-9a-fA-F]{64}
+     * @example "2548ad5d0d9d33d50ab43151f574474454017a733e307229fa509c4987ca9782"
+     */
     block: string;
-    /** tx hash */
+    /**
+     * tx hash
+     * @pattern [0-9a-fA-F]{64}
+     * @example "336d520af58ff440b2f20210ddb5ef5b2c035e0ec7ec258bae4b519a87fa1696"
+     */
     tx: string;
   };
-  /** block hash - inclusive */
+  /**
+   * block hash - inclusive
+   * @pattern [0-9a-fA-F]{64}
+   * @example "cf8c63a909d91776e27f7d05457e823a9dba606a7ab499ac435e7904ee70d7c8"
+   */
   untilBlock: string;
 };
 
 export type UtxoPointer = {
+  /**
+   * @pattern [0-9a-fA-F]{64}
+   * @example "011b86557367525891331b4bb985545120efc335b606d6a1c0d5a35fb330f421"
+   */
   txHash: string;
   index: number;
 };

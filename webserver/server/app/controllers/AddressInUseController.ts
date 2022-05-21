@@ -31,7 +31,7 @@ export class AddressInUseController extends Controller {
     requestBody: EndpointTypes[typeof route]['input'],
     @Res()
     errorResponse: TsoaResponse<
-      StatusCodes.BAD_REQUEST | StatusCodes.PRECONDITION_REQUIRED,
+      StatusCodes.BAD_REQUEST | StatusCodes.UNPROCESSABLE_ENTITY,
       ErrorShape
     >
   ): Promise<EndpointTypes[typeof route]['response']> {
@@ -112,7 +112,7 @@ export class AddressInUseController extends Controller {
     if ('code' in addresses) {
       expectType<Equals<typeof addresses, ErrorShape>>(true);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-      return errorResponse(StatusCodes.PRECONDITION_REQUIRED, addresses);
+      return errorResponse(StatusCodes.UNPROCESSABLE_ENTITY, addresses);
     }
 
     const result = [...addresses[0].addresses, ...addresses[1].addresses];

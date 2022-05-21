@@ -15,5 +15,7 @@
  *
  * Warning: querying reward bech32 addresses is equivalent to querying the stake credential inside it
  * This may return more results than expected (ex: a multisig containing the staking key of the wallet)
+ *
+ * @example "addr1qxzksn47upfu4fwqfmxx29rn5znlkw3ag98ul8rgndwm79aaql88xw6ez84k2ln6lawnt79sdqh7qwq0wcs672auktmsawshfe"
  */
 export type Address = string;

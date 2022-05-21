@@ -9,12 +9,29 @@ export type BlockLatestRequest = {
   offset: number;
 };
 
+export type BlockSubset = {
+  /**
+   * @example 1
+   */
+  era: number;
+  /**
+   * [0-9a-fA-F]{64}
+   * @example "cf8c63a909d91776e27f7d05457e823a9dba606a7ab499ac435e7904ee70d7c8"
+   */
+  hash: string;
+  /**
+   * @example 4512067
+   */
+  height: number;
+  /**
+   * @example 209
+   */
+  epoch: number;
+  /**
+   * @example 4924800
+   */
+  slot: number;
+};
 export type BlockLatestResponse = {
-  block: {
-    era: number;
-    hash: string;
-    height: number;
-    epoch: number;
-    slot: number;
-  };
+  block: BlockSubset;
 };

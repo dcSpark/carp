@@ -34,7 +34,7 @@ export class MetadataNftController extends Controller {
     requestBody: EndpointTypes[typeof route]['input'],
     @Res()
     errorResponse: TsoaResponse<
-      StatusCodes.BAD_REQUEST | StatusCodes.PRECONDITION_REQUIRED,
+      StatusCodes.BAD_REQUEST | StatusCodes.UNPROCESSABLE_ENTITY,
       ErrorShape
     >
   ): Promise<EndpointTypes[typeof route]['response']> {

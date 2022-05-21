@@ -6,6 +6,8 @@ import bodyParser from 'body-parser';
 import { RegisterRoutes } from '../build/routes';
 import SwaggerSingleton from './models/SwaggerSingleton';
 import { ValidateError } from 'tsoa';
+import { StatusCodes } from 'http-status-codes';
+import { Errors, genErrorMessage } from '../../shared/errors';
 
 export const app = express();
 
@@ -35,11 +37,9 @@ app.use(function errorHandler(
   next: NextFunction
 ): ExResponse | void {
   if (err instanceof ValidateError) {
-    console.warn(`Caught Validation Error for ${req.path}:`, err.fields);
-    return res.status(422).json({
-      message: 'Validation Failed',
-      details: err?.fields,
-    });
+    return res
+      .status(StatusCodes.UNPROCESSABLE_ENTITY)
+      .json(genErrorMessage(Errors.IncorrectFormat, err?.fields));
   }
   if (err instanceof Error) {
     return res.status(500).json({

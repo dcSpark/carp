@@ -80,9 +80,9 @@ describe(`/${Routes.transactionOutput}`, function () {
     } catch (err: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const response = getErrorResponse(err);
-      expect(response.status).to.be.equal(StatusCodes.PRECONDITION_REQUIRED);
+      expect(response.status).to.be.equal(StatusCodes.UNPROCESSABLE_ENTITY);
       expect(response.data.reason).to.satisfy((msg: string) =>
-        msg.startsWith(Errors.IncorrectTxHashFormat.prefix)
+        msg.startsWith(Errors.IncorrectFormat.prefix)
       );
     }
   });

@@ -166,7 +166,7 @@ describe(`/${Routes.addressUsed}`, function () {
     expect(result.addresses).to.be.eql([addresses[0]]);
   });
 
-  it("gets filters out addresses using filters", async function () {
+  it("filters out addresses using relation filters", async function () {
     const address =
       "stake1uydrhuvnrhlzpkzrkukp3h4n0fp5dzqzcz36t5thkmfezyc47wa2x";
     const filterToWithdrawal = await query(urlBase, Routes.addressUsed, {

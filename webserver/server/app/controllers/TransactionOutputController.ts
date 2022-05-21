@@ -8,7 +8,6 @@ import { Errors } from '../../../shared/errors';
 import type { EndpointTypes } from '../../../shared/routes';
 import { Routes } from '../../../shared/routes';
 import { outputsForTransaction } from '../services/TransactionOutput';
-import { isTxHash } from '../models/utils';
 
 const route = Routes.transactionOutput;
 
@@ -26,7 +25,7 @@ export class TransactionOutputController extends Controller {
     requestBody: EndpointTypes[typeof route]['input'],
     @Res()
     errorResponse: TsoaResponse<
-      StatusCodes.BAD_REQUEST | StatusCodes.PRECONDITION_REQUIRED,
+      StatusCodes.BAD_REQUEST | StatusCodes.UNPROCESSABLE_ENTITY,
       ErrorShape
     >
   ): Promise<EndpointTypes[typeof route]['response']> {
@@ -41,19 +40,6 @@ export class TransactionOutputController extends Controller {
       );
     }
 
-    const invalidHashes: string[] = [];
-    requestBody.utxoPointers
-      .filter(pointer => !isTxHash(pointer.txHash))
-      .forEach(invalid => invalidHashes.push(invalid.txHash));
-    if (invalidHashes.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-      return errorResponse(
-        StatusCodes.PRECONDITION_REQUIRED,
-        genErrorMessage(Errors.IncorrectTxHashFormat, {
-          txHash: invalidHashes,
-        })
-      );
-    }
     const { utxos } = await outputsForTransaction({
       dbTx: pool,
       ...requestBody,

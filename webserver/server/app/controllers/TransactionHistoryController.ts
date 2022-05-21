@@ -32,7 +32,7 @@ export class TransactionHistoryController extends Controller {
     requestBody: EndpointTypes[typeof route]['input'],
     @Res()
     errorResponse: TsoaResponse<
-      StatusCodes.BAD_REQUEST | StatusCodes.PRECONDITION_REQUIRED,
+      StatusCodes.BAD_REQUEST | StatusCodes.UNPROCESSABLE_ENTITY,
       ErrorShape
     >
   ): Promise<EndpointTypes[typeof route]['response']> {
@@ -112,7 +112,7 @@ export class TransactionHistoryController extends Controller {
     if ('code' in cardanoTxs) {
       expectType<Equals<typeof cardanoTxs, ErrorShape>>(true);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-      return errorResponse(StatusCodes.PRECONDITION_REQUIRED, cardanoTxs);
+      return errorResponse(StatusCodes.UNPROCESSABLE_ENTITY, cardanoTxs);
     }
 
     const mergedTxs = sortBy(
