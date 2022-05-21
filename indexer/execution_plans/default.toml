@@ -31,17 +31,25 @@ readonly=false
 readonly=false
 
 [MultieraMetadataTask]
+readonly=false
 
 [MultieraAddressTask]
 
 [MultieraOutputTask]
+readonly=false
 
 [MultieraUsedInputTask]
+readonly=false
 
 [MultieraUnusedInputTask]
 
 [MultieraStakeCredentialTask]
 
 [MultieraAddressCredentialRelationTask]
+readonly=false
 
 [MultieraTxCredentialRelationTask]
+
+[MultieraAssetMintTask]
+
+[MultieraCip25EntryTask]

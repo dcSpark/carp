@@ -22,6 +22,7 @@ const route = Routes.transactionHistory;
 export class TransactionHistoryController extends Controller {
   /**
    * Ordered by `<block.height, transaction.tx_index>`
+   *
    * Note: this endpoint only returns txs that are in a block. Use another tool to see mempool for txs not in a block
    */
   @SuccessResponse(`${StatusCodes.OK}`)

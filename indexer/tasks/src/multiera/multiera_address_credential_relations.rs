@@ -1,7 +1,8 @@
 use std::collections::BTreeSet;
 
-use crate::dsl::default_impl::EmptyConfiguration;
+use crate::dsl::default_impl::ReadonlyConfig;
 use crate::{dsl::default_impl::has_transaction_multiera, types::AddressCredentialRelationValue};
+use entity::sea_orm::Condition;
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction, Set},
@@ -15,7 +16,7 @@ use super::{
 
 carp_task! {
   name MultieraAddressCredentialRelationTask;
-  configuration EmptyConfiguration;
+  configuration ReadonlyConfig;
   doc "Adds to the database the relation between addresses and the credentials part of the addresses (ex: payment key + staking key)";
   era multiera;
   dependencies [MultieraAddressTask, MultieraStakeCredentialTask];
@@ -29,6 +30,7 @@ carp_task! {
       &previous_data.multiera_stake_credential,
       &previous_data.multiera_addresses,
       &previous_data.multiera_queued_addresses_relations,
+      task.config.readonly
   );
   merge_result |previous_data, _result| {
   };
@@ -46,6 +48,7 @@ async fn handle_address_credential_relation(
     multiera_stake_credential: &BTreeMap<Vec<u8>, StakeCredentialModel>,
     multiera_addresses: &BTreeMap<Vec<u8>, AddressInBlock>,
     queued_address_credential: &BTreeSet<QueuedAddressCredentialRelation>,
+    readonly: bool,
 ) -> Result<Vec<AddressCredentialModel>, DbErr> {
     if queued_address_credential.is_empty() {
         return Ok(vec![]);
@@ -75,8 +78,21 @@ async fn handle_address_credential_relation(
 
     match to_add.is_empty() {
         true => Ok(vec![]),
-        false => Ok(AddressCredential::insert_many(to_add.clone())
-            .exec_many_with_returning(db_tx)
-            .await?),
+        false => {
+            if readonly {
+                Ok(to_add
+                    .iter()
+                    .map(|entry| AddressCredentialModel {
+                        credential_id: entry.credential_id.clone().unwrap(),
+                        address_id: entry.address_id.clone().unwrap(),
+                        relation: entry.relation.clone().unwrap(),
+                    })
+                    .collect())
+            } else {
+                Ok(AddressCredential::insert_many(to_add.clone())
+                    .exec_many_with_returning(db_tx)
+                    .await?)
+            }
+        }
     }
 }

@@ -13,4 +13,4 @@ tasks = { path = "../tasks" }
 dot = { git = "https://github.com/dcSpark/dot-rust", branch = "subgraph" }
 strum = "0.24"
 strum_macros = "0.24"
-toml = "0.5"
+toml = { version = "0.5", features = ["preserve_order"] }

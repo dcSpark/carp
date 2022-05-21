@@ -14,7 +14,7 @@ cardano-multiplatform-lib = { git = "https://github.com/dcSpark/cardano-multipla
 entity = { path = "../entity" }
 tokio = { version = "1.16.1", features = ["full"] }
 pallas = "0.9.1"
-toml = "0.5"
+toml = { version = "0.5", features = ["preserve_order"] }
 hex = "0.4.3"
 cryptoxide = "0.4.2"
 futures = "0.3"

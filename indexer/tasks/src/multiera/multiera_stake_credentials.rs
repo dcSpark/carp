@@ -21,7 +21,7 @@ carp_task! {
   name MultieraStakeCredentialTask;
   configuration EmptyConfiguration;
   doc "Adds the stake credentials to the database.
-       Note: `stake credentials` are an unfortunately poorly named type in the Cardano binary specification.
+       Note: \"stake credentials\" are an unfortunately poorly named type in the Cardano binary specification.
        A stake credential has nothing to do with staking. It's just a hash with an prefix to specify what kind of hash it is (ex: payment vs script)";
   era multiera;
   dependencies [MultieraUsedInputTask, MultieraUnusedInputTask];

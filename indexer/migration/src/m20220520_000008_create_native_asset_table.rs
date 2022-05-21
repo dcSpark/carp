@@ -1,13 +1,12 @@
 use sea_schema::migration::prelude::*;
 
-use entity::prelude::{Transaction, TransactionColumn};
-use entity::transaction_metadata::*;
+use entity::native_asset::*;
 
 pub struct Migration;
 
 impl MigrationName for Migration {
     fn name(&self) -> &str {
-        "m20220508_000007_create_metadata_table"
+        "m20220520_000008_create_native_asset_table"
     }
 }
 
@@ -22,20 +21,12 @@ impl MigrationTrait for Migration {
                     .col(
                         ColumnDef::new(Column::Id)
                             .big_integer()
-                            .primary_key()
+                            .not_null()
                             .auto_increment()
-                            .not_null(),
+                            .primary_key(),
                     )
-                    .col(ColumnDef::new(Column::TxId).big_integer().not_null())
-                    .foreign_key(
-                        ForeignKey::create()
-                            .name("fk-metadata-tx_id")
-                            .from(Entity, Column::TxId)
-                            .to(Transaction, TransactionColumn::Id)
-                            .on_delete(ForeignKeyAction::Cascade),
-                    )
-                    .col(ColumnDef::new(Column::Label).binary().not_null())
-                    .col(ColumnDef::new(Column::Payload).binary().not_null())
+                    .col(ColumnDef::new(Column::PolicyId).binary().not_null())
+                    .col(ColumnDef::new(Column::AssetName).binary().not_null())
                     .to_owned(),
             )
             .await?;
@@ -44,17 +35,20 @@ impl MigrationTrait for Migration {
             .create_index(
                 Index::create()
                     .table(Entity)
-                    .name("index-metadata-txid")
-                    .col(Column::TxId)
+                    .name("index-native_asset-pair")
+                    .col(Column::PolicyId)
+                    .col(Column::AssetName)
+                    .unique()
                     .to_owned(),
             )
             .await?;
+
         manager
             .create_index(
                 Index::create()
                     .table(Entity)
-                    .name("index-metadata-label")
-                    .col(Column::Label)
+                    .name("index-native_asset_name")
+                    .col(Column::AssetName)
                     .to_owned(),
             )
             .await

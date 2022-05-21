@@ -2,7 +2,9 @@ use std::collections::BTreeSet;
 
 use entity::{
     prelude::*,
-    sea_orm::{entity::*, prelude::*, ColumnTrait, Condition, DatabaseTransaction, Set},
+    sea_orm::{
+        entity::*, prelude::*, ColumnTrait, Condition, DatabaseTransaction, QueryOrder, Set,
+    },
 };
 use std::collections::BTreeMap;
 
@@ -125,6 +127,7 @@ pub async fn get_outputs_for_inputs(
 
     // note: we don't need to deduplicate the conditions because every UTXO can only be spent once
     // so we know all these pairs are disjoint amongst all transactions
+    // https://github.com/dcSpark/carp/issues/46
     for input in inputs.iter().flat_map(|inputs| inputs.0.iter()) {
         output_conditions = output_conditions.add(
             Condition::all()
@@ -224,7 +227,7 @@ pub async fn transactions_from_hashes(
     use entity::sea_orm::QueryOrder;
     let txs = Transaction::find()
         .filter(TransactionColumn::Hash.is_in(tx_hashes.to_vec()))
-        .order_by_desc(TransactionColumn::Id)
+        .order_by_asc(TransactionColumn::Id)
         .all(db_tx)
         .await?;
     if txs.len() != tx_hashes.len() {
@@ -256,4 +259,47 @@ pub async fn block_from_hash(
         }
         Some(block) => block,
     })
+}
+
+pub async fn output_from_pointer(
+    db_tx: &DatabaseTransaction,
+    pointers: &[(i64 /* txid */, usize /* output index */)],
+) -> Result<Vec<TransactionOutputModel>, DbErr> {
+    // https://github.com/dcSpark/carp/issues/46
+    let mut output_conditions = Condition::any();
+    for (tx_id, output_index) in pointers.iter() {
+        output_conditions = output_conditions.add(
+            Condition::all()
+                .add(TransactionOutputColumn::TxId.eq(*tx_id))
+                .add(TransactionOutputColumn::OutputIndex.eq(*output_index as i32)),
+        );
+    }
+
+    let outputs = TransactionOutput::find()
+        .filter(output_conditions)
+        .order_by_asc(TransactionOutputColumn::Id)
+        .all(db_tx)
+        .await?;
+    Ok(outputs)
+}
+pub async fn input_from_pointer(
+    db_tx: &DatabaseTransaction,
+    pointers: &[(i64 /* txid */, usize /* input index */)],
+) -> Result<Vec<TransactionInputModel>, DbErr> {
+    // https://github.com/dcSpark/carp/issues/46
+    let mut input_conditions = Condition::any();
+    for (tx_id, input_index) in pointers.iter() {
+        input_conditions = input_conditions.add(
+            Condition::all()
+                .add(TransactionInputColumn::TxId.eq(*tx_id))
+                .add(TransactionInputColumn::InputIndex.eq(*input_index as i32)),
+        );
+    }
+
+    let inputs = TransactionInput::find()
+        .filter(input_conditions)
+        .order_by_asc(TransactionInputColumn::Id)
+        .all(db_tx)
+        .await?;
+    Ok(inputs)
 }

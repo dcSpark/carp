@@ -9,8 +9,8 @@
 
 # Run
 
-1. (dev) `yarn dev`
-1. (prod) `yarn build && yarn start`
+1. (dev) `yarn dev:start`
+1. (prod) `yarn build && yarn prod:start`
 
 # Regenerate database
 

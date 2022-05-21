@@ -9,6 +9,7 @@ export enum ErrorCodes {
   IncorrectTxHashFormat = 5,
   BlockOffsetLimit = 6,
   OffsetBlockNotFound = 7,
+  AssetLimitExceeded = 8,
 }
 
 export type ErrorShape = {
@@ -65,6 +66,12 @@ export const Errors = {
       "Block not found at offset. Are you sure your database is synchronized?",
     detailsGen: (details: { offset: number }) =>
       `Offset used was ${details.offset}`,
+  },
+  AssetLimitExceeded: {
+    code: ErrorCodes.AssetLimitExceeded,
+    prefix: "Exceeded request <policy, asset> pair limit.",
+    detailsGen: (details: { limit: number; found: number }) =>
+      `Limit of ${details.limit}, found ${details.found}`,
   },
 } as const;
 

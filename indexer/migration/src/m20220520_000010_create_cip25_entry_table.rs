@@ -1,13 +1,15 @@
 use sea_schema::migration::prelude::*;
 
-use entity::prelude::{Transaction, TransactionColumn};
-use entity::transaction_metadata::*;
+use entity::cip25_entry::*;
+use entity::prelude::{
+    NativeAsset, NativeAssetColumn, TransactionMetadata, TransactionMetadataColumn,
+};
 
 pub struct Migration;
 
 impl MigrationName for Migration {
     fn name(&self) -> &str {
-        "m20220508_000007_create_metadata_table"
+        "m20220520_000010_create_cip25_entry_table"
     }
 }
 
@@ -26,15 +28,21 @@ impl MigrationTrait for Migration {
                             .auto_increment()
                             .not_null(),
                     )
-                    .col(ColumnDef::new(Column::TxId).big_integer().not_null())
+                    .col(ColumnDef::new(Column::MetadataId).big_integer().not_null())
                     .foreign_key(
                         ForeignKey::create()
-                            .name("fk-metadata-tx_id")
-                            .from(Entity, Column::TxId)
-                            .to(Transaction, TransactionColumn::Id)
+                            .name("fk-cip25_entry-metadata")
+                            .from(Entity, Column::MetadataId)
+                            .to(TransactionMetadata, TransactionMetadataColumn::Id)
                             .on_delete(ForeignKeyAction::Cascade),
                     )
-                    .col(ColumnDef::new(Column::Label).binary().not_null())
+                    .col(ColumnDef::new(Column::AssetId).big_integer().not_null())
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk-cip25_entry-asset_id")
+                            .from(Entity, Column::AssetId)
+                            .to(NativeAsset, NativeAssetColumn::Id),
+                    )
                     .col(ColumnDef::new(Column::Payload).binary().not_null())
                     .to_owned(),
             )
@@ -44,17 +52,18 @@ impl MigrationTrait for Migration {
             .create_index(
                 Index::create()
                     .table(Entity)
-                    .name("index-metadata-txid")
-                    .col(Column::TxId)
+                    .name("index-cip25_entry-metadata")
+                    .col(Column::MetadataId)
                     .to_owned(),
             )
             .await?;
+
         manager
             .create_index(
                 Index::create()
                     .table(Entity)
-                    .name("index-metadata-label")
-                    .col(Column::Label)
+                    .name("index-cip25_entry-native_asset")
+                    .col(Column::AssetId)
                     .to_owned(),
             )
             .await

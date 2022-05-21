@@ -9,3 +9,10 @@ readonly=true
 
 [MultieraTransactionTask]
 readonly=true
+
+[MultieraMetadataTask]
+readonly=true
+
+[MultieraAssetMintTask]
+
+[MultieraCip25EntryTask]

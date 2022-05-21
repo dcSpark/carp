@@ -99,56 +99,80 @@
 <!-- N7 -->
 <g id="node8" class="node">
 <title>N7</title>
-<polygon fill="none" stroke="black" points="622.5,-484 473.5,-484 473.5,-448 622.5,-448 622.5,-484"/>
-<text text-anchor="middle" x="548" y="-462.3" font-family="Times,serif" font-size="14.00">MultieraBlockTask</text>
+<polygon fill="none" stroke="black" points="795.5,-484 646.5,-484 646.5,-448 795.5,-448 795.5,-484"/>
+<text text-anchor="middle" x="721" y="-462.3" font-family="Times,serif" font-size="14.00">MultieraBlockTask</text>
 </g>
 <!-- N8 -->
 <g id="node9" class="node">
 <title>N8</title>
-<polygon fill="none" stroke="black" points="645,-412 451,-412 451,-376 645,-376 645,-412"/>
-<text text-anchor="middle" x="548" y="-390.3" font-family="Times,serif" font-size="14.00">MultieraTransactionTask</text>
+<polygon fill="none" stroke="black" points="818,-412 624,-412 624,-376 818,-376 818,-412"/>
+<text text-anchor="middle" x="721" y="-390.3" font-family="Times,serif" font-size="14.00">MultieraTransactionTask</text>
 </g>
 <!-- N7&#45;&gt;N8 -->
 <g id="edge6" class="edge">
 <title>N7&#45;&gt;N8</title>
-<path fill="none" stroke="black" d="M548,-447.7C548,-439.98 548,-430.71 548,-422.11"/>
-<polygon fill="black" stroke="black" points="551.5,-422.1 548,-412.1 544.5,-422.1 551.5,-422.1"/>
+<path fill="none" stroke="black" d="M721,-447.7C721,-439.98 721,-430.71 721,-422.11"/>
+<polygon fill="black" stroke="black" points="724.5,-422.1 721,-412.1 717.5,-422.1 724.5,-422.1"/>
 </g>
 <!-- N9 -->
 <g id="node10" class="node">
 <title>N9</title>
-<polygon fill="none" stroke="black" points="623.5,-340 444.5,-340 444.5,-304 623.5,-304 623.5,-340"/>
-<text text-anchor="middle" x="534" y="-318.3" font-family="Times,serif" font-size="14.00">MultieraMetadataTask</text>
+<polygon fill="none" stroke="black" points="810.5,-340 631.5,-340 631.5,-304 810.5,-304 810.5,-340"/>
+<text text-anchor="middle" x="721" y="-318.3" font-family="Times,serif" font-size="14.00">MultieraMetadataTask</text>
 </g>
 <!-- N8&#45;&gt;N9 -->
 <g id="edge7" class="edge">
 <title>N8&#45;&gt;N9</title>
-<path fill="none" stroke="black" d="M544.54,-375.7C543,-367.98 541.14,-358.71 539.42,-350.11"/>
-<polygon fill="black" stroke="black" points="542.81,-349.22 537.42,-340.1 535.95,-350.6 542.81,-349.22"/>
+<path fill="none" stroke="black" d="M721,-375.7C721,-367.98 721,-358.71 721,-350.11"/>
+<polygon fill="black" stroke="black" points="724.5,-350.1 721,-340.1 717.5,-350.1 724.5,-350.1"/>
 </g>
 <!-- N10 -->
 <g id="node11" class="node">
 <title>N10</title>
-<polygon fill="none" stroke="black" points="810,-340 642,-340 642,-304 810,-304 810,-340"/>
-<text text-anchor="middle" x="726" y="-318.3" font-family="Times,serif" font-size="14.00">MultieraAddressTask</text>
+<polygon fill="none" stroke="black" points="997,-340 829,-340 829,-304 997,-304 997,-340"/>
+<text text-anchor="middle" x="913" y="-318.3" font-family="Times,serif" font-size="14.00">MultieraAddressTask</text>
 </g>
 <!-- N8&#45;&gt;N10 -->
 <g id="edge8" class="edge">
 <title>N8&#45;&gt;N10</title>
-<path fill="none" stroke="black" d="M591.54,-375.88C616.2,-366.18 647.22,-353.98 673.25,-343.74"/>
-<polygon fill="black" stroke="black" points="674.57,-346.99 682.6,-340.07 672.01,-340.47 674.57,-346.99"/>
+<path fill="none" stroke="black" d="M767.97,-375.88C794.68,-366.14 828.32,-353.87 856.47,-343.61"/>
+<polygon fill="black" stroke="black" points="857.99,-346.78 866.18,-340.07 855.59,-340.21 857.99,-346.78"/>
+</g>
+<!-- N17 -->
+<g id="node18" class="node">
+<title>N17</title>
+<polygon fill="none" stroke="black" points="613.5,-340 430.5,-340 430.5,-304 613.5,-304 613.5,-340"/>
+<text text-anchor="middle" x="522" y="-318.3" font-family="Times,serif" font-size="14.00">MultieraAssetMintTask</text>
+</g>
+<!-- N8&#45;&gt;N17 -->
+<g id="edge18" class="edge">
+<title>N8&#45;&gt;N17</title>
+<path fill="none" stroke="black" d="M672.57,-375.97C644.77,-366.19 609.66,-353.84 580.35,-343.52"/>
+<polygon fill="black" stroke="black" points="581.24,-340.13 570.64,-340.11 578.92,-346.73 581.24,-340.13"/>
+</g>
+<!-- N18 -->
+<g id="node19" class="node">
+<title>N18</title>
+<polygon fill="none" stroke="black" points="623.5,-268 430.5,-268 430.5,-232 623.5,-232 623.5,-268"/>
+<text text-anchor="middle" x="527" y="-246.3" font-family="Times,serif" font-size="14.00">MultieraCip25EntryTask</text>
+</g>
+<!-- N9&#45;&gt;N18 -->
+<g id="edge19" class="edge">
+<title>N9&#45;&gt;N18</title>
+<path fill="none" stroke="black" d="M673.54,-303.88C646.43,-294.09 612.26,-281.77 583.74,-271.47"/>
+<polygon fill="black" stroke="black" points="584.9,-268.17 574.3,-268.07 582.52,-274.75 584.9,-268.17"/>
 </g>
 <!-- N11 -->
 <g id="node12" class="node">
 <title>N11</title>
-<polygon fill="none" stroke="black" points="806.5,-268 645.5,-268 645.5,-232 806.5,-232 806.5,-268"/>
-<text text-anchor="middle" x="726" y="-246.3" font-family="Times,serif" font-size="14.00">MultieraOutputTask</text>
+<polygon fill="none" stroke="black" points="971.5,-268 810.5,-268 810.5,-232 971.5,-232 971.5,-268"/>
+<text text-anchor="middle" x="891" y="-246.3" font-family="Times,serif" font-size="14.00">MultieraOutputTask</text>
 </g>
 <!-- N10&#45;&gt;N11 -->
 <g id="edge9" class="edge">
 <title>N10&#45;&gt;N11</title>
-<path fill="none" stroke="black" d="M726,-303.7C726,-295.98 726,-286.71 726,-278.11"/>
-<polygon fill="black" stroke="black" points="729.5,-278.1 726,-268.1 722.5,-278.1 729.5,-278.1"/>
+<path fill="none" stroke="black" d="M907.56,-303.7C905.11,-295.9 902.16,-286.51 899.43,-277.83"/>
+<polygon fill="black" stroke="black" points="902.71,-276.59 896.38,-268.1 896.04,-278.69 902.71,-276.59"/>
 </g>
 <!-- N15 -->
 <g id="node16" class="node">
@@ -159,8 +183,8 @@
 <!-- N10&#45;&gt;N15 -->
 <g id="edge14" class="edge">
 <title>N10&#45;&gt;N15</title>
-<path fill="none" stroke="black" d="M671.78,-303.93C599.57,-279.97 477.99,-234.93 453,-196 419.31,-143.52 491.15,-87.72 540.22,-57.55"/>
-<polygon fill="black" stroke="black" points="542.31,-60.37 549.08,-52.22 538.71,-54.37 542.31,-60.37"/>
+<path fill="none" stroke="black" d="M857.08,-303.96C766.13,-275.7 594.57,-219.87 578,-196 550.33,-156.15 561.56,-96.34 571.66,-61.94"/>
+<polygon fill="black" stroke="black" points="575.08,-62.72 574.71,-52.14 568.4,-60.64 575.08,-62.72"/>
 </g>
 <!-- N16 -->
 <g id="node17" class="node">
@@ -171,62 +195,68 @@
 <!-- N10&#45;&gt;N16 -->
 <g id="edge16" class="edge">
 <title>N10&#45;&gt;N16</title>
-<path fill="none" stroke="black" d="M763.84,-303.84C801.78,-284.12 857.32,-247.68 877,-196 893.9,-151.63 890.14,-95.29 885.69,-62.38"/>
-<polygon fill="black" stroke="black" points="889.11,-61.55 884.19,-52.16 882.18,-62.57 889.11,-61.55"/>
+<path fill="none" stroke="black" d="M942.67,-303.91C956.12,-294.81 971.17,-282.49 981,-268 1010.42,-224.65 1022.46,-200.24 1002,-152 984.87,-111.6 946.2,-78.34 917.15,-57.74"/>
+<polygon fill="black" stroke="black" points="919.08,-54.82 908.86,-52.01 915.1,-60.58 919.08,-54.82"/>
 </g>
 <!-- N12 -->
 <g id="node13" class="node">
 <title>N12</title>
-<polygon fill="none" stroke="black" points="646.5,-196 461.5,-196 461.5,-160 646.5,-160 646.5,-196"/>
-<text text-anchor="middle" x="554" y="-174.3" font-family="Times,serif" font-size="14.00">MultieraUsedInputTask</text>
+<polygon fill="none" stroke="black" points="771.5,-196 586.5,-196 586.5,-160 771.5,-160 771.5,-196"/>
+<text text-anchor="middle" x="679" y="-174.3" font-family="Times,serif" font-size="14.00">MultieraUsedInputTask</text>
 </g>
 <!-- N11&#45;&gt;N12 -->
 <g id="edge10" class="edge">
 <title>N11&#45;&gt;N12</title>
-<path fill="none" stroke="black" d="M683.92,-231.88C660.2,-222.22 630.38,-210.09 605.3,-199.88"/>
-<polygon fill="black" stroke="black" points="606.52,-196.6 595.94,-196.07 603.88,-203.08 606.52,-196.6"/>
+<path fill="none" stroke="black" d="M839.41,-231.97C809.53,-222.1 771.74,-209.62 740.34,-199.25"/>
+<polygon fill="black" stroke="black" points="741.41,-195.92 730.82,-196.11 739.22,-202.57 741.41,-195.92"/>
 </g>
 <!-- N13 -->
 <g id="node14" class="node">
 <title>N13</title>
-<polygon fill="none" stroke="black" points="867.5,-196 664.5,-196 664.5,-160 867.5,-160 867.5,-196"/>
-<text text-anchor="middle" x="766" y="-174.3" font-family="Times,serif" font-size="14.00">MultieraUnusedInputTask</text>
+<polygon fill="none" stroke="black" points="992.5,-196 789.5,-196 789.5,-160 992.5,-160 992.5,-196"/>
+<text text-anchor="middle" x="891" y="-174.3" font-family="Times,serif" font-size="14.00">MultieraUnusedInputTask</text>
 </g>
 <!-- N11&#45;&gt;N13 -->
 <g id="edge11" class="edge">
 <title>N11&#45;&gt;N13</title>
-<path fill="none" stroke="black" d="M735.89,-231.7C740.49,-223.64 746.06,-213.89 751.15,-204.98"/>
-<polygon fill="black" stroke="black" points="754.3,-206.52 756.23,-196.1 748.23,-203.05 754.3,-206.52"/>
+<path fill="none" stroke="black" d="M891,-231.7C891,-223.98 891,-214.71 891,-206.11"/>
+<polygon fill="black" stroke="black" points="894.5,-206.1 891,-196.1 887.5,-206.1 894.5,-206.1"/>
 </g>
 <!-- N14 -->
 <g id="node15" class="node">
 <title>N14</title>
-<polygon fill="none" stroke="black" points="780,-124 554,-124 554,-88 780,-88 780,-124"/>
-<text text-anchor="middle" x="667" y="-102.3" font-family="Times,serif" font-size="14.00">MultieraStakeCredentialTask</text>
+<polygon fill="none" stroke="black" points="902,-124 676,-124 676,-88 902,-88 902,-124"/>
+<text text-anchor="middle" x="789" y="-102.3" font-family="Times,serif" font-size="14.00">MultieraStakeCredentialTask</text>
 </g>
 <!-- N12&#45;&gt;N14 -->
 <g id="edge12" class="edge">
 <title>N12&#45;&gt;N14</title>
-<path fill="none" stroke="black" d="M581.64,-159.88C596.42,-150.72 614.79,-139.34 630.7,-129.48"/>
-<polygon fill="black" stroke="black" points="632.59,-132.43 639.25,-124.19 628.91,-126.48 632.59,-132.43"/>
+<path fill="none" stroke="black" d="M705.91,-159.88C720.16,-150.81 737.85,-139.55 753.24,-129.76"/>
+<polygon fill="black" stroke="black" points="755.43,-132.51 761.99,-124.19 751.67,-126.61 755.43,-132.51"/>
 </g>
 <!-- N13&#45;&gt;N14 -->
 <g id="edge13" class="edge">
 <title>N13&#45;&gt;N14</title>
-<path fill="none" stroke="black" d="M741.78,-159.88C729.08,-150.89 713.34,-139.76 699.58,-130.03"/>
-<polygon fill="black" stroke="black" points="701.5,-127.11 691.31,-124.19 697.46,-132.82 701.5,-127.11"/>
+<path fill="none" stroke="black" d="M866.05,-159.88C852.96,-150.89 836.74,-139.76 822.56,-130.03"/>
+<polygon fill="black" stroke="black" points="824.27,-126.96 814.05,-124.19 820.31,-132.73 824.27,-126.96"/>
 </g>
 <!-- N14&#45;&gt;N15 -->
 <g id="edge15" class="edge">
 <title>N14&#45;&gt;N15</title>
-<path fill="none" stroke="black" d="M645.74,-87.7C634.91,-78.88 621.58,-68.03 609.84,-58.47"/>
-<polygon fill="black" stroke="black" points="611.98,-55.7 602.01,-52.1 607.56,-61.13 611.98,-55.7"/>
+<path fill="none" stroke="black" d="M738.38,-87.97C709.19,-78.14 672.31,-65.73 641.58,-55.39"/>
+<polygon fill="black" stroke="black" points="642.44,-51.98 631.84,-52.11 640.2,-58.62 642.44,-51.98"/>
 </g>
 <!-- N14&#45;&gt;N16 -->
 <g id="edge17" class="edge">
 <title>N14&#45;&gt;N16</title>
-<path fill="none" stroke="black" d="M719.08,-87.97C749.24,-78.1 787.39,-65.62 819.08,-55.25"/>
-<polygon fill="black" stroke="black" points="820.27,-58.55 828.69,-52.11 818.1,-51.89 820.27,-58.55"/>
+<path fill="none" stroke="black" d="M811.74,-87.7C823.44,-78.8 837.86,-67.82 850.51,-58.2"/>
+<polygon fill="black" stroke="black" points="852.68,-60.94 858.52,-52.1 848.44,-55.37 852.68,-60.94"/>
+</g>
+<!-- N17&#45;&gt;N18 -->
+<g id="edge20" class="edge">
+<title>N17&#45;&gt;N18</title>
+<path fill="none" stroke="black" d="M523.24,-303.7C523.79,-295.98 524.45,-286.71 525.06,-278.11"/>
+<polygon fill="black" stroke="black" points="528.56,-278.33 525.78,-268.1 521.57,-277.83 528.56,-278.33"/>
 </g>
 </g>
 </svg>

@@ -218,6 +218,119 @@ declare module 'zapatos/schema' {
   }
 
   /**
+   * **AssetMint**
+   * - Table in database
+   */
+  export namespace AssetMint {
+    export type Table = 'AssetMint';
+    export interface Selectable {
+      /**
+      * **AssetMint.tx_id**
+      * - `int8` in database
+      * - `NOT NULL`, no default
+      */
+      tx_id: db.Int8String;
+      /**
+      * **AssetMint.asset_id**
+      * - `int8` in database
+      * - `NOT NULL`, no default
+      */
+      asset_id: db.Int8String;
+      /**
+      * **AssetMint.amount**
+      * - `int8` in database
+      * - `NOT NULL`, no default
+      */
+      amount: db.Int8String;
+    }
+    export interface JSONSelectable {
+      /**
+      * **AssetMint.tx_id**
+      * - `int8` in database
+      * - `NOT NULL`, no default
+      */
+      tx_id: number;
+      /**
+      * **AssetMint.asset_id**
+      * - `int8` in database
+      * - `NOT NULL`, no default
+      */
+      asset_id: number;
+      /**
+      * **AssetMint.amount**
+      * - `int8` in database
+      * - `NOT NULL`, no default
+      */
+      amount: number;
+    }
+    export interface Whereable {
+      /**
+      * **AssetMint.tx_id**
+      * - `int8` in database
+      * - `NOT NULL`, no default
+      */
+      tx_id?: (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment | db.ParentColumn>;
+      /**
+      * **AssetMint.asset_id**
+      * - `int8` in database
+      * - `NOT NULL`, no default
+      */
+      asset_id?: (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment | db.ParentColumn>;
+      /**
+      * **AssetMint.amount**
+      * - `int8` in database
+      * - `NOT NULL`, no default
+      */
+      amount?: (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment | db.ParentColumn>;
+    }
+    export interface Insertable {
+      /**
+      * **AssetMint.tx_id**
+      * - `int8` in database
+      * - `NOT NULL`, no default
+      */
+      tx_id: (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment;
+      /**
+      * **AssetMint.asset_id**
+      * - `int8` in database
+      * - `NOT NULL`, no default
+      */
+      asset_id: (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment;
+      /**
+      * **AssetMint.amount**
+      * - `int8` in database
+      * - `NOT NULL`, no default
+      */
+      amount: (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment;
+    }
+    export interface Updatable {
+      /**
+      * **AssetMint.tx_id**
+      * - `int8` in database
+      * - `NOT NULL`, no default
+      */
+      tx_id?: (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment | db.SQLFragment<any, (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment>;
+      /**
+      * **AssetMint.asset_id**
+      * - `int8` in database
+      * - `NOT NULL`, no default
+      */
+      asset_id?: (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment | db.SQLFragment<any, (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment>;
+      /**
+      * **AssetMint.amount**
+      * - `int8` in database
+      * - `NOT NULL`, no default
+      */
+      amount?: (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment | db.SQLFragment<any, (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment>;
+    }
+    export type UniqueIndex = 'asset_mint-pk';
+    export type Column = keyof Selectable;
+    export type OnlyCols<T extends readonly Column[]> = Pick<Selectable, T[number]>;
+    export type SQLExpression = db.GenericSQLExpression | db.ColumnNames<Updatable | (keyof Updatable)[]> | db.ColumnValues<Updatable> | Table | Whereable | Column;
+    export type SQL = SQLExpression | SQLExpression[];
+  }
+
+  /**
    * **Block**
    * - Table in database
    */
@@ -413,7 +526,263 @@ declare module 'zapatos/schema' {
       */
       slot?: number | db.Parameter<number> | db.SQLFragment | db.SQLFragment<any, number | db.Parameter<number> | db.SQLFragment>;
     }
-    export type UniqueIndex = 'Block_pkey';
+    export type UniqueIndex = 'Block_hash_key' | 'Block_pkey';
+    export type Column = keyof Selectable;
+    export type OnlyCols<T extends readonly Column[]> = Pick<Selectable, T[number]>;
+    export type SQLExpression = db.GenericSQLExpression | db.ColumnNames<Updatable | (keyof Updatable)[]> | db.ColumnValues<Updatable> | Table | Whereable | Column;
+    export type SQL = SQLExpression | SQLExpression[];
+  }
+
+  /**
+   * **Cip25Entry**
+   * - Table in database
+   */
+  export namespace Cip25Entry {
+    export type Table = 'Cip25Entry';
+    export interface Selectable {
+      /**
+      * **Cip25Entry.id**
+      * - `int8` in database
+      * - `NOT NULL`, default: `nextval('"Cip25Entry_id_seq"'::regclass)`
+      */
+      id: db.Int8String;
+      /**
+      * **Cip25Entry.metadata_id**
+      * - `int8` in database
+      * - `NOT NULL`, no default
+      */
+      metadata_id: db.Int8String;
+      /**
+      * **Cip25Entry.asset_id**
+      * - `int8` in database
+      * - `NOT NULL`, no default
+      */
+      asset_id: db.Int8String;
+      /**
+      * **Cip25Entry.payload**
+      * - `bytea` in database
+      * - `NOT NULL`, no default
+      */
+      payload: Buffer;
+    }
+    export interface JSONSelectable {
+      /**
+      * **Cip25Entry.id**
+      * - `int8` in database
+      * - `NOT NULL`, default: `nextval('"Cip25Entry_id_seq"'::regclass)`
+      */
+      id: number;
+      /**
+      * **Cip25Entry.metadata_id**
+      * - `int8` in database
+      * - `NOT NULL`, no default
+      */
+      metadata_id: number;
+      /**
+      * **Cip25Entry.asset_id**
+      * - `int8` in database
+      * - `NOT NULL`, no default
+      */
+      asset_id: number;
+      /**
+      * **Cip25Entry.payload**
+      * - `bytea` in database
+      * - `NOT NULL`, no default
+      */
+      payload: db.ByteArrayString;
+    }
+    export interface Whereable {
+      /**
+      * **Cip25Entry.id**
+      * - `int8` in database
+      * - `NOT NULL`, default: `nextval('"Cip25Entry_id_seq"'::regclass)`
+      */
+      id?: (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment | db.ParentColumn>;
+      /**
+      * **Cip25Entry.metadata_id**
+      * - `int8` in database
+      * - `NOT NULL`, no default
+      */
+      metadata_id?: (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment | db.ParentColumn>;
+      /**
+      * **Cip25Entry.asset_id**
+      * - `int8` in database
+      * - `NOT NULL`, no default
+      */
+      asset_id?: (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment | db.ParentColumn>;
+      /**
+      * **Cip25Entry.payload**
+      * - `bytea` in database
+      * - `NOT NULL`, no default
+      */
+      payload?: (db.ByteArrayString | Buffer) | db.Parameter<(db.ByteArrayString | Buffer)> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, (db.ByteArrayString | Buffer) | db.Parameter<(db.ByteArrayString | Buffer)> | db.SQLFragment | db.ParentColumn>;
+    }
+    export interface Insertable {
+      /**
+      * **Cip25Entry.id**
+      * - `int8` in database
+      * - `NOT NULL`, default: `nextval('"Cip25Entry_id_seq"'::regclass)`
+      */
+      id?: (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.DefaultType | db.SQLFragment;
+      /**
+      * **Cip25Entry.metadata_id**
+      * - `int8` in database
+      * - `NOT NULL`, no default
+      */
+      metadata_id: (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment;
+      /**
+      * **Cip25Entry.asset_id**
+      * - `int8` in database
+      * - `NOT NULL`, no default
+      */
+      asset_id: (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment;
+      /**
+      * **Cip25Entry.payload**
+      * - `bytea` in database
+      * - `NOT NULL`, no default
+      */
+      payload: (db.ByteArrayString | Buffer) | db.Parameter<(db.ByteArrayString | Buffer)> | db.SQLFragment;
+    }
+    export interface Updatable {
+      /**
+      * **Cip25Entry.id**
+      * - `int8` in database
+      * - `NOT NULL`, default: `nextval('"Cip25Entry_id_seq"'::regclass)`
+      */
+      id?: (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.DefaultType | db.SQLFragment | db.SQLFragment<any, (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.DefaultType | db.SQLFragment>;
+      /**
+      * **Cip25Entry.metadata_id**
+      * - `int8` in database
+      * - `NOT NULL`, no default
+      */
+      metadata_id?: (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment | db.SQLFragment<any, (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment>;
+      /**
+      * **Cip25Entry.asset_id**
+      * - `int8` in database
+      * - `NOT NULL`, no default
+      */
+      asset_id?: (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment | db.SQLFragment<any, (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment>;
+      /**
+      * **Cip25Entry.payload**
+      * - `bytea` in database
+      * - `NOT NULL`, no default
+      */
+      payload?: (db.ByteArrayString | Buffer) | db.Parameter<(db.ByteArrayString | Buffer)> | db.SQLFragment | db.SQLFragment<any, (db.ByteArrayString | Buffer) | db.Parameter<(db.ByteArrayString | Buffer)> | db.SQLFragment>;
+    }
+    export type UniqueIndex = 'Cip25Entry_pkey';
+    export type Column = keyof Selectable;
+    export type OnlyCols<T extends readonly Column[]> = Pick<Selectable, T[number]>;
+    export type SQLExpression = db.GenericSQLExpression | db.ColumnNames<Updatable | (keyof Updatable)[]> | db.ColumnValues<Updatable> | Table | Whereable | Column;
+    export type SQL = SQLExpression | SQLExpression[];
+  }
+
+  /**
+   * **NativeAsset**
+   * - Table in database
+   */
+  export namespace NativeAsset {
+    export type Table = 'NativeAsset';
+    export interface Selectable {
+      /**
+      * **NativeAsset.id**
+      * - `int8` in database
+      * - `NOT NULL`, default: `nextval('"NativeAsset_id_seq"'::regclass)`
+      */
+      id: db.Int8String;
+      /**
+      * **NativeAsset.policy_id**
+      * - `bytea` in database
+      * - `NOT NULL`, no default
+      */
+      policy_id: Buffer;
+      /**
+      * **NativeAsset.asset_name**
+      * - `bytea` in database
+      * - `NOT NULL`, no default
+      */
+      asset_name: Buffer;
+    }
+    export interface JSONSelectable {
+      /**
+      * **NativeAsset.id**
+      * - `int8` in database
+      * - `NOT NULL`, default: `nextval('"NativeAsset_id_seq"'::regclass)`
+      */
+      id: number;
+      /**
+      * **NativeAsset.policy_id**
+      * - `bytea` in database
+      * - `NOT NULL`, no default
+      */
+      policy_id: db.ByteArrayString;
+      /**
+      * **NativeAsset.asset_name**
+      * - `bytea` in database
+      * - `NOT NULL`, no default
+      */
+      asset_name: db.ByteArrayString;
+    }
+    export interface Whereable {
+      /**
+      * **NativeAsset.id**
+      * - `int8` in database
+      * - `NOT NULL`, default: `nextval('"NativeAsset_id_seq"'::regclass)`
+      */
+      id?: (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment | db.ParentColumn>;
+      /**
+      * **NativeAsset.policy_id**
+      * - `bytea` in database
+      * - `NOT NULL`, no default
+      */
+      policy_id?: (db.ByteArrayString | Buffer) | db.Parameter<(db.ByteArrayString | Buffer)> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, (db.ByteArrayString | Buffer) | db.Parameter<(db.ByteArrayString | Buffer)> | db.SQLFragment | db.ParentColumn>;
+      /**
+      * **NativeAsset.asset_name**
+      * - `bytea` in database
+      * - `NOT NULL`, no default
+      */
+      asset_name?: (db.ByteArrayString | Buffer) | db.Parameter<(db.ByteArrayString | Buffer)> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, (db.ByteArrayString | Buffer) | db.Parameter<(db.ByteArrayString | Buffer)> | db.SQLFragment | db.ParentColumn>;
+    }
+    export interface Insertable {
+      /**
+      * **NativeAsset.id**
+      * - `int8` in database
+      * - `NOT NULL`, default: `nextval('"NativeAsset_id_seq"'::regclass)`
+      */
+      id?: (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.DefaultType | db.SQLFragment;
+      /**
+      * **NativeAsset.policy_id**
+      * - `bytea` in database
+      * - `NOT NULL`, no default
+      */
+      policy_id: (db.ByteArrayString | Buffer) | db.Parameter<(db.ByteArrayString | Buffer)> | db.SQLFragment;
+      /**
+      * **NativeAsset.asset_name**
+      * - `bytea` in database
+      * - `NOT NULL`, no default
+      */
+      asset_name: (db.ByteArrayString | Buffer) | db.Parameter<(db.ByteArrayString | Buffer)> | db.SQLFragment;
+    }
+    export interface Updatable {
+      /**
+      * **NativeAsset.id**
+      * - `int8` in database
+      * - `NOT NULL`, default: `nextval('"NativeAsset_id_seq"'::regclass)`
+      */
+      id?: (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.DefaultType | db.SQLFragment | db.SQLFragment<any, (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.DefaultType | db.SQLFragment>;
+      /**
+      * **NativeAsset.policy_id**
+      * - `bytea` in database
+      * - `NOT NULL`, no default
+      */
+      policy_id?: (db.ByteArrayString | Buffer) | db.Parameter<(db.ByteArrayString | Buffer)> | db.SQLFragment | db.SQLFragment<any, (db.ByteArrayString | Buffer) | db.Parameter<(db.ByteArrayString | Buffer)> | db.SQLFragment>;
+      /**
+      * **NativeAsset.asset_name**
+      * - `bytea` in database
+      * - `NOT NULL`, no default
+      */
+      asset_name?: (db.ByteArrayString | Buffer) | db.Parameter<(db.ByteArrayString | Buffer)> | db.SQLFragment | db.SQLFragment<any, (db.ByteArrayString | Buffer) | db.Parameter<(db.ByteArrayString | Buffer)> | db.SQLFragment>;
+    }
+    export type UniqueIndex = 'NativeAsset_pkey' | 'index-native_asset-pair';
     export type Column = keyof Selectable;
     export type OnlyCols<T extends readonly Column[]> = Pick<Selectable, T[number]>;
     export type SQLExpression = db.GenericSQLExpression | db.ColumnNames<Updatable | (keyof Updatable)[]> | db.ColumnValues<Updatable> | Table | Whereable | Column;
@@ -850,6 +1219,149 @@ declare module 'zapatos/schema' {
   }
 
   /**
+   * **TransactionMetadata**
+   * - Table in database
+   */
+  export namespace TransactionMetadata {
+    export type Table = 'TransactionMetadata';
+    export interface Selectable {
+      /**
+      * **TransactionMetadata.id**
+      * - `int8` in database
+      * - `NOT NULL`, default: `nextval('"TransactionMetadata_id_seq"'::regclass)`
+      */
+      id: db.Int8String;
+      /**
+      * **TransactionMetadata.tx_id**
+      * - `int8` in database
+      * - `NOT NULL`, no default
+      */
+      tx_id: db.Int8String;
+      /**
+      * **TransactionMetadata.label**
+      * - `bytea` in database
+      * - `NOT NULL`, no default
+      */
+      label: Buffer;
+      /**
+      * **TransactionMetadata.payload**
+      * - `bytea` in database
+      * - `NOT NULL`, no default
+      */
+      payload: Buffer;
+    }
+    export interface JSONSelectable {
+      /**
+      * **TransactionMetadata.id**
+      * - `int8` in database
+      * - `NOT NULL`, default: `nextval('"TransactionMetadata_id_seq"'::regclass)`
+      */
+      id: number;
+      /**
+      * **TransactionMetadata.tx_id**
+      * - `int8` in database
+      * - `NOT NULL`, no default
+      */
+      tx_id: number;
+      /**
+      * **TransactionMetadata.label**
+      * - `bytea` in database
+      * - `NOT NULL`, no default
+      */
+      label: db.ByteArrayString;
+      /**
+      * **TransactionMetadata.payload**
+      * - `bytea` in database
+      * - `NOT NULL`, no default
+      */
+      payload: db.ByteArrayString;
+    }
+    export interface Whereable {
+      /**
+      * **TransactionMetadata.id**
+      * - `int8` in database
+      * - `NOT NULL`, default: `nextval('"TransactionMetadata_id_seq"'::regclass)`
+      */
+      id?: (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment | db.ParentColumn>;
+      /**
+      * **TransactionMetadata.tx_id**
+      * - `int8` in database
+      * - `NOT NULL`, no default
+      */
+      tx_id?: (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment | db.ParentColumn>;
+      /**
+      * **TransactionMetadata.label**
+      * - `bytea` in database
+      * - `NOT NULL`, no default
+      */
+      label?: (db.ByteArrayString | Buffer) | db.Parameter<(db.ByteArrayString | Buffer)> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, (db.ByteArrayString | Buffer) | db.Parameter<(db.ByteArrayString | Buffer)> | db.SQLFragment | db.ParentColumn>;
+      /**
+      * **TransactionMetadata.payload**
+      * - `bytea` in database
+      * - `NOT NULL`, no default
+      */
+      payload?: (db.ByteArrayString | Buffer) | db.Parameter<(db.ByteArrayString | Buffer)> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, (db.ByteArrayString | Buffer) | db.Parameter<(db.ByteArrayString | Buffer)> | db.SQLFragment | db.ParentColumn>;
+    }
+    export interface Insertable {
+      /**
+      * **TransactionMetadata.id**
+      * - `int8` in database
+      * - `NOT NULL`, default: `nextval('"TransactionMetadata_id_seq"'::regclass)`
+      */
+      id?: (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.DefaultType | db.SQLFragment;
+      /**
+      * **TransactionMetadata.tx_id**
+      * - `int8` in database
+      * - `NOT NULL`, no default
+      */
+      tx_id: (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment;
+      /**
+      * **TransactionMetadata.label**
+      * - `bytea` in database
+      * - `NOT NULL`, no default
+      */
+      label: (db.ByteArrayString | Buffer) | db.Parameter<(db.ByteArrayString | Buffer)> | db.SQLFragment;
+      /**
+      * **TransactionMetadata.payload**
+      * - `bytea` in database
+      * - `NOT NULL`, no default
+      */
+      payload: (db.ByteArrayString | Buffer) | db.Parameter<(db.ByteArrayString | Buffer)> | db.SQLFragment;
+    }
+    export interface Updatable {
+      /**
+      * **TransactionMetadata.id**
+      * - `int8` in database
+      * - `NOT NULL`, default: `nextval('"TransactionMetadata_id_seq"'::regclass)`
+      */
+      id?: (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.DefaultType | db.SQLFragment | db.SQLFragment<any, (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.DefaultType | db.SQLFragment>;
+      /**
+      * **TransactionMetadata.tx_id**
+      * - `int8` in database
+      * - `NOT NULL`, no default
+      */
+      tx_id?: (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment | db.SQLFragment<any, (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment>;
+      /**
+      * **TransactionMetadata.label**
+      * - `bytea` in database
+      * - `NOT NULL`, no default
+      */
+      label?: (db.ByteArrayString | Buffer) | db.Parameter<(db.ByteArrayString | Buffer)> | db.SQLFragment | db.SQLFragment<any, (db.ByteArrayString | Buffer) | db.Parameter<(db.ByteArrayString | Buffer)> | db.SQLFragment>;
+      /**
+      * **TransactionMetadata.payload**
+      * - `bytea` in database
+      * - `NOT NULL`, no default
+      */
+      payload?: (db.ByteArrayString | Buffer) | db.Parameter<(db.ByteArrayString | Buffer)> | db.SQLFragment | db.SQLFragment<any, (db.ByteArrayString | Buffer) | db.Parameter<(db.ByteArrayString | Buffer)> | db.SQLFragment>;
+    }
+    export type UniqueIndex = 'TransactionMetadata_pkey';
+    export type Column = keyof Selectable;
+    export type OnlyCols<T extends readonly Column[]> = Pick<Selectable, T[number]>;
+    export type SQLExpression = db.GenericSQLExpression | db.ColumnNames<Updatable | (keyof Updatable)[]> | db.ColumnValues<Updatable> | Table | Whereable | Column;
+    export type SQL = SQLExpression | SQLExpression[];
+  }
+
+  /**
    * **TransactionOutput**
    * - Table in database
    */
@@ -1042,6 +1554,12 @@ declare module 'zapatos/schema' {
       */
       tx_id: db.Int8String;
       /**
+      * **TxCredentialRelation.block_id**
+      * - `int4` in database
+      * - `NOT NULL`, no default
+      */
+      block_id: number;
+      /**
       * **TxCredentialRelation.relation**
       * - `int4` in database
       * - `NOT NULL`, no default
@@ -1061,6 +1579,12 @@ declare module 'zapatos/schema' {
       * - `NOT NULL`, no default
       */
       tx_id: number;
+      /**
+      * **TxCredentialRelation.block_id**
+      * - `int4` in database
+      * - `NOT NULL`, no default
+      */
+      block_id: number;
       /**
       * **TxCredentialRelation.relation**
       * - `int4` in database
@@ -1082,6 +1606,12 @@ declare module 'zapatos/schema' {
       */
       tx_id?: (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment | db.ParentColumn>;
       /**
+      * **TxCredentialRelation.block_id**
+      * - `int4` in database
+      * - `NOT NULL`, no default
+      */
+      block_id?: number | db.Parameter<number> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, number | db.Parameter<number> | db.SQLFragment | db.ParentColumn>;
+      /**
       * **TxCredentialRelation.relation**
       * - `int4` in database
       * - `NOT NULL`, no default
@@ -1101,6 +1631,12 @@ declare module 'zapatos/schema' {
       * - `NOT NULL`, no default
       */
       tx_id: (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment;
+      /**
+      * **TxCredentialRelation.block_id**
+      * - `int4` in database
+      * - `NOT NULL`, no default
+      */
+      block_id: number | db.Parameter<number> | db.SQLFragment;
       /**
       * **TxCredentialRelation.relation**
       * - `int4` in database
@@ -1122,6 +1658,12 @@ declare module 'zapatos/schema' {
       */
       tx_id?: (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment | db.SQLFragment<any, (number | db.Int8String) | db.Parameter<(number | db.Int8String)> | db.SQLFragment>;
       /**
+      * **TxCredentialRelation.block_id**
+      * - `int4` in database
+      * - `NOT NULL`, no default
+      */
+      block_id?: number | db.Parameter<number> | db.SQLFragment | db.SQLFragment<any, number | db.Parameter<number> | db.SQLFragment>;
+      /**
       * **TxCredentialRelation.relation**
       * - `int4` in database
       * - `NOT NULL`, no default
@@ -1137,28 +1679,32 @@ declare module 'zapatos/schema' {
 
   /* === cross-table types === */
 
-  export type Table = Address.Table | AddressCredentialRelation.Table | Block.Table | StakeCredential.Table | Transaction.Table | TransactionInput.Table | TransactionOutput.Table | TxCredentialRelation.Table;
-  export type Selectable = Address.Selectable | AddressCredentialRelation.Selectable | Block.Selectable | StakeCredential.Selectable | Transaction.Selectable | TransactionInput.Selectable | TransactionOutput.Selectable | TxCredentialRelation.Selectable;
-  export type JSONSelectable = Address.JSONSelectable | AddressCredentialRelation.JSONSelectable | Block.JSONSelectable | StakeCredential.JSONSelectable | Transaction.JSONSelectable | TransactionInput.JSONSelectable | TransactionOutput.JSONSelectable | TxCredentialRelation.JSONSelectable;
-  export type Whereable = Address.Whereable | AddressCredentialRelation.Whereable | Block.Whereable | StakeCredential.Whereable | Transaction.Whereable | TransactionInput.Whereable | TransactionOutput.Whereable | TxCredentialRelation.Whereable;
-  export type Insertable = Address.Insertable | AddressCredentialRelation.Insertable | Block.Insertable | StakeCredential.Insertable | Transaction.Insertable | TransactionInput.Insertable | TransactionOutput.Insertable | TxCredentialRelation.Insertable;
-  export type Updatable = Address.Updatable | AddressCredentialRelation.Updatable | Block.Updatable | StakeCredential.Updatable | Transaction.Updatable | TransactionInput.Updatable | TransactionOutput.Updatable | TxCredentialRelation.Updatable;
-  export type UniqueIndex = Address.UniqueIndex | AddressCredentialRelation.UniqueIndex | Block.UniqueIndex | StakeCredential.UniqueIndex | Transaction.UniqueIndex | TransactionInput.UniqueIndex | TransactionOutput.UniqueIndex | TxCredentialRelation.UniqueIndex;
-  export type Column = Address.Column | AddressCredentialRelation.Column | Block.Column | StakeCredential.Column | Transaction.Column | TransactionInput.Column | TransactionOutput.Column | TxCredentialRelation.Column;
-  export type AllBaseTables = [Address.Table, AddressCredentialRelation.Table, Block.Table, StakeCredential.Table, Transaction.Table, TransactionInput.Table, TransactionOutput.Table, TxCredentialRelation.Table];
+  export type Table = Address.Table | AddressCredentialRelation.Table | AssetMint.Table | Block.Table | Cip25Entry.Table | NativeAsset.Table | StakeCredential.Table | Transaction.Table | TransactionInput.Table | TransactionMetadata.Table | TransactionOutput.Table | TxCredentialRelation.Table;
+  export type Selectable = Address.Selectable | AddressCredentialRelation.Selectable | AssetMint.Selectable | Block.Selectable | Cip25Entry.Selectable | NativeAsset.Selectable | StakeCredential.Selectable | Transaction.Selectable | TransactionInput.Selectable | TransactionMetadata.Selectable | TransactionOutput.Selectable | TxCredentialRelation.Selectable;
+  export type JSONSelectable = Address.JSONSelectable | AddressCredentialRelation.JSONSelectable | AssetMint.JSONSelectable | Block.JSONSelectable | Cip25Entry.JSONSelectable | NativeAsset.JSONSelectable | StakeCredential.JSONSelectable | Transaction.JSONSelectable | TransactionInput.JSONSelectable | TransactionMetadata.JSONSelectable | TransactionOutput.JSONSelectable | TxCredentialRelation.JSONSelectable;
+  export type Whereable = Address.Whereable | AddressCredentialRelation.Whereable | AssetMint.Whereable | Block.Whereable | Cip25Entry.Whereable | NativeAsset.Whereable | StakeCredential.Whereable | Transaction.Whereable | TransactionInput.Whereable | TransactionMetadata.Whereable | TransactionOutput.Whereable | TxCredentialRelation.Whereable;
+  export type Insertable = Address.Insertable | AddressCredentialRelation.Insertable | AssetMint.Insertable | Block.Insertable | Cip25Entry.Insertable | NativeAsset.Insertable | StakeCredential.Insertable | Transaction.Insertable | TransactionInput.Insertable | TransactionMetadata.Insertable | TransactionOutput.Insertable | TxCredentialRelation.Insertable;
+  export type Updatable = Address.Updatable | AddressCredentialRelation.Updatable | AssetMint.Updatable | Block.Updatable | Cip25Entry.Updatable | NativeAsset.Updatable | StakeCredential.Updatable | Transaction.Updatable | TransactionInput.Updatable | TransactionMetadata.Updatable | TransactionOutput.Updatable | TxCredentialRelation.Updatable;
+  export type UniqueIndex = Address.UniqueIndex | AddressCredentialRelation.UniqueIndex | AssetMint.UniqueIndex | Block.UniqueIndex | Cip25Entry.UniqueIndex | NativeAsset.UniqueIndex | StakeCredential.UniqueIndex | Transaction.UniqueIndex | TransactionInput.UniqueIndex | TransactionMetadata.UniqueIndex | TransactionOutput.UniqueIndex | TxCredentialRelation.UniqueIndex;
+  export type Column = Address.Column | AddressCredentialRelation.Column | AssetMint.Column | Block.Column | Cip25Entry.Column | NativeAsset.Column | StakeCredential.Column | Transaction.Column | TransactionInput.Column | TransactionMetadata.Column | TransactionOutput.Column | TxCredentialRelation.Column;
+  export type AllBaseTables = [Address.Table, AddressCredentialRelation.Table, AssetMint.Table, Block.Table, Cip25Entry.Table, NativeAsset.Table, StakeCredential.Table, Transaction.Table, TransactionInput.Table, TransactionMetadata.Table, TransactionOutput.Table, TxCredentialRelation.Table];
   export type AllForeignTables = [];
   export type AllViews = [];
   export type AllMaterializedViews = [];
-  export type AllTablesAndViews = [Address.Table, AddressCredentialRelation.Table, Block.Table, StakeCredential.Table, Transaction.Table, TransactionInput.Table, TransactionOutput.Table, TxCredentialRelation.Table];
+  export type AllTablesAndViews = [Address.Table, AddressCredentialRelation.Table, AssetMint.Table, Block.Table, Cip25Entry.Table, NativeAsset.Table, StakeCredential.Table, Transaction.Table, TransactionInput.Table, TransactionMetadata.Table, TransactionOutput.Table, TxCredentialRelation.Table];
 
 
   export type SelectableForTable<T extends Table> = {
     Address: Address.Selectable;
     AddressCredentialRelation: AddressCredentialRelation.Selectable;
+    AssetMint: AssetMint.Selectable;
     Block: Block.Selectable;
+    Cip25Entry: Cip25Entry.Selectable;
+    NativeAsset: NativeAsset.Selectable;
     StakeCredential: StakeCredential.Selectable;
     Transaction: Transaction.Selectable;
     TransactionInput: TransactionInput.Selectable;
+    TransactionMetadata: TransactionMetadata.Selectable;
     TransactionOutput: TransactionOutput.Selectable;
     TxCredentialRelation: TxCredentialRelation.Selectable;
   }[T];
@@ -1166,10 +1712,14 @@ declare module 'zapatos/schema' {
   export type JSONSelectableForTable<T extends Table> = {
     Address: Address.JSONSelectable;
     AddressCredentialRelation: AddressCredentialRelation.JSONSelectable;
+    AssetMint: AssetMint.JSONSelectable;
     Block: Block.JSONSelectable;
+    Cip25Entry: Cip25Entry.JSONSelectable;
+    NativeAsset: NativeAsset.JSONSelectable;
     StakeCredential: StakeCredential.JSONSelectable;
     Transaction: Transaction.JSONSelectable;
     TransactionInput: TransactionInput.JSONSelectable;
+    TransactionMetadata: TransactionMetadata.JSONSelectable;
     TransactionOutput: TransactionOutput.JSONSelectable;
     TxCredentialRelation: TxCredentialRelation.JSONSelectable;
   }[T];
@@ -1177,10 +1727,14 @@ declare module 'zapatos/schema' {
   export type WhereableForTable<T extends Table> = {
     Address: Address.Whereable;
     AddressCredentialRelation: AddressCredentialRelation.Whereable;
+    AssetMint: AssetMint.Whereable;
     Block: Block.Whereable;
+    Cip25Entry: Cip25Entry.Whereable;
+    NativeAsset: NativeAsset.Whereable;
     StakeCredential: StakeCredential.Whereable;
     Transaction: Transaction.Whereable;
     TransactionInput: TransactionInput.Whereable;
+    TransactionMetadata: TransactionMetadata.Whereable;
     TransactionOutput: TransactionOutput.Whereable;
     TxCredentialRelation: TxCredentialRelation.Whereable;
   }[T];
@@ -1188,10 +1742,14 @@ declare module 'zapatos/schema' {
   export type InsertableForTable<T extends Table> = {
     Address: Address.Insertable;
     AddressCredentialRelation: AddressCredentialRelation.Insertable;
+    AssetMint: AssetMint.Insertable;
     Block: Block.Insertable;
+    Cip25Entry: Cip25Entry.Insertable;
+    NativeAsset: NativeAsset.Insertable;
     StakeCredential: StakeCredential.Insertable;
     Transaction: Transaction.Insertable;
     TransactionInput: TransactionInput.Insertable;
+    TransactionMetadata: TransactionMetadata.Insertable;
     TransactionOutput: TransactionOutput.Insertable;
     TxCredentialRelation: TxCredentialRelation.Insertable;
   }[T];
@@ -1199,10 +1757,14 @@ declare module 'zapatos/schema' {
   export type UpdatableForTable<T extends Table> = {
     Address: Address.Updatable;
     AddressCredentialRelation: AddressCredentialRelation.Updatable;
+    AssetMint: AssetMint.Updatable;
     Block: Block.Updatable;
+    Cip25Entry: Cip25Entry.Updatable;
+    NativeAsset: NativeAsset.Updatable;
     StakeCredential: StakeCredential.Updatable;
     Transaction: Transaction.Updatable;
     TransactionInput: TransactionInput.Updatable;
+    TransactionMetadata: TransactionMetadata.Updatable;
     TransactionOutput: TransactionOutput.Updatable;
     TxCredentialRelation: TxCredentialRelation.Updatable;
   }[T];
@@ -1210,10 +1772,14 @@ declare module 'zapatos/schema' {
   export type UniqueIndexForTable<T extends Table> = {
     Address: Address.UniqueIndex;
     AddressCredentialRelation: AddressCredentialRelation.UniqueIndex;
+    AssetMint: AssetMint.UniqueIndex;
     Block: Block.UniqueIndex;
+    Cip25Entry: Cip25Entry.UniqueIndex;
+    NativeAsset: NativeAsset.UniqueIndex;
     StakeCredential: StakeCredential.UniqueIndex;
     Transaction: Transaction.UniqueIndex;
     TransactionInput: TransactionInput.UniqueIndex;
+    TransactionMetadata: TransactionMetadata.UniqueIndex;
     TransactionOutput: TransactionOutput.UniqueIndex;
     TxCredentialRelation: TxCredentialRelation.UniqueIndex;
   }[T];
@@ -1221,10 +1787,14 @@ declare module 'zapatos/schema' {
   export type ColumnForTable<T extends Table> = {
     Address: Address.Column;
     AddressCredentialRelation: AddressCredentialRelation.Column;
+    AssetMint: AssetMint.Column;
     Block: Block.Column;
+    Cip25Entry: Cip25Entry.Column;
+    NativeAsset: NativeAsset.Column;
     StakeCredential: StakeCredential.Column;
     Transaction: Transaction.Column;
     TransactionInput: TransactionInput.Column;
+    TransactionMetadata: TransactionMetadata.Column;
     TransactionOutput: TransactionOutput.Column;
     TxCredentialRelation: TxCredentialRelation.Column;
   }[T];
@@ -1232,10 +1802,14 @@ declare module 'zapatos/schema' {
   export type SQLForTable<T extends Table> = {
     Address: Address.SQL;
     AddressCredentialRelation: AddressCredentialRelation.SQL;
+    AssetMint: AssetMint.SQL;
     Block: Block.SQL;
+    Cip25Entry: Cip25Entry.SQL;
+    NativeAsset: NativeAsset.SQL;
     StakeCredential: StakeCredential.SQL;
     Transaction: Transaction.SQL;
     TransactionInput: TransactionInput.SQL;
+    TransactionMetadata: TransactionMetadata.SQL;
     TransactionOutput: TransactionOutput.SQL;
     TxCredentialRelation: TxCredentialRelation.SQL;
   }[T];

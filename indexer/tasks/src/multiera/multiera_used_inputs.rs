@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
-use crate::dsl::default_impl::EmptyConfiguration;
+use crate::dsl::default_impl::ReadonlyConfig;
+use crate::era_common::input_from_pointer;
 use crate::{dsl::default_impl::has_transaction_multiera, types::TxCredentialRelationValue};
 use cardano_multiplatform_lib::address::{
     BaseAddress, ByronAddress, EnterpriseAddress, PointerAddress, RewardAddress,
@@ -17,7 +18,7 @@ use crate::dsl::task_macro::*;
 
 carp_task! {
   name MultieraUsedInputTask;
-  configuration EmptyConfiguration;
+  configuration ReadonlyConfig;
   doc "Adds the used inputs to the database (regular inputs in most cases, collateral inputs if tx fails";
   era multiera;
   dependencies [MultieraOutputTask];
@@ -32,6 +33,7 @@ carp_task! {
       task.block,
       &previous_data.multiera_txs,
       &mut previous_data.vkey_relation_map,
+      task.config.readonly
   );
   merge_result |previous_data, result| {
     *previous_data.multiera_used_inputs = result;
@@ -40,7 +42,7 @@ carp_task! {
 
 type QueuedInputs<'a> = Vec<(
     &'a Vec<pallas::ledger::primitives::alonzo::TransactionInput>,
-    i64,
+    i64, // tx_id
 )>;
 
 async fn handle_input(
@@ -48,6 +50,7 @@ async fn handle_input(
     block: BlockInfo<'_, alonzo::Block>,
     multiera_txs: &[TransactionModel],
     vkey_relation_map: &mut RelationMap,
+    readonly: bool,
 ) -> Result<Vec<TransactionInputModel>, DbErr> {
     let mut queued_inputs = QueuedInputs::default();
 
@@ -85,10 +88,23 @@ async fn handle_input(
                     .as_slice(),
                 &input_to_output_map,
             );
-            Ok(
-                crate::era_common::insert_inputs(&queued_inputs, &input_to_output_map, db_tx)
-                    .await?,
-            )
+            if readonly {
+                Ok(input_from_pointer(
+                    db_tx,
+                    queued_inputs
+                        .iter()
+                        .flat_map(|pair| pair.0.iter().enumerate().zip(std::iter::repeat(pair.1)))
+                        .map(|((idx, _), tx_id)| (tx_id, idx))
+                        .collect::<Vec<_>>()
+                        .as_slice(),
+                )
+                .await?)
+            } else {
+                Ok(
+                    crate::era_common::insert_inputs(&queued_inputs, &input_to_output_map, db_tx)
+                        .await?,
+                )
+            }
         }
     }
 }

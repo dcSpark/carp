@@ -21,6 +21,7 @@ const route = Routes.addressUsed;
 export class AddressInUseController extends Controller {
   /**
    * Ordered lexicographically (order is not maintained)
+   *
    * Note: this endpoint only returns addresses that are in a block. Use another tool to see mempool information
    */
   @SuccessResponse(`${StatusCodes.OK}`)

@@ -29,6 +29,7 @@ macro_rules! data_to_type {
   (multiera_metadata) => { Vec<TransactionMetadataModel> };
   (multiera_outputs) => { Vec<TransactionOutputModel> };
   (multiera_used_inputs) => { Vec<TransactionInputModel> };
+  (multiera_assets) => { Vec<NativeAssetModel> };
 }
 
 pub(crate) use data_to_type;

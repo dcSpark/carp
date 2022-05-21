@@ -34,6 +34,8 @@ N13;
 N14;
 N15;
 N16;
+N17;
+N18;
 
 }
 
@@ -54,6 +56,8 @@ N16;
     N14[label="MultieraStakeCredentialTask"][shape="box"];
     N15[label="MultieraAddressCredentialRelationTask"][shape="box"];
     N16[label="MultieraTxCredentialRelationTask"][shape="box"];
+    N17[label="MultieraAssetMintTask"][shape="box"];
+    N18[label="MultieraCip25EntryTask"][shape="box"];
     N0 -> N1[label=""];
     N2 -> N3[label=""];
     N3 -> N4[label=""];
@@ -71,4 +75,7 @@ N16;
     N14 -> N15[label=""];
     N10 -> N16[label=""];
     N14 -> N16[label=""];
+    N8 -> N17[label=""];
+    N9 -> N18[label=""];
+    N17 -> N18[label=""];
 }

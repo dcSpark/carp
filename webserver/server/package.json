@@ -6,9 +6,9 @@
   "scripts": {
     "eslint": "eslint app",
     "typecheck": "tsc --project tsconfig.json",
-    "dev": "npx pgtyped --uri -c config.json && yarn build && concurrently \"nodemon -x tsoa spec-and-routes\" \"npx pgtyped -w -c config.json\" \"nodemon\"",
     "build": "tsoa spec-and-routes && tsc --project tsconfig.build.json --outDir build --experimentalDecorators",
-    "start": "yarn build && NODE_ENV=production node build/server/app/server.js",
+    "dev:start": "npx pgtyped --uri -c config.json && yarn build && concurrently \"nodemon -x tsoa spec-and-routes\" \"npx pgtyped -w -c config.json\" \"nodemon\"",
+    "prod:start": "yarn build && NODE_ENV=production node build/server/app/server.js",
     "parse-db": "npx pgtyped --uri -c config.json && npx zapatos",
     "prettier": "prettier --write \"**/*.tsx\"",
     "query": "psql -U $PGUSER -h $POSTGRES_HOST -d $POSTGRES_DB -f ./test_query.sql",

@@ -61,6 +61,17 @@ ALTER SEQUENCE public."Address_id_seq" OWNED BY public."Address".id;
 
 
 --
+-- Name: AssetMint; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public."AssetMint" (
+    tx_id bigint NOT NULL,
+    asset_id bigint NOT NULL,
+    amount bigint NOT NULL
+);
+
+
+--
 -- Name: Block; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -92,6 +103,67 @@ CREATE SEQUENCE public."Block_id_seq"
 --
 
 ALTER SEQUENCE public."Block_id_seq" OWNED BY public."Block".id;
+
+
+--
+-- Name: Cip25Entry; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public."Cip25Entry" (
+    id bigint NOT NULL,
+    metadata_id bigint NOT NULL,
+    asset_id bigint NOT NULL,
+    payload bytea NOT NULL
+);
+
+
+--
+-- Name: Cip25Entry_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public."Cip25Entry_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: Cip25Entry_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public."Cip25Entry_id_seq" OWNED BY public."Cip25Entry".id;
+
+
+--
+-- Name: NativeAsset; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public."NativeAsset" (
+    id bigint NOT NULL,
+    policy_id bytea NOT NULL,
+    asset_name bytea NOT NULL
+);
+
+
+--
+-- Name: NativeAsset_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public."NativeAsset_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: NativeAsset_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public."NativeAsset_id_seq" OWNED BY public."NativeAsset".id;
 
 
 --
@@ -173,10 +245,30 @@ ALTER SEQUENCE public."TransactionInput_id_seq" OWNED BY public."TransactionInpu
 --
 
 CREATE TABLE public."TransactionMetadata" (
+    id bigint NOT NULL,
     tx_id bigint NOT NULL,
     label bytea NOT NULL,
     payload bytea NOT NULL
 );
+
+
+--
+-- Name: TransactionMetadata_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public."TransactionMetadata_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: TransactionMetadata_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public."TransactionMetadata_id_seq" OWNED BY public."TransactionMetadata".id;
 
 
 --
@@ -237,6 +329,7 @@ ALTER SEQUENCE public."Transaction_id_seq" OWNED BY public."Transaction".id;
 CREATE TABLE public."TxCredentialRelation" (
     credential_id bigint NOT NULL,
     tx_id bigint NOT NULL,
+    block_id integer NOT NULL,
     relation integer NOT NULL
 );
 
@@ -266,6 +359,20 @@ ALTER TABLE ONLY public."Block" ALTER COLUMN id SET DEFAULT nextval('public."Blo
 
 
 --
+-- Name: Cip25Entry id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."Cip25Entry" ALTER COLUMN id SET DEFAULT nextval('public."Cip25Entry_id_seq"'::regclass);
+
+
+--
+-- Name: NativeAsset id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."NativeAsset" ALTER COLUMN id SET DEFAULT nextval('public."NativeAsset_id_seq"'::regclass);
+
+
+--
 -- Name: StakeCredential id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -284,6 +391,13 @@ ALTER TABLE ONLY public."Transaction" ALTER COLUMN id SET DEFAULT nextval('publi
 --
 
 ALTER TABLE ONLY public."TransactionInput" ALTER COLUMN id SET DEFAULT nextval('public."TransactionInput_id_seq"'::regclass);
+
+
+--
+-- Name: TransactionMetadata id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."TransactionMetadata" ALTER COLUMN id SET DEFAULT nextval('public."TransactionMetadata_id_seq"'::regclass);
 
 
 --
@@ -326,6 +440,22 @@ ALTER TABLE ONLY public."Block"
 
 
 --
+-- Name: Cip25Entry Cip25Entry_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."Cip25Entry"
+    ADD CONSTRAINT "Cip25Entry_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: NativeAsset NativeAsset_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."NativeAsset"
+    ADD CONSTRAINT "NativeAsset_pkey" PRIMARY KEY (id);
+
+
+--
 -- Name: StakeCredential StakeCredential_credential_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -347,6 +477,14 @@ ALTER TABLE ONLY public."StakeCredential"
 
 ALTER TABLE ONLY public."TransactionInput"
     ADD CONSTRAINT "TransactionInput_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: TransactionMetadata TransactionMetadata_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."TransactionMetadata"
+    ADD CONSTRAINT "TransactionMetadata_pkey" PRIMARY KEY (id);
 
 
 --
@@ -382,11 +520,11 @@ ALTER TABLE ONLY public."AddressCredentialRelation"
 
 
 --
--- Name: TransactionMetadata metadata-pk; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: AssetMint asset_mint-pk; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public."TransactionMetadata"
-    ADD CONSTRAINT "metadata-pk" PRIMARY KEY (tx_id, label);
+ALTER TABLE ONLY public."AssetMint"
+    ADD CONSTRAINT "asset_mint-pk" PRIMARY KEY (tx_id, asset_id);
 
 
 --
@@ -413,10 +551,52 @@ CREATE INDEX "index-address_credential-credential" ON public."AddressCredentialR
 
 
 --
+-- Name: index-asset_mint-native_asset; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "index-asset_mint-native_asset" ON public."AssetMint" USING btree (asset_id);
+
+
+--
+-- Name: index-cip25_entry-metadata; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "index-cip25_entry-metadata" ON public."Cip25Entry" USING btree (metadata_id);
+
+
+--
+-- Name: index-cip25_entry-native_asset; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "index-cip25_entry-native_asset" ON public."Cip25Entry" USING btree (asset_id);
+
+
+--
 -- Name: index-metadata-label; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX "index-metadata-label" ON public."TransactionMetadata" USING btree (label);
+
+
+--
+-- Name: index-metadata-txid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "index-metadata-txid" ON public."TransactionMetadata" USING btree (tx_id);
+
+
+--
+-- Name: index-native_asset-pair; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX "index-native_asset-pair" ON public."NativeAsset" USING btree (policy_id, asset_name);
+
+
+--
+-- Name: index-native_asset_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "index-native_asset_name" ON public."NativeAsset" USING btree (asset_name);
 
 
 --
@@ -455,6 +635,13 @@ CREATE INDEX "index-transaction_output-transaction" ON public."TransactionOutput
 
 
 --
+-- Name: index-tx_credential-block; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "index-tx_credential-block" ON public."TxCredentialRelation" USING btree (block_id);
+
+
+--
 -- Name: index-tx_credential-credential; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -475,6 +662,38 @@ ALTER TABLE ONLY public."AddressCredentialRelation"
 
 ALTER TABLE ONLY public."AddressCredentialRelation"
     ADD CONSTRAINT "fk-address_credential-credential_id" FOREIGN KEY (credential_id) REFERENCES public."StakeCredential"(id);
+
+
+--
+-- Name: AssetMint fk-asset_mint-asset_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."AssetMint"
+    ADD CONSTRAINT "fk-asset_mint-asset_id" FOREIGN KEY (asset_id) REFERENCES public."NativeAsset"(id);
+
+
+--
+-- Name: AssetMint fk-asset_mint-transaction_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."AssetMint"
+    ADD CONSTRAINT "fk-asset_mint-transaction_id" FOREIGN KEY (tx_id) REFERENCES public."Transaction"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: Cip25Entry fk-cip25_entry-asset_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."Cip25Entry"
+    ADD CONSTRAINT "fk-cip25_entry-asset_id" FOREIGN KEY (asset_id) REFERENCES public."NativeAsset"(id);
+
+
+--
+-- Name: Cip25Entry fk-cip25_entry-metadata; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."Cip25Entry"
+    ADD CONSTRAINT "fk-cip25_entry-metadata" FOREIGN KEY (metadata_id) REFERENCES public."TransactionMetadata"(id) ON DELETE CASCADE;
 
 
 --
@@ -523,6 +742,14 @@ ALTER TABLE ONLY public."TransactionOutput"
 
 ALTER TABLE ONLY public."TransactionOutput"
     ADD CONSTRAINT "fk-transaction_output-tx_id" FOREIGN KEY (tx_id) REFERENCES public."Transaction"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: TxCredentialRelation fk-tx_credential-block_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."TxCredentialRelation"
+    ADD CONSTRAINT "fk-tx_credential-block_id" FOREIGN KEY (block_id) REFERENCES public."Block"(id);
 
 
 --

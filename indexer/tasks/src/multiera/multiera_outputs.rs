@@ -8,14 +8,14 @@ use pallas::ledger::primitives::alonzo::{self, TransactionBody, TransactionBodyC
 use pallas::ledger::primitives::Fragment;
 
 use super::multiera_address::MultieraAddressTask;
-use crate::dsl::default_impl::EmptyConfiguration;
 use crate::era_common::get_truncated_address;
+use crate::{dsl::default_impl::ReadonlyConfig, era_common::output_from_pointer};
 
 use crate::dsl::task_macro::*;
 
 carp_task! {
   name MultieraOutputTask;
-  configuration EmptyConfiguration;
+  configuration ReadonlyConfig;
   doc "Adds the transaction outputs to the database";
   era multiera;
   dependencies [MultieraAddressTask];
@@ -35,6 +35,7 @@ carp_task! {
       task.block,
       &previous_data.multiera_txs,
       &previous_data.multiera_addresses,
+      task.config.readonly
   );
   merge_result |previous_data, result| {
     *previous_data.multiera_outputs = result;
@@ -55,6 +56,7 @@ async fn handle_output(
     block: BlockInfo<'_, alonzo::Block>,
     multiera_txs: &[TransactionModel],
     addresses: &BTreeMap<Vec<u8>, AddressInBlock>,
+    readonly: bool,
 ) -> Result<Vec<TransactionOutputModel>, DbErr> {
     let mut queued_output = Vec::<QueuedOutput>::default();
 
@@ -78,7 +80,19 @@ async fn handle_output(
         }
     }
 
-    Ok(insert_outputs(addresses, &queued_output, db_tx).await?)
+    if readonly {
+        Ok(output_from_pointer(
+            db_tx,
+            queued_output
+                .iter()
+                .map(|output| (output.tx_id, output.idx))
+                .collect::<Vec<_>>()
+                .as_slice(),
+        )
+        .await?)
+    } else {
+        Ok(insert_outputs(addresses, &queued_output, db_tx).await?)
+    }
 }
 
 fn queue_output(
