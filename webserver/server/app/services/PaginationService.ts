@@ -1,6 +1,7 @@
 import type { PoolClient } from 'pg';
 import { pageStartByHash } from '../models/pagination/pageStartByHash.queries';
 import { sqlBlockByHash } from '../models/pagination/sqlBlockByHash.queries';
+import { sqlTransactionBeforeBlock } from '../models/pagination/sqlTransactionBeforeBlock.queries';
 
 export type PaginationType = {
   after:
@@ -10,14 +11,30 @@ export type PaginationType = {
         tx_id: number;
       };
   until: {
-    block_id: number;
+    tx_id: number;
   };
 };
+
+export async function resolveUntilTransaction(request: {
+  block_hash: Buffer;
+  dbTx: PoolClient;
+}): Promise<undefined | PaginationType['until']> {
+  const result = await sqlTransactionBeforeBlock.run(
+    {
+      until_block: request.block_hash,
+    },
+    request.dbTx
+  );
+  if (result[0] == null) return undefined;
+  return {
+    tx_id: Number.parseInt(result[0].id, 10),
+  };
+}
 
 export async function resolveUntilBlock(request: {
   block_hash: Buffer;
   dbTx: PoolClient;
-}): Promise<undefined | PaginationType['until']> {
+}): Promise<undefined | { block_id: number }> {
   const result = await sqlBlockByHash.run(
     {
       until_block: request.block_hash,

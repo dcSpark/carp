@@ -6,14 +6,13 @@ export type BufferArray = (Buffer)[];
 /** 'SqlAddressUsed' parameters type */
 export interface ISqlAddressUsedParams {
   addresses: BufferArray | null | void;
-  after_block_id: number | null | void;
   after_tx_id: string | null | void;
-  until_block_id: number | null | void;
+  until_tx_id: string | null | void;
 }
 
 /** 'SqlAddressUsed' return type */
 export interface ISqlAddressUsedResult {
-  payload: Buffer;
+  payload: Buffer | null;
 }
 
 /** 'SqlAddressUsed' query type */
@@ -22,28 +21,44 @@ export interface ISqlAddressUsedQuery {
   result: ISqlAddressUsedResult;
 }
 
-const sqlAddressUsedIR: any = {"name":"sqlAddressUsed","params":[{"name":"addresses","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":396,"b":404,"line":8,"col":28}]}},{"name":"until_block_id","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":484,"b":497,"line":11,"col":30}]}},{"name":"after_block_id","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":627,"b":640,"line":17,"col":31},{"a":774,"b":787,"line":20,"col":32}]}},{"name":"after_tx_id","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":815,"b":825,"line":20,"col":73}]}}],"usedParamSet":{"addresses":true,"until_block_id":true,"after_block_id":true,"after_tx_id":true},"statement":{"body":"SELECT DISTINCT \"Address\".payload\nFROM \"Address\"\nINNER JOIN \"TransactionOutput\" ON \"TransactionOutput\".address_id = \"Address\".id\nLEFT JOIN \"TransactionInput\" ON \"TransactionInput\".utxo_id = \"TransactionOutput\".id\nINNER JOIN \"Transaction\" ON (\"TransactionOutput\".tx_id = \"Transaction\".id OR \"TransactionInput\".tx_id = \"Transaction\".id)\nWHERE\n  \"Address\".payload = ANY (:addresses)\n  AND\n                                        \n  \"Transaction\".block_id <= (:until_block_id)\n  AND (\n                                                                                       \n    \"Transaction\".block_id > (:after_block_id)\n      OR\n                                                                                         \n    (\"Transaction\".block_id = (:after_block_id) AND \"Transaction\".id > (:after_tx_id))\n  )","loc":{"a":27,"b":831,"line":2,"col":0}}};
+const sqlAddressUsedIR: any = {"name":"sqlAddressUsed","params":[{"name":"addresses","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":119,"b":127,"line":6,"col":36}]}},{"name":"until_tx_id","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":344,"b":354,"line":13,"col":37},{"a":750,"b":760,"line":25,"col":39},{"a":944,"b":954,"line":29,"col":36}]}},{"name":"after_tx_id","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":403,"b":413,"line":15,"col":36},{"a":1002,"b":1012,"line":31,"col":35}]}}],"usedParamSet":{"addresses":true,"until_tx_id":true,"after_tx_id":true},"statement":{"body":"WITH\n  address_row AS (\n    SELECT *\n    FROM \"Address\"\n    WHERE \"Address\".payload = ANY (:addresses)\n  ),\n  outputs AS (\n    SELECT DISTINCT address_row.payload\n    FROM \"TransactionOutput\"\n    INNER JOIN address_row ON \"TransactionOutput\".address_id = address_row.id\n    WHERE\n      \"TransactionOutput\".tx_id <= (:until_tx_id)\n      AND\n      \"TransactionOutput\".tx_id > (:after_tx_id)\n  ),\n  inputs AS (\n    SELECT DISTINCT address_row.payload\n    FROM \"TransactionInput\"\n    INNER JOIN (\n      SELECT \"TransactionOutput\".id, \"TransactionOutput\".address_id\n      FROM \"TransactionOutput\"\n      INNER JOIN address_row ON \"TransactionOutput\".address_id = address_row.id\n      WHERE\n        \"TransactionOutput\".tx_id <= (:until_tx_id)\n    ) spent_utxos ON \"TransactionInput\".utxo_id = spent_utxos.id\n    INNER JOIN address_row ON spent_utxos.address_id = address_row.id\n    WHERE\n      \"TransactionInput\".tx_id <= (:until_tx_id)\n      AND\n      \"TransactionInput\".tx_id > (:after_tx_id)\n  )\nSELECT DISTINCT all_address.payload\nFROM (SELECT * FROM inputs UNION ALL SELECT * from outputs) all_address","loc":{"a":27,"b":1125,"line":2,"col":0}}};
 
 /**
  * Query generated from SQL:
  * ```
- * SELECT DISTINCT "Address".payload
- * FROM "Address"
- * INNER JOIN "TransactionOutput" ON "TransactionOutput".address_id = "Address".id
- * LEFT JOIN "TransactionInput" ON "TransactionInput".utxo_id = "TransactionOutput".id
- * INNER JOIN "Transaction" ON ("TransactionOutput".tx_id = "Transaction".id OR "TransactionInput".tx_id = "Transaction".id)
- * WHERE
- *   "Address".payload = ANY (:addresses)
- *   AND
- *                                         
- *   "Transaction".block_id <= (:until_block_id)
- *   AND (
- *                                                                                        
- *     "Transaction".block_id > (:after_block_id)
- *       OR
- *                                                                                          
- *     ("Transaction".block_id = (:after_block_id) AND "Transaction".id > (:after_tx_id))
+ * WITH
+ *   address_row AS (
+ *     SELECT *
+ *     FROM "Address"
+ *     WHERE "Address".payload = ANY (:addresses)
+ *   ),
+ *   outputs AS (
+ *     SELECT DISTINCT address_row.payload
+ *     FROM "TransactionOutput"
+ *     INNER JOIN address_row ON "TransactionOutput".address_id = address_row.id
+ *     WHERE
+ *       "TransactionOutput".tx_id <= (:until_tx_id)
+ *       AND
+ *       "TransactionOutput".tx_id > (:after_tx_id)
+ *   ),
+ *   inputs AS (
+ *     SELECT DISTINCT address_row.payload
+ *     FROM "TransactionInput"
+ *     INNER JOIN (
+ *       SELECT "TransactionOutput".id, "TransactionOutput".address_id
+ *       FROM "TransactionOutput"
+ *       INNER JOIN address_row ON "TransactionOutput".address_id = address_row.id
+ *       WHERE
+ *         "TransactionOutput".tx_id <= (:until_tx_id)
+ *     ) spent_utxos ON "TransactionInput".utxo_id = spent_utxos.id
+ *     INNER JOIN address_row ON spent_utxos.address_id = address_row.id
+ *     WHERE
+ *       "TransactionInput".tx_id <= (:until_tx_id)
+ *       AND
+ *       "TransactionInput".tx_id > (:after_tx_id)
  *   )
+ * SELECT DISTINCT all_address.payload
+ * FROM (SELECT * FROM inputs UNION ALL SELECT * from outputs) all_address
  * ```
  */
 export const sqlAddressUsed = new PreparedQuery<ISqlAddressUsedParams,ISqlAddressUsedResult>(sqlAddressUsedIR);

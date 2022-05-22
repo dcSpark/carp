@@ -3,7 +3,7 @@ import { StatusCodes } from 'http-status-codes';
 import { ADDRESS_LIMIT } from '../../../shared/constants';
 import tx from 'pg-tx';
 import pool from '../services/PgPoolSingleton';
-import { resolvePageStart, resolveUntilBlock } from '../services/PaginationService';
+import { resolvePageStart, resolveUntilTransaction } from '../services/PaginationService';
 import type { ErrorShape } from '../../../shared/errors';
 import { genErrorMessage } from '../../../shared/errors';
 import { Errors } from '../../../shared/errors';
@@ -62,7 +62,7 @@ export class AddressInUseController extends Controller {
       pool,
       async dbTx => {
         const [until, pageStart] = await Promise.all([
-          resolveUntilBlock({
+          resolveUntilTransaction({
             block_hash: Buffer.from(requestBody.untilBlock, 'hex'),
             dbTx,
           }),

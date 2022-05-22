@@ -17,10 +17,9 @@ export async function historyForCredentials(
   const txs = await sqlHistoryForCredentials.run(
     {
       credentials: request.stakeCredentials,
-      after_block_id: request.after?.block_id ?? -1,
       after_tx_id: (request.after?.tx_id ?? -1)?.toString(),
       limit: request.limit.toString(),
-      until_block_id: request.until.block_id,
+      until_tx_id: request.until.tx_id.toString(),
       relation: request.relationFilter,
     },
     request.dbTx
@@ -56,10 +55,9 @@ export async function historyForAddresses(
   const txs = await sqlHistoryForAddresses.run(
     {
       addresses: request.addresses,
-      after_block_id: request.after?.block_id ?? -1,
       after_tx_id: (request.after?.tx_id ?? -1)?.toString(),
       limit: request.limit.toString(),
-      until_block_id: request.until.block_id,
+      until_tx_id: request.until.tx_id.toString(),
     },
     request.dbTx
   );

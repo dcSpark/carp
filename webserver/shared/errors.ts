@@ -49,7 +49,7 @@ export const Errors = {
   },
   PageStartNotFound: {
     code: ErrorCodes.PageStartNotFound,
-    prefix: "After block and/or transaction not found.",
+    prefix: "Combination of block and transaction not found.",
     detailsGen: (details: { blockHash: string; txHash: string }) =>
       `Searched block hash ${details.blockHash} and tx hash ${details.txHash}`,
   },

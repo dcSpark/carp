@@ -7,7 +7,7 @@ import { query, getErrorResponse } from "@dcspark/carp-client/client/src/index";
 const urlBase = "http://localhost:3000";
 
 // eslint-disable-next-line mocha/no-setup-in-describe
-describe(`/${Routes.addressUsed}`, function () {
+describe(`/${Routes.blockLatest}`, function () {
   this.timeout(10000);
 
   it("should find the latest block possibly with an offset", async function () {

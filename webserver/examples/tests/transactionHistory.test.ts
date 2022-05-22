@@ -7,6 +7,7 @@ import { bech32 } from "bech32";
 import Cip5 from "@dcspark/cip5-js";
 import { RelationFilterType } from "@dcspark/carp-client/shared/models/common";
 import { query, getErrorResponse } from "@dcspark/carp-client/client/src/index";
+import { ADDRESS_LIMIT } from "@dcspark/carp-client/shared/constants";
 
 const urlBase = "http://localhost:3000";
 
@@ -16,6 +17,7 @@ const hashForUntilBlock =
 // eslint-disable-next-line mocha/no-setup-in-describe
 describe(`/${Routes.transactionHistory}`, function () {
   this.timeout(100_000);
+
   it("should return empty if addresses do not exist", async function () {
     const result = await query(urlBase, Routes.transactionHistory, {
       addresses: [
@@ -177,13 +179,14 @@ describe(`/${Routes.transactionHistory}`, function () {
   });
 
   it("should allow limiting the number of transactions returned", async function () {
+    const addresses = [
+      "DdzFFzCqrhsnUbJho1ERJsuZxkevYTofBFMuQo5Uaxmb2dHUQX7TzK4C9gN5Yc5Hc4ok4o4wj1krZrgvQWGfd4BgpYFRQUQBgLzZxFi6",
+      "DdzFFzCqrht33HAPd4PyqRAhmry5gsSgvZjh8dWdZPuHYchXPbP1W3Rw5A2zwgftbeU9rMu3znnpNib3oFGkmBy3LL8i8VTZhNG9qnwN",
+      "DdzFFzCqrhsgXjCq9Gc3RbGkGNnShyMqKcXzvJM4ByLhuPQ77UGRjy59TQbtLdMuJJz9PcFACi5mYrfA9h11vUehcZPCzJUsC7nirrJB",
+      "DdzFFzCqrhsksJxdqiVRGY5kZbzKJmMW9qKcZMVZ95oYaDrCHEEk1fxV4QbkoNDu24WY1ZKCUnuizc8SWaVPkEwv66eTtUdsyVRBkgD7",
+    ];
     const result = await query(urlBase, Routes.transactionHistory, {
-      addresses: [
-        "DdzFFzCqrhsnUbJho1ERJsuZxkevYTofBFMuQo5Uaxmb2dHUQX7TzK4C9gN5Yc5Hc4ok4o4wj1krZrgvQWGfd4BgpYFRQUQBgLzZxFi6",
-        "DdzFFzCqrht33HAPd4PyqRAhmry5gsSgvZjh8dWdZPuHYchXPbP1W3Rw5A2zwgftbeU9rMu3znnpNib3oFGkmBy3LL8i8VTZhNG9qnwN",
-        "DdzFFzCqrhsgXjCq9Gc3RbGkGNnShyMqKcXzvJM4ByLhuPQ77UGRjy59TQbtLdMuJJz9PcFACi5mYrfA9h11vUehcZPCzJUsC7nirrJB",
-        "DdzFFzCqrhsksJxdqiVRGY5kZbzKJmMW9qKcZMVZ95oYaDrCHEEk1fxV4QbkoNDu24WY1ZKCUnuizc8SWaVPkEwv66eTtUdsyVRBkgD7",
-      ],
+      addresses,
       untilBlock: hashForUntilBlock,
       limit: 5,
     });
@@ -196,7 +199,7 @@ describe(`/${Routes.transactionHistory}`, function () {
     ]);
   });
 
-  it("should do same history even if addresses sent twice", async function () {
+  it("should have same history even if addresses sent twice", async function () {
     const resultUnique = await query(urlBase, Routes.transactionHistory, {
       addresses: [
         "DdzFFzCqrhsnUbJho1ERJsuZxkevYTofBFMuQo5Uaxmb2dHUQX7TzK4C9gN5Yc5Hc4ok4o4wj1krZrgvQWGfd4BgpYFRQUQBgLzZxFi6",
@@ -233,6 +236,22 @@ describe(`/${Routes.transactionHistory}`, function () {
     expect(result.transactions[0].transaction.hash).to.equal(
       "00d6d64b251514c48a9ad75940c5e7031bae5f0d002e9be7f6caf4cc1a78b57f"
     );
+  });
+
+  it("Pagination works up to the last tx in untilBlock", async function () {
+    const result = await query(urlBase, Routes.transactionHistory, {
+      addresses: [
+        "addr1q9ya8v4pe33nlkgftyd70nhhp407pvnjjcsddhf64sh9gegwtvyxm7r69gx9cwvtg82p87zpwmzj0kj7tjmyraze3pzqe6zxzv",
+      ],
+      untilBlock:
+        "e99b06115fc0cd221671b686b6d9ef1c6dc047abed2c4f7d3ae528427a746f60",
+    });
+    expect(result.transactions).to.have.lengthOf(1);
+    expect(result.transactions[0].transaction.hash).to.equal(
+      // note: this is the last tx in the block
+      "871b14fbe5abb6cacc63f922187c4f10ea9499055a972eb5d3d4e8771af643df"
+    );
+    expect(result.transactions[0].block.era).to.equal(1);
   });
 
   it("Transaction-era transactions should be marked properly", async function () {
@@ -394,60 +413,60 @@ describe(`/${Routes.transactionHistory}`, function () {
   it("Get tx only related by its staking key", async function () {
     const result = await query(urlBase, Routes.transactionHistory, {
       addresses: [
-        "stake1uydrhuvnrhlzpkzrkukp3h4n0fp5dzqzcz36t5thkmfezyc47wa2x",
+        "stake1ux236z4g4r4pztn5v69txyj2yq6a3esq5x4p4stxydra7zsnv25ue",
       ],
       after: {
-        tx: "193c753a090fa0e7248590d407137e9439622e2fe818688186aeb47ac9b58fa4",
+        tx: "2383af0582da2b18039fab49ef4bb246f7d23d4304e36eb48f9387ff80adc769",
         block:
-          "42b95a9ce5b17f02aa00f99c3bca0a9eccbdbe0942fa246b5376af66979c8c0c",
+          "400363d541c4ac11dffee26d75d3f36e96d213cfb6d8ce6595a6ccb8d0744131",
       },
       untilBlock:
-        "d62a740622c27a501697c90fdbdba7ff4931a1ff2ffccdbb5c85bdaa2bec9539",
+        "d8bcf81ff514a1f06705a6e0b021a9d6ed91e8d63b80a58f770997113942644f",
     });
     expect(result.transactions).to.have.lengthOf(1);
     expect(result.transactions[0].transaction.hash).to.equal(
-      "e2da505cca54744a512cccb714bdb71439a28df0b5a122f489ebea4f1c690995"
+      "e89e7039c4fb14807c626a4ebbe197f2b76b14d370dba18660ca16915b392e2a"
     );
   });
 
   it("Gets tx only related by its staking key with explicit filter", async function () {
     const result = await query(urlBase, Routes.transactionHistory, {
       addresses: [
-        "stake1uydrhuvnrhlzpkzrkukp3h4n0fp5dzqzcz36t5thkmfezyc47wa2x",
+        "stake1ux236z4g4r4pztn5v69txyj2yq6a3esq5x4p4stxydra7zsnv25ue",
       ],
       after: {
-        tx: "193c753a090fa0e7248590d407137e9439622e2fe818688186aeb47ac9b58fa4",
+        tx: "2383af0582da2b18039fab49ef4bb246f7d23d4304e36eb48f9387ff80adc769",
         block:
-          "42b95a9ce5b17f02aa00f99c3bca0a9eccbdbe0942fa246b5376af66979c8c0c",
+          "400363d541c4ac11dffee26d75d3f36e96d213cfb6d8ce6595a6ccb8d0744131",
       },
       untilBlock:
-        "d62a740622c27a501697c90fdbdba7ff4931a1ff2ffccdbb5c85bdaa2bec9539",
+        "d8bcf81ff514a1f06705a6e0b021a9d6ed91e8d63b80a58f770997113942644f",
       relationFilter: RelationFilterType.Withdrawal,
     });
     expect(result.transactions).to.have.lengthOf(1);
     expect(result.transactions[0].transaction.hash).to.equal(
-      "e2da505cca54744a512cccb714bdb71439a28df0b5a122f489ebea4f1c690995"
+      "e89e7039c4fb14807c626a4ebbe197f2b76b14d370dba18660ca16915b392e2a"
     );
   });
 
   it("Fail to find tx only related by its staking key with strict filter", async function () {
     const result = await query(urlBase, Routes.transactionHistory, {
       addresses: [
-        "stake1uydrhuvnrhlzpkzrkukp3h4n0fp5dzqzcz36t5thkmfezyc47wa2x",
+        "stake1ux236z4g4r4pztn5v69txyj2yq6a3esq5x4p4stxydra7zsnv25ue",
       ],
       after: {
-        tx: "193c753a090fa0e7248590d407137e9439622e2fe818688186aeb47ac9b58fa4",
+        tx: "2383af0582da2b18039fab49ef4bb246f7d23d4304e36eb48f9387ff80adc769",
         block:
-          "42b95a9ce5b17f02aa00f99c3bca0a9eccbdbe0942fa246b5376af66979c8c0c",
+          "400363d541c4ac11dffee26d75d3f36e96d213cfb6d8ce6595a6ccb8d0744131",
       },
       untilBlock:
-        "d62a740622c27a501697c90fdbdba7ff4931a1ff2ffccdbb5c85bdaa2bec9539",
+        "d8bcf81ff514a1f06705a6e0b021a9d6ed91e8d63b80a58f770997113942644f",
       relationFilter: RelationFilterType.FILTER_ALL,
     });
     expect(result.transactions).to.have.lengthOf(0);
   });
 
-  it("Get tx using script hash", async function () {
+  it("Get popular credential script hash", async function () {
     const result = await query(urlBase, Routes.transactionHistory, {
       addresses: [
         // note: this is the jpg.store contract address
@@ -467,6 +486,17 @@ describe(`/${Routes.transactionHistory}`, function () {
         "34b1926c6adb2a9b196701e99de1cbd41953a25033bac10d0ae259ea83bb65d2",
     });
     expect(result.transactions).to.have.lengthOf(1);
+  });
+
+  it("Get popular legacy address", async function () {
+    const result = await query(urlBase, Routes.transactionHistory, {
+      addresses: [
+        "DdzFFzCqrhstmqBkaU98vdHu6PdqjqotmgudToWYEeRmQKDrn4cAgGv9EZKtu1DevLrMA1pdVazufUCK4zhFkUcQZ5Gm88mVHnrwmXvT",
+      ],
+      untilBlock:
+        "d08183f7769687d93dc9cd88339a67c673fc950fa25c42841f2ae7e11c0432c2",
+    });
+    expect(result.transactions).to.have.lengthOf(ADDRESS_LIMIT.RESPONSE);
   });
 
   it("Two bech32 addresses in the same tx don't result in the tx being duplicated", async function () {
@@ -511,5 +541,21 @@ describe(`/${Routes.transactionHistory}`, function () {
       }
     }
     expect(Array.from(duplicated)).to.be.eql([]);
+  });
+
+  it("it detects utxos created before 'after' and spent during the range", async function () {
+    const result = await query(urlBase, Routes.transactionHistory, {
+      addresses: [
+        "DdzFFzCqrht5HayiWAqVeesJror4LGKPRmsGHYFzywwBs8Pobk1gEKC6z5wsp4NZXj1v5r2vPVREYBgKVXBJiFJ49QDxmSSst3cZWBrf",
+      ],
+      untilBlock:
+        "4ceeb4b5f5216030c6401b70aed415e3eee26e975f198b8bffdee9af9c746dca",
+      after: {
+        tx: "d9aa9dea8cc61bd2c4913b8c12466dae9f4704640932b737765b69d267b55686",
+        block:
+          "4a536e82662739b5ae1625aeacea2486200436c8923ad9af8e6ce323d6ed4c0b",
+      },
+    });
+    expect(result.transactions.length).to.be.eql(1);
   });
 });

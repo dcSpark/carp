@@ -20,8 +20,8 @@ carp_task! {
   doc "Adds to the database the relation between addresses and the credentials part of the addresses (ex: payment key + staking key)";
   era multiera;
   dependencies [MultieraAddressTask, MultieraStakeCredentialTask];
-  read [multiera_queued_addresses_relations, multiera_stake_credential];
-  write [multiera_addresses];
+  read [multiera_addresses, multiera_queued_addresses_relations, multiera_stake_credential];
+  write [];
   should_add_task |block, _properties| {
     has_transaction_multiera(block.1)
   };

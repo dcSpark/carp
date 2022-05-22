@@ -12,9 +12,14 @@ const urlBase = "http://localhost:3000";
 const hashForUntilBlock =
   "5fc6a3d84cbd3a1fab3d0f1228e0e788a1ba28f682a3a2ea7b2d49ad99645a2c";
 
+const nonExistingAddr =
+  "DdzFFzCqrhtBBX4VvncQ6Zxn8UHawaqSB4jf9EELRBuWUT9gZTmCDWCNTVMotEdof1g26qbrDc8qcHZvtntxR4FaBN1iKxQ5ttjZSZoj";
+const genesisAddr =
+  "Ae2tdPwUPEZ1zsFUP2eYpyRJooGpYSBzR1jZsdK6ioAqR9vUcBiwQgyeRfB";
+
 // eslint-disable-next-line mocha/no-setup-in-describe
 describe(`/${Routes.addressUsed}`, function () {
-  this.timeout(10000);
+  this.timeout(100_000);
 
   it("should throw on invalid address", async function () {
     try {
@@ -50,15 +55,15 @@ describe(`/${Routes.addressUsed}`, function () {
     const result = await query(urlBase, Routes.addressUsed, {
       addresses: [
         "DdzFFzCqrht4wFnWC5TJA5UUVE54JC9xZWq589iKyCrWa6hek3KKevyaXzQt6FsdunbkZGzBFQhwZi1MDpijwRoC7kj1MkEPh2Uu5Ssz",
-        "DdzFFzCqrhtBBX4VvncQ6Zxn8UHawaqSB4jf9EELRBuWUT9gZTmCDWCNTVMotEdof1g26qbrDc8qcHZvtntxR4FaBN1iKxQ5ttjZSZoj",
+        nonExistingAddr,
         "DdzFFzCqrht62k6YFcieBUwxkq2CLSi4Pdvt3bd6ghq5P7fTgp8n5pRyQK45gN8A2Udyaj9mFRdK1eUoxy1QjcU5AuCix5uJB3zdBgkf",
-        "Ae2tdPwUPEZ1zsFUP2eYpyRJooGpYSBzR1jZsdK6ioAqR9vUcBiwQgyeRfB",
+        genesisAddr,
         "DdzFFzCqrht2Hw9qp1YcqsMJfwjMXiJR46RXU8KFALErRXnjHnjwBPCP8FDjwgUQkZeGghu69YP71ZU67EDsXa5G3g8D2Kr5XZ7Jc42b",
       ],
       untilBlock: hashForUntilBlock,
     });
     expect(result.addresses).to.be.eql([
-      "Ae2tdPwUPEZ1zsFUP2eYpyRJooGpYSBzR1jZsdK6ioAqR9vUcBiwQgyeRfB",
+      genesisAddr,
       "DdzFFzCqrht2Hw9qp1YcqsMJfwjMXiJR46RXU8KFALErRXnjHnjwBPCP8FDjwgUQkZeGghu69YP71ZU67EDsXa5G3g8D2Kr5XZ7Jc42b",
       "DdzFFzCqrht4wFnWC5TJA5UUVE54JC9xZWq589iKyCrWa6hek3KKevyaXzQt6FsdunbkZGzBFQhwZi1MDpijwRoC7kj1MkEPh2Uu5Ssz",
       "DdzFFzCqrht62k6YFcieBUwxkq2CLSi4Pdvt3bd6ghq5P7fTgp8n5pRyQK45gN8A2Udyaj9mFRdK1eUoxy1QjcU5AuCix5uJB3zdBgkf",
@@ -69,9 +74,9 @@ describe(`/${Routes.addressUsed}`, function () {
     const result = await query(urlBase, Routes.addressUsed, {
       addresses: [
         "DdzFFzCqrht4wFnWC5TJA5UUVE54JC9xZWq589iKyCrWa6hek3KKevyaXzQt6FsdunbkZGzBFQhwZi1MDpijwRoC7kj1MkEPh2Uu5Ssz",
-        "DdzFFzCqrhtBBX4VvncQ6Zxn8UHawaqSB4jf9EELRBuWUT9gZTmCDWCNTVMotEdof1g26qbrDc8qcHZvtntxR4FaBN1iKxQ5ttjZSZoj",
+        nonExistingAddr,
         "DdzFFzCqrht62k6YFcieBUwxkq2CLSi4Pdvt3bd6ghq5P7fTgp8n5pRyQK45gN8A2Udyaj9mFRdK1eUoxy1QjcU5AuCix5uJB3zdBgkf",
-        "Ae2tdPwUPEZ1zsFUP2eYpyRJooGpYSBzR1jZsdK6ioAqR9vUcBiwQgyeRfB",
+        genesisAddr,
         "DdzFFzCqrht2Hw9qp1YcqsMJfwjMXiJR46RXU8KFALErRXnjHnjwBPCP8FDjwgUQkZeGghu69YP71ZU67EDsXa5G3g8D2Kr5XZ7Jc42b",
       ],
       untilBlock: hashForUntilBlock,
@@ -168,16 +173,16 @@ describe(`/${Routes.addressUsed}`, function () {
 
   it("filters out addresses using relation filters", async function () {
     const address =
-      "stake1uydrhuvnrhlzpkzrkukp3h4n0fp5dzqzcz36t5thkmfezyc47wa2x";
+      "stake1ux236z4g4r4pztn5v69txyj2yq6a3esq5x4p4stxydra7zsnv25ue";
     const filterToWithdrawal = await query(urlBase, Routes.addressUsed, {
       addresses: [address],
       after: {
-        tx: "193c753a090fa0e7248590d407137e9439622e2fe818688186aeb47ac9b58fa4",
+        tx: "2383af0582da2b18039fab49ef4bb246f7d23d4304e36eb48f9387ff80adc769",
         block:
-          "42b95a9ce5b17f02aa00f99c3bca0a9eccbdbe0942fa246b5376af66979c8c0c",
+          "400363d541c4ac11dffee26d75d3f36e96d213cfb6d8ce6595a6ccb8d0744131",
       },
       untilBlock:
-        "d62a740622c27a501697c90fdbdba7ff4931a1ff2ffccdbb5c85bdaa2bec9539",
+        "d8bcf81ff514a1f06705a6e0b021a9d6ed91e8d63b80a58f770997113942644f",
       relationFilter: RelationFilterType.Withdrawal,
     });
 
@@ -196,5 +201,36 @@ describe(`/${Routes.addressUsed}`, function () {
     });
 
     expect(filterAll.addresses).to.be.eql([]);
+  });
+
+  it("is still fast on legacy address with many txs", async function () {
+    const result = await query(urlBase, Routes.addressUsed, {
+      addresses: [
+        "DdzFFzCqrhstmqBkaU98vdHu6PdqjqotmgudToWYEeRmQKDrn4cAgGv9EZKtu1DevLrMA1pdVazufUCK4zhFkUcQZ5Gm88mVHnrwmXvT",
+      ],
+      untilBlock:
+        "bb7507affd7d04eb2e2ba2df8366204b447a15550caefb6d94e601a4df44b641",
+    });
+    expect(result.addresses).to.be.eql([
+      "DdzFFzCqrhstmqBkaU98vdHu6PdqjqotmgudToWYEeRmQKDrn4cAgGv9EZKtu1DevLrMA1pdVazufUCK4zhFkUcQZ5Gm88mVHnrwmXvT",
+    ]);
+  });
+
+  it("it detects utxos created before 'after' and spent during the range", async function () {
+    const result = await query(urlBase, Routes.addressUsed, {
+      addresses: [
+        "DdzFFzCqrht5HayiWAqVeesJror4LGKPRmsGHYFzywwBs8Pobk1gEKC6z5wsp4NZXj1v5r2vPVREYBgKVXBJiFJ49QDxmSSst3cZWBrf",
+      ],
+      untilBlock:
+        "4ceeb4b5f5216030c6401b70aed415e3eee26e975f198b8bffdee9af9c746dca",
+      after: {
+        tx: "d9aa9dea8cc61bd2c4913b8c12466dae9f4704640932b737765b69d267b55686",
+        block:
+          "4a536e82662739b5ae1625aeacea2486200436c8923ad9af8e6ce323d6ed4c0b",
+      },
+    });
+    expect(result.addresses).to.be.eql([
+      "DdzFFzCqrht5HayiWAqVeesJror4LGKPRmsGHYFzywwBs8Pobk1gEKC6z5wsp4NZXj1v5r2vPVREYBgKVXBJiFJ49QDxmSSst3cZWBrf",
+    ]);
   });
 });
