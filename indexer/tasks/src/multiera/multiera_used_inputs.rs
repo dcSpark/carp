@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate::dsl::default_impl::ReadonlyConfig;
+use crate::config::ReadonlyConfig::ReadonlyConfig;
 use crate::era_common::input_from_pointer;
 use crate::{dsl::default_impl::has_transaction_multiera, types::TxCredentialRelationValue};
 use cardano_multiplatform_lib::address::{

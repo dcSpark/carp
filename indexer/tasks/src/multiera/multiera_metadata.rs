@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate::dsl::default_impl::ReadonlyConfig;
+use crate::config::ReadonlyConfig::ReadonlyConfig;
 use entity::sea_orm::QueryOrder;
 use entity::{
     prelude::*,

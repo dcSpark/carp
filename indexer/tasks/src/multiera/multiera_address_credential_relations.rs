@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-use crate::dsl::default_impl::ReadonlyConfig;
+use crate::config::ReadonlyConfig::ReadonlyConfig;
 use crate::{dsl::default_impl::has_transaction_multiera, types::AddressCredentialRelationValue};
 use entity::sea_orm::Condition;
 use entity::{

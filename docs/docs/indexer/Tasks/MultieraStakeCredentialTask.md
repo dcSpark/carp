@@ -1,7 +1,19 @@
 # MultieraStakeCredentialTask
 Adds the stake credentials to the database\.
-       Note: \`stake credentials\` are an unfortunately poorly named type in the Cardano binary specification\.
+       Note: \\"stake credentials\\" are an unfortunately poorly named type in the Cardano binary specification\.
        A stake credential has nothing to do with staking\. It's just a hash with an prefix to specify what kind of hash it is \(ex: payment vs script\)
+
+
+<details>
+    <summary>Configuration</summary>
+
+```rust
+#[derive(Debug, Clone, Copy, serde::Deserialize, serde::Serialize)]
+pub struct EmptyConfig {}
+
+```
+</details>
+
 
 ## Era
 ` multiera `

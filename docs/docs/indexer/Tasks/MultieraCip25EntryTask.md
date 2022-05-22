@@ -1,6 +1,18 @@
 # MultieraCip25EntryTask
 Maps CIP25 entries to the corresponding DB entry for the asset
 
+
+<details>
+    <summary>Configuration</summary>
+
+```rust
+#[derive(Debug, Clone, Copy, serde::Deserialize, serde::Serialize)]
+pub struct EmptyConfig {}
+
+```
+</details>
+
+
 ## Era
 ` multiera `
 

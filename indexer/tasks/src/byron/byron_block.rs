@@ -1,5 +1,6 @@
+use crate::config::ReadonlyConfig::ReadonlyConfig;
 use crate::dsl::task_macro::*;
-use crate::{dsl::default_impl::ReadonlyConfig, era_common::block_from_hash};
+use crate::era_common::block_from_hash;
 use entity::{block::EraValue, sea_orm::Set};
 use hex::ToHex;
 use pallas::ledger::primitives::{byron, Fragment};

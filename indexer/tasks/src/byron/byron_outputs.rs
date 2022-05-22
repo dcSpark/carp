@@ -1,5 +1,5 @@
 use super::byron_address::ByronAddressTask;
-use crate::dsl::default_impl::EmptyConfiguration;
+use crate::config::EmptyConfig::EmptyConfig;
 use crate::{dsl::task_macro::*, era_common::get_truncated_address};
 use entity::sea_orm::Set;
 use pallas::{
@@ -12,7 +12,7 @@ use pallas::{
 
 carp_task! {
   name ByronOutputTask;
-  configuration EmptyConfiguration;
+  configuration EmptyConfig;
   doc "Adds the transaction outputs to the database";
   era byron;
   dependencies [ByronAddressTask];

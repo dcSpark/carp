@@ -2,11 +2,11 @@ use crate::{dsl::default_impl::has_transaction_byron, dsl::task_macro::*};
 use pallas::ledger::primitives::byron::{self, TxIn};
 
 use super::byron_outputs::ByronOutputTask;
-use crate::dsl::default_impl::EmptyConfiguration;
+use crate::config::EmptyConfig::EmptyConfig;
 
 carp_task! {
   name ByronInputTask;
-  configuration EmptyConfiguration;
+  configuration EmptyConfig;
   doc "Adds the transaction inputs to the database";
   era byron;
   dependencies [ByronOutputTask];

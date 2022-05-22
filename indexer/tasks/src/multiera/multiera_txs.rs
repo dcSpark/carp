@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
 use super::multiera_block::MultieraBlockTask;
-use crate::dsl::default_impl::ReadonlyConfig;
+use crate::config::ReadonlyConfig::ReadonlyConfig;
 use crate::era_common::transactions_from_hashes;
 use crate::{dsl::default_impl::has_transaction_multiera, dsl::task_macro::*};
 use entity::sea_orm::{DatabaseTransaction, QueryOrder, Set};

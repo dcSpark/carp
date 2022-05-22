@@ -6,7 +6,7 @@ use entity::sea_orm::Set;
 use pallas::ledger::primitives::{byron, Fragment};
 
 use super::byron_block::ByronBlockTask;
-use crate::dsl::default_impl::ReadonlyConfig;
+use crate::config::ReadonlyConfig::ReadonlyConfig;
 
 carp_task! {
   name ByronTransactionTask;

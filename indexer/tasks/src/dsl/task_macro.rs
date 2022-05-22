@@ -121,6 +121,18 @@ cfg_if::cfg_if! {
 
                         md.write(self.get_doc()[1..self.get_doc().len()-1].paragraph()).unwrap();
 
+                        let config = include_str!(concat!("../config/", stringify!($config), ".rs"));
+                        let config_docs = format!("
+<details>
+    <summary>Configuration</summary>
+
+```rust
+{}
+```
+</details>
+", config);
+                        md.write_raw(config_docs.paragraph()).unwrap();
+
                         md.write("Era".heading(2)).unwrap();
                         md.write(self.get_era().code()).unwrap();
 

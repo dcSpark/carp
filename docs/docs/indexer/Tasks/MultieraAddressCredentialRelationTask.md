@@ -1,6 +1,20 @@
 # MultieraAddressCredentialRelationTask
 Adds to the database the relation between addresses and the credentials part of the addresses \(ex: payment key \+ staking key\)
 
+
+<details>
+    <summary>Configuration</summary>
+
+```rust
+#[derive(Debug, Clone, Copy, serde::Deserialize, serde::Serialize)]
+pub struct ReadonlyConfig {
+    pub readonly: bool,
+}
+
+```
+</details>
+
+
 ## Era
 ` multiera `
 

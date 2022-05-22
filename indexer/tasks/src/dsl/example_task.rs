@@ -1,11 +1,11 @@
-use crate::dsl::default_impl::EmptyConfiguration;
+use crate::config::EmptyConfig::EmptyConfig;
 use crate::dsl::task_macro::*;
 
 carp_task! {
   // The task name. This is what will show up in the task graph
   // and this is how you specify dependencies
   name ExampleTask;
-  configuration EmptyConfiguration;
+  configuration EmptyConfig;
   doc "An example task to help people learn how to write custom Carp tasks";
   // The era your task operates on. Note: different eras have different block representations
   era multiera;

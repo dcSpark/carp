@@ -1,6 +1,18 @@
 # ByronAddressTask
 Adds the address raw bytes to the database
 
+
+<details>
+    <summary>Configuration</summary>
+
+```rust
+#[derive(Debug, Clone, Copy, serde::Deserialize, serde::Serialize)]
+pub struct EmptyConfig {}
+
+```
+</details>
+
+
 ## Era
 ` byron `
 

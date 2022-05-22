@@ -1,4 +1,4 @@
-use crate::dsl::default_impl::ReadonlyConfig;
+use crate::config::ReadonlyConfig::ReadonlyConfig;
 use crate::era_common::block_from_hash;
 use crate::utils::blake2b256;
 use crate::{dsl::default_impl::has_transaction_multiera, dsl::task_macro::*};

@@ -8,8 +8,9 @@ use pallas::ledger::primitives::alonzo::{self, TransactionBody, TransactionBodyC
 use pallas::ledger::primitives::Fragment;
 
 use super::multiera_address::MultieraAddressTask;
+use crate::config::ReadonlyConfig::ReadonlyConfig;
 use crate::era_common::get_truncated_address;
-use crate::{dsl::default_impl::ReadonlyConfig, era_common::output_from_pointer};
+use crate::era_common::output_from_pointer;
 
 use crate::dsl::task_macro::*;
 

@@ -1,6 +1,20 @@
 # MultieraUsedInputTask
 Adds the used inputs to the database \(regular inputs in most cases, collateral inputs if tx fails
 
+
+<details>
+    <summary>Configuration</summary>
+
+```rust
+#[derive(Debug, Clone, Copy, serde::Deserialize, serde::Serialize)]
+pub struct ReadonlyConfig {
+    pub readonly: bool,
+}
+
+```
+</details>
+
+
 ## Era
 ` multiera `
 

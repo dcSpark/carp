@@ -1,6 +1,18 @@
 # MultieraAssetMintTask
 Adds new tokens and keeps track of mints/burns in general
 
+
+<details>
+    <summary>Configuration</summary>
+
+```rust
+#[derive(Debug, Clone, Copy, serde::Deserialize, serde::Serialize)]
+pub struct EmptyConfig {}
+
+```
+</details>
+
+
 ## Era
 ` multiera `
 

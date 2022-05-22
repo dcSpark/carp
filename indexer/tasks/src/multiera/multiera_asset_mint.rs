@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::dsl::default_impl::EmptyConfiguration;
+use crate::config::EmptyConfig::EmptyConfig;
 use cardano_multiplatform_lib::crypto::ScriptHash;
 use entity::{
     prelude::*,
@@ -20,7 +20,7 @@ use crate::dsl::task_macro::*;
 
 carp_task! {
   name MultieraAssetMintTask;
-  configuration EmptyConfiguration;
+  configuration EmptyConfig;
   doc "Adds new tokens and keeps track of mints/burns in general";
   era multiera;
   dependencies [MultieraTransactionTask];

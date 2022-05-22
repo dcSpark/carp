@@ -1,6 +1,6 @@
 extern crate shred;
 
-use crate::dsl::default_impl::EmptyConfiguration;
+use crate::config::EmptyConfig::EmptyConfig;
 use cardano_multiplatform_lib::{
     address::ByronAddress,
     genesis::byron::{config::GenesisData, parse::redeem_pubkey_to_txid},
@@ -22,7 +22,7 @@ use super::genesis_block::GenesisBlockTask;
 
 carp_task! {
   name GenesisTransactionTask;
-  configuration EmptyConfiguration;
+  configuration EmptyConfig;
   doc "Parses Genesis transactions (avvm & non-avvm balances from genesis)";
   era genesis;
   dependencies [GenesisBlockTask];

@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::dsl::default_impl::EmptyConfiguration;
+use crate::config::EmptyConfig::EmptyConfig;
 use cardano_multiplatform_lib::crypto::ScriptHash;
 use entity::{
     prelude::*,
@@ -25,7 +25,7 @@ use crate::dsl::task_macro::*;
 
 carp_task! {
   name MultieraCip25EntryTask;
-  configuration EmptyConfiguration;
+  configuration EmptyConfig;
   doc "Maps CIP25 entries to the corresponding DB entry for the asset";
   era multiera;
   dependencies [MultieraMetadataTask, MultieraAssetMintTask];

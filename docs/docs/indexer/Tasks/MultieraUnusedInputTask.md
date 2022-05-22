@@ -1,6 +1,18 @@
 # MultieraUnusedInputTask
 Adds the unused inputs to the database \(collateral inputs if tx succeeds, collateral inputs otherwise
 
+
+<details>
+    <summary>Configuration</summary>
+
+```rust
+#[derive(Debug, Clone, Copy, serde::Deserialize, serde::Serialize)]
+pub struct EmptyConfig {}
+
+```
+</details>
+
+
 ## Era
 ` multiera `
 

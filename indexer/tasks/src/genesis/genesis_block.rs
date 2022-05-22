@@ -1,11 +1,11 @@
-use crate::dsl::default_impl::EmptyConfiguration;
+use crate::config::EmptyConfig::EmptyConfig;
 use crate::dsl::task_macro::*;
 use entity::{block::EraValue, sea_orm::Set};
 use hex::ToHex;
 
 carp_task! {
   name GenesisBlockTask;
-  configuration EmptyConfiguration;
+  configuration EmptyConfig;
   doc "Adds the block to the database";
   era genesis;
   dependencies [];
