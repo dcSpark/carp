@@ -9,6 +9,7 @@ RUN USER=root cargo new --lib migration
 RUN USER=root cargo new --bin reparse
 RUN USER=root cargo new --bin rollback
 RUN USER=root cargo new --lib tasks
+RUN USER=root cargo new --lib task-docgen
 RUN USER=root cargo new --bin plan-visualizer
 
 COPY ./indexer/Cargo.toml ./Cargo.toml
@@ -19,6 +20,7 @@ COPY ./indexer/migration/Cargo.toml ./migration/Cargo.toml
 COPY ./indexer/reparse/Cargo.toml ./reparse/Cargo.toml
 COPY ./indexer/rollback/Cargo.toml ./rollback/Cargo.toml
 COPY ./indexer/tasks/Cargo.toml ./tasks/Cargo.toml
+COPY ./indexer/task-docgen/Cargo.toml ./task-docgen/Cargo.toml
 COPY ./indexer/plan-visualizer/Cargo.toml ./plan-visualizer/Cargo.toml
 
 RUN cargo build --release
@@ -28,6 +30,7 @@ RUN cargo clean --release -p migration
 RUN cargo clean --release -p reparse
 RUN cargo clean --release -p rollback
 RUN cargo clean --release -p tasks
+RUN cargo clean --release -p task-docgen
 RUN cargo clean --release -p plan-visualizer
 
 RUN rm -rf ./src

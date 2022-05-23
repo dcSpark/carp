@@ -48,6 +48,7 @@ services:
       target: carp
       args:
         - APP=/app
+    image: carp:${CARP_VERSION}
     environment:
       - NETWORK=${NETWORK:-testnet}
       - SOCKET=/app/node-ipc/node.socket
@@ -91,6 +92,7 @@ services:
   #   - S3_FOLDER=${S3_FOLDER:?Recommend as hostname}
   #   - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:?Please set me}
   #   - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:?Please set me}
+  #   - CARP_VERSION=${CARP_VERSION}
   #   volumes:
   #   - ./${NETWORK:-testnet}/node-ipc:/app/node-ipc:rw
   #   secrets:
