@@ -25,7 +25,6 @@ pub struct EmptyConfig {}
 ## Data accessed
 #### Reads from
 
-   * ` multiera_block `
    * ` multiera_stake_credential `
    * ` vkey_relation_map `
 

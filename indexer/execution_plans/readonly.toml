@@ -1,8 +1,18 @@
+[GenesisBlockTask]
+
+[GenesisTransactionTask]
+
 [ByronBlockTask]
-readonly=true
+readonly=false
 
 [ByronTransactionTask]
-readonly=true
+readonly=false
+
+[ByronAddressTask]
+
+[ByronOutputTask]
+
+[ByronInputTask]
 
 [MultieraBlockTask]
 readonly=true
@@ -11,8 +21,9 @@ readonly=true
 readonly=true
 
 [MultieraMetadataTask]
-readonly=true
+readonly=false
 
 [MultieraAssetMintTask]
+readonly=true
 
 [MultieraCip25EntryTask]

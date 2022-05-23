@@ -7,7 +7,9 @@ Adds new tokens and keeps track of mints/burns in general
 
 ```rust
 #[derive(Debug, Clone, Copy, serde::Deserialize, serde::Serialize)]
-pub struct EmptyConfig {}
+pub struct ReadonlyConfig {
+    pub readonly: bool,
+}
 
 ```
 </details>

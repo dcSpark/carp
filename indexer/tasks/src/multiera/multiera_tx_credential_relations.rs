@@ -25,14 +25,13 @@ carp_task! {
   doc "Adds the relation between transactions and credentials that appear within the tx to the database";
   era multiera;
   dependencies [MultieraAddressTask, MultieraStakeCredentialTask];
-  read [multiera_block, multiera_stake_credential, vkey_relation_map];
+  read [multiera_stake_credential, vkey_relation_map];
   write [];
   should_add_task |block, _properties| {
     has_transaction_multiera(block.1)
   };
   execute |previous_data, task| handle_tx_credential_relations(
       task.db_tx,
-      &previous_data.multiera_block.as_ref().unwrap(),
       &previous_data.multiera_stake_credential,
       &previous_data.vkey_relation_map,
   );
@@ -42,7 +41,6 @@ carp_task! {
 
 async fn handle_tx_credential_relations(
     db_tx: &DatabaseTransaction,
-    database_block: &BlockModel,
     multiera_stake_credential: &BTreeMap<Vec<u8>, StakeCredentialModel>,
     vkey_relation_map: &RelationMap,
 ) -> Result<(), DbErr> {
@@ -55,7 +53,6 @@ async fn handle_tx_credential_relations(
                     .unwrap()
                     .id),
                 tx_id: Set(*tx_id),
-                block_id: Set(database_block.id),
                 relation: Set(*relation),
             }
         }));

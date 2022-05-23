@@ -27,13 +27,9 @@ pub struct ReadonlyConfig {
 ## Data accessed
 #### Reads from
 
+   * ` multiera_addresses `
    * ` multiera_queued_addresses_relations `
    * ` multiera_stake_credential `
-
-
-#### Writes to
-
-   * ` multiera_addresses `
 
 
 ## Full source

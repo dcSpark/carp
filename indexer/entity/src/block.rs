@@ -17,8 +17,6 @@ pub struct Model {
 pub enum Relation {
     #[sea_orm(has_many = "super::transaction::Entity")]
     Transaction,
-    #[sea_orm(has_many = "super::tx_credential::Entity")]
-    TxCredentialRelation,
 }
 
 impl ActiveModelBehavior for ActiveModel {}
