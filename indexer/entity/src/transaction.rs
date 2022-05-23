@@ -28,6 +28,10 @@ pub enum Relation {
     TransactionOutput,
     #[sea_orm(has_many = "super::tx_credential::Entity")]
     TxCredential,
+    #[sea_orm(has_many = "super::address::Entity")]
+    Address,
+    #[sea_orm(has_many = "super::stake_credential::Entity")]
+    StakeCredential,
 }
 
 // TODO: figure out why this isn't automatically handle by the macros above

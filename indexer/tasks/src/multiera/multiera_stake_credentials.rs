@@ -85,21 +85,19 @@ async fn handle_stake_credentials(
         }
     }
 
-    let cred_to_model_map = insert_stake_credentials(
-        &vkey_relation_map
-            .0
-            .values()
-            .flat_map(|cred_to_model| cred_to_model.keys())
-            .map(|pallas| pallas.to_vec())
-            .collect(),
-        db_tx,
-    )
-    .await?;
+    let mut queued_cred = BTreeMap::<Vec<u8>, i64>::default();
+    for (tx_id, cred_to_relation) in &vkey_relation_map.0 {
+        for key in cred_to_relation.keys() {
+            // we want to keep track of the first tx for each credential
+            queued_cred.entry(key.to_vec()).or_insert(*tx_id);
+        }
+    }
+    let cred_to_model_map = insert_stake_credentials(&queued_cred, db_tx).await?;
     Ok(cred_to_model_map)
 }
 
 async fn insert_stake_credentials(
-    deduplicated_creds: &BTreeSet<Vec<u8>>,
+    deduplicated_creds: &BTreeMap<Vec<u8>, i64>,
     txn: &DatabaseTransaction,
 ) -> Result<BTreeMap<Vec<u8>, StakeCredentialModel>, DbErr> {
     let mut result_map = BTreeMap::<Vec<u8>, StakeCredentialModel>::default();
@@ -110,13 +108,13 @@ async fn insert_stake_credentials(
 
     // 1) Add credentials that were already in the DB
     {
-        let mut found_credentials = StakeCredential::find()
-            .filter(
-                Condition::any()
-                    .add(StakeCredentialColumn::Credential.is_in(deduplicated_creds.clone())),
-            )
-            .all(txn)
-            .await?;
+        let mut found_credentials =
+            StakeCredential::find()
+                .filter(Condition::any().add(
+                    StakeCredentialColumn::Credential.is_in(deduplicated_creds.keys().cloned()),
+                ))
+                .all(txn)
+                .await?;
 
         result_map.extend(
             found_credentials
@@ -130,9 +128,10 @@ async fn insert_stake_credentials(
         // check which credentials weren't found in the DB and prepare to add them
         let credentials_to_add: Vec<StakeCredentialActiveModel> = deduplicated_creds
             .iter()
-            .filter(|&credential| !result_map.contains_key(credential))
-            .map(|credential| StakeCredentialActiveModel {
+            .filter(|&(credential, _)| !result_map.contains_key(credential))
+            .map(|(credential, tx_id)| StakeCredentialActiveModel {
                 credential: Set(credential.to_vec()),
+                first_tx: Set(*tx_id),
                 ..Default::default()
             })
             .collect();

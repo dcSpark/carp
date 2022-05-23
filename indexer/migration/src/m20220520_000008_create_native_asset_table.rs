@@ -1,6 +1,7 @@
 use sea_schema::migration::prelude::*;
 
 use entity::native_asset::*;
+use entity::prelude::{Transaction, TransactionColumn};
 
 pub struct Migration;
 
@@ -28,6 +29,24 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Column::PolicyId).binary().not_null())
                     .col(ColumnDef::new(Column::AssetName).binary().not_null())
                     .col(ColumnDef::new(Column::Cip14Fingerprint).binary().not_null())
+                    .col(ColumnDef::new(Column::FirstTx).big_integer().not_null())
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk-native_asset-tx_id")
+                            .from(Entity, Column::FirstTx)
+                            .to(Transaction, TransactionColumn::Id)
+                            .on_delete(ForeignKeyAction::Cascade),
+                    )
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .table(Entity)
+                    .name("index-native_asset-transaction")
+                    .col(Column::FirstTx)
                     .to_owned(),
             )
             .await?;

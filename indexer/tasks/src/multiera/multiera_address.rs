@@ -64,7 +64,7 @@ async fn handle_addresses(
     DbErr,
 > {
     let mut queued_address_credential = BTreeSet::<QueuedAddressCredentialRelation>::default();
-    let mut queued_address = BTreeSet::<Vec<u8>>::default();
+    let mut queued_address = BTreeMap::<Vec<u8>, i64>::default();
 
     for (tx_body, cardano_transaction) in block.1.transaction_bodies.iter().zip(multiera_txs) {
         for component in tx_body.iter() {
@@ -126,7 +126,7 @@ async fn handle_addresses(
 fn queue_certificate(
     vkey_relation_map: &mut RelationMap,
     queued_address_credential: &mut BTreeSet<QueuedAddressCredentialRelation>,
-    queued_address: &mut BTreeSet<Vec<u8>>,
+    queued_address: &mut BTreeMap<Vec<u8>, i64>,
     tx_id: i64,
     cert: &Certificate,
 ) {
@@ -251,7 +251,7 @@ fn queue_certificate(
 fn queue_output(
     queued_credentials: &mut RelationMap,
     queued_address_credential: &mut BTreeSet<QueuedAddressCredentialRelation>,
-    queued_address: &mut BTreeSet<Vec<u8>>,
+    queued_address: &mut BTreeMap<Vec<u8>, i64>,
     tx_body: &TransactionBody,
     tx_id: i64,
     output: &alonzo::TransactionOutput,
@@ -304,7 +304,14 @@ fn queue_output(
             address_relation,
         );
     } else if ByronAddress::from_address(&addr).is_some() {
-        queued_address.insert(addr.to_bytes());
+        queued_address
+            .entry(addr.to_bytes())
+            .and_modify(|old_id| {
+                if tx_id < *old_id {
+                    *old_id = tx_id
+                }
+            })
+            .or_insert(tx_id);
     } else if let Some(enterprise_addr) = EnterpriseAddress::from_address(&addr) {
         queue_address_credential(
             queued_credentials,
@@ -336,14 +343,21 @@ fn queue_output(
 fn queue_address_credential(
     vkey_relation_map: &mut RelationMap,
     queued_address_credential: &mut BTreeSet<QueuedAddressCredentialRelation>,
-    queued_address: &mut BTreeSet<Vec<u8>>,
+    queued_address: &mut BTreeMap<Vec<u8>, i64>,
     tx_id: i64,
     address: &[u8],
     credential: &cardano_multiplatform_lib::address::StakeCredential,
     tx_relation: TxCredentialRelationValue,
     address_relation: AddressCredentialRelationValue,
 ) {
-    queued_address.insert(address.to_vec());
+    queued_address
+        .entry(address.to_vec())
+        .and_modify(|old_id| {
+            if tx_id < *old_id {
+                *old_id = tx_id
+            }
+        })
+        .or_insert(tx_id);
     vkey_relation_map.add_relation(tx_id, &credential.to_bytes(), tx_relation);
     queued_address_credential.insert(QueuedAddressCredentialRelation {
         address: address.to_vec(),

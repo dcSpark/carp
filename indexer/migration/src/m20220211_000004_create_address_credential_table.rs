@@ -24,7 +24,8 @@ impl MigrationTrait for Migration {
                         ForeignKey::create()
                             .name("fk-address_credential-address_id")
                             .from(Entity, Column::AddressId)
-                            .to(Address, AddressColumn::Id),
+                            .to(Address, AddressColumn::Id)
+                            .on_delete(ForeignKeyAction::Cascade),
                     )
                     .col(
                         ColumnDef::new(Column::CredentialId)
@@ -35,7 +36,8 @@ impl MigrationTrait for Migration {
                         ForeignKey::create()
                             .name("fk-address_credential-credential_id")
                             .from(Entity, Column::CredentialId)
-                            .to(StakeCredential, StakeCredentialColumn::Id),
+                            .to(StakeCredential, StakeCredentialColumn::Id)
+                            .on_delete(ForeignKeyAction::Cascade),
                     )
                     .col(ColumnDef::new(Column::Relation).integer().not_null())
                     // Note: the 3-tuple is the primary key

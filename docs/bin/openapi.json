@@ -6,8 +6,38 @@
         "requestBodies": {},
         "responses": {},
         "schemas": {
-            "Address": {
+            "CredentialHex": {
                 "type": "string",
+                "example": "8200581c8baf48931c5187cd59fde553f4e7da2e1a2aa9202ec6e67815cb3f8a",
+                "pattern": "[0-9a-fA-F]{64}"
+            },
+            "Bech32FullAddress": {
+                "type": "string",
+                "example": "stake1ux236z4g4r4pztn5v69txyj2yq6a3esq5x4p4stxydra7zsnv25ue"
+            },
+            "Bech32Credential": {
+                "type": "string",
+                "example": "script1ffv7hkf75573h0mlsg3jc7cpyuq2pn6tk7xc08dtkx3q5ah7h47"
+            },
+            "Base58Address": {
+                "type": "string",
+                "example": "Ae2tdPwUPEZHu3NZa6kCwet2msq4xrBXKHBDvogFKwMsF18Jca8JHLRBas7"
+            },
+            "Address": {
+                "anyOf": [
+                    {
+                        "$ref": "#/components/schemas/CredentialHex"
+                    },
+                    {
+                        "$ref": "#/components/schemas/Bech32FullAddress"
+                    },
+                    {
+                        "$ref": "#/components/schemas/Bech32Credential"
+                    },
+                    {
+                        "$ref": "#/components/schemas/Base58Address"
+                    }
+                ],
                 "example": "addr1qxzksn47upfu4fwqfmxx29rn5znlkw3ag98ul8rgndwm79aaql88xw6ez84k2ln6lawnt79sdqh7qwq0wcs672auktmsawshfe",
                 "description": "Supported types:\n- Credential hex (8200581c...) - note this is not a keyhash (it contains a credential type prefix)\n- Bech32 full address (`addr` / `addr_test` / `stake` / `stake_test`)\n- Bech32 credentials ( `addr_vkh`, `script`, etc.) - this is the recommended approach\n- Legacy Byron format (Ae2, Dd, etc.)\n\nNote: we recommend avoiding to query base addresses history using bech32\nAs Cardano UTXO spendability depends only on the payment credential and not the full base address\nThe result will also miss transactions that are only related to the payment key of the address\nex: the payment key is used in a multisig\n\nNote: using two different address representations in the same query will hurt performance (ex: addr1 and addr_vkh1)\nThis because under-the-hood this will run multiple independent SQL queries for the different formats\n\nWarning: querying reward bech32 addresses is equivalent to querying the stake credential inside it\nThis may return more results than expected (ex: a multisig containing the staking key of the wallet)"
             },
@@ -32,14 +62,8 @@
                 "description": "Filter which uses of the address are considered relevant for the query.\n\nThis is a bitmask, so you can combine multiple options\nex: `RelationFilterType.Input & RelationFilterType.Output`\n\nNote: relations only apply to credentials and not to full bech32 addresses",
                 "pattern": "([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])"
             },
-            "Pagination": {
+            "AfterBlockPagination": {
                 "properties": {
-                    "untilBlock": {
-                        "type": "string",
-                        "description": "block hash - inclusive",
-                        "example": "cf8c63a909d91776e27f7d05457e823a9dba606a7ab499ac435e7904ee70d7c8",
-                        "pattern": "[0-9a-fA-F]{64}"
-                    },
                     "after": {
                         "properties": {
                             "tx": {
@@ -63,10 +87,31 @@
                         "description": "Omitting \"after\" means you query starting from the genesis block.\n\nNote: the reason you have to specify both a tx hash AND a block hash in the \"after\" for pagination\nis because this is the only way to make sure your pagination doesn't get affected by rollbacks.\nex: a rollback could cause a tx to be removed from one block and appear in a totally different block.\nSpecifying the block hash as well allows making sure you're paginating on the right tx in the right block."
                     }
                 },
+                "type": "object"
+            },
+            "UntilBlockPagination": {
+                "properties": {
+                    "untilBlock": {
+                        "type": "string",
+                        "description": "block hash - inclusive",
+                        "example": "cf8c63a909d91776e27f7d05457e823a9dba606a7ab499ac435e7904ee70d7c8",
+                        "pattern": "[0-9a-fA-F]{64}"
+                    }
+                },
                 "required": [
                     "untilBlock"
                 ],
                 "type": "object"
+            },
+            "Pagination": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/AfterBlockPagination"
+                    },
+                    {
+                        "$ref": "#/components/schemas/UntilBlockPagination"
+                    }
+                ]
             },
             "AddressUsedRequest": {
                 "allOf": [
@@ -660,7 +705,7 @@
                         }
                     }
                 },
-                "description": "Get the outputs for given `<tx hash, output index>` pairs\n\nNote: this endpoint only returns txs that are in a block. Use another tool to see mempool for txs not in a block",
+                "description": "Get the outputs for given `<tx hash, output index>` pairs.\n\nThis endpoint will return both used AND unused outputs\n\nNote: this endpoint only returns txs that are in a block. Use another tool to see mempool for txs not in a block",
                 "security": [],
                 "parameters": [],
                 "requestBody": {

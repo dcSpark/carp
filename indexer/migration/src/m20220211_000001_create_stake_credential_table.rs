@@ -1,5 +1,6 @@
 use sea_schema::migration::prelude::*;
 
+use entity::prelude::{Transaction, TransactionColumn};
 use entity::stake_credential::*;
 
 pub struct Migration;
@@ -30,6 +31,14 @@ impl MigrationTrait for Migration {
                             .binary()
                             .not_null()
                             .unique_key(),
+                    )
+                    .col(ColumnDef::new(Column::FirstTx).big_integer().not_null())
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk-stake_credential-tx_id")
+                            .from(Entity, Column::FirstTx)
+                            .to(Transaction, TransactionColumn::Id)
+                            .on_delete(ForeignKeyAction::Cascade),
                     )
                     .to_owned(),
             )

@@ -20,7 +20,7 @@ pub struct AddressInBlock {
 }
 
 pub async fn insert_addresses(
-    addresses: &BTreeSet<Vec<u8>>,
+    addresses: &BTreeMap<Vec<u8>, i64>,
     txn: &DatabaseTransaction,
 ) -> Result<BTreeMap<Vec<u8>, AddressInBlock>, DbErr> {
     if addresses.is_empty() {
@@ -40,14 +40,14 @@ pub async fn insert_addresses(
     // 3) It's not great to hard-code a postgresql-specific limitation
     // 4) ADDRESS_TRUNCATE seems more obviously human than 2704 so maybe easier if somebody sees it
     // 5) Storing up to 2704 bytes is a waste of space since they aren't used for anything
-    let truncated_addrs: Vec<&[u8]> = addresses
+    let truncated_addrs: BTreeMap<&[u8], i64> = addresses
         .iter()
-        .map(|addr| get_truncated_address(addr.as_slice()))
+        .map(|addr| (get_truncated_address(addr.0.as_slice()), *addr.1))
         .collect();
 
     // deduplicate addresses to avoid re-querying the same address many times
     // useful not only as a perf improvement, but also avoids parallel queries writing to the same row
-    let deduplicated = BTreeSet::<_>::from_iter(truncated_addrs.clone());
+    let deduplicated = BTreeSet::<_>::from_iter(truncated_addrs.keys().map(|addr| *addr));
 
     let mut result_map = BTreeMap::<Vec<u8>, AddressInBlock>::default();
 
@@ -84,6 +84,7 @@ pub async fn insert_addresses(
             .filter(|&&addr| !result_map.contains_key(addr))
             .map(|addr| AddressActiveModel {
                 payload: Set(addr.to_vec()),
+                first_tx: Set(truncated_addrs[addr]),
                 ..Default::default()
             })
             .collect();

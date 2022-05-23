@@ -97,16 +97,17 @@ async fn handle_mints(
 
     // 1) Remove duplicates to build a list of all the <policy_id, asset_name> pairs that we care about
     // note: duplicates may exist because we're grouping all txs in a block in one batch
-    let mut unique_pairs = BTreeMap::<&Vec<u8>, BTreeSet<&Vec<u8>>>::default();
-    for mint in &queued_mints {
+    let mut unique_pairs = BTreeMap::<&Vec<u8>, BTreeMap<&Vec<u8>, i64>>::default();
+    for (tx_id, pair, _) in &queued_mints {
         unique_pairs
-            .entry(&mint.1 .0)
+            .entry(&pair.0)
             .and_modify(|asset_names| {
-                asset_names.insert(&mint.1 .1);
+                // we want to keep track of the first tx for each credential
+                asset_names.entry(&pair.1).or_insert(*tx_id);
             })
             .or_insert({
-                let mut new_set = BTreeSet::<&Vec<u8>>::default();
-                new_set.insert(&mint.1 .1);
+                let mut new_set = BTreeMap::<&Vec<u8>, i64>::default();
+                new_set.insert(&pair.1, *tx_id);
                 new_set
             });
     }
@@ -116,7 +117,7 @@ async fn handle_mints(
     let mut mint_conditions = Condition::any();
     for (&asset_name, &policy_id) in unique_pairs
         .iter()
-        .flat_map(|(policy_id, assets)| assets.iter().zip(std::iter::repeat(policy_id)))
+        .flat_map(|(policy_id, assets)| assets.keys().zip(std::iter::repeat(policy_id)))
     {
         mint_conditions = mint_conditions.add(
             Condition::all()
@@ -146,15 +147,18 @@ async fn handle_mints(
                 remaining_pairs
                     .iter()
                     .flat_map(|(policy_id, assets)| assets.iter().zip(std::iter::repeat(policy_id)))
-                    .map(|(&asset_name, &policy_id)| NativeAssetActiveModel {
-                        policy_id: Set(policy_id.clone()),
-                        asset_name: Set(asset_name.clone()),
-                        cip14_fingerprint: Set(blake2b160(
-                            &[policy_id.as_slice(), asset_name.as_slice()].concat(),
-                        )
-                        .to_vec()),
-                        ..Default::default()
-                    }),
+                    .map(
+                        |((&asset_name, tx_id), &policy_id)| NativeAssetActiveModel {
+                            policy_id: Set(policy_id.clone()),
+                            asset_name: Set(asset_name.clone()),
+                            cip14_fingerprint: Set(blake2b160(
+                                &[policy_id.as_slice(), asset_name.as_slice()].concat(),
+                            )
+                            .to_vec()),
+                            first_tx: Set(*tx_id),
+                            ..Default::default()
+                        },
+                    ),
             )
             .exec_many_with_returning(db_tx)
             .await?,

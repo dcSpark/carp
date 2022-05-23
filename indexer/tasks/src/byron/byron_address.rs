@@ -57,16 +57,18 @@ async fn handle_addresses(
             if tx_outputs.is_empty() {
                 return Ok(BTreeMap::<Vec<u8>, AddressInBlock>::default());
             }
+
+            let mut queued_address = BTreeMap::<Vec<u8>, i64>::default();
+            for (address, tx_id) in tx_outputs
+                .iter()
+                .flat_map(|pair| pair.0.iter().zip(std::iter::repeat(pair.1.id)))
+                .map(|(output, tx_id)| (output.address.encode_fragment().unwrap(), tx_id))
+            {
+                // we want to keep track of the first tx for each address
+                queued_address.entry(address).or_insert(tx_id);
+            }
             // insert addresses
-            let address_map = crate::era_common::insert_addresses(
-                &tx_outputs
-                    .iter()
-                    .flat_map(|pair| pair.0.iter())
-                    .map(|output| output.address.encode_fragment().unwrap())
-                    .collect(),
-                db_tx,
-            )
-            .await?;
+            let address_map = crate::era_common::insert_addresses(&queued_address, db_tx).await?;
 
             Ok(address_map)
         }

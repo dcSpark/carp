@@ -61,7 +61,7 @@ async fn handle_txs(
     let mut transactions: Vec<TransactionActiveModel> = vec![];
     // note: genesis file is a JSON structure, so there shouldn't be duplicate addresses
     // even across avvm and non-avvm it should be unique, otherwise two txs with the same tx hash would exist
-    let mut addresses: Vec<AddressActiveModel> = vec![];
+    let mut addresses: Vec<Box<dyn Fn(i64) -> AddressActiveModel>> = vec![];
     let mut outputs: Vec<cardano_multiplatform_lib::TransactionOutput> = vec![];
 
     for (pub_key, amount) in block.1.avvm_distr.iter() {
@@ -69,20 +69,23 @@ async fn handle_txs(
         let byron_addr =
             ByronAddress::from_bytes(extended_addr.to_address().as_ref().to_vec()).unwrap();
 
+        // note: strictly speaking, genesis txs are unordered so there is no defined index
+        let tx_index = transactions.len() as i32;
         transactions.push(TransactionActiveModel {
             block_id: Set(database_block.id),
             hash: Set(tx_hash.to_bytes().to_vec()),
             is_valid: Set(true),
             payload: Set(byron_addr.to_bytes()),
-            // note: strictly speaking, genesis txs are unordered so there is no defined index
-            tx_index: Set(transactions.len() as i32),
+            tx_index: Set(tx_index),
             ..Default::default()
         });
 
-        addresses.push(AddressActiveModel {
-            payload: Set(byron_addr.to_bytes()),
+        let addr_copy = byron_addr.clone();
+        addresses.push(Box::new(move |tx_id| AddressActiveModel {
+            payload: Set(addr_copy.to_bytes()),
+            first_tx: Set(tx_id),
             ..Default::default()
-        });
+        }));
 
         // TODO: this is actually wrong. CML uses the Shelley format, but this should be the Byron format
         outputs.push(cardano_multiplatform_lib::TransactionOutput::new(
@@ -101,20 +104,23 @@ async fn handle_txs(
         // println!("{}", byron_addr.to_base58());
         // println!("{}", hex::encode(tx_hash));
 
+        // note: strictly speaking, genesis txs are unordered so there is no defined index
+        let tx_index = transactions.len() as i32;
         transactions.push(TransactionActiveModel {
             block_id: Set(database_block.id),
             hash: Set(tx_hash.to_vec()),
             is_valid: Set(true),
             payload: Set(byron_addr.to_bytes()),
-            // note: strictly speaking, genesis txs are unordered so there is no defined index
-            tx_index: Set(transactions.len() as i32),
+            tx_index: Set(tx_index),
             ..Default::default()
         });
 
-        addresses.push(AddressActiveModel {
-            payload: Set(byron_addr.to_bytes()),
+        let addr_copy = byron_addr.clone();
+        addresses.push(Box::new(move |tx_id| AddressActiveModel {
+            payload: Set(addr_copy.to_bytes()),
+            first_tx: Set(tx_id),
             ..Default::default()
-        });
+        }));
 
         // TODO: this is actually wrong. CML uses the Shelley format, but this should be the Byron format
         outputs.push(cardano_multiplatform_lib::TransactionOutput::new(
@@ -123,10 +129,14 @@ async fn handle_txs(
         ));
     }
 
-    let (inserted_txs, inserted_addresses) = try_join(
-        bulk_insert_txs(db_tx, &transactions),
-        Address::insert_many(addresses).exec_many_with_returning(db_tx),
+    let inserted_txs = bulk_insert_txs(db_tx, &transactions).await?;
+    let inserted_addresses = Address::insert_many(
+        addresses
+            .iter()
+            .enumerate()
+            .map(|(idx, addr)| addr(inserted_txs[idx].id)),
     )
+    .exec_many_with_returning(db_tx)
     .await?;
 
     let outputs_to_add = inserted_txs
