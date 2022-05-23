@@ -116,7 +116,7 @@ pub fn add_input_relations(
         i64,
     )],
     outputs: &[&TransactionOutputModel],
-    input_to_output_map: &BTreeMap<&Vec<u8>, BTreeMap<i64, i64>>,
+    input_to_output_map: &BTreeMap<&Vec<u8>, BTreeMap<i64, &TransactionOutputModel>>,
 ) {
     let mut output_to_input_tx = BTreeMap::<i64, i64>::default();
     for input_tx_pair in inputs.iter() {
@@ -124,7 +124,7 @@ pub fn add_input_relations(
             match input_to_output_map.get(&input.transaction_id.to_vec()) {
                 Some(entry_for_tx) => {
                     let output_id = entry_for_tx[&(input.index as i64)];
-                    output_to_input_tx.insert(output_id, input_tx_pair.1);
+                    output_to_input_tx.insert(output_id.id, input_tx_pair.1);
                 }
                 None => {
                     println!("tx: {}", hex::encode(input.transaction_id));

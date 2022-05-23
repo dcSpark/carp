@@ -1,6 +1,9 @@
 use sea_schema::migration::prelude::*;
 
-use entity::prelude::{Transaction, TransactionColumn, TransactionOutput, TransactionOutputColumn};
+use entity::prelude::{
+    Address, AddressColumn, Transaction, TransactionColumn, TransactionOutput,
+    TransactionOutputColumn,
+};
 use entity::transaction_input::*;
 
 pub struct Migration;
@@ -41,6 +44,13 @@ impl MigrationTrait for Migration {
                             .to(Transaction, TransactionColumn::Id)
                             .on_delete(ForeignKeyAction::Cascade),
                     )
+                    .col(ColumnDef::new(Column::AddressId).big_integer().not_null())
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk-transaction_input-address_id")
+                            .from(Entity, Column::AddressId)
+                            .to(Address, AddressColumn::Id),
+                    )
                     .col(ColumnDef::new(Column::InputIndex).integer().not_null())
                     .to_owned(),
             )
@@ -52,6 +62,16 @@ impl MigrationTrait for Migration {
                     .table(Entity)
                     .name("index-transaction_input-transaction_output")
                     .col(Column::UtxoId)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .table(Entity)
+                    .name("index-transaction_input-address")
+                    .col(Column::AddressId)
                     .to_owned(),
             )
             .await?;

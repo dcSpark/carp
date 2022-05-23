@@ -16,6 +16,8 @@ pub enum Relation {
     AddressCredential,
     #[sea_orm(has_many = "super::transaction_output::Entity")]
     TransactionOutput,
+    #[sea_orm(has_many = "super::transaction_input::Entity")]
+    TransactionInput,
 }
 
 impl ActiveModelBehavior for ActiveModel {}
