@@ -14,7 +14,9 @@ const route = Routes.transactionOutput;
 @Route('transaction/output')
 export class TransactionOutputController extends Controller {
   /**
-   * Get the outputs for given `<tx hash, output index>` pairs
+   * Get the outputs for given `<tx hash, output index>` pairs.
+   *
+   * This endpoint will return both used AND unused outputs
    *
    * Note: this endpoint only returns txs that are in a block. Use another tool to see mempool for txs not in a block
    */
