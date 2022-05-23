@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use super::{multiera_txs::MultieraTransactionTask, utils::user_asset::AssetName};
 use crate::config::ReadonlyConfig::ReadonlyConfig;
+use crate::utils::blake2b160;
 use cardano_multiplatform_lib::crypto::ScriptHash;
 use entity::sea_orm::QueryOrder;
 use entity::{
@@ -148,6 +149,10 @@ async fn handle_mints(
                     .map(|(&asset_name, &policy_id)| NativeAssetActiveModel {
                         policy_id: Set(policy_id.clone()),
                         asset_name: Set(asset_name.clone()),
+                        cip14_fingerprint: Set(blake2b160(
+                            &[policy_id.as_slice(), asset_name.as_slice()].concat(),
+                        )
+                        .to_vec()),
                         ..Default::default()
                     }),
             )

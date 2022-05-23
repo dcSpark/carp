@@ -27,6 +27,7 @@ impl MigrationTrait for Migration {
                     )
                     .col(ColumnDef::new(Column::PolicyId).binary().not_null())
                     .col(ColumnDef::new(Column::AssetName).binary().not_null())
+                    .col(ColumnDef::new(Column::Cip14Fingerprint).binary().not_null())
                     .to_owned(),
             )
             .await?;
@@ -39,6 +40,16 @@ impl MigrationTrait for Migration {
                     .col(Column::PolicyId)
                     .col(Column::AssetName)
                     .unique()
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .table(Entity)
+                    .name("index-native_asset-fingerprint")
+                    .col(Column::Cip14Fingerprint)
                     .to_owned(),
             )
             .await?;

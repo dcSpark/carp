@@ -10,6 +10,13 @@ pub fn blake2b256(data: &[u8]) -> [u8; 32] {
     out
 }
 
+// https://github.com/cardano-foundation/CIPs/pull/64
+pub fn blake2b160(data: &[u8]) -> [u8; 32] {
+    let mut out = [0; 32];
+    Blake2b::blake2b(&mut out, data, &[]);
+    out
+}
+
 #[derive(Default, Debug)]
 pub struct TaskPerfAggregator(pub BTreeMap<&'static str, Duration>);
 impl TaskPerfAggregator {

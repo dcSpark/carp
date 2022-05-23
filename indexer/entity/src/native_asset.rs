@@ -8,6 +8,7 @@ pub struct Model {
     pub id: i64,
     pub policy_id: Vec<u8>,
     pub asset_name: Vec<u8>,
+    pub cip14_fingerprint: Vec<u8>,
 }
 
 #[derive(Copy, Clone, Debug, DeriveRelation, EnumIter)]
