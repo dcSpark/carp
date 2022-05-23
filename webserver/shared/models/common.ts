@@ -33,7 +33,7 @@ export enum RelationFilterType {
   NO_FILTER = 0xff,
 }
 
-export type Pagination = {
+export type AfterBlockPagination = {
   /**
    * Omitting "after" means you query starting from the genesis block.
    *
@@ -56,6 +56,8 @@ export type Pagination = {
      */
     tx: string;
   };
+};
+export type UntilBlockPagination = {
   /**
    * block hash - inclusive
    * @pattern [0-9a-fA-F]{64}
@@ -63,6 +65,8 @@ export type Pagination = {
    */
   untilBlock: string;
 };
+export type Pagination = InexactSubset<AfterBlockPagination> &
+  UntilBlockPagination;
 
 export type UtxoPointer = {
   /**
@@ -71,4 +75,11 @@ export type UtxoPointer = {
    */
   txHash: string;
   index: number;
+};
+
+export type OffsetPaginationRequest = {
+  offset: number;
+};
+export type OffsetPaginationResponse = {
+  hasNextPage: boolean;
 };

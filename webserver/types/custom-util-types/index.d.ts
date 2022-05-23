@@ -4,6 +4,7 @@ declare type Equals<X, Y> = (<T>() => T extends X ? 1 : 2) extends <
   ? true
   : false;
 
+declare type InexactSubset<T> = { [P in keyof T]?: T[P] };
 declare type NonNullableOrVoidable<T> = T extends void | null | undefined
   ? never
   : T;
