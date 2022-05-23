@@ -68,6 +68,7 @@ async fn handle_entries(
             &get_cip25_pairs(&Metadatum::decode_fragment(metadata.payload.as_slice()).unwrap())
         {
             for ((asset_name, payload), policy_id) in pairs
+                .1
                 .iter()
                 .flat_map(|(policy_id, assets)| assets.iter().zip(std::iter::repeat(policy_id)))
             {
@@ -79,6 +80,7 @@ async fn handle_entries(
                         metadata_id: Set(metadata.id),
                         asset_id: Set(*asset_id),
                         payload: Set(payload.clone()),
+                        version: Set(pairs.0.clone()),
                         ..Default::default()
                     });
                 }

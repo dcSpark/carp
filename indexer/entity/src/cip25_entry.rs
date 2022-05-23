@@ -11,6 +11,7 @@ pub struct Model {
     #[sea_orm(column_type = "BigInteger")]
     pub asset_id: i64,
     pub payload: Vec<u8>,
+    pub version: String,
 }
 
 #[derive(Copy, Clone, Debug, DeriveRelation, EnumIter)]

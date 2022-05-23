@@ -66,7 +66,7 @@ fn get_cip25_assets(
 
 pub fn get_cip25_pairs(
     content: &Metadatum,
-) -> Result<BTreeMap<PolicyId, BTreeMap<AssetName, Payload>>, Cip25ParseError> {
+) -> Result<(String, BTreeMap<PolicyId, BTreeMap<AssetName, Payload>>), Cip25ParseError> {
     let version = search_cip25_version(content).unwrap_or_else(|| "1.0".to_string());
 
     let mut result = BTreeMap::<PolicyId, BTreeMap<AssetName, Payload>>::default();
@@ -84,5 +84,5 @@ pub fn get_cip25_pairs(
         ));
     }
 
-    Ok(result)
+    Ok((version, result))
 }
