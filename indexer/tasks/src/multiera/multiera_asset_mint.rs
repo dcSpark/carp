@@ -1,7 +1,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::config::EmptyConfig::EmptyConfig;
+use super::{multiera_txs::MultieraTransactionTask, utils::user_asset::AssetName};
+use crate::config::ReadonlyConfig::ReadonlyConfig;
 use cardano_multiplatform_lib::crypto::ScriptHash;
+use entity::sea_orm::QueryOrder;
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, Condition, DatabaseTransaction, Set},
@@ -14,13 +16,11 @@ use pallas::{
     },
 };
 
-use super::{multiera_txs::MultieraTransactionTask, utils::user_asset::AssetName};
-
 use crate::dsl::task_macro::*;
 
 carp_task! {
   name MultieraAssetMintTask;
-  configuration EmptyConfig;
+  configuration ReadonlyConfig;
   doc "Adds new tokens and keeps track of mints/burns in general";
   era multiera;
   dependencies [MultieraTransactionTask];
@@ -38,6 +38,7 @@ carp_task! {
       task.db_tx,
       task.block,
       &previous_data.multiera_txs,
+      task.config.readonly
   );
   merge_result |previous_data, result| {
     *previous_data.multiera_assets = result;
@@ -48,6 +49,7 @@ async fn handle_mints(
     db_tx: &DatabaseTransaction,
     block: BlockInfo<'_, alonzo::Block>,
     multiera_txs: &[TransactionModel],
+    readonly: bool,
 ) -> Result<Vec<NativeAssetModel>, DbErr> {
     let mut queued_mints = Vec::<(i64, (Vec<u8>, Vec<u8>), i64)>::default();
     for (tx_body, cardano_transaction) in block.1.transaction_bodies.iter().zip(multiera_txs) {
@@ -71,6 +73,25 @@ async fn handle_mints(
     }
     if queued_mints.is_empty() {
         return Ok(vec![]);
+    }
+
+    if readonly {
+        // https://github.com/dcSpark/carp/issues/46
+        let mut asset_conditions = Condition::any();
+        for (_, (policy_id, asset_name), _) in queued_mints.iter() {
+            asset_conditions = asset_conditions.add(
+                Condition::all()
+                    .add(NativeAssetColumn::PolicyId.eq(policy_id.clone()))
+                    .add(NativeAssetColumn::AssetName.eq(asset_name.clone())),
+            );
+        }
+
+        let assets = NativeAsset::find()
+            .filter(asset_conditions)
+            .order_by_asc(NativeAssetColumn::Id)
+            .all(db_tx)
+            .await?;
+        return Ok(assets);
     }
 
     // 1) Remove duplicates to build a list of all the <policy_id, asset_name> pairs that we care about

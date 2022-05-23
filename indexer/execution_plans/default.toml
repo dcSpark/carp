@@ -51,5 +51,6 @@ readonly=false
 [MultieraTxCredentialRelationTask]
 
 [MultieraAssetMintTask]
+readonly=false
 
 [MultieraCip25EntryTask]
