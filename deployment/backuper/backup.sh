@@ -6,6 +6,8 @@
 # 4. Upload backup to s3
 # 5. Save backup epoch done to file
 
+source /env
+
 if [[ "${NETWORK}" == testnet ]]; then
     NET_QUERY="--testnet-magic 1097911063"
 else
@@ -26,10 +28,10 @@ if [[ "${CURRENT_EPOCH}" -gt "${LAST_BACKUP_EPOCH}" ]]; then
         -h postgres \
         -U ${POSTGRES_USER:-oura} \
         -d ${POSTGRES_DB:-cardano} \
-        > backup_${CURRENT_EPOCH}.sql
+        > carp_db_${CARP_VERSION}_${CURRENT_EPOCH}.sql
 
-    s3cmd put backup_${CURRENT_EPOCH}.sql s3://${S3_BUCKET}/${S3_FOLDER}/${NETWORK}/
-    rm -rf backup_${CURRENT_EPOCH}.sql
+    s3cmd put carp_db_${CARP_VERSION}_${CURRENT_EPOCH}.sql s3://${S3_BUCKET}/${S3_FOLDER}/${NETWORK}/
+    rm -rf carp_db_${CARP_VERSION}_${CURRENT_EPOCH}.sql
 
     echo "${CURRENT_EPOCH}" > "${EPOCH_FILE}"
 fi
