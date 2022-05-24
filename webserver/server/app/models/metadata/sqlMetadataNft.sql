@@ -15,16 +15,9 @@ WITH
   )
 SELECT "Cip25Entry".payload, native_assets.policy_id, native_assets.asset_name
 FROM
-  (
-    SELECT "AssetMint".asset_id, MIN("AssetMint".tx_id) as tx_id
-    FROM "AssetMint"
-    INNER JOIN native_assets ON native_assets.id = "AssetMint".asset_id
-    GROUP BY "AssetMint".asset_id
-  ) asset_and_tx
-  INNER JOIN native_assets
-    ON native_assets.id = asset_and_tx.asset_id
+  native_assets
   INNER JOIN "TransactionMetadata"
-    ON asset_and_tx.tx_id = "TransactionMetadata".tx_id
+    ON native_assets.first_tx = "TransactionMetadata".tx_id
   INNER JOIN "Cip25Entry"
     ON
       "Cip25Entry".asset_id = native_assets.id
