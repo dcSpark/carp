@@ -33,24 +33,27 @@ RUN cargo clean --release -p tasks
 RUN cargo clean --release -p task-docgen
 RUN cargo clean --release -p plan-visualizer
 
-RUN rm -rf ./src
-RUN rm -rf ./entity
-RUN rm -rf ./migration
-RUN rm -rf ./reparse
-RUN rm -rf ./rollback
-RUN rm -rf ./tasks
-RUN rm -rf ./plan-visualizer
+RUN rm -rf ./src \
+    ./entity \
+    ./migration \
+    ./reparse \
+    ./rollback \
+    ./tasks \
+    ./plan-visualizer \
+    ./task-docgen
 
 COPY ./indexer/entity ./entity
 COPY ./indexer/migration ./migration
 COPY ./indexer/reparse ./reparse
 COPY ./indexer/rollback ./rollback
 COPY ./indexer/tasks ./tasks
+COPY ./indexer/task-docgen ./task-docgen
 COPY ./indexer/src ./src
 COPY ./indexer/plan-visualizer ./plan-visualizer
 
 RUN cargo build --release \
-    -p carp -p migration -p reparse -p rollback -p tasks -p plan-visualizer
+    -p carp -p migration -p reparse -p rollback \
+    -p tasks -p plan-visualizer -p task-docgen
 
 WORKDIR /ops
 
@@ -59,6 +62,7 @@ RUN cp /carp/target/release/migration .
 RUN cp /carp/target/release/reparse .
 RUN cp /carp/target/release/rollback .
 RUN cp /carp/target/release/plan-visualizer .
+
 
 COPY ./indexer/genesis ./genesis
 COPY ./indexer/execution_plans ./execution_plans
