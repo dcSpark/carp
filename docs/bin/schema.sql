@@ -26,7 +26,8 @@ SET default_table_access_method = heap;
 
 CREATE TABLE public."Address" (
     id bigint NOT NULL,
-    payload bytea NOT NULL
+    payload bytea NOT NULL,
+    first_tx bigint NOT NULL
 );
 
 
@@ -113,6 +114,7 @@ CREATE TABLE public."Cip25Entry" (
     id bigint NOT NULL,
     metadata_id bigint NOT NULL,
     asset_id bigint NOT NULL,
+    version text NOT NULL,
     payload bytea NOT NULL
 );
 
@@ -143,7 +145,9 @@ ALTER SEQUENCE public."Cip25Entry_id_seq" OWNED BY public."Cip25Entry".id;
 CREATE TABLE public."NativeAsset" (
     id bigint NOT NULL,
     policy_id bytea NOT NULL,
-    asset_name bytea NOT NULL
+    asset_name bytea NOT NULL,
+    cip14_fingerprint bytea NOT NULL,
+    first_tx bigint NOT NULL
 );
 
 
@@ -172,7 +176,8 @@ ALTER SEQUENCE public."NativeAsset_id_seq" OWNED BY public."NativeAsset".id;
 
 CREATE TABLE public."StakeCredential" (
     id bigint NOT NULL,
-    credential bytea NOT NULL
+    credential bytea NOT NULL,
+    first_tx bigint NOT NULL
 );
 
 
@@ -217,6 +222,7 @@ CREATE TABLE public."TransactionInput" (
     id bigint NOT NULL,
     utxo_id bigint NOT NULL,
     tx_id bigint NOT NULL,
+    address_id bigint NOT NULL,
     input_index integer NOT NULL
 );
 
@@ -329,7 +335,6 @@ ALTER SEQUENCE public."Transaction_id_seq" OWNED BY public."Transaction".id;
 CREATE TABLE public."TxCredentialRelation" (
     credential_id bigint NOT NULL,
     tx_id bigint NOT NULL,
-    block_id integer NOT NULL,
     relation integer NOT NULL
 );
 
@@ -544,6 +549,13 @@ ALTER TABLE ONLY public."TxCredentialRelation"
 
 
 --
+-- Name: index-address-transaction; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "index-address-transaction" ON public."Address" USING btree (first_tx);
+
+
+--
 -- Name: index-address_credential-credential; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -586,10 +598,24 @@ CREATE INDEX "index-metadata-txid" ON public."TransactionMetadata" USING btree (
 
 
 --
+-- Name: index-native_asset-fingerprint; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "index-native_asset-fingerprint" ON public."NativeAsset" USING btree (cip14_fingerprint);
+
+
+--
 -- Name: index-native_asset-pair; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX "index-native_asset-pair" ON public."NativeAsset" USING btree (policy_id, asset_name);
+
+
+--
+-- Name: index-native_asset-transaction; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "index-native_asset-transaction" ON public."NativeAsset" USING btree (first_tx);
 
 
 --
@@ -604,6 +630,13 @@ CREATE INDEX "index-native_asset_name" ON public."NativeAsset" USING btree (asse
 --
 
 CREATE INDEX "index-transaction-block" ON public."Transaction" USING btree (block_id);
+
+
+--
+-- Name: index-transaction_input-address; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "index-transaction_input-address" ON public."TransactionInput" USING btree (address_id);
 
 
 --
@@ -635,13 +668,6 @@ CREATE INDEX "index-transaction_output-transaction" ON public."TransactionOutput
 
 
 --
--- Name: index-tx_credential-block; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "index-tx_credential-block" ON public."TxCredentialRelation" USING btree (block_id);
-
-
---
 -- Name: index-tx_credential-credential; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -649,11 +675,19 @@ CREATE INDEX "index-tx_credential-credential" ON public."TxCredentialRelation" U
 
 
 --
+-- Name: Address fk-address-tx_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."Address"
+    ADD CONSTRAINT "fk-address-tx_id" FOREIGN KEY (first_tx) REFERENCES public."Transaction"(id) ON DELETE CASCADE;
+
+
+--
 -- Name: AddressCredentialRelation fk-address_credential-address_id; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."AddressCredentialRelation"
-    ADD CONSTRAINT "fk-address_credential-address_id" FOREIGN KEY (address_id) REFERENCES public."Address"(id);
+    ADD CONSTRAINT "fk-address_credential-address_id" FOREIGN KEY (address_id) REFERENCES public."Address"(id) ON DELETE CASCADE;
 
 
 --
@@ -661,7 +695,7 @@ ALTER TABLE ONLY public."AddressCredentialRelation"
 --
 
 ALTER TABLE ONLY public."AddressCredentialRelation"
-    ADD CONSTRAINT "fk-address_credential-credential_id" FOREIGN KEY (credential_id) REFERENCES public."StakeCredential"(id);
+    ADD CONSTRAINT "fk-address_credential-credential_id" FOREIGN KEY (credential_id) REFERENCES public."StakeCredential"(id) ON DELETE CASCADE;
 
 
 --
@@ -705,11 +739,35 @@ ALTER TABLE ONLY public."TransactionMetadata"
 
 
 --
+-- Name: NativeAsset fk-native_asset-tx_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."NativeAsset"
+    ADD CONSTRAINT "fk-native_asset-tx_id" FOREIGN KEY (first_tx) REFERENCES public."Transaction"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: StakeCredential fk-stake_credential-tx_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."StakeCredential"
+    ADD CONSTRAINT "fk-stake_credential-tx_id" FOREIGN KEY (first_tx) REFERENCES public."Transaction"(id) ON DELETE CASCADE;
+
+
+--
 -- Name: Transaction fk-transaction-block_id; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."Transaction"
     ADD CONSTRAINT "fk-transaction-block_id" FOREIGN KEY (block_id) REFERENCES public."Block"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: TransactionInput fk-transaction_input-address_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."TransactionInput"
+    ADD CONSTRAINT "fk-transaction_input-address_id" FOREIGN KEY (address_id) REFERENCES public."Address"(id);
 
 
 --
@@ -742,14 +800,6 @@ ALTER TABLE ONLY public."TransactionOutput"
 
 ALTER TABLE ONLY public."TransactionOutput"
     ADD CONSTRAINT "fk-transaction_output-tx_id" FOREIGN KEY (tx_id) REFERENCES public."Transaction"(id) ON DELETE CASCADE;
-
-
---
--- Name: TxCredentialRelation fk-tx_credential-block_id; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public."TxCredentialRelation"
-    ADD CONSTRAINT "fk-tx_credential-block_id" FOREIGN KEY (block_id) REFERENCES public."Block"(id);
 
 
 --

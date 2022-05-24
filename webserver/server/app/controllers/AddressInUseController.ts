@@ -13,7 +13,6 @@ import { Routes } from '../../../shared/routes';
 import { getAddressTypes } from '../models/utils';
 import type { AddressUsedResponse } from '../../../shared/models/AddressUsed';
 import { addressUsed, credentialUsed } from '../services/AddressUsedService';
-import { RelationFilterType } from '../../../shared/models/common';
 
 const route = Routes.addressUsed;
 
@@ -21,6 +20,9 @@ const route = Routes.addressUsed;
 export class AddressInUseController extends Controller {
   /**
    * Ordered lexicographically (order is not maintained)
+   *
+   * Warning: the pagination on this endpoint is NOT whether or not an address was used during this block interval,
+   * but rather whether or not the address was first used within this interval.
    *
    * Note: this endpoint only returns addresses that are in a block. Use another tool to see mempool information
    */
@@ -31,7 +33,7 @@ export class AddressInUseController extends Controller {
     requestBody: EndpointTypes[typeof route]['input'],
     @Res()
     errorResponse: TsoaResponse<
-      StatusCodes.BAD_REQUEST | StatusCodes.UNPROCESSABLE_ENTITY,
+      StatusCodes.BAD_REQUEST | StatusCodes.CONFLICT | StatusCodes.UNPROCESSABLE_ENTITY,
       ErrorShape
     >
   ): Promise<EndpointTypes[typeof route]['response']> {
@@ -49,7 +51,7 @@ export class AddressInUseController extends Controller {
     if (addressTypes.invalid.length > 0) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return errorResponse(
-        StatusCodes.BAD_REQUEST,
+        StatusCodes.UNPROCESSABLE_ENTITY,
         genErrorMessage(Errors.IncorrectAddressFormat, {
           addresses: addressTypes.invalid,
         })
@@ -95,7 +97,6 @@ export class AddressInUseController extends Controller {
         const result = await Promise.all([
           credentialUsed({
             stakeCredentials: addressTypes.credentialHex.map(addr => Buffer.from(addr, 'hex')),
-            relationFilter: requestBody.relationFilter ?? RelationFilterType.NO_FILTER,
             ...commonRequest,
           }),
           addressUsed({
@@ -112,7 +113,7 @@ export class AddressInUseController extends Controller {
     if ('code' in addresses) {
       expectType<Equals<typeof addresses, ErrorShape>>(true);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-      return errorResponse(StatusCodes.UNPROCESSABLE_ENTITY, addresses);
+      return errorResponse(StatusCodes.CONFLICT, addresses);
     }
 
     const result = [...addresses[0].addresses, ...addresses[1].addresses];

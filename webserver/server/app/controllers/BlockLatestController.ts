@@ -22,10 +22,7 @@ export class BlockLatestController extends Controller {
     @Body()
     requestBody: EndpointTypes[typeof route]['input'],
     @Res()
-    errorResponse: TsoaResponse<
-      StatusCodes.BAD_REQUEST | StatusCodes.UNPROCESSABLE_ENTITY,
-      ErrorShape
-    >
+    errorResponse: TsoaResponse<StatusCodes.BAD_REQUEST | StatusCodes.CONFLICT, ErrorShape>
   ): Promise<EndpointTypes[typeof route]['response']> {
     const normalizedOffset = Math.abs(requestBody.offset);
     if (normalizedOffset > BLOCK_LIMIT.OFFSET) {
@@ -45,7 +42,7 @@ export class BlockLatestController extends Controller {
     if (latestBlock == null) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return errorResponse(
-        StatusCodes.UNPROCESSABLE_ENTITY,
+        StatusCodes.CONFLICT,
         genErrorMessage(Errors.OffsetBlockNotFound, {
           offset: requestBody.offset,
         })

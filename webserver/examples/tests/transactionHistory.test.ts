@@ -57,7 +57,7 @@ describe(`/${Routes.transactionHistory}`, function () {
     } catch (err: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const response = getErrorResponse(err);
-      expect(response.status).to.be.equal(StatusCodes.UNPROCESSABLE_ENTITY);
+      expect(response.status).to.be.equal(StatusCodes.CONFLICT);
       expect(response.data.reason).to.satisfy((msg: string) =>
         msg.startsWith(Errors.BlockHashNotFound.prefix)
       );
@@ -81,7 +81,7 @@ describe(`/${Routes.transactionHistory}`, function () {
     } catch (err: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const response = getErrorResponse(err);
-      expect(response.status).to.be.equal(StatusCodes.UNPROCESSABLE_ENTITY);
+      expect(response.status).to.be.equal(StatusCodes.CONFLICT);
       expect(response.data.reason).to.satisfy((msg: string) =>
         msg.startsWith(Errors.PageStartNotFound.prefix)
       );
@@ -105,7 +105,7 @@ describe(`/${Routes.transactionHistory}`, function () {
     } catch (err: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const response = getErrorResponse(err);
-      expect(response.status).to.be.equal(StatusCodes.UNPROCESSABLE_ENTITY);
+      expect(response.status).to.be.equal(StatusCodes.CONFLICT);
       expect(response.data.reason).to.satisfy((msg: string) =>
         msg.startsWith(Errors.PageStartNotFound.prefix)
       );

@@ -7,7 +7,6 @@ export type BufferArray = (Buffer)[];
 export interface ISqlCredentialUsedParams {
   after_tx_id: string | null | void;
   credentials: BufferArray | null | void;
-  relation: number | null | void;
   until_tx_id: string | null | void;
 }
 
@@ -22,22 +21,19 @@ export interface ISqlCredentialUsedQuery {
   result: ISqlCredentialUsedResult;
 }
 
-const sqlCredentialUsedIR: any = {"name":"sqlCredentialUsed","params":[{"name":"credentials","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":240,"b":250,"line":6,"col":39}]}},{"name":"relation","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":298,"b":305,"line":8,"col":39}]}},{"name":"until_tx_id","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":357,"b":367,"line":10,"col":38}]}},{"name":"after_tx_id","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":413,"b":423,"line":12,"col":37}]}}],"usedParamSet":{"credentials":true,"relation":true,"until_tx_id":true,"after_tx_id":true},"statement":{"body":"SELECT DISTINCT \"StakeCredential\".credential\nFROM \"StakeCredential\"\nINNER JOIN \"TxCredentialRelation\" ON \"TxCredentialRelation\".credential_id = \"StakeCredential\".id\nWHERE\n  \"StakeCredential\".credential = ANY (:credentials)\n  AND\n  (\"TxCredentialRelation\".relation & (:relation)) > 0\n  AND\n  (\"TxCredentialRelation\".tx_id) <= (:until_tx_id)\n  AND\n  (\"TxCredentialRelation\".tx_id) > (:after_tx_id)","loc":{"a":30,"b":424,"line":2,"col":0}}};
+const sqlCredentialUsedIR: any = {"name":"sqlCredentialUsed","params":[{"name":"credentials","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":143,"b":153,"line":5,"col":39}]}},{"name":"until_tx_id","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":198,"b":208,"line":7,"col":36}]}},{"name":"after_tx_id","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":252,"b":262,"line":9,"col":35}]}}],"usedParamSet":{"credentials":true,"until_tx_id":true,"after_tx_id":true},"statement":{"body":"SELECT DISTINCT \"StakeCredential\".credential\nFROM \"StakeCredential\"\nWHERE\n  \"StakeCredential\".credential = ANY (:credentials)\n  AND\n  (\"StakeCredential\".first_tx) <= (:until_tx_id)\n  AND\n  (\"StakeCredential\".first_tx) > (:after_tx_id)","loc":{"a":30,"b":263,"line":2,"col":0}}};
 
 /**
  * Query generated from SQL:
  * ```
  * SELECT DISTINCT "StakeCredential".credential
  * FROM "StakeCredential"
- * INNER JOIN "TxCredentialRelation" ON "TxCredentialRelation".credential_id = "StakeCredential".id
  * WHERE
  *   "StakeCredential".credential = ANY (:credentials)
  *   AND
- *   ("TxCredentialRelation".relation & (:relation)) > 0
+ *   ("StakeCredential".first_tx) <= (:until_tx_id)
  *   AND
- *   ("TxCredentialRelation".tx_id) <= (:until_tx_id)
- *   AND
- *   ("TxCredentialRelation".tx_id) > (:after_tx_id)
+ *   ("StakeCredential".first_tx) > (:after_tx_id)
  * ```
  */
 export const sqlCredentialUsed = new PreparedQuery<ISqlCredentialUsedParams,ISqlCredentialUsedResult>(sqlCredentialUsedIR);
