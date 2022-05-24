@@ -31,7 +31,7 @@ export interface ISqlHistoryForAddressesQuery {
   result: ISqlHistoryForAddressesResult;
 }
 
-const sqlHistoryForAddressesIR: any = {"name":"sqlHistoryForAddresses","params":[{"name":"addresses","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":127,"b":135,"line":6,"col":36}]}},{"name":"until_tx_id","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":413,"b":423,"line":13,"col":45},{"a":940,"b":950,"line":27,"col":43},{"a":1076,"b":1086,"line":30,"col":40}]}},{"name":"after_tx_id","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":488,"b":498,"line":15,"col":44},{"a":1142,"b":1152,"line":32,"col":39}]}},{"name":"limit","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":564,"b":568,"line":17,"col":16},{"a":1217,"b":1221,"line":34,"col":16},{"a":1697,"b":1701,"line":50,"col":8}]}}],"usedParamSet":{"addresses":true,"until_tx_id":true,"after_tx_id":true,"limit":true},"statement":{"body":"WITH\n  address_row AS (\n    SELECT *\n    FROM \"Address\"\n    WHERE \"Address\".payload = ANY (:addresses)\n  ),\n  outputs AS (\n        SELECT DISTINCT ON (\"TransactionOutput\".tx_id) \"TransactionOutput\".tx_id\n        FROM \"TransactionOutput\"\n        INNER JOIN address_row ON \"TransactionOutput\".address_id = address_row.id\n        WHERE\n              \"TransactionOutput\".tx_id <= (:until_tx_id)\n              AND\n              \"TransactionOutput\".tx_id > (:after_tx_id)\n        ORDER BY \"TransactionOutput\".tx_id ASC\n        LIMIT (:limit)\n  ),\n  inputs AS (\n        SELECT DISTINCT ON (\"TransactionInput\".tx_id) \"TransactionInput\".tx_id\n        FROM \"TransactionInput\"\n        INNER JOIN (\n          SELECT \"TransactionOutput\".id\n          FROM \"TransactionOutput\"\n          INNER JOIN address_row ON \"TransactionOutput\".address_id = address_row.id\n          WHERE\n            \"TransactionOutput\".tx_id <= (:until_tx_id)\n        ) spent_utxos ON \"TransactionInput\".utxo_id = spent_utxos.id\n        WHERE\n          \"TransactionInput\".tx_id <= (:until_tx_id)\n          AND\n          \"TransactionInput\".tx_id > (:after_tx_id)\n        ORDER BY \"TransactionInput\".tx_id ASC\n        LIMIT (:limit)\n  )\nSELECT \"Transaction\".id,\n        \"Transaction\".payload,\n        \"Transaction\".hash,\n        \"Transaction\".tx_index,\n        \"Transaction\".is_valid,\n        \"Block\".hash AS block_hash,\n        \"Block\".epoch,\n        \"Block\".slot,\n        \"Block\".era,\n        \"Block\".height\nFROM \"Transaction\"\nINNER JOIN \"Block\" ON \"Transaction\".block_id = \"Block\".id\nWHERE \"Transaction\".id IN (SELECT * FROM inputs UNION ALL SELECT * from outputs)\nORDER BY \"Transaction\".id ASC\nLIMIT (:limit)","loc":{"a":35,"b":1702,"line":2,"col":0}}};
+const sqlHistoryForAddressesIR: any = {"name":"sqlHistoryForAddresses","params":[{"name":"addresses","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":127,"b":135,"line":6,"col":36}]}},{"name":"until_tx_id","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":409,"b":419,"line":13,"col":41},{"a":824,"b":834,"line":24,"col":40}]}},{"name":"after_tx_id","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":476,"b":486,"line":15,"col":40},{"a":890,"b":900,"line":26,"col":39}]}},{"name":"limit","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":552,"b":556,"line":17,"col":16},{"a":965,"b":969,"line":28,"col":16},{"a":1445,"b":1449,"line":44,"col":8}]}}],"usedParamSet":{"addresses":true,"until_tx_id":true,"after_tx_id":true,"limit":true},"statement":{"body":"WITH\n  address_row AS (\n    SELECT *\n    FROM \"Address\"\n    WHERE \"Address\".payload = ANY (:addresses)\n  ),\n  outputs AS (\n        SELECT DISTINCT ON (\"TransactionOutput\".tx_id) \"TransactionOutput\".tx_id\n        FROM \"TransactionOutput\"\n        INNER JOIN address_row ON \"TransactionOutput\".address_id = address_row.id\n        WHERE\n          \"TransactionOutput\".tx_id <= (:until_tx_id)\n          AND\n          \"TransactionOutput\".tx_id > (:after_tx_id)\n        ORDER BY \"TransactionOutput\".tx_id ASC\n        LIMIT (:limit)\n  ),\n  inputs AS (\n        SELECT DISTINCT ON (\"TransactionInput\".tx_id) \"TransactionInput\".tx_id\n        FROM \"TransactionInput\"\n        INNER JOIN address_row ON \"TransactionInput\".address_id = address_row.id\n        WHERE\n          \"TransactionInput\".tx_id <= (:until_tx_id)\n          AND\n          \"TransactionInput\".tx_id > (:after_tx_id)\n        ORDER BY \"TransactionInput\".tx_id ASC\n        LIMIT (:limit)\n  )\nSELECT \"Transaction\".id,\n        \"Transaction\".payload,\n        \"Transaction\".hash,\n        \"Transaction\".tx_index,\n        \"Transaction\".is_valid,\n        \"Block\".hash AS block_hash,\n        \"Block\".epoch,\n        \"Block\".slot,\n        \"Block\".era,\n        \"Block\".height\nFROM \"Transaction\"\nINNER JOIN \"Block\" ON \"Transaction\".block_id = \"Block\".id\nWHERE \"Transaction\".id IN (SELECT * FROM inputs UNION ALL SELECT * from outputs)\nORDER BY \"Transaction\".id ASC\nLIMIT (:limit)","loc":{"a":35,"b":1450,"line":2,"col":0}}};
 
 /**
  * Query generated from SQL:
@@ -47,22 +47,16 @@ const sqlHistoryForAddressesIR: any = {"name":"sqlHistoryForAddresses","params":
  *         FROM "TransactionOutput"
  *         INNER JOIN address_row ON "TransactionOutput".address_id = address_row.id
  *         WHERE
- *               "TransactionOutput".tx_id <= (:until_tx_id)
- *               AND
- *               "TransactionOutput".tx_id > (:after_tx_id)
+ *           "TransactionOutput".tx_id <= (:until_tx_id)
+ *           AND
+ *           "TransactionOutput".tx_id > (:after_tx_id)
  *         ORDER BY "TransactionOutput".tx_id ASC
  *         LIMIT (:limit)
  *   ),
  *   inputs AS (
  *         SELECT DISTINCT ON ("TransactionInput".tx_id) "TransactionInput".tx_id
  *         FROM "TransactionInput"
- *         INNER JOIN (
- *           SELECT "TransactionOutput".id
- *           FROM "TransactionOutput"
- *           INNER JOIN address_row ON "TransactionOutput".address_id = address_row.id
- *           WHERE
- *             "TransactionOutput".tx_id <= (:until_tx_id)
- *         ) spent_utxos ON "TransactionInput".utxo_id = spent_utxos.id
+ *         INNER JOIN address_row ON "TransactionInput".address_id = address_row.id
  *         WHERE
  *           "TransactionInput".tx_id <= (:until_tx_id)
  *           AND
