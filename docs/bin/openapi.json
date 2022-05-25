@@ -55,28 +55,31 @@
                 ],
                 "type": "object"
             },
+            "BlockTxPair": {
+                "properties": {
+                    "tx": {
+                        "type": "string",
+                        "description": "tx hash",
+                        "example": "336d520af58ff440b2f20210ddb5ef5b2c035e0ec7ec258bae4b519a87fa1696",
+                        "pattern": "[0-9a-fA-F]{64}"
+                    },
+                    "block": {
+                        "type": "string",
+                        "description": "block hash",
+                        "example": "2548ad5d0d9d33d50ab43151f574474454017a733e307229fa509c4987ca9782",
+                        "pattern": "[0-9a-fA-F]{64}"
+                    }
+                },
+                "required": [
+                    "tx",
+                    "block"
+                ],
+                "type": "object"
+            },
             "AfterBlockPagination": {
                 "properties": {
                     "after": {
-                        "properties": {
-                            "tx": {
-                                "type": "string",
-                                "description": "tx hash",
-                                "example": "336d520af58ff440b2f20210ddb5ef5b2c035e0ec7ec258bae4b519a87fa1696",
-                                "pattern": "[0-9a-fA-F]{64}"
-                            },
-                            "block": {
-                                "type": "string",
-                                "description": "block hash",
-                                "example": "2548ad5d0d9d33d50ab43151f574474454017a733e307229fa509c4987ca9782",
-                                "pattern": "[0-9a-fA-F]{64}"
-                            }
-                        },
-                        "required": [
-                            "tx",
-                            "block"
-                        ],
-                        "type": "object",
+                        "$ref": "#/components/schemas/BlockTxPair",
                         "description": "Omitting \"after\" means you query starting from the genesis block.\n\nNote: the reason you have to specify both a tx hash AND a block hash in the \"after\" for pagination\nis because this is the only way to make sure your pagination doesn't get affected by rollbacks.\nex: a rollback could cause a tx to be removed from one block and appear in a totally different block.\nSpecifying the block hash as well allows making sure you're paginating on the right tx in the right block."
                     }
                 },
@@ -203,6 +206,80 @@
                     "offset"
                 ],
                 "type": "object"
+            },
+            "PageInfo": {
+                "properties": {
+                    "pageInfo": {
+                        "properties": {
+                            "hasNextPage": {
+                                "type": "boolean"
+                            }
+                        },
+                        "required": [
+                            "hasNextPage"
+                        ],
+                        "type": "object"
+                    }
+                },
+                "required": [
+                    "pageInfo"
+                ],
+                "type": "object"
+            },
+            "CredentialAddressResponse": {
+                "allOf": [
+                    {
+                        "properties": {
+                            "addresses": {
+                                "items": {
+                                    "$ref": "#/components/schemas/Bech32FullAddress"
+                                },
+                                "type": "array"
+                            }
+                        },
+                        "required": [
+                            "addresses"
+                        ],
+                        "type": "object"
+                    },
+                    {
+                        "$ref": "#/components/schemas/PageInfo"
+                    }
+                ]
+            },
+            "Credential": {
+                "anyOf": [
+                    {
+                        "$ref": "#/components/schemas/CredentialHex"
+                    },
+                    {
+                        "$ref": "#/components/schemas/Bech32Credential"
+                    }
+                ]
+            },
+            "CredentialAddressRequest": {
+                "allOf": [
+                    {
+                        "properties": {
+                            "after": {
+                                "$ref": "#/components/schemas/Bech32FullAddress"
+                            },
+                            "credentials": {
+                                "items": {
+                                    "$ref": "#/components/schemas/Credential"
+                                },
+                                "type": "array"
+                            }
+                        },
+                        "required": [
+                            "credentials"
+                        ],
+                        "type": "object"
+                    },
+                    {
+                        "$ref": "#/components/schemas/UntilBlockPagination"
+                    }
+                ]
             },
             "Cip25Metadata": {
                 "type": "string",
@@ -511,7 +588,7 @@
                         }
                     }
                 },
-                "description": "Ordered lexicographically (order is not maintained)\n\nNote: this endpoint only returns addresses that are in a block. Use another tool to see mempool information",
+                "description": "Ordered lexicographically (order is not maintained)\n\nWarning: the pagination on this endpoint is NOT whether or not an address was used during this block interval,\nbut rather whether or not the address was first used within this interval.\n\nNote: this endpoint only returns addresses that are in a block. Use another tool to see mempool information",
                 "security": [],
                 "parameters": [],
                 "requestBody": {
@@ -570,6 +647,56 @@
                         "application/json": {
                             "schema": {
                                 "$ref": "#/components/schemas/BlockLatestRequest"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/credential/address": {
+            "post": {
+                "operationId": "AddressesForCredential",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CredentialAddressResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Ordered by the first time the address was seen on-chain\n\nNote: this endpoint only returns addresses that are in a block. Use another tool to see mempool information",
+                "security": [],
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CredentialAddressRequest"
                             }
                         }
                     }

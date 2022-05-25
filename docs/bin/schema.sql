@@ -626,6 +626,13 @@ CREATE INDEX "index-native_asset_name" ON public."NativeAsset" USING btree (asse
 
 
 --
+-- Name: index-stake_credential-transaction; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "index-stake_credential-transaction" ON public."StakeCredential" USING btree (first_tx);
+
+
+--
 -- Name: index-transaction-block; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -703,7 +710,7 @@ ALTER TABLE ONLY public."AddressCredentialRelation"
 --
 
 ALTER TABLE ONLY public."AssetMint"
-    ADD CONSTRAINT "fk-asset_mint-asset_id" FOREIGN KEY (asset_id) REFERENCES public."NativeAsset"(id);
+    ADD CONSTRAINT "fk-asset_mint-asset_id" FOREIGN KEY (asset_id) REFERENCES public."NativeAsset"(id) ON DELETE CASCADE;
 
 
 --
@@ -719,7 +726,7 @@ ALTER TABLE ONLY public."AssetMint"
 --
 
 ALTER TABLE ONLY public."Cip25Entry"
-    ADD CONSTRAINT "fk-cip25_entry-asset_id" FOREIGN KEY (asset_id) REFERENCES public."NativeAsset"(id);
+    ADD CONSTRAINT "fk-cip25_entry-asset_id" FOREIGN KEY (asset_id) REFERENCES public."NativeAsset"(id) ON DELETE CASCADE;
 
 
 --
@@ -767,7 +774,7 @@ ALTER TABLE ONLY public."Transaction"
 --
 
 ALTER TABLE ONLY public."TransactionInput"
-    ADD CONSTRAINT "fk-transaction_input-address_id" FOREIGN KEY (address_id) REFERENCES public."Address"(id);
+    ADD CONSTRAINT "fk-transaction_input-address_id" FOREIGN KEY (address_id) REFERENCES public."Address"(id) ON DELETE CASCADE;
 
 
 --
@@ -783,7 +790,7 @@ ALTER TABLE ONLY public."TransactionInput"
 --
 
 ALTER TABLE ONLY public."TransactionInput"
-    ADD CONSTRAINT "fk-transaction_input-utxo_id" FOREIGN KEY (utxo_id) REFERENCES public."TransactionOutput"(id);
+    ADD CONSTRAINT "fk-transaction_input-utxo_id" FOREIGN KEY (utxo_id) REFERENCES public."TransactionOutput"(id) ON DELETE CASCADE;
 
 
 --
@@ -791,7 +798,7 @@ ALTER TABLE ONLY public."TransactionInput"
 --
 
 ALTER TABLE ONLY public."TransactionOutput"
-    ADD CONSTRAINT "fk-transaction_output-address_id" FOREIGN KEY (address_id) REFERENCES public."Address"(id);
+    ADD CONSTRAINT "fk-transaction_output-address_id" FOREIGN KEY (address_id) REFERENCES public."Address"(id) ON DELETE CASCADE;
 
 
 --
@@ -807,7 +814,7 @@ ALTER TABLE ONLY public."TransactionOutput"
 --
 
 ALTER TABLE ONLY public."TxCredentialRelation"
-    ADD CONSTRAINT "fk-tx_credential-credential_id" FOREIGN KEY (credential_id) REFERENCES public."StakeCredential"(id);
+    ADD CONSTRAINT "fk-tx_credential-credential_id" FOREIGN KEY (credential_id) REFERENCES public."StakeCredential"(id) ON DELETE CASCADE;
 
 
 --
