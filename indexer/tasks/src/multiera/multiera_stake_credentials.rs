@@ -126,7 +126,7 @@ async fn insert_stake_credentials(
     // 2) Add credentials that weren't in the DB
     {
         // check which credentials weren't found in the DB and prepare to add them
-        let credentials_to_add: Vec<StakeCredentialActiveModel> = deduplicated_creds
+        let mut credentials_to_add: Vec<StakeCredentialActiveModel> = deduplicated_creds
             .iter()
             .filter(|&(credential, _)| !result_map.contains_key(credential))
             .map(|(credential, tx_id)| StakeCredentialActiveModel {
@@ -135,6 +135,9 @@ async fn insert_stake_credentials(
                 ..Default::default()
             })
             .collect();
+
+        // need to make sure we're inserting addresses in the same order as we added txs
+        credentials_to_add.sort_by(|a, b| a.first_tx.as_ref().cmp(b.first_tx.as_ref()));
 
         // add the new entires into the DB, then add them to our result mapping
         if !credentials_to_add.is_empty() {
