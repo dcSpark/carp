@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-# Carp (Cardano Postges Indexer)
+# Carp (Cardano Postgres Indexer)
 
 Syncs Cardano blockchain information a Postgres database.
 
