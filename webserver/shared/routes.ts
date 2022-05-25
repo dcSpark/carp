@@ -3,6 +3,10 @@ import type {
   AddressUsedResponse,
 } from "./models/AddressUsed";
 import { BlockLatestRequest, BlockLatestResponse } from "./models/BlockLatest";
+import type {
+  CredentialAddressRequest,
+  CredentialAddressResponse,
+} from "./models/CredentialAddress";
 import { Cip25Response, PolicyIdAssetMapType } from "./models/PolicyIdAssetMap";
 import type {
   TransactionHistoryRequest,
@@ -17,6 +21,7 @@ export enum Routes {
   transactionHistory = "transaction/history",
   transactionOutput = "transaction/output",
   addressUsed = "address/used",
+  credentialAddress = "credential/address",
   blockLatest = "block/latest",
   metadataNft = "metadata/nft",
 }
@@ -46,5 +51,10 @@ export type EndpointTypes = {
     name: typeof Routes.metadataNft;
     input: PolicyIdAssetMapType;
     response: Cip25Response;
+  };
+  [Routes.credentialAddress]: {
+    name: typeof Routes.credentialAddress;
+    input: CredentialAddressRequest;
+    response: CredentialAddressResponse;
   };
 };

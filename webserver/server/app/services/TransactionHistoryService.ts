@@ -2,11 +2,11 @@ import type { TransactionHistoryResponse } from '../../../shared/models/Transact
 import { sqlHistoryForCredentials } from '../models/transaction/sqlHistoryForCredentials.queries';
 import { sqlHistoryForAddresses } from '../models/transaction/sqlHistoryForAddresses.queries';
 import type { PoolClient } from 'pg';
-import type { PaginationType } from './PaginationService';
+import type { TransactionPaginationType } from './PaginationService';
 import type { RelationFilter } from '../../../shared/models/common';
 
 export async function historyForCredentials(
-  request: PaginationType & {
+  request: TransactionPaginationType & {
     dbTx: PoolClient;
     stakeCredentials: Buffer[];
     relationFilter: RelationFilter;
@@ -45,7 +45,7 @@ export async function historyForCredentials(
 }
 
 export async function historyForAddresses(
-  request: PaginationType & {
+  request: TransactionPaginationType & {
     addresses: Buffer[];
     dbTx: PoolClient;
     limit: number;

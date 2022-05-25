@@ -33,6 +33,20 @@ export enum RelationFilterType {
   NO_FILTER = 0xff,
 }
 
+export type BlockTxPair = {
+  /**
+   * block hash
+   * @pattern [0-9a-fA-F]{64}
+   * @example "2548ad5d0d9d33d50ab43151f574474454017a733e307229fa509c4987ca9782"
+   */
+  block: string;
+  /**
+   * tx hash
+   * @pattern [0-9a-fA-F]{64}
+   * @example "336d520af58ff440b2f20210ddb5ef5b2c035e0ec7ec258bae4b519a87fa1696"
+   */
+  tx: string;
+};
 export type AfterBlockPagination = {
   /**
    * Omitting "after" means you query starting from the genesis block.
@@ -42,20 +56,7 @@ export type AfterBlockPagination = {
    * ex: a rollback could cause a tx to be removed from one block and appear in a totally different block.
    * Specifying the block hash as well allows making sure you're paginating on the right tx in the right block.
    */
-  after?: {
-    /**
-     * block hash
-     * @pattern [0-9a-fA-F]{64}
-     * @example "2548ad5d0d9d33d50ab43151f574474454017a733e307229fa509c4987ca9782"
-     */
-    block: string;
-    /**
-     * tx hash
-     * @pattern [0-9a-fA-F]{64}
-     * @example "336d520af58ff440b2f20210ddb5ef5b2c035e0ec7ec258bae4b519a87fa1696"
-     */
-    tx: string;
-  };
+  after?: BlockTxPair;
 };
 export type UntilBlockPagination = {
   /**
@@ -74,4 +75,10 @@ export type UtxoPointer = {
    */
   txHash: string;
   index: number;
+};
+
+export type PageInfo = {
+  pageInfo: {
+    hasNextPage: boolean;
+  };
 };

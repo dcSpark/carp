@@ -1,11 +1,11 @@
 import type { AddressUsedResponse } from '../../../shared/models/AddressUsed';
 import type { PoolClient } from 'pg';
-import type { PaginationType } from './PaginationService';
+import type { TransactionPaginationType } from './PaginationService';
 import { sqlAddressUsed } from '../models/address/sqlAddressUsed.queries';
 import { sqlCredentialUsed } from '../models/address/sqlCredentialUsed.queries';
 
 export async function credentialUsed(
-  request: PaginationType & {
+  request: TransactionPaginationType & {
     dbTx: PoolClient;
     stakeCredentials: Buffer[];
     reverseMap: Map<string, Set<string>>;
@@ -31,7 +31,7 @@ export async function credentialUsed(
 }
 
 export async function addressUsed(
-  request: PaginationType & {
+  request: TransactionPaginationType & {
     addresses: Buffer[];
     dbTx: PoolClient;
     reverseMap: Map<string, Set<string>>;

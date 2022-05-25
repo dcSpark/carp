@@ -3,22 +3,31 @@ import { pageStartByHash } from '../models/pagination/pageStartByHash.queries';
 import { sqlBlockByHash } from '../models/pagination/sqlBlockByHash.queries';
 import { sqlTransactionBeforeBlock } from '../models/pagination/sqlTransactionBeforeBlock.queries';
 
-export type PaginationType = {
+export type UntilPaginationType = {
+  until: {
+    tx_id: number;
+  };
+};
+export type AddressPaginationType = UntilPaginationType & {
+  after:
+    | undefined
+    | {
+        address: Buffer; // payload of bech32
+      };
+};
+export type TransactionPaginationType = UntilPaginationType & {
   after:
     | undefined
     | {
         block_id: number;
         tx_id: number;
       };
-  until: {
-    tx_id: number;
-  };
 };
 
 export async function resolveUntilTransaction(request: {
   block_hash: Buffer;
   dbTx: PoolClient;
-}): Promise<undefined | PaginationType['until']> {
+}): Promise<undefined | UntilPaginationType['until']> {
   const result = await sqlTransactionBeforeBlock.run(
     {
       until_block: request.block_hash,
@@ -51,7 +60,7 @@ export async function resolvePageStart(request: {
   after_block: Buffer;
   after_tx: Buffer;
   dbTx: PoolClient;
-}): Promise<undefined | PaginationType['after']> {
+}): Promise<undefined | TransactionPaginationType['after']> {
   const result = await pageStartByHash.run(
     {
       after_block: request.after_block,
