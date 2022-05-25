@@ -1,10 +1,11 @@
 import type { Credential, Bech32FullAddress } from "./Address";
-import type { Pagination, PageInfo, BlockTxPair } from "./common";
+import type { UntilBlockPagination, PageInfo } from "./common";
 
 export type CredentialAddressRequest = {
   credentials: Credential[];
-} & Pagination;
+  after?: Bech32FullAddress;
+} & UntilBlockPagination;
 
 export type CredentialAddressResponse = {
   addresses: Bech32FullAddress[];
-} & PageInfo<BlockTxPair & { address: Bech32FullAddress }>;
+} & PageInfo;

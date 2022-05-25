@@ -3,7 +3,7 @@ import { StatusCodes } from 'http-status-codes';
 import { CREDENTIAL_LIMIT } from '../../../shared/constants';
 import tx from 'pg-tx';
 import pool from '../services/PgPoolSingleton';
-import { resolvePageStart, resolveUntilTransaction } from '../services/PaginationService';
+import { resolveUntilTransaction } from '../services/PaginationService';
 import type { ErrorShape } from '../../../shared/errors';
 import { genErrorMessage } from '../../../shared/errors';
 import { Errors } from '../../../shared/errors';
@@ -12,14 +12,14 @@ import type { EndpointTypes } from '../../../shared/routes';
 import { Routes } from '../../../shared/routes';
 import type { CredentialAddressResponse } from '../../../shared/models/CredentialAddress';
 import { addressesForCredential } from '../services/CredentialAddressesService';
-import { getAsCredentialHex } from '../models/utils';
+import { getAsCredentialHex, getAsExactAddressHex } from '../models/utils';
 
 const route = Routes.credentialAddress;
 
 @Route('credential/address')
 export class CredentialAddressesController extends Controller {
   /**
-   * Ordered lexicographically (order is not maintained)
+   * Ordered by the first time the address was seen on-chain
    *
    * Note: this endpoint only returns addresses that are in a block. Use another tool to see mempool information
    */
@@ -67,37 +67,49 @@ export class CredentialAddressesController extends Controller {
       );
     }
 
+    let after: undefined | { address: Buffer } = undefined;
+    if (requestBody.after != null) {
+      const asHex = getAsExactAddressHex(requestBody.after);
+      if (asHex == null) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+        return errorResponse(
+          StatusCodes.UNPROCESSABLE_ENTITY,
+          genErrorMessage(Errors.IncorrectAddressFormat, {
+            addresses: [requestBody.after],
+          })
+        );
+      }
+      after = { address: Buffer.from(asHex, 'hex') };
+    }
+
+    if (filteredAddresses.invalid.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+      return errorResponse(
+        StatusCodes.UNPROCESSABLE_ENTITY,
+        genErrorMessage(Errors.IncorrectAddressFormat, {
+          addresses: filteredAddresses.invalid,
+        })
+      );
+    }
+
     // note: we use a SQL transaction to make sure the pagination check works properly
     // otherwise, a rollback could happen between getting the pagination info and the history query
     const addresses = await tx<ErrorShape | CredentialAddressResponse>(pool, async dbTx => {
-      const [until, pageStart] = await Promise.all([
+      const [until] = await Promise.all([
         resolveUntilTransaction({
           block_hash: Buffer.from(requestBody.untilBlock, 'hex'),
           dbTx,
         }),
-        requestBody.after == null
-          ? Promise.resolve(undefined)
-          : resolvePageStart({
-              after_block: Buffer.from(requestBody.after.block, 'hex'),
-              after_tx: Buffer.from(requestBody.after.tx, 'hex'),
-              dbTx,
-            }),
       ]);
       if (until == null) {
         return genErrorMessage(Errors.BlockHashNotFound, {
           untilBlock: requestBody.untilBlock,
         });
       }
-      if (requestBody.after != null && pageStart == null) {
-        return genErrorMessage(Errors.PageStartNotFound, {
-          blockHash: requestBody.after.block,
-          txHash: requestBody.after.tx,
-        });
-      }
 
       const result = await addressesForCredential({
+        after,
         credentials: requestBody.credentials.map(addr => Buffer.from(addr, 'hex')),
-        after: pageStart,
         until,
         dbTx,
       });

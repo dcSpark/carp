@@ -31,20 +31,13 @@ export const getAddressTypes = (addresses: string[]): ParsedAddressTypes => {
       updateSet(asCredHex, address);
       continue;
     }
-    try {
-      const bech32Info = bech32.decode(address, 1000);
-      switch (bech32Info.prefix) {
-        case Cip5.miscellaneous.addr:
-        case Cip5.miscellaneous.addr_test:
-          const payload = bech32.fromWords(bech32Info.words);
-          const asHex = Buffer.from(payload).toString('hex');
+    const asExactAddressHex = getAsCredentialHex(address);
+    if (asExactAddressHex != null) {
+      result.credentialHex.push(asExactAddressHex);
+      updateSet(asExactAddressHex, address);
+      continue;
+    }
 
-          result.exactAddress.push(asHex);
-          updateSet(asHex, address);
-
-          continue;
-      }
-    } catch (_e) {}
     if (ByronAddress.is_valid(address)) {
       const byronAddr = ByronAddress.from_base58(address);
       const asHex = Buffer.from(byronAddr.to_bytes()).toString('hex');
@@ -116,6 +109,21 @@ export function getAsCredentialHex(address: string): undefined | string {
 
         return asHex;
       }
+    }
+  } catch (_e) {}
+  return undefined;
+}
+
+export function getAsExactAddressHex(address: string): undefined | string {
+  try {
+    const bech32Info = bech32.decode(address, 1000);
+    switch (bech32Info.prefix) {
+      case Cip5.miscellaneous.addr:
+      case Cip5.miscellaneous.addr_test:
+        const payload = bech32.fromWords(bech32Info.words);
+        const asHex = Buffer.from(payload).toString('hex');
+
+        return asHex;
     }
   } catch (_e) {}
   return undefined;

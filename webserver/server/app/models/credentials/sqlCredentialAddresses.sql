@@ -1,14 +1,22 @@
 /* @name sqlCredentialAddresses */
 WITH
   max_address_id AS (
-    SELECT MAX("Address".id)
+    SELECT "Address".id
     FROM "Address"
     WHERE "Address".first_tx <= (:until_tx_id)
+    ORDER BY "Address".first_tx DESC
+    LIMIT 1
   ),
   min_address_id AS (
-    SELECT MIN("Address".id)
-    FROM "Address"
-    WHERE "Address".first_tx > (:after_tx_id)
+    SELECT
+      CASE
+            WHEN (:after_address)::bytea IS NULL then -1
+            WHEN (:after_address)::bytea IS NOT NULL then (
+              SELECT "Address".id
+              FROM "Address"
+              WHERE "Address".payload = (:after_address)::bytea
+            )
+      END
   ),
   relations AS (
     SELECT "AddressCredentialRelation".address_id
@@ -17,7 +25,7 @@ WITH
     WHERE
       "StakeCredential".credential = ANY (:credentials)
       AND
-      "AddressCredentialRelation".address_id >= (SELECT * FROM min_address_id)
+      "AddressCredentialRelation".address_id > (SELECT * FROM min_address_id)
       AND
       "AddressCredentialRelation".address_id <= (SELECT * FROM max_address_id)
       ORDER BY "AddressCredentialRelation".address_id ASC

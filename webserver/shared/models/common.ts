@@ -77,10 +77,8 @@ export type UtxoPointer = {
   index: number;
 };
 
-export type PageInfo<T> = {
+export type PageInfo = {
   pageInfo: {
     hasNextPage: boolean;
-    /// undefined if the query had an empty result set
-    endCursor?: T;
   };
 };
