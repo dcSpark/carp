@@ -28,7 +28,9 @@ impl MigrationTrait for Migration {
                         ForeignKey::create()
                             .name("fk-tx_credential-credential_id")
                             .from(Entity, Column::CredentialId)
-                            .to(StakeCredential, StakeCredentialColumn::Id),
+                            .to(StakeCredential, StakeCredentialColumn::Id)
+                            // TODO: sea-query doesn't support RESTRICT DEFERRED
+                            .on_delete(ForeignKeyAction::Cascade),
                     )
                     .col(ColumnDef::new(Column::TxId).big_integer().not_null())
                     .foreign_key(

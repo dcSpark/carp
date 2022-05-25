@@ -41,7 +41,9 @@ impl MigrationTrait for Migration {
                         ForeignKey::create()
                             .name("fk-cip25_entry-asset_id")
                             .from(Entity, Column::AssetId)
-                            .to(NativeAsset, NativeAssetColumn::Id),
+                            .to(NativeAsset, NativeAssetColumn::Id)
+                            // TODO: sea-query doesn't support RESTRICT DEFERRED
+                            .on_delete(ForeignKeyAction::Cascade),
                     )
                     .col(ColumnDef::new(Column::Version).text().not_null())
                     .col(ColumnDef::new(Column::Payload).binary().not_null())

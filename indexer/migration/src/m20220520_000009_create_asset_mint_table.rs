@@ -32,7 +32,9 @@ impl MigrationTrait for Migration {
                         ForeignKey::create()
                             .name("fk-asset_mint-asset_id")
                             .from(Entity, Column::AssetId)
-                            .to(NativeAsset, NativeAssetColumn::Id),
+                            .to(NativeAsset, NativeAssetColumn::Id)
+                            // TODO: sea-query doesn't support RESTRICT DEFERRED
+                            .on_delete(ForeignKeyAction::Cascade),
                     )
                     .col(ColumnDef::new(Column::Amount).big_integer().not_null())
                     // Note: the 2-tuple is the primary key
