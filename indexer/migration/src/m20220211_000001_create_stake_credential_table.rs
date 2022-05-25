@@ -42,6 +42,16 @@ impl MigrationTrait for Migration {
                     )
                     .to_owned(),
             )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .table(Entity)
+                    .name("index-stake_credential-transaction")
+                    .col(Column::FirstTx)
+                    .to_owned(),
+            )
             .await
     }
 
