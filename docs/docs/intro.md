@@ -9,6 +9,8 @@ Syncs Cardano blockchain information a Postgres database.
 - Backend: written in Rust using [Oura](https://github.com/txpipe/oura) and [CML](https://github.com/dcSpark/cardano-multiplatform-lib).
 - Sever & Client: Written using Typescript
 
+The source code can be found here on github: [dcSpark/carp](https://github.com/dcSpark/carp).
+
 # Core pillars
 
 - **Speed**: queries should be fast so they can be used inside production applications like wallets without the user feeling the application is not responsive.
