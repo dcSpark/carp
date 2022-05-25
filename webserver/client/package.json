@@ -8,7 +8,7 @@
     "clean": "rm -rf ./dist",
     "build": "yarn clean && tsc --project tsconfig.build.json && yarn run copy:misc",
     "copy:misc": "cp package.json dist/ && cp README.md dist/",
-    "npm:publish": "yarn typecheck && yarn build && cd dist && npm publish --access public && cd ..",
+    "npm:publish": "yarn typecheck && yarn build && cd dist && yarn publish --access public && cd ..",
     "verify": "yarn typecheck && yarn eslint",
     "typecheck": "tsc --project tsconfig.json",
     "prettier": "prettier --write \"**/*.tsx\""
