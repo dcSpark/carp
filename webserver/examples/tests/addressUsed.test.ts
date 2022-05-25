@@ -4,7 +4,6 @@ import { Routes } from "@dcspark/carp-client/shared/routes";
 import { StatusCodes } from "http-status-codes";
 import { bech32 } from "bech32";
 import Cip5 from "@dcspark/cip5-js";
-import { RelationFilterType } from "@dcspark/carp-client/shared/models/common";
 import { query, getErrorResponse } from "@dcspark/carp-client/client/src/index";
 
 const urlBase = "http://localhost:3000";
@@ -33,7 +32,7 @@ describe(`/${Routes.addressUsed}`, function () {
     } catch (err: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const response = getErrorResponse(err);
-      expect(response.status).to.be.equal(StatusCodes.BAD_REQUEST);
+      expect(response.status).to.be.equal(StatusCodes.UNPROCESSABLE_ENTITY);
       expect(response.data.reason).to.satisfy((msg: string) =>
         msg.startsWith(Errors.IncorrectAddressFormat.prefix)
       );
@@ -100,11 +99,6 @@ describe(`/${Routes.addressUsed}`, function () {
       ],
       untilBlock:
         "bb0c2160852adee50d3dd0ed6c3b5b7ac406a0b51704de3c90f6e5b8563ff69d",
-      after: {
-        tx: "fc6c0965767fad75baa4ccb9edc35bcd16fa96f7717771699aaa6f8e1ca0dfaa",
-        block:
-          "bb0c2160852adee50d3dd0ed6c3b5b7ac406a0b51704de3c90f6e5b8563ff69d",
-      },
     });
     expect(result.addresses).to.have.length(1);
   });
@@ -171,38 +165,6 @@ describe(`/${Routes.addressUsed}`, function () {
     expect(result.addresses).to.be.eql([addresses[0]]);
   });
 
-  it("filters out addresses using relation filters", async function () {
-    const address =
-      "stake1ux236z4g4r4pztn5v69txyj2yq6a3esq5x4p4stxydra7zsnv25ue";
-    const filterToWithdrawal = await query(urlBase, Routes.addressUsed, {
-      addresses: [address],
-      after: {
-        tx: "2383af0582da2b18039fab49ef4bb246f7d23d4304e36eb48f9387ff80adc769",
-        block:
-          "400363d541c4ac11dffee26d75d3f36e96d213cfb6d8ce6595a6ccb8d0744131",
-      },
-      untilBlock:
-        "d8bcf81ff514a1f06705a6e0b021a9d6ed91e8d63b80a58f770997113942644f",
-      relationFilter: RelationFilterType.Withdrawal,
-    });
-
-    expect(filterToWithdrawal.addresses).to.be.eql([address]);
-
-    const filterAll = await query(urlBase, Routes.addressUsed, {
-      addresses: [address],
-      after: {
-        tx: "193c753a090fa0e7248590d407137e9439622e2fe818688186aeb47ac9b58fa4",
-        block:
-          "42b95a9ce5b17f02aa00f99c3bca0a9eccbdbe0942fa246b5376af66979c8c0c",
-      },
-      untilBlock:
-        "d62a740622c27a501697c90fdbdba7ff4931a1ff2ffccdbb5c85bdaa2bec9539",
-      relationFilter: RelationFilterType.FILTER_ALL,
-    });
-
-    expect(filterAll.addresses).to.be.eql([]);
-  });
-
   it("is still fast on legacy address with many txs", async function () {
     const result = await query(urlBase, Routes.addressUsed, {
       addresses: [
@@ -213,24 +175,6 @@ describe(`/${Routes.addressUsed}`, function () {
     });
     expect(result.addresses).to.be.eql([
       "DdzFFzCqrhstmqBkaU98vdHu6PdqjqotmgudToWYEeRmQKDrn4cAgGv9EZKtu1DevLrMA1pdVazufUCK4zhFkUcQZ5Gm88mVHnrwmXvT",
-    ]);
-  });
-
-  it("it detects utxos created before 'after' and spent during the range", async function () {
-    const result = await query(urlBase, Routes.addressUsed, {
-      addresses: [
-        "DdzFFzCqrht5HayiWAqVeesJror4LGKPRmsGHYFzywwBs8Pobk1gEKC6z5wsp4NZXj1v5r2vPVREYBgKVXBJiFJ49QDxmSSst3cZWBrf",
-      ],
-      untilBlock:
-        "4ceeb4b5f5216030c6401b70aed415e3eee26e975f198b8bffdee9af9c746dca",
-      after: {
-        tx: "d9aa9dea8cc61bd2c4913b8c12466dae9f4704640932b737765b69d267b55686",
-        block:
-          "4a536e82662739b5ae1625aeacea2486200436c8923ad9af8e6ce323d6ed4c0b",
-      },
-    });
-    expect(result.addresses).to.be.eql([
-      "DdzFFzCqrht5HayiWAqVeesJror4LGKPRmsGHYFzywwBs8Pobk1gEKC6z5wsp4NZXj1v5r2vPVREYBgKVXBJiFJ49QDxmSSst3cZWBrf",
     ]);
   });
 });

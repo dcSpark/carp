@@ -32,7 +32,7 @@ export class TransactionHistoryController extends Controller {
     requestBody: EndpointTypes[typeof route]['input'],
     @Res()
     errorResponse: TsoaResponse<
-      StatusCodes.BAD_REQUEST | StatusCodes.UNPROCESSABLE_ENTITY,
+      StatusCodes.CONFLICT | StatusCodes.BAD_REQUEST | StatusCodes.UNPROCESSABLE_ENTITY,
       ErrorShape
     >
   ): Promise<EndpointTypes[typeof route]['response']> {
@@ -50,7 +50,7 @@ export class TransactionHistoryController extends Controller {
     if (addressTypes.invalid.length > 0) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return errorResponse(
-        StatusCodes.BAD_REQUEST,
+        StatusCodes.UNPROCESSABLE_ENTITY,
         genErrorMessage(Errors.IncorrectAddressFormat, {
           addresses: addressTypes.invalid,
         })
@@ -112,7 +112,7 @@ export class TransactionHistoryController extends Controller {
     if ('code' in cardanoTxs) {
       expectType<Equals<typeof cardanoTxs, ErrorShape>>(true);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-      return errorResponse(StatusCodes.UNPROCESSABLE_ENTITY, cardanoTxs);
+      return errorResponse(StatusCodes.CONFLICT, cardanoTxs);
     }
 
     const mergedTxs = sortBy(

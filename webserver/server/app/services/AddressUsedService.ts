@@ -1,7 +1,6 @@
 import type { AddressUsedResponse } from '../../../shared/models/AddressUsed';
 import type { PoolClient } from 'pg';
 import type { PaginationType } from './PaginationService';
-import type { RelationFilter } from '../../../shared/models/common';
 import { sqlAddressUsed } from '../models/address/sqlAddressUsed.queries';
 import { sqlCredentialUsed } from '../models/address/sqlCredentialUsed.queries';
 
@@ -9,7 +8,6 @@ export async function credentialUsed(
   request: PaginationType & {
     dbTx: PoolClient;
     stakeCredentials: Buffer[];
-    relationFilter: RelationFilter;
     reverseMap: Map<string, Set<string>>;
   }
 ): Promise<AddressUsedResponse> {
@@ -19,7 +17,6 @@ export async function credentialUsed(
       credentials: request.stakeCredentials,
       after_tx_id: (request.after?.tx_id ?? -1)?.toString(),
       until_tx_id: request.until.tx_id.toString(),
-      relation: request.relationFilter,
     },
     request.dbTx
   );

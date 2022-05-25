@@ -10,22 +10,16 @@ WITH
         FROM "TransactionOutput"
         INNER JOIN address_row ON "TransactionOutput".address_id = address_row.id
         WHERE
-              "TransactionOutput".tx_id <= (:until_tx_id)
-              AND
-              "TransactionOutput".tx_id > (:after_tx_id)
+          "TransactionOutput".tx_id <= (:until_tx_id)
+          AND
+          "TransactionOutput".tx_id > (:after_tx_id)
         ORDER BY "TransactionOutput".tx_id ASC
         LIMIT (:limit)
   ),
   inputs AS (
         SELECT DISTINCT ON ("TransactionInput".tx_id) "TransactionInput".tx_id
         FROM "TransactionInput"
-        INNER JOIN (
-          SELECT "TransactionOutput".id
-          FROM "TransactionOutput"
-          INNER JOIN address_row ON "TransactionOutput".address_id = address_row.id
-          WHERE
-            "TransactionOutput".tx_id <= (:until_tx_id)
-        ) spent_utxos ON "TransactionInput".utxo_id = spent_utxos.id
+        INNER JOIN address_row ON "TransactionInput".address_id = address_row.id
         WHERE
           "TransactionInput".tx_id <= (:until_tx_id)
           AND
