@@ -212,7 +212,8 @@
                     "pageInfo": {
                         "properties": {
                             "hasNextPage": {
-                                "type": "boolean"
+                                "type": "boolean",
+                                "example": false
                             }
                         },
                         "required": [

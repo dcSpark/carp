@@ -79,6 +79,9 @@ export type UtxoPointer = {
 
 export type PageInfo = {
   pageInfo: {
+    /**
+     * @example false
+     */
     hasNextPage: boolean;
   };
 };
