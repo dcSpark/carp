@@ -47,7 +47,7 @@ pub async fn insert_addresses(
 
     // deduplicate addresses to avoid re-querying the same address many times
     // useful not only as a perf improvement, but also avoids parallel queries writing to the same row
-    let deduplicated = BTreeSet::<_>::from_iter(truncated_addrs.keys().map(|addr| *addr));
+    let deduplicated = BTreeSet::<_>::from_iter(truncated_addrs.keys().copied());
 
     let mut result_map = BTreeMap::<Vec<u8>, AddressInBlock>::default();
 
@@ -79,7 +79,7 @@ pub async fn insert_addresses(
     // 2) Add addresses that weren't in the DB
     {
         // check which addresses weren't found in the DB and prepare to add them
-        let addrs_to_add: Vec<AddressActiveModel> = deduplicated
+        let mut addrs_to_add: Vec<AddressActiveModel> = deduplicated
             .iter()
             .filter(|&&addr| !result_map.contains_key(addr))
             .map(|addr| AddressActiveModel {
@@ -88,6 +88,9 @@ pub async fn insert_addresses(
                 ..Default::default()
             })
             .collect();
+
+        // need to make sure we're inserting addresses in the same order as we added txs
+        addrs_to_add.sort_by(|a, b| a.first_tx.as_ref().cmp(b.first_tx.as_ref()));
 
         // add the new entires into the DB, then add them to our result mapping
         if !addrs_to_add.is_empty() {
