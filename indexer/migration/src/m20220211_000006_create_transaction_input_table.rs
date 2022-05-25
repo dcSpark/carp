@@ -34,7 +34,9 @@ impl MigrationTrait for Migration {
                         ForeignKey::create()
                             .name("fk-transaction_input-utxo_id")
                             .from(Entity, Column::UtxoId)
-                            .to(TransactionOutput, TransactionOutputColumn::Id),
+                            .to(TransactionOutput, TransactionOutputColumn::Id)
+                            // TODO: sea-query doesn't support RESTRICT DEFERRED
+                            .on_delete(ForeignKeyAction::Cascade),
                     )
                     .col(ColumnDef::new(Column::TxId).big_integer().not_null())
                     .foreign_key(
@@ -49,7 +51,9 @@ impl MigrationTrait for Migration {
                         ForeignKey::create()
                             .name("fk-transaction_input-address_id")
                             .from(Entity, Column::AddressId)
-                            .to(Address, AddressColumn::Id),
+                            .to(Address, AddressColumn::Id)
+                            // TODO: sea-query doesn't support RESTRICT DEFERRED
+                            .on_delete(ForeignKeyAction::Cascade),
                     )
                     .col(ColumnDef::new(Column::InputIndex).integer().not_null())
                     .to_owned(),

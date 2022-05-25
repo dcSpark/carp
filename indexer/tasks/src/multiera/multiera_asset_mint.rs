@@ -142,26 +142,29 @@ async fn handle_mints(
 
     // 4) Add the new pairs to the database if there are any
     if !remaining_pairs.is_empty() {
-        found_assets.extend(
-            NativeAsset::insert_many(
-                remaining_pairs
-                    .iter()
-                    .flat_map(|(policy_id, assets)| assets.iter().zip(std::iter::repeat(policy_id)))
-                    .map(
-                        |((&asset_name, tx_id), &policy_id)| NativeAssetActiveModel {
-                            policy_id: Set(policy_id.clone()),
-                            asset_name: Set(asset_name.clone()),
-                            cip14_fingerprint: Set(blake2b160(
-                                &[policy_id.as_slice(), asset_name.as_slice()].concat(),
-                            )
-                            .to_vec()),
-                            first_tx: Set(*tx_id),
-                            ..Default::default()
-                        },
-                    ),
+        let mut to_insert = remaining_pairs
+            .iter()
+            .flat_map(|(policy_id, assets)| assets.iter().zip(std::iter::repeat(policy_id)))
+            .map(
+                |((&asset_name, tx_id), &policy_id)| NativeAssetActiveModel {
+                    policy_id: Set(policy_id.clone()),
+                    asset_name: Set(asset_name.clone()),
+                    cip14_fingerprint: Set(blake2b160(
+                        &[policy_id.as_slice(), asset_name.as_slice()].concat(),
+                    )
+                    .to_vec()),
+                    first_tx: Set(*tx_id),
+                    ..Default::default()
+                },
             )
-            .exec_many_with_returning(db_tx)
-            .await?,
+            .collect::<Vec<_>>();
+        // need to make sure we're inserting addresses in the same order as we added txs
+        to_insert.sort_by(|a, b| a.first_tx.as_ref().cmp(b.first_tx.as_ref()));
+
+        found_assets.extend(
+            NativeAsset::insert_many(to_insert)
+                .exec_many_with_returning(db_tx)
+                .await?,
         );
     }
 
