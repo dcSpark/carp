@@ -19,6 +19,10 @@ The source code can be found here on github: [dcSpark/carp](https://github.com/d
 - **Type safe**: using and exposing types to avoid bugs is crucial in financial software. Database queries and the web server should have all its types checked and available to users.
 - **Documented**: Although we have to assume the user has read the [cardano ledger specs](https://github.com/input-output-hk/cardano-ledger), design decisions, usage and pitfalls should all be documented.
 
+# Architecture
+
+![image](../static/img/diagram.svg)
+
 # FAQ
 
 Q) How does it take to sync the database from scratch?<br />
