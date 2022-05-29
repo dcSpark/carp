@@ -12,6 +12,8 @@ mod m20220508_000007_create_metadata_table;
 mod m20220520_000008_create_native_asset_table;
 mod m20220520_000009_create_asset_mint_table;
 mod m20220520_000010_create_cip25_entry_table;
+mod m20220528_000011_create_plutus_data_hash_table;
+mod m20220528_000012_create_plutus_data_table;
 
 pub struct Migrator;
 
@@ -31,6 +33,8 @@ impl MigratorTrait for Migrator {
             Box::new(m20220520_000008_create_native_asset_table::Migration),
             Box::new(m20220520_000009_create_asset_mint_table::Migration),
             Box::new(m20220520_000010_create_cip25_entry_table::Migration),
+            Box::new(m20220528_000011_create_plutus_data_hash_table::Migration),
+            Box::new(m20220528_000012_create_plutus_data_table::Migration),
         ]
     }
 }
