@@ -57,7 +57,7 @@ async fn main() -> anyhow::Result<()> {
     let postgres_url = std::env::var("DATABASE_URL").expect("env DATABASE_URL not found");
 
     tracing::info!("Execution plan {}", args.plan);
-    let exec_plan = Arc::new(ExecutionPlan::load_from_file(&args.plan));
+    let exec_plan = Arc::new(ExecutionPlan::load_execution_plan(&args.plan));
 
     tracing::info!("{}", "Connecting to database...");
     let conn = Database::connect(&postgres_url).await?;
