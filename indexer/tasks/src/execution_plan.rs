@@ -4,6 +4,7 @@ use toml::Value;
 use tracing_subscriber::prelude::*;
 
 pub struct ExecutionPlan(pub toml::value::Table);
+
 impl ExecutionPlan {
     pub fn load_from_file(path: &str) -> ExecutionPlan {
         match &fs::read_to_string(path) {

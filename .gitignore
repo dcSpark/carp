@@ -5,3 +5,4 @@ secrets/
 node_modules/
 deployment/.env
 dev_env
+.idea/
