@@ -45,7 +45,7 @@ carp_task! {
 
 async fn handle_txs(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, GenesisData>,
+    block_info: BlockInfo<'_, GenesisData>,
     database_block: &BlockModel,
 ) -> Result<
     (
@@ -64,8 +64,9 @@ async fn handle_txs(
     let mut addresses: Vec<Box<dyn Fn(i64) -> AddressActiveModel>> = vec![];
     let mut outputs: Vec<cardano_multiplatform_lib::TransactionOutput> = vec![];
 
-    for (pub_key, amount) in block.1.avvm_distr.iter() {
-        let (tx_hash, extended_addr) = redeem_pubkey_to_txid(pub_key, Some(block.1.protocol_magic));
+    for (pub_key, amount) in block_info.1.avvm_distr.iter() {
+        let (tx_hash, extended_addr) =
+            redeem_pubkey_to_txid(pub_key, Some(block_info.1.protocol_magic));
         let byron_addr = extended_addr.to_address();
 
         // note: strictly speaking, genesis txs are unordered so there is no defined index
@@ -94,7 +95,7 @@ async fn handle_txs(
     }
 
     // note: empty on mainnet
-    for (byron_addr, amount) in block.1.non_avvm_balances.iter() {
+    for (byron_addr, amount) in block_info.1.non_avvm_balances.iter() {
         let tx_hash = blake2b256(&byron_addr.to_bytes());
 
         // println!("{}", amount.to_str());
