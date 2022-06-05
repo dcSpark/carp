@@ -15,8 +15,8 @@ use std::sync::{Arc, Mutex};
 
 use crate::dsl::task_macro::*;
 use crate::utils::{blake2b256, TaskPerfAggregator};
-use entity::sea_orm::Iterable;
-use futures::future::try_join;
+use entity::sea_orm::{IntoActiveModel, Iterable};
+use futures::future::{join_all, try_join};
 
 use super::genesis_block::GenesisBlockTask;
 
@@ -61,7 +61,7 @@ async fn handle_txs(
     let mut transactions: Vec<TransactionActiveModel> = vec![];
     // note: genesis file is a JSON structure, so there shouldn't be duplicate addresses
     // even across avvm and non-avvm it should be unique, otherwise two txs with the same tx hash would exist
-    let mut addresses: Vec<Box<dyn Fn(i64) -> AddressActiveModel>> = vec![];
+    let mut address_lambdas: Vec<Box<dyn Fn(i64) -> AddressActiveModel>> = vec![];
     let mut outputs: Vec<cardano_multiplatform_lib::TransactionOutput> = vec![];
 
     for (pub_key, amount) in block_info.1.avvm_distr.iter() {
@@ -81,7 +81,7 @@ async fn handle_txs(
         });
 
         let addr_copy = byron_addr.clone();
-        addresses.push(Box::new(move |tx_id| AddressActiveModel {
+        address_lambdas.push(Box::new(move |tx_id| AddressActiveModel {
             payload: Set(addr_copy.to_bytes()),
             first_tx: Set(tx_id),
             ..Default::default()
@@ -114,7 +114,7 @@ async fn handle_txs(
         });
 
         let addr_copy = byron_addr.clone();
-        addresses.push(Box::new(move |tx_id| AddressActiveModel {
+        address_lambdas.push(Box::new(move |tx_id| AddressActiveModel {
             payload: Set(addr_copy.to_bytes()),
             first_tx: Set(tx_id),
             ..Default::default()
@@ -127,17 +127,15 @@ async fn handle_txs(
         ));
     }
 
-    let inserted_txs = bulk_insert_txs(db_tx, &transactions).await?;
-    let inserted_addresses = Address::insert_many(
-        addresses
-            .iter()
-            .enumerate()
-            .map(|(idx, addr)| addr(inserted_txs[idx].id)),
-    )
-    .exec_many_with_returning(db_tx)
-    .await?;
+    let inserted_txs = insert_active_models(db_tx, &transactions).await?;
+    let addresses: Vec<_> = address_lambdas
+        .iter()
+        .enumerate()
+        .map(|(idx, addr)| addr(inserted_txs[idx].id))
+        .collect();
+    let inserted_addresses = insert_active_models(db_tx, &addresses).await?;
 
-    let outputs_to_add = inserted_txs
+    let outputs_to_add: Vec<_> = inserted_txs
         .iter()
         .zip(&inserted_addresses)
         .enumerate()
@@ -149,28 +147,26 @@ async fn handle_txs(
             // so all txs have a single output
             output_index: Set(0),
             ..Default::default()
-        });
-    let inserted_outputs = TransactionOutput::insert_many(outputs_to_add)
-        .exec_many_with_returning(db_tx)
-        .await?;
+        })
+        .collect();
+    let inserted_outputs = insert_active_models(db_tx, &outputs_to_add).await?;
 
     Ok((inserted_txs, inserted_addresses, inserted_outputs))
 }
 
 // https://github.com/SeaQL/sea-orm/issues/691
-async fn bulk_insert_txs(
-    txn: &DatabaseTransaction,
-    transactions: &[TransactionActiveModel],
-) -> Result<Vec<TransactionModel>, DbErr> {
-    let mut result: Vec<TransactionModel> = vec![];
-    for chunk in transactions
-        .chunks((u16::MAX / <Transaction as EntityTrait>::Column::iter().count() as u16) as usize)
-    {
-        result.extend(
-            Transaction::insert_many(chunk.to_vec())
-                .exec_many_with_returning(txn)
-                .await?,
-        );
-    }
-    Ok(result)
+async fn insert_active_models<ActiveModel, Model>(
+    db_tx: &DatabaseTransaction,
+    transactions: &[ActiveModel], // Should this be for Iter?
+) -> Result<Vec<<ActiveModel::Entity as EntityTrait>::Model>, DbErr>
+where
+    <<ActiveModel as ActiveModelTrait>::Entity as EntityTrait>::Model: IntoActiveModel<ActiveModel>,
+    ActiveModel: ActiveModelBehavior + Send + Sync,
+    ActiveModel: ActiveModelTrait,
+{
+    let future_inserts = transactions
+        .iter()
+        .map(|active_model| active_model.clone().insert(db_tx)) // Can we do without clone?
+        .collect::<Vec<_>>();
+    join_all(future_inserts).await.into_iter().collect()
 }
