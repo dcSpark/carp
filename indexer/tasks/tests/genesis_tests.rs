@@ -1,5 +1,5 @@
 use crate::genesis_helpers::{OwnedBlockInfo, GENESIS_HASH};
-use cardano_multiplatform_lib::chain_crypto::{Ed25519, KeyPair};
+use cardano_multiplatform_lib::chain_crypto::{Ed25519, KeyPair, PublicKey};
 use cardano_multiplatform_lib::utils::BigNum;
 use entity::sea_orm::DatabaseConnection;
 use entity::{
@@ -14,7 +14,7 @@ use entity::{
 };
 use genesis_helpers::GenesisBlockBuilder;
 use rand::rngs::StdRng;
-use rand::SeedableRng;
+use rand::{Rng, SeedableRng};
 use std::sync::{Arc, Mutex};
 use tasks::dsl::task_macro::alonzo::Coin;
 use tasks::execution_plan::ExecutionPlan;
@@ -106,16 +106,25 @@ async fn process_genesis_block__when_genesis_block_task_then_added_to_db() {
     assert_eq!(expected, actual);
 }
 
+fn new_pubkey<R: rand::RngCore + rand::CryptoRng>(rng: &mut R) -> PublicKey<Ed25519> {
+    let (_, pubkey) = KeyPair::<Ed25519>::generate(rng).into_keys();
+    pubkey
+}
+
 #[tokio::test]
 async fn process_genesis_block__when_genesis_tx_test_then_includes_txs() {
     // Given
     let conn = in_memory_db_conn().await;
     setup_schema(&conn).await;
     let mut rng = new_rng();
-    let (_, pubkey) = KeyPair::<Ed25519>::generate(&mut rng).into_keys();
-    let coin = BigNum::from(100);
+    let pubkey1 = new_pubkey(&mut rng);
+    let pubkey2 = new_pubkey(&mut rng);
+    let coin1 = BigNum::from(100);
+    let coin2 = BigNum::from(200);
+
     let block_info = GenesisBlockBuilder::default()
-        .with_voucher(pubkey, coin)
+        .with_voucher(pubkey1, coin1)
+        .with_voucher(pubkey2, coin2)
         .build();
     let exec_plan = Arc::new(ExecutionPlan::from(vec![
         "GenesisBlockTask",
@@ -137,9 +146,9 @@ async fn process_genesis_block__when_genesis_tx_test_then_includes_txs() {
 
     // Then
     let txs = transaction::Entity::find().all(&conn).await.unwrap();
-    dbg!(txs);
-    let outputs = transaction_output::Entity::find().all(&conn).await.unwrap();
-    dbg!(outputs);
-    let addresses = address::Entity::find().all(&conn).await.unwrap();
-    dbg!(addresses);
+    txs.iter().for_each(|tx| println!("{:?}", tx));
+    // let outputs = transaction_output::Entity::find().all(&conn).await.unwrap();
+    // dbg!(outputs);
+    // let addresses = address::Entity::find().all(&conn).await.unwrap();
+    // dbg!(addresses);
 }
