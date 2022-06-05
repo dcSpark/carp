@@ -155,7 +155,7 @@ async fn handle_txs(
 }
 
 // https://github.com/SeaQL/sea-orm/issues/691
-async fn insert_active_models<ActiveModel, Model>(
+async fn insert_active_models<ActiveModel>(
     db_tx: &DatabaseTransaction,
     transactions: &[ActiveModel], // Should this be for Iter?
 ) -> Result<Vec<<ActiveModel::Entity as EntityTrait>::Model>, DbErr>
