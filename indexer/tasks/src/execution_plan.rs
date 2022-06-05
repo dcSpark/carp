@@ -23,7 +23,6 @@ impl ExecutionPlan {
     }
 }
 
-#[cfg(test)]
 impl From<Vec<&str>> for ExecutionPlan {
     fn from(tasks: Vec<&str>) -> Self {
         let map = tasks
