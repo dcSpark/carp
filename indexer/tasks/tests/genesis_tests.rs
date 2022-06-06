@@ -1,6 +1,9 @@
 use crate::genesis_helpers::{OwnedBlockInfo, GENESIS_HASH};
+use cardano_multiplatform_lib::address::ByronAddress;
 use cardano_multiplatform_lib::chain_crypto::{Ed25519, KeyPair, PublicKey};
+use cardano_multiplatform_lib::from_bytes;
 use cardano_multiplatform_lib::utils::BigNum;
+use entity::prelude::{AddressModel, TransactionModel, TransactionOutputModel};
 use entity::sea_orm::DatabaseConnection;
 use entity::{
     address, block,
@@ -14,7 +17,8 @@ use entity::{
 };
 use genesis_helpers::GenesisBlockBuilder;
 use rand::rngs::StdRng;
-use rand::{Rng, SeedableRng};
+use rand::{CryptoRng, Rng, RngCore, SeedableRng};
+use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 use tasks::dsl::task_macro::alonzo::Coin;
 use tasks::execution_plan::ExecutionPlan;
@@ -106,26 +110,32 @@ async fn process_genesis_block__when_genesis_block_task_then_added_to_db() {
     assert_eq!(expected, actual);
 }
 
-fn new_pubkey<R: rand::RngCore + rand::CryptoRng>(rng: &mut R) -> PublicKey<Ed25519> {
+fn new_pubkey<R: RngCore + CryptoRng>(rng: &mut R) -> PublicKey<Ed25519> {
     let (_, pubkey) = KeyPair::<Ed25519>::generate(rng).into_keys();
     pubkey
 }
 
 #[tokio::test]
-async fn process_genesis_block__when_genesis_tx_test_then_includes_txs() {
+async fn process_genesis_block__when_genesis_tx_task_then_txs_in_correct_order() {
     // Given
     let conn = in_memory_db_conn().await;
     setup_schema(&conn).await;
     let mut rng = new_rng();
     let pubkey1 = new_pubkey(&mut rng);
     let pubkey2 = new_pubkey(&mut rng);
+    let pubkey3 = new_pubkey(&mut rng);
     let coin1 = BigNum::from(100);
     let coin2 = BigNum::from(200);
+    let coin3 = BigNum::from(50);
 
     let block_info = GenesisBlockBuilder::default()
         .with_voucher(pubkey1, coin1)
         .with_voucher(pubkey2, coin2)
+        .with_voucher(pubkey3, coin3)
         .build();
+
+    let avvm_in_block = block_info.1.avvm_distr.clone();
+
     let exec_plan = Arc::new(ExecutionPlan::from(vec![
         "GenesisBlockTask",
         "GenesisTransactionTask",
@@ -146,9 +156,34 @@ async fn process_genesis_block__when_genesis_tx_test_then_includes_txs() {
 
     // Then
     let txs = transaction::Entity::find().all(&conn).await.unwrap();
-    txs.iter().for_each(|tx| println!("{:?}", tx));
-    // let outputs = transaction_output::Entity::find().all(&conn).await.unwrap();
-    // dbg!(outputs);
-    // let addresses = address::Entity::find().all(&conn).await.unwrap();
-    // dbg!(addresses);
+    txs.iter().for_each(|tx| println!("Transaction: {:?}", tx));
+    let outputs = transaction_output::Entity::find().all(&conn).await.unwrap();
+    outputs.iter().for_each(|tx| println!("Output: {:?}", tx));
+    let addresses = address::Entity::find().all(&conn).await.unwrap();
+    addresses
+        .iter()
+        .for_each(|tx| println!("Address: {:?}", tx));
+
+    let avvm_in_db = reconstruct_original_transactions(&outputs);
+
+    assert_eq!(avvm_in_block, avvm_in_db);
+}
+
+fn reconstruct_original_transactions(
+    outputs: &Vec<TransactionOutputModel>,
+) -> BTreeMap<PublicKey<Ed25519>, BigNum> {
+    // Get value and address from output
+    let mut original_transactions = BTreeMap::new();
+
+    for output in outputs {
+        let payload = output.payload.clone();
+        let cml_output = cardano_multiplatform_lib::TransactionOutput::from_bytes(payload).unwrap();
+        let coin = cml_output.amount().coin();
+        let address = cml_output.address();
+        let byron_address = ByronAddress::from_address(&address).unwrap();
+        let pubkey = todo!("fun conversion stuff that looks really easy");
+        original_transactions.insert(pubkey, coin);
+    }
+
+    original_transactions
 }

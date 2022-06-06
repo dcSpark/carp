@@ -160,9 +160,8 @@ async fn insert_active_models<ActiveModel>(
     transactions: &[ActiveModel], // Should this be for Iter?
 ) -> Result<Vec<<ActiveModel::Entity as EntityTrait>::Model>, DbErr>
 where
+    ActiveModel: ActiveModelTrait + ActiveModelBehavior + Send + Sync,
     <<ActiveModel as ActiveModelTrait>::Entity as EntityTrait>::Model: IntoActiveModel<ActiveModel>,
-    ActiveModel: ActiveModelBehavior + Send + Sync,
-    ActiveModel: ActiveModelTrait,
 {
     let future_inserts = transactions
         .iter()
