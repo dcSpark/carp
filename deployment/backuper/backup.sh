@@ -30,8 +30,9 @@ if [[ "${CURRENT_EPOCH}" -gt "${LAST_BACKUP_EPOCH}" ]]; then
         -d ${POSTGRES_DB:-cardano} \
         > carp_db_${CARP_VERSION}_${CURRENT_EPOCH}.sql
 
-    s3cmd put carp_db_${CARP_VERSION}_${CURRENT_EPOCH}.sql s3://${S3_BUCKET}/${S3_FOLDER}/${NETWORK}/
-    rm -rf carp_db_${CARP_VERSION}_${CURRENT_EPOCH}.sql
+    tar -cvzf carp_db_${CARP_VERSION}_${CURRENT_EPOCH}.sql.tgz carp_db_${CARP_VERSION}_${CURRENT_EPOCH}.sql
+    s3cmd put carp_db_${CARP_VERSION}_${CURRENT_EPOCH}.sql.tgz s3://${S3_BUCKET}/${S3_FOLDER}/${NETWORK}/
+    rm -rf carp_db_${CARP_VERSION}_${CURRENT_EPOCH}.sql carp_db_${CARP_VERSION}_${CURRENT_EPOCH}.sql.tgz
 
     echo "${CURRENT_EPOCH}" > "${EPOCH_FILE}"
 fi

@@ -20,6 +20,6 @@ COPY s3cfg /root/.s3cfg
 COPY entrypoint.sh /
 COPY backup.sh /
 
-RUN crontab -l | { cat; echo "0 * * * * /backup.sh >> /var/log/cron.log 2>&1"; } | crontab -
+RUN crontab -l | { cat; echo "0 */12 * * * /backup.sh >> /var/log/cron.log 2>&1"; } | crontab -
 
 ENTRYPOINT /entrypoint.sh
