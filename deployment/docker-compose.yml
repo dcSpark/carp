@@ -75,6 +75,16 @@ services:
         max-size: "1m"
         max-file: "10"
 
+  carp_web:
+    restart: unless-stopped
+    build:
+      context: ../webserver/
+      dockerfile: Dockerfile
+    ports:
+    - 3000:3000
+    environment:
+    - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+
   # to run stack with backup, please uncomment this
   # currently supports only AWS s3. GCP and Azure TODO
   # postgres_backup:
