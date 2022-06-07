@@ -1,39 +1,26 @@
-use crate::genesis_helpers::{OwnedBlockInfo, GENESIS_HASH};
-use cardano_multiplatform_lib::address::ByronAddress;
-use cardano_multiplatform_lib::chain_crypto::{Ed25519, KeyPair, PublicKey};
-use cardano_multiplatform_lib::from_bytes;
-use cardano_multiplatform_lib::utils::BigNum;
-use entity::prelude::{AddressModel, TransactionModel, TransactionOutputModel};
-use entity::sea_orm::DatabaseConnection;
+#![allow(non_snake_case)]
+use crate::genesis_helpers::{
+    addr_as_byron, db_output_as_byron_and_coin, in_memory_db_conn, new_perf_aggregator,
+    pubkey_as_byron, some_block, OwnedBlockInfo, GENESIS_HASH,
+};
 use entity::{
     address, block,
     block::EraValue,
     sea_orm::EntityTrait,
     sea_orm::{
-        ConnectionTrait, Database, DatabaseBackend, DatabaseTransaction, DbConn, DbErr, Schema,
+        ConnectionTrait, DatabaseBackend, DatabaseTransaction, DbConn, DbErr, Schema,
         TransactionTrait,
     },
     transaction, transaction_output,
 };
 use genesis_helpers::GenesisBlockBuilder;
-use rand::rngs::StdRng;
-use rand::{CryptoRng, Rng, RngCore, SeedableRng};
-use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
-use tasks::dsl::task_macro::alonzo::Coin;
-use tasks::execution_plan::ExecutionPlan;
-use tasks::genesis::genesis_executor::process_genesis_block;
-use tasks::utils::TaskPerfAggregator;
+use tasks::{
+    execution_plan::ExecutionPlan, genesis::genesis_executor::process_genesis_block,
+    utils::TaskPerfAggregator,
+};
 
 mod genesis_helpers;
-
-async fn in_memory_db_conn() -> DbConn {
-    Database::connect("sqlite::memory:").await.unwrap()
-}
-
-fn new_perf_aggregator() -> Arc<Mutex<TaskPerfAggregator>> {
-    Default::default()
-}
 
 async fn wrap_process_genesis_block(
     txn: &DatabaseTransaction,
@@ -67,12 +54,6 @@ async fn setup_schema(db: &DbConn) {
     db.execute(builder.build(&stmt_for_addresses))
         .await
         .unwrap();
-}
-
-const RNG_SEED: [u8; 32] = [6; 32];
-
-fn new_rng() -> StdRng {
-    StdRng::from_seed(RNG_SEED)
 }
 
 #[tokio::test]
@@ -110,31 +91,30 @@ async fn process_genesis_block__when_genesis_block_task_then_added_to_db() {
     assert_eq!(expected, actual);
 }
 
-fn new_pubkey<R: RngCore + CryptoRng>(rng: &mut R) -> PublicKey<Ed25519> {
-    let (_, pubkey) = KeyPair::<Ed25519>::generate(rng).into_keys();
-    pubkey
-}
-
 #[tokio::test]
 async fn process_genesis_block__when_genesis_tx_task_then_txs_in_correct_order() {
     // Given
     let conn = in_memory_db_conn().await;
     setup_schema(&conn).await;
-    let mut rng = new_rng();
-    let pubkey1 = new_pubkey(&mut rng);
-    let pubkey2 = new_pubkey(&mut rng);
-    let pubkey3 = new_pubkey(&mut rng);
-    let coin1 = BigNum::from(100);
-    let coin2 = BigNum::from(200);
-    let coin3 = BigNum::from(50);
 
-    let block_info = GenesisBlockBuilder::default()
-        .with_voucher(pubkey1, coin1)
-        .with_voucher(pubkey2, coin2)
-        .with_voucher(pubkey3, coin3)
-        .build();
+    let block_info = some_block();
 
-    let avvm_in_block = block_info.1.avvm_distr.clone();
+    let protocol_magic = block_info.1.protocol_magic;
+    let mut avvm_in_block: Vec<_> = block_info
+        .1
+        .avvm_distr
+        .clone()
+        .into_iter()
+        .map(|(pubkey, coin)| (pubkey_as_byron(&pubkey, protocol_magic), coin))
+        .collect();
+
+    let non_avvm_in_block: Vec<_> = block_info
+        .1
+        .non_avvm_balances
+        .clone()
+        .into_iter()
+        .map(|(addr, coin)| (addr_as_byron(addr), coin))
+        .collect();
 
     let exec_plan = Arc::new(ExecutionPlan::from(vec![
         "GenesisBlockTask",
@@ -155,35 +135,18 @@ async fn process_genesis_block__when_genesis_tx_task_then_txs_in_correct_order()
     .unwrap();
 
     // Then
-    let txs = transaction::Entity::find().all(&conn).await.unwrap();
-    txs.iter().for_each(|tx| println!("Transaction: {:?}", tx));
+    let _txs = transaction::Entity::find().all(&conn).await.unwrap();
     let outputs = transaction_output::Entity::find().all(&conn).await.unwrap();
-    outputs.iter().for_each(|tx| println!("Output: {:?}", tx));
-    let addresses = address::Entity::find().all(&conn).await.unwrap();
-    addresses
-        .iter()
-        .for_each(|tx| println!("Address: {:?}", tx));
+    let _addresses = address::Entity::find().all(&conn).await.unwrap();
 
-    let avvm_in_db = reconstruct_original_transactions(&outputs);
-
-    assert_eq!(avvm_in_block, avvm_in_db);
-}
-
-fn reconstruct_original_transactions(
-    outputs: &Vec<TransactionOutputModel>,
-) -> BTreeMap<PublicKey<Ed25519>, BigNum> {
-    // Get value and address from output
-    let mut original_transactions = BTreeMap::new();
-
-    for output in outputs {
-        let payload = output.payload.clone();
-        let cml_output = cardano_multiplatform_lib::TransactionOutput::from_bytes(payload).unwrap();
-        let coin = cml_output.amount().coin();
-        let address = cml_output.address();
-        let byron_address = ByronAddress::from_address(&address).unwrap();
-        let pubkey = todo!("fun conversion stuff that looks really easy");
-        original_transactions.insert(pubkey, coin);
-    }
-
-    original_transactions
+    // Transactions kept order
+    // Outputs kept order
+    let distr_and_balances_in_db: Vec<_> =
+        outputs.iter().map(db_output_as_byron_and_coin).collect();
+    let distr_and_balances_in_block = {
+        avvm_in_block.extend(non_avvm_in_block);
+        avvm_in_block
+    };
+    assert_eq!(distr_and_balances_in_block, distr_and_balances_in_db);
+    // Addresses paired with correct first transaction
 }
