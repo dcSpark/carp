@@ -69,7 +69,7 @@ pub struct ByronTaskRegistryEntry {
 
 #[derive(Copy, Clone)]
 pub struct MultieraTaskRegistryEntry {
-    pub builder: &'static (dyn for<'a> TaskBuilder<'a, alonzo::Block> + Sync),
+    pub builder: &'static (dyn for<'a> TaskBuilder<'a, alonzo::Block<'a>> + Sync),
 }
 
 inventory::collect!(TaskRegistryEntry);

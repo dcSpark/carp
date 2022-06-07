@@ -7,6 +7,7 @@ use crate::{dsl::default_impl::has_transaction_multiera, dsl::task_macro::*};
 use entity::sea_orm::{DatabaseTransaction, QueryOrder, Set};
 use pallas::ledger::primitives::alonzo::{self};
 use pallas::ledger::primitives::Fragment;
+use pallas::ledger::primitives::ToHash;
 
 carp_task! {
   name MultieraTransactionTask;
@@ -32,7 +33,7 @@ carp_task! {
 
 async fn handle_tx(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, alonzo::Block>,
+    block: BlockInfo<'_, alonzo::Block<'_>>,
     database_block: &BlockModel,
     readonly: bool,
 ) -> Result<Vec<TransactionModel>, DbErr> {

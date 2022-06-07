@@ -29,7 +29,7 @@ carp_task! {
 
 async fn handle_block(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, alonzo::Block>,
+    block: BlockInfo<'_, alonzo::Block<'_>>,
     readonly: bool,
 ) -> Result<BlockModel, DbErr> {
     let hash = blake2b256(&block.1.header.encode_fragment().unwrap());

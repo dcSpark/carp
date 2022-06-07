@@ -13,7 +13,7 @@ use tokio::runtime::Handle;
 
 pub async fn process_multiera_block(
     txn: &DatabaseTransaction,
-    block: BlockInfo<'_, alonzo::Block>,
+    block: BlockInfo<'_, alonzo::Block<'_>>,
     exec_plan: &ExecutionPlan,
     perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
 ) -> Result<(), DbErr> {

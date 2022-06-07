@@ -23,7 +23,7 @@ macro_rules! era_to_block {
         byron::Block
     };
     (multiera) => {
-        alonzo::Block
+        alonzo::Block<'a>
     };
 }
 

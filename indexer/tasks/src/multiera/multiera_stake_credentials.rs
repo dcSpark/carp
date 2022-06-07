@@ -43,7 +43,7 @@ carp_task! {
 
 async fn handle_stake_credentials(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, alonzo::Block>,
+    block: BlockInfo<'_, alonzo::Block<'_>>,
     multiera_txs: &[TransactionModel],
     vkey_relation_map: &mut RelationMap,
 ) -> Result<BTreeMap<Vec<u8>, StakeCredentialModel>, DbErr> {

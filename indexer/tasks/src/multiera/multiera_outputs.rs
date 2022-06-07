@@ -11,7 +11,7 @@ use super::multiera_address::MultieraAddressTask;
 use crate::config::ReadonlyConfig::ReadonlyConfig;
 use crate::era_common::get_truncated_address;
 use crate::era_common::output_from_pointer;
-
+use pallas::ledger::primitives::ToHash;
 use crate::dsl::task_macro::*;
 
 carp_task! {
@@ -54,7 +54,7 @@ struct QueuedOutput {
 
 async fn handle_output(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, alonzo::Block>,
+    block: BlockInfo<'_, alonzo::Block<'_>>,
     multiera_txs: &[TransactionModel],
     addresses: &BTreeMap<Vec<u8>, AddressInBlock>,
     readonly: bool,

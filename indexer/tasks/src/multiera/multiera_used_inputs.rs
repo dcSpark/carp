@@ -47,7 +47,7 @@ type QueuedInputs<'a> = Vec<(
 
 async fn handle_input(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, alonzo::Block>,
+    block: BlockInfo<'_, alonzo::Block<'_>>,
     multiera_txs: &[TransactionModel],
     vkey_relation_map: &mut RelationMap,
     readonly: bool,

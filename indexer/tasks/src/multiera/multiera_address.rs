@@ -22,6 +22,7 @@ use super::{
     multiera_address_credential_relations::QueuedAddressCredentialRelation,
     multiera_txs::MultieraTransactionTask, relation_map::RelationMap,
 };
+use pallas::ledger::primitives::ToHash;
 use crate::config::EmptyConfig::EmptyConfig;
 
 use crate::dsl::task_macro::*;
@@ -53,7 +54,7 @@ carp_task! {
 
 async fn handle_addresses(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, alonzo::Block>,
+    block: BlockInfo<'_, alonzo::Block<'_>>,
     multiera_txs: &[TransactionModel],
     vkey_relation_map: &mut RelationMap,
 ) -> Result<

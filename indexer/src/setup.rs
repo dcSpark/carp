@@ -91,6 +91,7 @@ pub fn oura_bootstrap(
         min_depth: 0,
         intersect: Some(intersect),
         retry_policy: None,
+        finalize: None, // TODO: configurable
     };
 
     let source_setup = WithUtils::new(source_config, utils);
