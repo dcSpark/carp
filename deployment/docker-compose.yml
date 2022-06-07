@@ -83,6 +83,7 @@ services:
     ports:
     - 3000:3000
     environment:
+<<<<<<< backup_optimization
       - POSTGRES_LOGGING=true
       - PGUSER=${POSTGRES_USER}
       - POSTGRES_HOST=postgres
@@ -92,6 +93,9 @@ services:
       - POSTGRES_USER=${POSTGRES_USER:?Export PG username}
     volumes:
       - ./${NETWORK:-testnet}/postgres-data:/var/lib/postgresql/data
+=======
+    - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+>>>>>>> main
 
   # to run stack with backup, please uncomment this
   # currently supports only AWS s3. GCP and Azure TODO
