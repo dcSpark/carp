@@ -8,9 +8,8 @@ use cardano_multiplatform_lib::utils::BigNum;
 use entity::{
     address, block,
     block::EraValue,
-    sea_orm::EntityTrait,
     sea_orm::{
-        ConnectionTrait, DatabaseBackend, DatabaseTransaction, DbConn, DbErr, Schema,
+        ConnectionTrait, DatabaseBackend, DatabaseTransaction, DbConn, DbErr, EntityTrait, Schema,
         TransactionTrait,
     },
     transaction, transaction_output,
@@ -140,9 +139,6 @@ async fn process_genesis_block__when_genesis_tx_task_then_txns_in_correct_order(
     // Then
     let txs = transaction::Entity::find().all(&conn).await.unwrap();
 
-    // Transactions kept order
-
-    // Outputs kept order
     let tx_hashes_in_block: Vec<_> = {
         avvm_tx_hashes_in_block.extend(non_avvm_tx_hashes_in_block);
         avvm_tx_hashes_in_block
@@ -263,7 +259,6 @@ async fn process_genesis_block__when_genesis_tx_task_then_address_in_db() {
     // Then
     let addresses = address::Entity::find().all(&conn).await.unwrap();
 
-    // Outputs kept order
     let addresses_in_block = {
         avvm_in_block.extend(non_avvm_in_block);
         avvm_in_block
@@ -326,7 +321,6 @@ async fn process_genesis_block__when_genesis_tx_task_and_duplicate_pubkey_then_o
     // Then
     let addresses = address::Entity::find().all(&conn).await.unwrap();
 
-    // Outputs kept order
     let addresses_in_block = vec![
         pubkey_as_byron(&pubkey, protocol_magic),
         addr_as_byron(address),

@@ -3,17 +3,14 @@ use cardano_multiplatform_lib::{
     chain_crypto::{self, Ed25519, KeyPair, PublicKey},
     crypto::BlockHeaderHash,
     fees::LinearFee,
-    genesis::{
-        byron::config::GenesisData, byron::config::ProtocolMagic,
-        byron::parse::redeem_pubkey_to_txid,
-    },
+    genesis::byron::{config::GenesisData, config::ProtocolMagic, parse::redeem_pubkey_to_txid},
     legacy_address,
     legacy_address::ExtendedAddr,
     utils::{self, BigNum},
 };
-use entity::prelude::AddressModel;
 use entity::{
     block::EraValue,
+    prelude::AddressModel,
     prelude::{TransactionModel, TransactionOutputModel},
     sea_orm::{Database, DbConn},
 };
@@ -159,7 +156,6 @@ pub fn db_tx_to_enumerated_tx_hash(tx: &TransactionModel) -> Vec<u8> {
     tx.hash.clone()
 }
 
-// Is there a better way of doing this. Going from ExtendedAddr -> Pubkey seems... involved
 pub fn db_output_as_byron_and_coin(output: &TransactionOutputModel) -> (ByronAddress, BigNum) {
     let payload = output.payload.clone();
     let cml_output = cardano_multiplatform_lib::TransactionOutput::from_bytes(payload).unwrap();
