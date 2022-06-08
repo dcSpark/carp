@@ -1,8 +1,9 @@
 #![allow(non_snake_case)]
 use crate::genesis_helpers::{
-    addr_as_byron, addr_to_tx_hash, db_address_as_byron, db_output_as_byron_and_coin,
-    db_tx_to_enumerated_tx_hash, in_memory_db_conn, new_address, new_perf_aggregator, new_pubkey,
-    new_rng, pubkey_as_byron, pubkey_to_tx_hash, some_block, OwnedBlockInfo, GENESIS_HASH,
+    addr_as_byron, addr_to_tx_hash, arbitrary_block, db_address_as_byron,
+    db_output_as_byron_and_coin, db_tx_to_enumerated_tx_hash, in_memory_db_conn, new_address,
+    new_perf_aggregator, new_pubkey, new_rng, pubkey_as_byron, pubkey_to_tx_hash, OwnedBlockInfo,
+    GENESIS_HASH,
 };
 use cardano_multiplatform_lib::utils::BigNum;
 use entity::{
@@ -15,11 +16,13 @@ use entity::{
     transaction, transaction_output,
 };
 use genesis_helpers::GenesisBlockBuilder;
+use proptest::prelude::*;
 use std::sync::{Arc, Mutex};
 use tasks::{
     execution_plan::ExecutionPlan, genesis::genesis_executor::process_genesis_block,
     utils::TaskPerfAggregator,
 };
+use tokio::runtime::Runtime;
 
 mod genesis_helpers;
 
@@ -92,13 +95,24 @@ async fn process_genesis_block__when_genesis_block_task_then_added_to_db() {
     assert_eq!(expected, actual);
 }
 
-#[tokio::test]
-async fn process_genesis_block__when_genesis_tx_task_then_txns_in_correct_order() {
+proptest! {
+    #![proptest_config(ProptestConfig {
+    cases: 10, .. ProptestConfig::default()
+    })]
+    #[test]
+    fn process_genesis_block__when_genesis_tx_task_then_txns_in_correct_order(block_info in arbitrary_block()) {
+        let rt = Runtime::new().unwrap();
+
+        rt.block_on(inner__process_genesis_block__when_genesis_tx_task_then_txns_in_correct_order(block_info))
+    }
+}
+
+async fn inner__process_genesis_block__when_genesis_tx_task_then_txns_in_correct_order(
+    block_info: OwnedBlockInfo,
+) {
     // Given
     let conn = in_memory_db_conn().await;
     setup_schema(&conn).await;
-
-    let block_info = some_block();
 
     let protocol_magic = block_info.1.protocol_magic;
 
@@ -151,13 +165,24 @@ async fn process_genesis_block__when_genesis_tx_task_then_txns_in_correct_order(
     assert_eq!(tx_hashes_in_block, tx_hashes_in_db);
 }
 
-#[tokio::test]
-async fn process_genesis_block__when_genesis_tx_task_then_outputs_in_db() {
+proptest! {
+    #![proptest_config(ProptestConfig {
+    cases: 10, .. ProptestConfig::default()
+    })]
+    #[test]
+    fn process_genesis_block__when_genesis_tx_task_then_outputs_in_db(block_info in arbitrary_block()) {
+        let rt = Runtime::new().unwrap();
+
+        rt.block_on(inner__process_genesis_block__when_genesis_tx_task_then_outputs_in_db(block_info))
+    }
+}
+
+async fn inner__process_genesis_block__when_genesis_tx_task_then_outputs_in_db(
+    block_info: OwnedBlockInfo,
+) {
     // Given
     let conn = in_memory_db_conn().await;
     setup_schema(&conn).await;
-
-    let block_info = some_block();
 
     let protocol_magic = block_info.1.protocol_magic;
 
@@ -212,13 +237,25 @@ async fn process_genesis_block__when_genesis_tx_task_then_outputs_in_db() {
     assert_eq!(distr_and_balances_in_block, distr_and_balances_in_db);
 }
 
-#[tokio::test]
-async fn process_genesis_block__when_genesis_tx_task_then_address_in_db() {
+proptest! {
+    #![proptest_config(ProptestConfig {
+    cases: 10, .. ProptestConfig::default()
+    })]
+    #[test]
+    fn process_genesis_block__when_genesis_tx_task_then_address_in_db(block_info in arbitrary_block()) {
+        let rt = Runtime::new().unwrap();
+
+        rt.block_on(inner__process_genesis_block__when_genesis_tx_task_then_address_in_db(block_info))
+    }
+
+}
+
+async fn inner__process_genesis_block__when_genesis_tx_task_then_address_in_db(
+    block_info: OwnedBlockInfo,
+) {
     // Given
     let conn = in_memory_db_conn().await;
     setup_schema(&conn).await;
-
-    let block_info = some_block();
 
     let protocol_magic = block_info.1.protocol_magic;
 

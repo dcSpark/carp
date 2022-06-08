@@ -14,7 +14,8 @@ use entity::{
     prelude::{TransactionModel, TransactionOutputModel},
     sea_orm::{Database, DbConn},
 };
-use rand::{rngs::StdRng, CryptoRng, RngCore, SeedableRng};
+use proptest::prop_compose;
+use rand::{rngs::StdRng, CryptoRng, Rng, RngCore, SeedableRng};
 use std::{
     collections::BTreeMap,
     sync::{Arc, Mutex},
@@ -102,32 +103,6 @@ pub fn new_address<R: RngCore + CryptoRng>(rng: &mut R) -> legacy_address::Addr 
     ExtendedAddr::new_redeem(&new_pubkey(rng), Some(PROTOCOL_MAGIC)).into()
 }
 
-pub fn some_block() -> OwnedBlockInfo {
-    let mut rng = new_rng();
-    let pubkey1 = new_pubkey(&mut rng);
-    let pubkey2 = new_pubkey(&mut rng);
-    let pubkey3 = new_pubkey(&mut rng);
-    let coin1 = BigNum::from(100);
-    let coin2 = BigNum::from(200);
-    let coin3 = BigNum::from(50);
-
-    let avvms = vec![(pubkey1, coin1), (pubkey2, coin2), (pubkey3, coin3)];
-
-    let address1 = new_address(&mut rng);
-    let address2 = new_address(&mut rng);
-    let address3 = new_address(&mut rng);
-    let coin1 = BigNum::from(444);
-    let coin2 = BigNum::from(233);
-    let coin3 = BigNum::from(11);
-
-    let non_avvms = vec![(address1, coin1), (address2, coin2), (address3, coin3)];
-
-    GenesisBlockBuilder::default()
-        .with_avvms(avvms)
-        .with_non_avvms(non_avvms)
-        .build()
-}
-
 pub fn pubkey_as_byron(
     pubkey: &PublicKey<Ed25519>,
     protocol_magical: ProtocolMagic,
@@ -169,4 +144,54 @@ pub fn db_address_as_byron(output: &AddressModel) -> ByronAddress {
     let payload = output.payload.clone();
     let byron_address = ByronAddress::from_bytes(payload).unwrap();
     byron_address
+}
+
+prop_compose! {
+    pub fn deterministic_rng()(seed: [u8; 32]) -> StdRng {
+        StdRng::from_seed(seed)
+    }
+}
+
+prop_compose! {
+    pub fn arbitrary_avvms()(
+        mut rng in deterministic_rng(),
+        size in 0..20,
+    ) -> Vec<(PublicKey<Ed25519>, BigNum)>{
+        let mut avvms = Vec::new();
+        for _ in 0..size {
+            let value: u64 = rng.gen();
+            let coin = value.into();
+            let addr = new_pubkey(&mut rng);
+            avvms.push((addr, coin))
+        }
+        avvms
+    }
+}
+
+prop_compose! {
+    pub fn arbitrary_non_avvms()(
+        mut rng in deterministic_rng(),
+        size in 0..20,
+    ) -> Vec<(legacy_address::Addr, BigNum)> {
+        let mut non_avvms = Vec::new();
+        for _ in 0..size {
+            let value: u64 = rng.gen();
+            let coin = value.into();
+            let addr = new_address(&mut rng);
+            non_avvms.push((addr, coin))
+        }
+        non_avvms
+    }
+}
+
+prop_compose! {
+    pub fn arbitrary_block()(
+        avvms in arbitrary_avvms(),
+        non_avvms in arbitrary_non_avvms()
+    ) -> OwnedBlockInfo {
+        GenesisBlockBuilder::default()
+            .with_avvms(avvms)
+            .with_non_avvms(non_avvms)
+            .build()
+    }
 }
