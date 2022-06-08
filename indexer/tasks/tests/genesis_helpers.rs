@@ -1,21 +1,31 @@
-use cardano_multiplatform_lib::address::ByronAddress;
-use cardano_multiplatform_lib::chain_crypto::{KeyPair, PublicKey};
-use cardano_multiplatform_lib::genesis::byron::config::ProtocolMagic;
-use cardano_multiplatform_lib::legacy_address::ExtendedAddr;
 use cardano_multiplatform_lib::{
-    chain_crypto, chain_crypto::Ed25519, crypto::BlockHeaderHash, fees::LinearFee,
-    genesis::byron::config::GenesisData, legacy_address, utils, utils::BigNum,
+    address::ByronAddress,
+    chain_crypto::{self, Ed25519, KeyPair, PublicKey},
+    crypto::BlockHeaderHash,
+    fees::LinearFee,
+    genesis::{
+        byron::config::GenesisData, byron::config::ProtocolMagic,
+        byron::parse::redeem_pubkey_to_txid,
+    },
+    legacy_address,
+    legacy_address::ExtendedAddr,
+    utils::{self, BigNum},
 };
-use entity::block::EraValue;
-use entity::prelude::TransactionOutputModel;
-use entity::sea_orm::{Database, DbConn};
-use rand::rngs::StdRng;
-use rand::{CryptoRng, RngCore, SeedableRng};
-use std::collections::BTreeMap;
-use std::sync::{Arc, Mutex};
-use std::time::SystemTime;
-use tasks::dsl::database_task::BlockGlobalInfo;
-use tasks::utils::TaskPerfAggregator;
+use entity::{
+    block::EraValue,
+    prelude::{TransactionModel, TransactionOutputModel},
+    sea_orm::{Database, DbConn},
+};
+use rand::{rngs::StdRng, CryptoRng, RngCore, SeedableRng};
+use std::{
+    collections::BTreeMap,
+    sync::{Arc, Mutex},
+    time::SystemTime,
+};
+use tasks::{
+    dsl::database_task::BlockGlobalInfo,
+    utils::{blake2b256, TaskPerfAggregator},
+};
 
 pub type OwnedBlockInfo = (String, GenesisData, BlockGlobalInfo);
 
@@ -128,8 +138,24 @@ pub fn pubkey_as_byron(
     ByronAddress::from_bytes(address.to_address().as_ref().to_vec()).unwrap()
 }
 
+pub fn pubkey_to_tx_hash(
+    pubkey: &PublicKey<Ed25519>,
+    protocol_magic: Option<ProtocolMagic>,
+) -> Vec<u8> {
+    let (tx_hash, _) = redeem_pubkey_to_txid(pubkey, protocol_magic);
+    tx_hash.to_bytes().to_vec()
+}
+
 pub fn addr_as_byron(addr: legacy_address::Addr) -> ByronAddress {
     ByronAddress::from_bytes(addr.as_ref().to_vec()).unwrap()
+}
+
+pub fn addr_to_tx_hash(addr: legacy_address::Addr) -> Vec<u8> {
+    blake2b256(addr.as_ref()).to_vec()
+}
+
+pub fn db_tx_to_enumerated_tx_hash(tx: &TransactionModel) -> (usize, Vec<u8>) {
+    (tx.tx_index as usize, tx.hash.clone())
 }
 
 // Is there a better way of doing this. Going from ExtendedAddr -> Pubkey seems... involved

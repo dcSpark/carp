@@ -1,7 +1,8 @@
 #![allow(non_snake_case)]
 use crate::genesis_helpers::{
-    addr_as_byron, db_output_as_byron_and_coin, in_memory_db_conn, new_perf_aggregator,
-    pubkey_as_byron, some_block, OwnedBlockInfo, GENESIS_HASH,
+    addr_as_byron, addr_to_tx_hash, db_output_as_byron_and_coin, db_tx_to_enumerated_tx_hash,
+    in_memory_db_conn, new_perf_aggregator, pubkey_as_byron, pubkey_to_tx_hash, some_block,
+    OwnedBlockInfo, GENESIS_HASH,
 };
 use entity::{
     address, block,
@@ -92,7 +93,7 @@ async fn process_genesis_block__when_genesis_block_task_then_added_to_db() {
 }
 
 #[tokio::test]
-async fn process_genesis_block__when_genesis_tx_task_then_txs_in_correct_order() {
+async fn process_genesis_block__when_genesis_tx_task_then_txns_in_correct_order() {
     // Given
     let conn = in_memory_db_conn().await;
     setup_schema(&conn).await;
@@ -100,6 +101,70 @@ async fn process_genesis_block__when_genesis_tx_task_then_txs_in_correct_order()
     let block_info = some_block();
 
     let protocol_magic = block_info.1.protocol_magic;
+
+    let mut avvm_tx_hashes_in_block: Vec<_> = block_info
+        .1
+        .avvm_distr
+        .clone()
+        .into_iter()
+        .map(|(pubkey, _)| pubkey_to_tx_hash(&pubkey, Some(protocol_magic)))
+        .collect();
+
+    let non_avvm_tx_hashes_in_block: Vec<_> = block_info
+        .1
+        .non_avvm_balances
+        .clone()
+        .into_iter()
+        .map(|(addr, _)| addr_to_tx_hash(addr))
+        .collect();
+
+    let exec_plan = Arc::new(ExecutionPlan::from(vec![
+        "GenesisBlockTask",
+        "GenesisTransactionTask",
+    ]));
+    let perf_aggregator = new_perf_aggregator();
+
+    // When
+    conn.transaction(|db_tx| {
+        Box::pin(wrap_process_genesis_block(
+            db_tx,
+            block_info,
+            exec_plan.clone(),
+            perf_aggregator.clone(),
+        ))
+    })
+    .await
+    .unwrap();
+
+    // Then
+    let txs = transaction::Entity::find().all(&conn).await.unwrap();
+
+    // Transactions kept order
+
+    // Outputs kept order
+    let tx_hashes_in_block: Vec<_> = {
+        avvm_tx_hashes_in_block.extend(non_avvm_tx_hashes_in_block);
+        avvm_tx_hashes_in_block
+    }
+    .into_iter()
+    .enumerate()
+    .collect();
+    let tx_hashes_in_db: Vec<_> = txs.iter().map(db_tx_to_enumerated_tx_hash).collect();
+
+    assert_eq!(tx_hashes_in_block, tx_hashes_in_db);
+    // Addresses paired with correct first transaction
+}
+
+#[tokio::test]
+async fn process_genesis_block__when_genesis_tx_task_then_outputs_in_correct_order() {
+    // Given
+    let conn = in_memory_db_conn().await;
+    setup_schema(&conn).await;
+
+    let block_info = some_block();
+
+    let protocol_magic = block_info.1.protocol_magic;
+
     let mut avvm_in_block: Vec<_> = block_info
         .1
         .avvm_distr
@@ -139,14 +204,14 @@ async fn process_genesis_block__when_genesis_tx_task_then_txs_in_correct_order()
     let outputs = transaction_output::Entity::find().all(&conn).await.unwrap();
     let _addresses = address::Entity::find().all(&conn).await.unwrap();
 
-    // Transactions kept order
     // Outputs kept order
-    let distr_and_balances_in_db: Vec<_> =
-        outputs.iter().map(db_output_as_byron_and_coin).collect();
     let distr_and_balances_in_block = {
         avvm_in_block.extend(non_avvm_in_block);
         avvm_in_block
     };
+
+    let distr_and_balances_in_db: Vec<_> =
+        outputs.iter().map(db_output_as_byron_and_coin).collect();
+
     assert_eq!(distr_and_balances_in_block, distr_and_balances_in_db);
-    // Addresses paired with correct first transaction
 }
