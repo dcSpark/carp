@@ -11,6 +11,7 @@ use cardano_multiplatform_lib::{
     legacy_address::ExtendedAddr,
     utils::{self, BigNum},
 };
+use entity::prelude::AddressModel;
 use entity::{
     block::EraValue,
     prelude::{TransactionModel, TransactionOutputModel},
@@ -154,8 +155,8 @@ pub fn addr_to_tx_hash(addr: legacy_address::Addr) -> Vec<u8> {
     blake2b256(addr.as_ref()).to_vec()
 }
 
-pub fn db_tx_to_enumerated_tx_hash(tx: &TransactionModel) -> (usize, Vec<u8>) {
-    (tx.tx_index as usize, tx.hash.clone())
+pub fn db_tx_to_enumerated_tx_hash(tx: &TransactionModel) -> Vec<u8> {
+    tx.hash.clone()
 }
 
 // Is there a better way of doing this. Going from ExtendedAddr -> Pubkey seems... involved
@@ -166,4 +167,10 @@ pub fn db_output_as_byron_and_coin(output: &TransactionOutputModel) -> (ByronAdd
     let address = cml_output.address();
     let byron_address = ByronAddress::from_address(&address).unwrap();
     (byron_address, coin)
+}
+
+pub fn db_address_as_byron(output: &AddressModel) -> ByronAddress {
+    let payload = output.payload.clone();
+    let byron_address = ByronAddress::from_bytes(payload).unwrap();
+    byron_address
 }
