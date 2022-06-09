@@ -100,7 +100,9 @@ proptest! {
     cases: 10, .. ProptestConfig::default()
     })]
     #[test]
-    fn process_genesis_block__when_genesis_tx_task_then_txns_in_correct_order(block_info in arbitrary_block()) {
+    fn process_genesis_block__when_genesis_tx_task_then_txns_in_correct_order(
+        block_info in arbitrary_block()
+    ) {
         let rt = Runtime::new().unwrap();
 
         rt.block_on(inner__process_genesis_block__when_genesis_tx_task_then_txns_in_correct_order(block_info))
@@ -170,7 +172,9 @@ proptest! {
     cases: 10, .. ProptestConfig::default()
     })]
     #[test]
-    fn process_genesis_block__when_genesis_tx_task_then_outputs_in_db(block_info in arbitrary_block()) {
+    fn process_genesis_block__when_genesis_tx_task_then_outputs_in_db(
+        block_info in arbitrary_block()
+    ) {
         let rt = Runtime::new().unwrap();
 
         rt.block_on(inner__process_genesis_block__when_genesis_tx_task_then_outputs_in_db(block_info))
@@ -242,7 +246,9 @@ proptest! {
     cases: 10, .. ProptestConfig::default()
     })]
     #[test]
-    fn process_genesis_block__when_genesis_tx_task_then_address_in_db(block_info in arbitrary_block()) {
+    fn process_genesis_block__when_genesis_tx_task_then_address_in_db(
+        block_info in arbitrary_block()
+    ) {
         let rt = Runtime::new().unwrap();
 
         rt.block_on(inner__process_genesis_block__when_genesis_tx_task_then_address_in_db(block_info))
