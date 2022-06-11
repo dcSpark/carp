@@ -1,8 +1,9 @@
 #![allow(non_snake_case)]
 use crate::genesis_helpers::{
     addr_as_byron, addr_to_tx_hash, arbitrary_block, db_address_as_byron,
-    db_output_as_byron_and_coin, db_tx_to_tx_hash_and_byron, in_memory_db_conn,
-    new_perf_aggregator, pubkey_as_byron, pubkey_to_tx_hash, OwnedBlockInfo, GENESIS_HASH,
+    db_output_as_byron_and_coin, db_tx_to_tx_hash_and_byron, in_memory_db_conn, mainnet_block_info,
+    new_perf_aggregator, pubkey_as_byron, pubkey_to_tx_hash, testnet_block_info, OwnedBlockInfo,
+    GENESIS_HASH,
 };
 use entity::{
     address, block,
@@ -107,6 +108,20 @@ proptest! {
     }
 }
 
+#[tokio::test]
+async fn mainnet__process_genesis_block__when_genesis_tx_task_then_txns_in_db_with_correct_payload()
+{
+    let block_info = mainnet_block_info().await;
+    inner__process_genesis_block__when_genesis_tx_task_then_outputs_in_db(block_info).await;
+}
+
+#[tokio::test]
+async fn testnet__process_genesis_block__when_genesis_tx_task_then_txns_in_db_with_correct_payload()
+{
+    let block_info = testnet_block_info().await;
+    inner__process_genesis_block__when_genesis_tx_task_then_outputs_in_db(block_info).await;
+}
+
 async fn inner__process_genesis_block__when_genesis_tx_task_then_txns_in_db_with_correct_payload(
     block_info: OwnedBlockInfo,
 ) {
@@ -185,6 +200,18 @@ proptest! {
     }
 }
 
+#[tokio::test]
+async fn mainnet__process_genesis_block__when_genesis_tx_task_then_outputs_in_db() {
+    let block_info = mainnet_block_info().await;
+    inner__process_genesis_block__when_genesis_tx_task_then_outputs_in_db(block_info).await;
+}
+
+#[tokio::test]
+async fn testnet__process_genesis_block__when_genesis_tx_task_then_outputs_in_db() {
+    let block_info = testnet_block_info().await;
+    inner__process_genesis_block__when_genesis_tx_task_then_outputs_in_db(block_info).await;
+}
+
 async fn inner__process_genesis_block__when_genesis_tx_task_then_outputs_in_db(
     block_info: OwnedBlockInfo,
 ) {
@@ -257,7 +284,18 @@ proptest! {
 
         rt.block_on(inner__process_genesis_block__when_genesis_tx_task_then_address_in_db(block_info))
     }
+}
 
+#[tokio::test]
+async fn mainnet__process_genesis_block__when_genesis_tx_task_then_address_in_db() {
+    let block_info = mainnet_block_info().await;
+    inner__process_genesis_block__when_genesis_tx_task_then_address_in_db(block_info).await;
+}
+
+#[tokio::test]
+async fn testnet__process_genesis_block__when_genesis_tx_task_then_address_in_db() {
+    let block_info = testnet_block_info().await;
+    inner__process_genesis_block__when_genesis_tx_task_then_address_in_db(block_info).await;
 }
 
 async fn inner__process_genesis_block__when_genesis_tx_task_then_address_in_db(

@@ -1,3 +1,4 @@
+use cardano_multiplatform_lib::genesis::byron::parse::parse;
 use cardano_multiplatform_lib::{
     address::ByronAddress,
     chain_crypto::{self, Ed25519, KeyPair, PublicKey},
@@ -18,6 +19,7 @@ use proptest::prop_compose;
 use rand::{rngs::StdRng, CryptoRng, Rng, RngCore, SeedableRng};
 use std::{
     collections::BTreeMap,
+    fs,
     sync::{Arc, Mutex},
     time::SystemTime,
 };
@@ -140,6 +142,31 @@ pub fn db_address_as_byron(output: &AddressModel) -> ByronAddress {
     let payload = output.payload.clone();
     let byron_address = ByronAddress::from_bytes(payload).unwrap();
     byron_address
+}
+
+const GENESIS_MAINNET: &str = "../genesis/mainnet-byron-genesis.json";
+const GENESIS_TESTNET: &str = "../genesis/testnet-byron-genesis.json";
+
+pub async fn mainnet_block_info() -> OwnedBlockInfo {
+    genesis_block_info(GENESIS_MAINNET)
+}
+
+pub async fn testnet_block_info() -> OwnedBlockInfo {
+    genesis_block_info(GENESIS_TESTNET)
+}
+
+fn genesis_block_info(path: &str) -> OwnedBlockInfo {
+    let cbor = "".to_string();
+
+    let file = fs::File::open(path).expect("Failed to open genesis file");
+    let genesis_file: GenesisData = parse(file);
+
+    let block_global_info = BlockGlobalInfo {
+        era: EraValue::Byron,
+        epoch: None,
+        epoch_slot: None,
+    };
+    (cbor, genesis_file, block_global_info)
 }
 
 prop_compose! {
