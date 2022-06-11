@@ -186,6 +186,7 @@ fn add_non_avvms(
     }
 }
 
+// https://github.com/SeaQL/sea-orm/issues/691
 async fn insert_active_models<ActiveModel>(
     db_tx: &DatabaseTransaction,
     active_models: Vec<ActiveModel>,
@@ -194,9 +195,10 @@ where
     ActiveModel: ActiveModelTrait + ActiveModelBehavior + Send + Sync,
     <<ActiveModel as ActiveModelTrait>::Entity as EntityTrait>::Model: IntoActiveModel<ActiveModel>,
 {
-    let batch_size = u16::MAX
-        / <<ActiveModel as ActiveModelTrait>::Entity as EntityTrait>::Column::iter().count() as u16;
-    for chunk in active_models.chunks(batch_size as usize) {
+    // Max parameter count for SQLite: https://www.sqlite.org/limits.html
+    let batch_size = 32766usize
+        / <<ActiveModel as ActiveModelTrait>::Entity as EntityTrait>::Column::iter().count();
+    for chunk in active_models.chunks(batch_size) {
         ActiveModel::Entity::insert_many(chunk.to_vec())
             .exec(db_tx)
             .await?;
