@@ -80,18 +80,12 @@ impl GenesisBlockBuilder {
     }
 }
 
-const RNG_SEED: [u8; 32] = [6; 32];
-
 pub async fn in_memory_db_conn() -> DbConn {
     Database::connect("sqlite::memory:").await.unwrap()
 }
 
 pub fn new_perf_aggregator() -> Arc<Mutex<TaskPerfAggregator>> {
     Default::default()
-}
-
-pub fn new_rng() -> StdRng {
-    StdRng::from_seed(RNG_SEED)
 }
 
 pub fn new_pubkey<R: RngCore + CryptoRng>(rng: &mut R) -> PublicKey<Ed25519> {
@@ -157,7 +151,7 @@ prop_compose! {
 prop_compose! {
     pub fn arbitrary_avvms()(
         mut rng in deterministic_rng(),
-        size in 0..5,
+        size in 0..100,
     ) -> Vec<(PublicKey<Ed25519>, BigNum)>{
         let mut avvms = Vec::new();
         for _ in 0..size {
@@ -173,7 +167,7 @@ prop_compose! {
 prop_compose! {
     pub fn arbitrary_non_avvms()(
         mut rng in deterministic_rng(),
-        size in 0..5,
+        size in 0..100,
     ) -> Vec<(legacy_address::Addr, BigNum)> {
         let mut non_avvms = Vec::new();
         for _ in 0..size {

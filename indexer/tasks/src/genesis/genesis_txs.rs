@@ -158,15 +158,30 @@ async fn handle_txs(
     Ok((inserted_txs, inserted_addresses, inserted_outputs))
 }
 
+async fn insert_active_models<ActiveModel>(
+    db_tx: &DatabaseTransaction,
+    active_models: Vec<ActiveModel>,
+) -> Result<(), DbErr>
+where
+    ActiveModel: ActiveModelTrait + ActiveModelBehavior + Send + Sync,
+    <<ActiveModel as ActiveModelTrait>::Entity as EntityTrait>::Model: IntoActiveModel<ActiveModel>,
+{
+    let batch_size = u16::MAX
+        / <<ActiveModel as ActiveModelTrait>::Entity as EntityTrait>::Column::iter().count() as u16;
+    for chunk in active_models.chunks(batch_size as usize) {
+        ActiveModel::Entity::insert_many(chunk.to_vec())
+            .exec(db_tx)
+            .await?;
+    }
+    Ok(())
+}
+
 async fn insert_active_transaction_models(
     db_tx: &DatabaseTransaction,
     active_models: Vec<TransactionActiveModel>,
     block_id: i32,
 ) -> Result<Vec<TransactionModel>, DbErr> {
-    let batch_size = u16::MAX / <Transaction as EntityTrait>::Column::iter().count() as u16;
-    for chunk in active_models.chunks(batch_size as usize) {
-        Transaction::insert_many(chunk.to_vec()).exec(db_tx).await?;
-    }
+    insert_active_models(db_tx, active_models).await?;
     let models = <entity::prelude::Transaction as EntityTrait>::find()
         .filter(transaction::Column::BlockId.eq(block_id))
         .all(db_tx)
@@ -179,10 +194,7 @@ async fn insert_active_address_models(
     active_models: Vec<AddressActiveModel>,
     tx_ids: &Vec<i64>,
 ) -> Result<Vec<AddressModel>, DbErr> {
-    let batch_size = u16::MAX / <Address as EntityTrait>::Column::iter().count() as u16;
-    for chunk in active_models.chunks(batch_size as usize) {
-        Address::insert_many(chunk.to_vec()).exec(db_tx).await?;
-    }
+    insert_active_models(db_tx, active_models).await?;
     let mut all_models = Vec::new();
     for tx_id in tx_ids {
         let models = <entity::prelude::Address as EntityTrait>::find()
@@ -199,12 +211,7 @@ async fn insert_active_output_models(
     active_models: Vec<TransactionOutputActiveModel>,
     tx_ids: &Vec<i64>,
 ) -> Result<Vec<TransactionOutputModel>, DbErr> {
-    let batch_size = u16::MAX / <TransactionOutput as EntityTrait>::Column::iter().count() as u16;
-    for chunk in active_models.chunks(batch_size as usize) {
-        TransactionOutput::insert_many(chunk.to_vec())
-            .exec(db_tx)
-            .await?;
-    }
+    insert_active_models(db_tx, active_models).await?;
     let mut all_models = Vec::new();
     for tx_id in tx_ids {
         let models = <entity::prelude::TransactionOutput as EntityTrait>::find()
