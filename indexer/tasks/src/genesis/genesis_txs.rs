@@ -66,6 +66,59 @@ async fn handle_txs(
     let mut address_lambdas: Vec<Box<dyn Fn(i64) -> AddressActiveModel>> = vec![];
     let mut outputs: Vec<cardano_multiplatform_lib::TransactionOutput> = vec![];
 
+    add_avvms(
+        &block_info,
+        &database_block,
+        &mut transactions,
+        &mut address_lambdas,
+        &mut outputs,
+    );
+    // note: empty on mainnet
+    add_non_avvms(
+        &block_info,
+        &database_block,
+        &mut transactions,
+        &mut address_lambdas,
+        &mut outputs,
+    );
+
+    let block_id = database_block.id;
+    let inserted_txs = insert_active_transaction_models(db_tx, transactions, block_id).await?;
+
+    let tx_ids = inserted_txs.iter().map(|model| model.id).collect();
+    let addresses: Vec<_> = address_lambdas
+        .iter()
+        .enumerate()
+        .map(|(idx, addr)| addr(inserted_txs[idx].id))
+        .collect();
+    let inserted_addresses = insert_active_address_models(db_tx, addresses, &tx_ids).await?;
+
+    let outputs_to_add: Vec<_> = inserted_txs
+        .iter()
+        .zip(&inserted_addresses)
+        .enumerate()
+        .map(|(i, (tx, addr))| TransactionOutputActiveModel {
+            address_id: Set(addr.id),
+            tx_id: Set(tx.id),
+            payload: Set(outputs[i].to_bytes()),
+            // recall: genesis txs are hashes of addresses
+            // so all txs have a single output
+            output_index: Set(0),
+            ..Default::default()
+        })
+        .collect();
+    let inserted_outputs = insert_active_output_models(db_tx, outputs_to_add, &tx_ids).await?;
+
+    Ok((inserted_txs, inserted_addresses, inserted_outputs))
+}
+
+fn add_avvms(
+    block_info: &BlockInfo<GenesisData>,
+    database_block: &BlockModel,
+    transactions: &mut Vec<TransactionActiveModel>,
+    address_lambdas: &mut Vec<Box<dyn Fn(i64) -> AddressActiveModel>>,
+    outputs: &mut Vec<cardano_multiplatform_lib::TransactionOutput>,
+) {
     for (pub_key, amount) in block_info.1.avvm_distr.iter() {
         let (tx_hash, extended_addr) =
             redeem_pubkey_to_txid(pub_key, Some(block_info.1.protocol_magic));
@@ -95,14 +148,17 @@ async fn handle_txs(
             &Value::new(amount),
         ));
     }
+}
 
-    // note: empty on mainnet
+fn add_non_avvms(
+    block_info: &BlockInfo<GenesisData>,
+    database_block: &BlockModel,
+    transactions: &mut Vec<TransactionActiveModel>,
+    address_lambdas: &mut Vec<Box<dyn Fn(i64) -> AddressActiveModel>>,
+    outputs: &mut Vec<cardano_multiplatform_lib::TransactionOutput>,
+) {
     for (byron_addr, amount) in block_info.1.non_avvm_balances.iter() {
         let tx_hash = blake2b256(&byron_addr.to_bytes());
-
-        // println!("{}", amount.to_str());
-        // println!("{}", byron_addr.to_base58());
-        // println!("{}", hex::encode(tx_hash));
 
         // note: strictly speaking, genesis txs are unordered so there is no defined index
         let tx_index = transactions.len() as i32;
@@ -128,34 +184,6 @@ async fn handle_txs(
             &Value::new(amount),
         ));
     }
-    let block_id = database_block.id;
-    let inserted_txs = insert_active_transaction_models(db_tx, transactions, block_id).await?;
-
-    let tx_ids = inserted_txs.iter().map(|model| model.id).collect();
-    let addresses: Vec<_> = address_lambdas
-        .iter()
-        .enumerate()
-        .map(|(idx, addr)| addr(inserted_txs[idx].id))
-        .collect();
-    let inserted_addresses = insert_active_address_models(db_tx, addresses, &tx_ids).await?;
-
-    let outputs_to_add: Vec<_> = inserted_txs
-        .iter()
-        .zip(&inserted_addresses)
-        .enumerate()
-        .map(|(i, (tx, addr))| TransactionOutputActiveModel {
-            address_id: Set(addr.id),
-            tx_id: Set(tx.id),
-            payload: Set(outputs[i].to_bytes()),
-            // recall: genesis txs are hashes of addresses
-            // so all txs have a single output
-            output_index: Set(0),
-            ..Default::default()
-        })
-        .collect();
-    let inserted_outputs = insert_active_output_models(db_tx, outputs_to_add, &tx_ids).await?;
-
-    Ok((inserted_txs, inserted_addresses, inserted_outputs))
 }
 
 async fn insert_active_models<ActiveModel>(
