@@ -1,6 +1,10 @@
 extern crate shred;
 
-use crate::config::EmptyConfig::EmptyConfig;
+use crate::{
+    config::EmptyConfig::EmptyConfig,
+    dsl::task_macro::*,
+    utils::{blake2b256, TaskPerfAggregator},
+};
 use cardano_multiplatform_lib::{
     byron::ByronAddress,
     genesis::byron::{config::GenesisData, parse::redeem_pubkey_to_txid},
@@ -10,14 +14,12 @@ use entity::{
     address,
     prelude::*,
     sea_orm::{DatabaseTransaction, DbErr, EntityTrait, Set},
+    sea_orm::{IntoActiveModel, Iterable},
     transaction, transaction_output,
 };
 use shred::{DispatcherBuilder, ResourceId, System, SystemData, World, Write};
 use std::sync::{Arc, Mutex};
 
-use crate::dsl::task_macro::*;
-use crate::utils::{blake2b256, TaskPerfAggregator};
-use entity::sea_orm::{IntoActiveModel, Iterable};
 use futures::future::{join_all, try_join};
 
 use super::genesis_block::GenesisBlockTask;

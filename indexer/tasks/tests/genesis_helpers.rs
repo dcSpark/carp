@@ -1,18 +1,16 @@
-use cardano_multiplatform_lib::genesis::byron::parse::parse;
 use cardano_multiplatform_lib::{
     address::ByronAddress,
     chain_crypto::{self, Ed25519, KeyPair, PublicKey},
     crypto::BlockHeaderHash,
     fees::LinearFee,
+    genesis::byron::parse::parse,
     genesis::byron::{config::GenesisData, config::ProtocolMagic, parse::redeem_pubkey_to_txid},
-    legacy_address,
-    legacy_address::ExtendedAddr,
+    legacy_address::{self, ExtendedAddr},
     utils::{self, BigNum},
 };
 use entity::{
     block::EraValue,
-    prelude::AddressModel,
-    prelude::{TransactionModel, TransactionOutputModel},
+    prelude::{AddressModel, TransactionModel, TransactionOutputModel},
     sea_orm::{Database, DbConn},
 };
 use proptest::prop_compose;
