@@ -127,8 +127,10 @@ pub fn addr_to_tx_hash(addr: legacy_address::Addr) -> Vec<u8> {
     blake2b256(addr.as_ref()).to_vec()
 }
 
-pub fn db_tx_to_enumerated_tx_hash(tx: &TransactionModel) -> Vec<u8> {
-    tx.hash.clone()
+pub fn db_tx_to_tx_hash_and_byron(tx: &TransactionModel) -> (Vec<u8>, ByronAddress) {
+    let tx_hash = tx.hash.clone();
+    let byron = ByronAddress::from_bytes(tx.payload.clone()).unwrap();
+    (tx_hash, byron)
 }
 
 pub fn db_output_as_byron_and_coin(output: &TransactionOutputModel) -> (ByronAddress, BigNum) {
@@ -155,7 +157,7 @@ prop_compose! {
 prop_compose! {
     pub fn arbitrary_avvms()(
         mut rng in deterministic_rng(),
-        size in 0..20,
+        size in 0..5,
     ) -> Vec<(PublicKey<Ed25519>, BigNum)>{
         let mut avvms = Vec::new();
         for _ in 0..size {
@@ -171,7 +173,7 @@ prop_compose! {
 prop_compose! {
     pub fn arbitrary_non_avvms()(
         mut rng in deterministic_rng(),
-        size in 0..20,
+        size in 0..5,
     ) -> Vec<(legacy_address::Addr, BigNum)> {
         let mut non_avvms = Vec::new();
         for _ in 0..size {

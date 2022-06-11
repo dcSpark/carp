@@ -7,8 +7,10 @@ use cardano_multiplatform_lib::{
     ledger::common::value::Value,
 };
 use entity::{
+    address,
     prelude::*,
     sea_orm::{DatabaseTransaction, DbErr, EntityTrait, Set},
+    transaction, transaction_output,
 };
 use shred::{DispatcherBuilder, ResourceId, System, SystemData, World, Write};
 use std::sync::{Arc, Mutex};
@@ -126,14 +128,16 @@ async fn handle_txs(
             &Value::new(amount),
         ));
     }
+    let block_id = database_block.id;
+    let inserted_txs = insert_active_transaction_models(db_tx, transactions, block_id).await?;
 
-    let inserted_txs = insert_active_models(db_tx, &transactions).await?;
+    let tx_ids = inserted_txs.iter().map(|model| model.id).collect();
     let addresses: Vec<_> = address_lambdas
         .iter()
         .enumerate()
         .map(|(idx, addr)| addr(inserted_txs[idx].id))
         .collect();
-    let inserted_addresses = insert_active_models(db_tx, &addresses).await?;
+    let inserted_addresses = insert_active_address_models(db_tx, addresses, &tx_ids).await?;
 
     let outputs_to_add: Vec<_> = inserted_txs
         .iter()
@@ -149,23 +153,65 @@ async fn handle_txs(
             ..Default::default()
         })
         .collect();
-    let inserted_outputs = insert_active_models(db_tx, &outputs_to_add).await?;
+    let inserted_outputs = insert_active_output_models(db_tx, outputs_to_add, &tx_ids).await?;
 
     Ok((inserted_txs, inserted_addresses, inserted_outputs))
 }
 
-// https://github.com/SeaQL/sea-orm/issues/691
-async fn insert_active_models<ActiveModel>(
+async fn insert_active_transaction_models(
     db_tx: &DatabaseTransaction,
-    transactions: &[ActiveModel], // Should this be for Iter?
-) -> Result<Vec<<ActiveModel::Entity as EntityTrait>::Model>, DbErr>
-where
-    ActiveModel: ActiveModelTrait + ActiveModelBehavior + Send + Sync,
-    <<ActiveModel as ActiveModelTrait>::Entity as EntityTrait>::Model: IntoActiveModel<ActiveModel>,
-{
-    let future_inserts = transactions
-        .iter()
-        .map(|active_model| active_model.clone().insert(db_tx)) // Can we do without clone?
-        .collect::<Vec<_>>();
-    join_all(future_inserts).await.into_iter().collect()
+    active_models: Vec<TransactionActiveModel>,
+    block_id: i32,
+) -> Result<Vec<TransactionModel>, DbErr> {
+    let batch_size = u16::MAX / <Transaction as EntityTrait>::Column::iter().count() as u16;
+    for chunk in active_models.chunks(batch_size as usize) {
+        Transaction::insert_many(chunk.to_vec()).exec(db_tx).await?;
+    }
+    let models = <entity::prelude::Transaction as EntityTrait>::find()
+        .filter(transaction::Column::BlockId.eq(block_id))
+        .all(db_tx)
+        .await?;
+    Ok(models)
+}
+
+async fn insert_active_address_models(
+    db_tx: &DatabaseTransaction,
+    active_models: Vec<AddressActiveModel>,
+    tx_ids: &Vec<i64>,
+) -> Result<Vec<AddressModel>, DbErr> {
+    let batch_size = u16::MAX / <Address as EntityTrait>::Column::iter().count() as u16;
+    for chunk in active_models.chunks(batch_size as usize) {
+        Address::insert_many(chunk.to_vec()).exec(db_tx).await?;
+    }
+    let mut all_models = Vec::new();
+    for tx_id in tx_ids {
+        let models = <entity::prelude::Address as EntityTrait>::find()
+            .filter(address::Column::FirstTx.eq(*tx_id))
+            .all(db_tx)
+            .await?;
+        all_models.extend(models);
+    }
+    Ok(all_models)
+}
+
+async fn insert_active_output_models(
+    db_tx: &DatabaseTransaction,
+    active_models: Vec<TransactionOutputActiveModel>,
+    tx_ids: &Vec<i64>,
+) -> Result<Vec<TransactionOutputModel>, DbErr> {
+    let batch_size = u16::MAX / <TransactionOutput as EntityTrait>::Column::iter().count() as u16;
+    for chunk in active_models.chunks(batch_size as usize) {
+        TransactionOutput::insert_many(chunk.to_vec())
+            .exec(db_tx)
+            .await?;
+    }
+    let mut all_models = Vec::new();
+    for tx_id in tx_ids {
+        let models = <entity::prelude::TransactionOutput as EntityTrait>::find()
+            .filter(transaction_output::Column::TxId.eq(*tx_id))
+            .all(db_tx)
+            .await?;
+        all_models.extend(models);
+    }
+    Ok(all_models)
 }

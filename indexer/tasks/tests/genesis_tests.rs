@@ -1,11 +1,9 @@
 #![allow(non_snake_case)]
 use crate::genesis_helpers::{
     addr_as_byron, addr_to_tx_hash, arbitrary_block, db_address_as_byron,
-    db_output_as_byron_and_coin, db_tx_to_enumerated_tx_hash, in_memory_db_conn, new_address,
-    new_perf_aggregator, new_pubkey, new_rng, pubkey_as_byron, pubkey_to_tx_hash, OwnedBlockInfo,
-    GENESIS_HASH,
+    db_output_as_byron_and_coin, db_tx_to_tx_hash_and_byron, in_memory_db_conn,
+    new_perf_aggregator, pubkey_as_byron, pubkey_to_tx_hash, OwnedBlockInfo, GENESIS_HASH,
 };
-use cardano_multiplatform_lib::utils::BigNum;
 use entity::{
     address, block,
     block::EraValue,
@@ -100,16 +98,16 @@ proptest! {
     cases: 10, .. ProptestConfig::default()
     })]
     #[test]
-    fn process_genesis_block__when_genesis_tx_task_then_txns_in_correct_order(
+    fn process_genesis_block__when_genesis_tx_task_then_txns_in_db_with_correct_payload(
         block_info in arbitrary_block()
     ) {
         let rt = Runtime::new().unwrap();
 
-        rt.block_on(inner__process_genesis_block__when_genesis_tx_task_then_txns_in_correct_order(block_info))
+        rt.block_on(inner__process_genesis_block__when_genesis_tx_task_then_txns_in_db_with_correct_payload(block_info))
     }
 }
 
-async fn inner__process_genesis_block__when_genesis_tx_task_then_txns_in_correct_order(
+async fn inner__process_genesis_block__when_genesis_tx_task_then_txns_in_db_with_correct_payload(
     block_info: OwnedBlockInfo,
 ) {
     // Given
@@ -123,7 +121,12 @@ async fn inner__process_genesis_block__when_genesis_tx_task_then_txns_in_correct
         .avvm_distr
         .clone()
         .into_iter()
-        .map(|(pubkey, _)| pubkey_to_tx_hash(&pubkey, Some(protocol_magic)))
+        .map(|(pubkey, _)| {
+            (
+                pubkey_to_tx_hash(&pubkey, Some(protocol_magic)),
+                pubkey_as_byron(&pubkey, protocol_magic),
+            )
+        })
         .collect();
 
     let non_avvm_tx_hashes_in_block: Vec<_> = block_info
@@ -131,7 +134,7 @@ async fn inner__process_genesis_block__when_genesis_tx_task_then_txns_in_correct
         .non_avvm_balances
         .clone()
         .into_iter()
-        .map(|(addr, _)| addr_to_tx_hash(addr))
+        .map(|(addr, _)| (addr_to_tx_hash(addr.clone()), addr_as_byron(addr)))
         .collect();
 
     let exec_plan = Arc::new(ExecutionPlan::from(vec![
@@ -161,7 +164,7 @@ async fn inner__process_genesis_block__when_genesis_tx_task_then_txns_in_correct
     }
     .into_iter()
     .collect();
-    let tx_hashes_in_db: Vec<_> = txs.iter().map(db_tx_to_enumerated_tx_hash).collect();
+    let tx_hashes_in_db: Vec<_> = txs.iter().map(db_tx_to_tx_hash_and_byron).collect();
 
     // This is over-constrained, since order doesn't matter
     assert_eq!(tx_hashes_in_block, tx_hashes_in_db);
@@ -169,7 +172,8 @@ async fn inner__process_genesis_block__when_genesis_tx_task_then_txns_in_correct
 
 proptest! {
     #![proptest_config(ProptestConfig {
-    cases: 10, .. ProptestConfig::default()
+        cases: 10,
+        .. ProptestConfig::default()
     })]
     #[test]
     fn process_genesis_block__when_genesis_tx_task_then_outputs_in_db(
@@ -310,66 +314,5 @@ async fn inner__process_genesis_block__when_genesis_tx_task_then_address_in_db(
     let addresses_in_db: Vec<_> = addresses.iter().map(db_address_as_byron).collect();
 
     // This is over-constrained, since order doesn't matter
-    assert_eq!(addresses_in_block, addresses_in_db);
-}
-
-#[tokio::test]
-async fn process_genesis_block__when_genesis_tx_task_and_duplicate_pubkey_then_only_added_once() {
-    // Given
-    let conn = in_memory_db_conn().await;
-    setup_schema(&conn).await;
-
-    let mut rng = new_rng();
-    let pubkey = new_pubkey(&mut rng);
-    let address = new_address(&mut rng);
-    let coin = BigNum::from(99);
-
-    let avvms = vec![
-        (pubkey.clone(), coin),
-        (pubkey.clone(), coin),
-        (pubkey.clone(), coin),
-        (pubkey.clone(), coin),
-    ];
-    let non_avvms = vec![
-        (address.clone(), coin),
-        (address.clone(), coin),
-        (address.clone(), coin),
-        (address.clone(), coin),
-    ];
-
-    let block_info = GenesisBlockBuilder::default()
-        .with_avvms(avvms)
-        .with_non_avvms(non_avvms)
-        .build();
-    let protocol_magic = block_info.1.protocol_magic;
-
-    let exec_plan = Arc::new(ExecutionPlan::from(vec![
-        "GenesisBlockTask",
-        "GenesisTransactionTask",
-    ]));
-    let perf_aggregator = new_perf_aggregator();
-
-    // When
-    conn.transaction(|db_tx| {
-        Box::pin(wrap_process_genesis_block(
-            db_tx,
-            block_info,
-            exec_plan.clone(),
-            perf_aggregator.clone(),
-        ))
-    })
-    .await
-    .unwrap();
-
-    // Then
-    let addresses = address::Entity::find().all(&conn).await.unwrap();
-
-    let addresses_in_block = vec![
-        pubkey_as_byron(&pubkey, protocol_magic),
-        addr_as_byron(address),
-    ];
-
-    let addresses_in_db: Vec<_> = addresses.iter().map(db_address_as_byron).collect();
-
     assert_eq!(addresses_in_block, addresses_in_db);
 }
