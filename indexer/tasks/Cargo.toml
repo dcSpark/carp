@@ -10,7 +10,7 @@ name = "tasks"
 shred = { git = "https://github.com/dcSpark/shred", branch = "builder-getters" }
 nameof = "1.2.2"
 inventory = "0.2.3"
-cardano-multiplatform-lib = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "long-addr-fix" }
+cardano-multiplatform-lib = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "metadata-and-addr" }
 entity = { path = "../entity" }
 tokio = { version = "1.16.1", features = ["full"] }
 pallas = "0.10.0"

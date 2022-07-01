@@ -367,8 +367,8 @@ checksum = "c1db59621ec70f09c5e9b597b220c7a2b43611f4710dc03ceb8748637775692c"
 
 [[package]]
 name = "cardano-multiplatform-lib"
-version = "0.2.0"
-source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?branch=long-addr-fix#6dba2ac5bb53045e9e643b19191fa51b6015c571"
+version = "0.3.0"
+source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?branch=metadata-and-addr#2af5e86eeaa64736a76faebd17dee42b6c65f8e7"
 dependencies = [
  "base64",
  "bech32 0.7.3",

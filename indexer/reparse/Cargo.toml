@@ -16,5 +16,5 @@ dotenv = "0.15.0"
 tokio = { version = "1.16.1", features = ["full"] }
 entity = { path = "../entity" }
 futures = "0.3.21"
-cardano-multiplatform-lib = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "long-addr-fix" }
+cardano-multiplatform-lib = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "metadata-and-addr" }
 hex = "0.4.0"
