@@ -13,7 +13,7 @@ use super::user_asset::{AssetName, Cip25ParseError, Payload, PolicyId};
 fn is_policy_key(key: &Metadatum) -> Option<PolicyId> {
     match key {
         Metadatum::Bytes(x) if x.len() == 28 => Some(x.to_vec()),
-        Metadatum::Text(x) if x.len() == 56 => Some(hex::decode(x).unwrap()),
+        Metadatum::Text(x) if x.len() == 56 => hex::decode(x).map_or(None, Some),
         _ => None,
     }
 }
@@ -23,9 +23,9 @@ fn is_policy_key(key: &Metadatum) -> Option<PolicyId> {
 // There's probably a much more formal approach.
 fn is_asset_key(key: &Metadatum) -> Option<AssetName> {
     match key {
-        Metadatum::Bytes(x) if x.len() <= 32 => Some(AssetName::try_from(x.as_slice()).unwrap()),
+        Metadatum::Bytes(x) if x.len() <= 32 => AssetName::try_from(x.as_slice()).map_or(None, Some),
         Metadatum::Text(x) if x.as_bytes().len() <= 32 => {
-            Some(AssetName::try_from(x.as_bytes()).unwrap())
+            AssetName::try_from(x.as_bytes()).map_or(None, Some)
         }
         _ => None,
     }
