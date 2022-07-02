@@ -6,6 +6,7 @@ use shred::DispatcherBuilder;
 use std::sync::{Arc, Mutex};
 
 /// Misc information about blocks that can't be computed from just the block data itself
+#[derive(Debug)]
 pub struct BlockGlobalInfo {
     pub era: EraValue,
     pub epoch: Option<u64>,
