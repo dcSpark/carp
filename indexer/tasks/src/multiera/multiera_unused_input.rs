@@ -7,7 +7,7 @@ use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction},
 };
-use pallas::ledger::primitives::alonzo::{self, TransactionBodyComponent};
+use pallas::ledger::traverse::MultiEraBlock;
 
 use crate::dsl::task_macro::*;
 
@@ -45,25 +45,21 @@ type QueuedInputs<'a> = Vec<(
 
 async fn handle_unused_input(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, alonzo::Block<'_>>,
+    block: BlockInfo<'_, MultiEraBlock<'_>>,
     multiera_txs: &[TransactionModel],
     vkey_relation_map: &mut RelationMap,
 ) -> Result<(), DbErr> {
     let mut queued_unused_inputs = QueuedInputs::default();
 
-    for (tx_body, cardano_transaction) in block.1.transaction_bodies.iter().zip(multiera_txs) {
-        for component in tx_body.iter() {
-            match component {
-                TransactionBodyComponent::Inputs(inputs) if !cardano_transaction.is_valid => {
-                    queued_unused_inputs.push((inputs, cardano_transaction.id))
-                }
-                TransactionBodyComponent::Collateral(inputs) if cardano_transaction.is_valid => {
-                    // note: we consider collateral as just another kind of input instead of a separate table
-                    // you can use the is_valid field to know what kind of input it actually is
-                    queued_unused_inputs.push((inputs, cardano_transaction.id))
-                }
-                _ => (),
-            };
+    for (tx_body, cardano_transaction) in block.1.txs().iter().zip(multiera_txs) {
+        if !cardano_transaction.is_valid {
+            queued_unused_inputs.push((tx_body.inputs(), cardano_transaction.id))
+        }
+
+        if cardano_transaction.is_valid {
+            // note: we consider collateral as just another kind of input instead of a separate table
+            // you can use the is_valid field to know what kind of input it actually is
+            queued_unused_inputs.push((tx_body.collateral(), cardano_transaction.id))
         }
     }
 

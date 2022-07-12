@@ -4,15 +4,17 @@ use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction, Set},
 };
-use pallas::ledger::primitives::alonzo::{self, TransactionBody, TransactionBodyComponent};
-use pallas::ledger::primitives::Fragment;
+use pallas::ledger::{
+    primitives::Fragment,
+    traverse::{MultiEraBlock, MultiEraOutput, MultiEraTx},
+};
 
 use super::multiera_address::MultieraAddressTask;
 use crate::config::ReadonlyConfig::ReadonlyConfig;
+use crate::dsl::task_macro::*;
 use crate::era_common::get_truncated_address;
 use crate::era_common::output_from_pointer;
 use pallas::ledger::primitives::ToHash;
-use crate::dsl::task_macro::*;
 
 carp_task! {
   name MultieraOutputTask;
@@ -54,30 +56,22 @@ struct QueuedOutput {
 
 async fn handle_output(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, alonzo::Block<'_>>,
+    block: BlockInfo<'_, MultiEraBlock<'_>>,
     multiera_txs: &[TransactionModel],
     addresses: &BTreeMap<Vec<u8>, AddressInBlock>,
     readonly: bool,
 ) -> Result<Vec<TransactionOutputModel>, DbErr> {
     let mut queued_output = Vec::<QueuedOutput>::default();
 
-    for (tx_body, cardano_transaction) in block.1.transaction_bodies.iter().zip(multiera_txs) {
-        for component in tx_body.iter() {
-            #[allow(clippy::single_match)]
-            match component {
-                TransactionBodyComponent::Outputs(outputs) => {
-                    for (idx, output) in outputs.iter().enumerate() {
-                        queue_output(
-                            &mut queued_output,
-                            tx_body,
-                            cardano_transaction.id,
-                            output,
-                            idx,
-                        );
-                    }
-                }
-                _ => {}
-            }
+    for (tx_body, cardano_transaction) in block.1.txs().iter().zip(multiera_txs) {
+        for (idx, output) in tx_body.outputs().iter().enumerate() {
+            queue_output(
+                &mut queued_output,
+                tx_body,
+                cardano_transaction.id,
+                output,
+                idx,
+            );
         }
     }
 
@@ -98,14 +92,14 @@ async fn handle_output(
 
 fn queue_output(
     queued_output: &mut Vec<QueuedOutput>,
-    tx_body: &TransactionBody,
+    tx_body: &MultiEraTx<'_>,
     tx_id: i64,
-    output: &alonzo::TransactionOutput,
+    output: &MultiEraOutput,
     idx: usize,
 ) {
-    use cardano_multiplatform_lib::address::Address;
-    let addr = Address::from_bytes(output.address.to_vec())
-        .map_err(|e| panic!("{:?}{:?}", e, tx_body.to_hash().to_vec()))
+    let addr = output
+        .to_address()
+        .map_err(|e| panic!("{:?}{:?}", e, tx_body.hash().to_vec()))
         .unwrap();
 
     queued_output.push(QueuedOutput {

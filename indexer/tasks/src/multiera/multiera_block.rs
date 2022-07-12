@@ -5,6 +5,7 @@ use crate::{dsl::default_impl::has_transaction_multiera, dsl::task_macro::*};
 use entity::sea_orm::{DatabaseTransaction, Set};
 use pallas::ledger::primitives::alonzo::{self};
 use pallas::ledger::primitives::Fragment;
+use pallas::ledger::traverse::MultiEraBlock;
 
 carp_task! {
   name MultieraBlockTask;
@@ -29,7 +30,7 @@ carp_task! {
 
 async fn handle_block(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, alonzo::Block<'_>>,
+    block: BlockInfo<'_, MultiEraBlock<'_>>,
     readonly: bool,
 ) -> Result<BlockModel, DbErr> {
     let hash = blake2b256(&block.1.header.encode_fragment().unwrap());

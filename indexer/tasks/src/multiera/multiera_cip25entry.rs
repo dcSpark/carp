@@ -9,9 +9,7 @@ use entity::{
 use pallas::ledger::primitives::Fragment;
 use pallas::{
     codec::utils::KeyValuePairs,
-    ledger::primitives::alonzo::{
-        self, AuxiliaryData, Metadatum, MetadatumLabel, TransactionBodyComponent,
-    },
+    ledger::primitives::alonzo::{self, AuxiliaryData, Metadatum, MetadatumLabel},
 };
 
 use super::{

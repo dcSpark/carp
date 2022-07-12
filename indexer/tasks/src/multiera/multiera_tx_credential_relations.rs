@@ -9,7 +9,6 @@ use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction, Set},
 };
-use pallas::ledger::primitives::alonzo::{self};
 
 use super::{
     multiera_address::MultieraAddressTask, multiera_stake_credentials::MultieraStakeCredentialTask,

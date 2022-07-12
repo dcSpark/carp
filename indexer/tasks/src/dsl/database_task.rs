@@ -1,7 +1,7 @@
 use crate::utils::TaskPerfAggregator;
 use cardano_multiplatform_lib::genesis::byron::config::GenesisData;
 use entity::{block::EraValue, prelude::*, sea_orm::DatabaseTransaction};
-use pallas::ledger::primitives::{alonzo, byron};
+use pallas::ledger::traverse::MultiEraBlock;
 use shred::DispatcherBuilder;
 use std::sync::{Arc, Mutex};
 
@@ -64,12 +64,12 @@ pub struct GenesisTaskRegistryEntry {
 
 #[derive(Copy, Clone)]
 pub struct ByronTaskRegistryEntry {
-    pub builder: &'static (dyn for<'a> TaskBuilder<'a, byron::Block> + Sync),
+    pub builder: &'static (dyn for<'a> TaskBuilder<'a, MultiEraBlock<'a>> + Sync),
 }
 
 #[derive(Copy, Clone)]
 pub struct MultieraTaskRegistryEntry {
-    pub builder: &'static (dyn for<'a> TaskBuilder<'a, alonzo::Block<'a>> + Sync),
+    pub builder: &'static (dyn for<'a> TaskBuilder<'a, MultiEraBlock<'a>> + Sync),
 }
 
 inventory::collect!(TaskRegistryEntry);

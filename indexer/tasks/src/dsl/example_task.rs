@@ -39,9 +39,6 @@ carp_task! {
   };
 }
 
-async fn handle_dummy(
-    _db_tx: &DatabaseTransaction,
-    _block: BlockInfo<'_, alonzo::Block<'_>>,
-) -> Result<(), DbErr> {
+async fn handle_dummy(_db_tx: &DatabaseTransaction, _block: BlockInfo<'_>) -> Result<(), DbErr> {
     Ok(())
 }

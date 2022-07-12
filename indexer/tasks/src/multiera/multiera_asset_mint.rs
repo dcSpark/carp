@@ -10,11 +10,10 @@ use entity::{
     sea_orm::{prelude::*, Condition, DatabaseTransaction, Set},
 };
 use pallas::ledger::primitives::Fragment;
+use pallas::ledger::traverse::MultiEraBlock;
 use pallas::{
     codec::utils::KeyValuePairs,
-    ledger::primitives::alonzo::{
-        self, AuxiliaryData, Metadatum, MetadatumLabel, TransactionBodyComponent,
-    },
+    ledger::primitives::alonzo::{self, AuxiliaryData, Metadatum, MetadatumLabel},
 };
 
 use crate::dsl::task_macro::*;
@@ -48,7 +47,7 @@ carp_task! {
 
 async fn handle_mints(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, alonzo::Block<'_>>,
+    block: BlockInfo<'_, MultiEraBlock<'_>>,
     multiera_txs: &[TransactionModel],
     readonly: bool,
 ) -> Result<Vec<NativeAssetModel>, DbErr> {

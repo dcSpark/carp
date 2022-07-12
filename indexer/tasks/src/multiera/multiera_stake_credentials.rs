@@ -5,7 +5,6 @@ use entity::{
     prelude::*,
     sea_orm::{prelude::*, Condition, DatabaseTransaction, Set},
 };
-use pallas::ledger::primitives::alonzo::{self, TransactionBodyComponent};
 
 use crate::{dsl::default_impl::has_transaction_multiera, types::TxCredentialRelationValue};
 
@@ -15,7 +14,7 @@ use super::{
 };
 use crate::config::EmptyConfig::EmptyConfig;
 use crate::dsl::task_macro::*;
-use pallas::ledger::primitives::Fragment;
+use pallas::ledger::{primitives::Fragment, traverse::MultiEraBlock};
 
 carp_task! {
   name MultieraStakeCredentialTask;
@@ -43,13 +42,13 @@ carp_task! {
 
 async fn handle_stake_credentials(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, alonzo::Block<'_>>,
+    block: BlockInfo<'_, MultiEraBlock<'_>>,
     multiera_txs: &[TransactionModel],
     vkey_relation_map: &mut RelationMap,
 ) -> Result<BTreeMap<Vec<u8>, StakeCredentialModel>, DbErr> {
     for ((tx_body, cardano_transaction), witness_set) in block
         .1
-        .transaction_bodies
+        .txs()
         .iter()
         .zip(multiera_txs)
         .zip(block.1.transaction_witness_sets.iter())
@@ -62,26 +61,18 @@ async fn handle_stake_credentials(
             )
             .unwrap(),
         );
-        for component in tx_body.iter() {
-            #[allow(clippy::single_match)]
-            match component {
-                TransactionBodyComponent::RequiredSigners(key_hashes) => {
-                    for &signer in key_hashes.iter() {
-                        let owner_credential =
-                            pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(
-                                signer,
-                            )
-                            .encode_fragment()
-                            .unwrap();
-                        vkey_relation_map.add_relation(
-                            cardano_transaction.id,
-                            &owner_credential.clone(),
-                            TxCredentialRelationValue::RequiredSigner,
-                        );
-                    }
-                }
-                _ => {}
-            }
+
+        // PALLAS TODO: required_signers -> &[Hash<28>]
+        for signer in tx_body.required_signers() {
+            let owner_credential =
+                pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(signer)
+                    .encode_fragment()
+                    .unwrap();
+            vkey_relation_map.add_relation(
+                cardano_transaction.id,
+                &owner_credential.clone(),
+                TxCredentialRelationValue::RequiredSigner,
+            );
         }
     }
 

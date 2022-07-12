@@ -8,6 +8,7 @@ use entity::sea_orm::{DatabaseTransaction, QueryOrder, Set};
 use pallas::ledger::primitives::alonzo::{self};
 use pallas::ledger::primitives::Fragment;
 use pallas::ledger::primitives::ToHash;
+use pallas::ledger::traverse::MultiEraBlock;
 
 carp_task! {
   name MultieraTransactionTask;
@@ -33,7 +34,7 @@ carp_task! {
 
 async fn handle_tx(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, alonzo::Block<'_>>,
+    block: BlockInfo<'_, MultiEraBlock<'_>>,
     database_block: &BlockModel,
     readonly: bool,
 ) -> Result<Vec<TransactionModel>, DbErr> {
