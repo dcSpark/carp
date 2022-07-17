@@ -23,7 +23,9 @@ fn is_policy_key(key: &Metadatum) -> Option<PolicyId> {
 // There's probably a much more formal approach.
 fn is_asset_key(key: &Metadatum) -> Option<AssetName> {
     match key {
-        Metadatum::Bytes(x) if x.len() <= 32 => AssetName::try_from(x.as_slice()).map_or(None, Some),
+        Metadatum::Bytes(x) if x.len() <= 32 => {
+            AssetName::try_from(x.as_slice()).map_or(None, Some)
+        }
         Metadatum::Text(x) if x.as_bytes().len() <= 32 => {
             AssetName::try_from(x.as_bytes()).map_or(None, Some)
         }

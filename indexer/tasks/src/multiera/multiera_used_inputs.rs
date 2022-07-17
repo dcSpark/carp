@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::config::ReadonlyConfig::ReadonlyConfig;
 use crate::era_common::input_from_pointer;
-use crate::{dsl::default_impl::has_transaction_multiera, types::TxCredentialRelationValue};
+use crate::types::TxCredentialRelationValue;
 use cardano_multiplatform_lib::address::{
     BaseAddress, ByronAddress, EnterpriseAddress, PointerAddress, RewardAddress,
 };
@@ -10,7 +10,7 @@ use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction},
 };
-use pallas::ledger::primitives::alonzo::{self, TransactionBodyComponent};
+use pallas::ledger::traverse::{MultiEraBlock, MultiEraInput, OutputRef};
 
 use super::{multiera_outputs::MultieraOutputTask, relation_map::RelationMap};
 
@@ -26,7 +26,7 @@ carp_task! {
   write [vkey_relation_map, multiera_used_inputs];
   should_add_task |block, _properties| {
     // txs always have at least one input (even if tx fails)
-    has_transaction_multiera(block.1)
+    !block.1.is_empty()
   };
   execute |previous_data, task| handle_input(
       task.db_tx,
@@ -40,33 +40,34 @@ carp_task! {
   };
 }
 
-type QueuedInputs<'a> = Vec<(
-    &'a Vec<pallas::ledger::primitives::alonzo::TransactionInput>,
+type QueuedInputs = Vec<(
+    Vec<OutputRef>,
     i64, // tx_id
 )>;
 
 async fn handle_input(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, alonzo::Block<'_>>,
+    block: BlockInfo<'_, MultiEraBlock<'_>>,
     multiera_txs: &[TransactionModel],
     vkey_relation_map: &mut RelationMap,
     readonly: bool,
 ) -> Result<Vec<TransactionInputModel>, DbErr> {
     let mut queued_inputs = QueuedInputs::default();
+    let txs = block.1.txs();
 
-    for (tx_body, cardano_transaction) in block.1.transaction_bodies.iter().zip(multiera_txs) {
-        for component in tx_body.iter() {
-            match component {
-                TransactionBodyComponent::Inputs(inputs) if cardano_transaction.is_valid => {
-                    queued_inputs.push((inputs, cardano_transaction.id))
-                }
-                TransactionBodyComponent::Collateral(inputs) if !cardano_transaction.is_valid => {
-                    // note: we consider collateral as just another kind of input instead of a separate table
-                    // you can use the is_valid field to know what kind of input it actually is
-                    queued_inputs.push((inputs, cardano_transaction.id))
-                }
-                _ => (),
-            };
+    for (tx_body, cardano_transaction) in txs.iter().zip(multiera_txs) {
+        if cardano_transaction.is_valid {
+            let refs = tx_body.inputs().iter().map(|x| x.output_ref()).collect();
+            queued_inputs.push((refs, cardano_transaction.id));
+        }
+
+        if !cardano_transaction.is_valid {
+            let refs = tx_body
+                .collateral()
+                .iter()
+                .map(|x| x.output_ref())
+                .collect();
+            queued_inputs.push((refs, cardano_transaction.id))
         }
     }
 
@@ -111,23 +112,20 @@ async fn handle_input(
 
 pub fn add_input_relations(
     vkey_relation_map: &mut RelationMap,
-    inputs: &[(
-        &Vec<pallas::ledger::primitives::alonzo::TransactionInput>,
-        i64,
-    )],
+    inputs: &[(Vec<OutputRef>, i64)],
     outputs: &[&TransactionOutputModel],
     input_to_output_map: &BTreeMap<&Vec<u8>, BTreeMap<i64, &TransactionOutputModel>>,
 ) {
     let mut output_to_input_tx = BTreeMap::<i64, i64>::default();
     for input_tx_pair in inputs.iter() {
         for input in input_tx_pair.0.iter() {
-            match input_to_output_map.get(&input.transaction_id.to_vec()) {
+            match input_to_output_map.get(&input.hash().to_vec()) {
                 Some(entry_for_tx) => {
-                    let output_id = entry_for_tx[&(input.index as i64)];
+                    let output_id = entry_for_tx[&(input.index() as i64)];
                     output_to_input_tx.insert(output_id.id, input_tx_pair.1);
                 }
                 None => {
-                    println!("tx: {}", hex::encode(input.transaction_id));
+                    println!("tx: {}", input.hash());
                     panic!();
                 }
             }

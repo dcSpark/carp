@@ -9,8 +9,7 @@ pub use crate::{
     utils::TaskPerfAggregator,
 };
 pub use cardano_multiplatform_lib::genesis::byron::config::GenesisData;
-pub use pallas::ledger::primitives::alonzo::{self};
-pub use pallas::ledger::primitives::byron::{self};
+pub use pallas::ledger::traverse::MultiEraBlock;
 pub use paste::paste;
 pub use shred::{DispatcherBuilder, Read, ResourceId, System, SystemData, World, Write};
 pub use std::sync::{Arc, Mutex};
@@ -20,10 +19,10 @@ macro_rules! era_to_block {
         GenesisData
     };
     (byron) => {
-        byron::Block
+        MultiEraBlock<'a>
     };
     (multiera) => {
-        alonzo::Block<'a>
+        MultiEraBlock<'a>
     };
 }
 

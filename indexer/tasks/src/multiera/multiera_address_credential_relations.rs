@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
 use crate::config::ReadonlyConfig::ReadonlyConfig;
-use crate::{dsl::default_impl::has_transaction_multiera, types::AddressCredentialRelationValue};
+use crate::types::AddressCredentialRelationValue;
 use entity::sea_orm::Condition;
 use entity::{
     prelude::*,
@@ -23,7 +23,7 @@ carp_task! {
   read [multiera_addresses, multiera_queued_addresses_relations, multiera_stake_credential];
   write [];
   should_add_task |block, _properties| {
-    has_transaction_multiera(block.1)
+    !block.1.is_empty()
   };
   execute |previous_data, task| handle_address_credential_relation(
       task.db_tx,

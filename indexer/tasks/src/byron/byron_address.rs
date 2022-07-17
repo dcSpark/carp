@@ -18,7 +18,7 @@ carp_task! {
   should_add_task |block, _properties| {
     // recall: txs may have no outputs if they just burn all inputs as fee
     match block.1 {
-        byron::Block::MainBlock(main_block) => {
+        MultiEraBlock::Byron(main_block) => {
             main_block
                 .body
                 .tx_payload.iter().any(|payload| payload.transaction.outputs.len() > 0)
@@ -38,14 +38,11 @@ carp_task! {
 
 async fn handle_addresses(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, byron::Block>,
+    block: BlockInfo<'_, MultiEraBlock<'_>>,
     byron_txs: &[TransactionModel],
 ) -> Result<BTreeMap<Vec<u8>, AddressInBlock>, DbErr> {
     match &block.1 {
-        // Byron era had Epoch-boundary blocks for calculating stake distribution changes
-        // they don't contain any txs, so we can just ignore them
-        byron::Block::EbBlock(_) => Ok(BTreeMap::<Vec<u8>, AddressInBlock>::default()),
-        byron::Block::MainBlock(main_block) => {
+        MultiEraBlock::Byron(main_block) => {
             let tx_outputs: Vec<_> = main_block
                 .body
                 .tx_payload
@@ -72,5 +69,8 @@ async fn handle_addresses(
 
             Ok(address_map)
         }
+        // Byron era had Epoch-boundary blocks for calculating stake distribution changes
+        // they don't contain any txs, so we can just ignore them
+        _ => Ok(BTreeMap::<Vec<u8>, AddressInBlock>::default()),
     }
 }

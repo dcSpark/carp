@@ -9,7 +9,6 @@ use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction, Set},
 };
-use pallas::ledger::primitives::alonzo::{self};
 
 use super::{
     multiera_address::MultieraAddressTask, multiera_stake_credentials::MultieraStakeCredentialTask,
@@ -17,7 +16,7 @@ use super::{
 };
 use crate::config::EmptyConfig::EmptyConfig;
 
-use crate::{dsl::default_impl::has_transaction_multiera, dsl::task_macro::*};
+use crate::dsl::task_macro::*;
 
 carp_task! {
   name MultieraTxCredentialRelationTask;
@@ -28,7 +27,7 @@ carp_task! {
   read [multiera_stake_credential, vkey_relation_map];
   write [];
   should_add_task |block, _properties| {
-    has_transaction_multiera(block.1)
+    !block.1.is_empty()
   };
   execute |previous_data, task| handle_tx_credential_relations(
       task.db_tx,
