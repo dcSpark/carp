@@ -16,7 +16,7 @@ use super::{
 };
 use crate::config::EmptyConfig::EmptyConfig;
 
-use crate::{dsl::task_macro::*};
+use crate::dsl::task_macro::*;
 
 carp_task! {
   name MultieraTxCredentialRelationTask;

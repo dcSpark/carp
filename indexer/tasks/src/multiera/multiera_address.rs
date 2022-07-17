@@ -13,9 +13,7 @@ use pallas::ledger::{
 };
 use std::ops::Deref;
 
-use crate::{
-    types::{AddressCredentialRelationValue, TxCredentialRelationValue},
-};
+use crate::types::{AddressCredentialRelationValue, TxCredentialRelationValue};
 
 use super::{
     multiera_address_credential_relations::QueuedAddressCredentialRelation,
@@ -90,8 +88,10 @@ async fn handle_addresses(
 
         for withdrawal in tx_body.withdrawals().collect::<Vec<(&[u8], u64)>>() {
             let reward_addr = RewardAddress::from_address(
-                &cardano_multiplatform_lib::address::Address::from_bytes(withdrawal.0.clone().into())
-                    .unwrap(),
+                &cardano_multiplatform_lib::address::Address::from_bytes(
+                    withdrawal.0.clone().into(),
+                )
+                .unwrap(),
             )
             .unwrap();
             queue_address_credential(

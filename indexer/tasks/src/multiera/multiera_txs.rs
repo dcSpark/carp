@@ -2,8 +2,8 @@ use std::collections::BTreeSet;
 
 use super::multiera_block::MultieraBlockTask;
 use crate::config::ReadonlyConfig::ReadonlyConfig;
+use crate::dsl::task_macro::*;
 use crate::era_common::transactions_from_hashes;
-use crate::{dsl::task_macro::*};
 use entity::sea_orm::{DatabaseTransaction, QueryOrder, Set};
 use pallas::ledger::primitives::alonzo::{self};
 use pallas::ledger::primitives::Fragment;
@@ -59,14 +59,13 @@ async fn handle_tx(
         .iter()
         .enumerate()
         .map(|(idx, tx)| TransactionActiveModel {
-                hash: Set(tx.hash().to_vec()),
-                block_id: Set(database_block.id),
-                tx_index: Set(idx as i32),
-                payload: Set(tx.encode().unwrap()),
-                is_valid: Set(tx.is_valid()),
-                ..Default::default()
-            }
-        )
+            hash: Set(tx.hash().to_vec()),
+            block_id: Set(database_block.id),
+            tx_index: Set(idx as i32),
+            payload: Set(tx.encode().unwrap()),
+            is_valid: Set(tx.is_valid()),
+            ..Default::default()
+        })
         .collect();
 
     if !txs.is_empty() {

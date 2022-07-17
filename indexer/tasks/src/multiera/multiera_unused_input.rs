@@ -33,10 +33,7 @@ carp_task! {
   };
 }
 
-type QueuedInputs = Vec<(
-    Vec<OutputRef>,
-    i64,
-)>;
+type QueuedInputs = Vec<(Vec<OutputRef>, i64)>;
 
 async fn handle_unused_input(
     db_tx: &DatabaseTransaction,
@@ -56,7 +53,11 @@ async fn handle_unused_input(
         if cardano_transaction.is_valid {
             // note: we consider collateral as just another kind of input instead of a separate table
             // you can use the is_valid field to know what kind of input it actually is
-            let refs = tx_body.collateral().iter().map(|x| x.output_ref()).collect();
+            let refs = tx_body
+                .collateral()
+                .iter()
+                .map(|x| x.output_ref())
+                .collect();
             queued_unused_inputs.push((refs, cardano_transaction.id))
         }
     }

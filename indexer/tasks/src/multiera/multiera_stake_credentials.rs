@@ -6,7 +6,7 @@ use entity::{
     sea_orm::{prelude::*, Condition, DatabaseTransaction, Set},
 };
 
-use crate::{types::TxCredentialRelationValue};
+use crate::types::TxCredentialRelationValue;
 
 use super::{
     multiera_unused_input::MultieraUnusedInputTask, multiera_used_inputs::MultieraUsedInputTask,
@@ -46,26 +46,19 @@ async fn handle_stake_credentials(
     multiera_txs: &[TransactionModel],
     vkey_relation_map: &mut RelationMap,
 ) -> Result<BTreeMap<Vec<u8>, StakeCredentialModel>, DbErr> {
-    for ((tx_body, cardano_transaction), witness_set) in block
-        .1
-        .txs()
-        .iter()
-        .zip(multiera_txs)
-        .zip(block.1.transaction_witness_sets.iter())
-    {
+    for (tx_body, cardano_transaction) in block.1.txs().iter().zip(multiera_txs) {
         queue_witness(
             vkey_relation_map,
             cardano_transaction.id,
             &cardano_multiplatform_lib::TransactionWitnessSet::from_bytes(
-                witness_set.encode_fragment().unwrap(),
+                tx_body.witnesses().cbor().to_vec(),
             )
             .unwrap(),
         );
 
-        // PALLAS TODO: required_signers -> &[Hash<28>]
-        for signer in tx_body.required_signers() {
+        for signer in tx_body.required_signers().collect::<Vec<_>>() {
             let owner_credential =
-                pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(signer)
+                pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(signer.clone())
                     .encode_fragment()
                     .unwrap();
             vkey_relation_map.add_relation(

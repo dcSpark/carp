@@ -30,5 +30,4 @@ cardano-multiplatform-lib = { git = "https://github.com/dcSpark/cardano-multipla
 num-integer = "0.1.45"
 # pallas = "0.11.0"
 pallas = { git = "https://github.com/txpipe/pallas" }
-# pallas = { path = "../../pallas/pallas" }
 cryptoxide = "0.4.2"

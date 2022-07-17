@@ -21,14 +21,7 @@ carp_task! {
   write [byron_outputs];
   should_add_task |block, _properties| {
     // recall: txs may have no outputs if they just burn all inputs as fee
-    match block.1 {
-        byron::Block::MainBlock(main_block) => {
-            main_block
-                .body
-                .tx_payload.iter().any(|payload| payload.transaction.outputs.len() > 0)
-        }
-        _ => false,
-    }
+    block.1.txs().iter().any(|tx| tx.outputs().len() > 0)
   };
   execute |previous_data, task| handle_outputs(
       task.db_tx,
@@ -47,10 +40,12 @@ async fn handle_outputs(
     byron_txs: &[TransactionModel],
     byron_addresses: &BTreeMap<Vec<u8>, AddressInBlock>,
 ) -> Result<Vec<TransactionOutputModel>, DbErr> {
-    let tx_outputs: Vec<_> = block.1
+    let tx_outputs: Vec<_> = block
+        .1
         .as_byron()
         .unwrap()
-        .body.tx_payload
+        .body
+        .tx_payload
         .iter()
         .map(|payload| &payload.transaction.outputs)
         .zip(byron_txs)

@@ -53,8 +53,7 @@ async fn handle_metadata(
             .await;
     }
 
-    let mut metadata_map =
-        BTreeMap::<i64 /* id */, MultiEraMeta>::default();
+    let mut metadata_map = BTreeMap::<i64 /* id */, MultiEraMeta>::default();
 
     let txs = block.1.txs();
 
@@ -74,7 +73,13 @@ async fn handle_metadata(
     Ok(TransactionMetadata::insert_many(
         metadata_map
             .iter()
-            .flat_map(|(tx_id, metadata)| metadata.as_alonzo().unwrap().iter().zip(std::iter::repeat(tx_id)))
+            .flat_map(|(tx_id, metadata)| {
+                metadata
+                    .as_alonzo()
+                    .unwrap()
+                    .iter()
+                    .zip(std::iter::repeat(tx_id))
+            })
             .map(
                 |((label, metadata), tx_id)| TransactionMetadataActiveModel {
                     tx_id: Set(*tx_id),

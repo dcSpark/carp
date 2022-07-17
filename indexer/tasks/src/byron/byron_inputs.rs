@@ -1,4 +1,4 @@
-use crate::{dsl::task_macro::*};
+use crate::dsl::task_macro::*;
 use pallas::ledger::primitives::byron::{self, TxIn};
 
 use super::byron_outputs::ByronOutputTask;
@@ -31,38 +31,28 @@ async fn handle_inputs(
     block: BlockInfo<'_, MultiEraBlock<'_>>,
     byron_txs: &[TransactionModel],
 ) -> Result<Vec<TransactionInputModel>, DbErr> {
-    let all_inputs: Vec<(
-        Vec<pallas::ledger::traverse::OutputRef>,
-        i64,
-    )> = block.1
+    let all_inputs: Vec<(Vec<pallas::ledger::traverse::OutputRef>, i64)> = block
+        .1
         .txs()
         .iter()
         .zip(byron_txs)
         .map(|(tx, cardano_tx_in_db)| {
-            let inputs: Vec<pallas::ledger::traverse::OutputRef> = tx
-                .inputs()
-                .iter()
-                .map(|x| x.output_ref())
-                .collect();
-                    
+            let inputs: Vec<pallas::ledger::traverse::OutputRef> =
+                tx.inputs().iter().map(|x| x.output_ref()).collect();
+
             (inputs, cardano_tx_in_db.id)
         })
         .collect();
 
-    let flattened_inputs: Vec<(
-        Vec<pallas::ledger::traverse::OutputRef>,
-        i64,
-    )> = all_inputs
+    let flattened_inputs: Vec<(Vec<pallas::ledger::traverse::OutputRef>, i64)> = all_inputs
         .into_iter()
         .map(|inputs| (inputs.0, inputs.1))
         .collect();
     let outputs_for_inputs =
         crate::era_common::get_outputs_for_inputs(&flattened_inputs, db_tx).await?;
 
-    let input_to_output_map =
-        crate::era_common::gen_input_to_output_map(&outputs_for_inputs);
+    let input_to_output_map = crate::era_common::gen_input_to_output_map(&outputs_for_inputs);
     let result =
-        crate::era_common::insert_inputs(&flattened_inputs, &input_to_output_map, db_tx)
-            .await?;
+        crate::era_common::insert_inputs(&flattened_inputs, &input_to_output_map, db_tx).await?;
     Ok(result)
 }

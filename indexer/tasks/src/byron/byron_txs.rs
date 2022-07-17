@@ -1,7 +1,4 @@
-use crate::{
-    dsl::task_macro::*,
-    era_common::transactions_from_hashes, utils::blake2b256,
-};
+use crate::{dsl::task_macro::*, era_common::transactions_from_hashes, utils::blake2b256};
 use entity::sea_orm::Set;
 use pallas::ledger::primitives::{byron, Fragment};
 
@@ -41,34 +38,31 @@ async fn handle_tx(
     }
 
     if readonly {
-        let tx_hashes = block.1
+        let tx_hashes = block
+            .1
             .txs()
             .iter()
-            .map(|tx_body| {
-                blake2b256(&tx_body.encode().expect("")).to_vec()
-            })
+            .map(|tx_body| blake2b256(&tx_body.encode().expect("")).to_vec())
             .collect::<Vec<_>>();
         let txs = transactions_from_hashes(db_tx, tx_hashes.as_slice()).await;
         return txs;
     }
 
     let transaction_inserts =
-        Transaction::insert_many(block.1.txs().iter().enumerate().map(
-            |(idx, tx_body)| {
-                let tx_hash = blake2b256(&tx_body.encode().expect(""));
+        Transaction::insert_many(block.1.txs().iter().enumerate().map(|(idx, tx_body)| {
+            let tx_hash = blake2b256(&tx_body.encode().expect(""));
 
-                let tx_payload = tx_body.encode().unwrap();
+            let tx_payload = tx_body.encode().unwrap();
 
-                TransactionActiveModel {
-                    hash: Set(tx_hash.to_vec()),
-                    block_id: Set(database_block.id),
-                    tx_index: Set(idx as i32),
-                    payload: Set(tx_payload),
-                    is_valid: Set(true), // always true in Byron
-                    ..Default::default()
-                }
-            },
-        ))
+            TransactionActiveModel {
+                hash: Set(tx_hash.to_vec()),
+                block_id: Set(database_block.id),
+                tx_index: Set(idx as i32),
+                payload: Set(tx_payload),
+                is_valid: Set(true), // always true in Byron
+                ..Default::default()
+            }
+        }))
         .exec_many_with_returning(db_tx)
         .await?;
     Ok(transaction_inserts)

@@ -1,12 +1,7 @@
-use anyhow::anyhow;
 use oura::{
-    model::{BlockRecord, Era, EventData},
+    model::{BlockRecord, EventData},
     pipelining::StageReceiver,
     sources::PointArg,
-};
-use pallas::ledger::primitives::{
-    alonzo::{self},
-    Fragment,
 };
 use std::sync::{Arc, Mutex};
 use tasks::{
@@ -155,6 +150,18 @@ impl<'a> Config<'a> {
     }
 }
 
+fn to_era_value(x: pallas::ledger::traverse::Era) -> EraValue {
+    match x {
+        pallas::ledger::traverse::Era::Byron => EraValue::Byron,
+        pallas::ledger::traverse::Era::Shelley => EraValue::Shelley,
+        pallas::ledger::traverse::Era::Allegra => EraValue::Allegra,
+        pallas::ledger::traverse::Era::Mary => EraValue::Mary,
+        pallas::ledger::traverse::Era::Alonzo => EraValue::Alonzo,
+        pallas::ledger::traverse::Era::Babbage => EraValue::Babbage,
+        _ => unreachable!("all known eras are handled"),
+    }
+}
+
 async fn insert_block(
     block_record: BlockRecord,
     txn: &DatabaseTransaction,
@@ -169,7 +176,7 @@ async fn insert_block(
     let multi_block = MultiEraBlock::decode(&block_payload).unwrap();
 
     let block_global_info = BlockGlobalInfo {
-        era: multi_block.era().into(),
+        era: to_era_value(multi_block.era()),
         epoch: block_record.epoch,
         epoch_slot: block_record.epoch_slot,
     };
@@ -182,7 +189,7 @@ async fn insert_block(
                 txn,
                 (
                     &block_record.cbor_hex.unwrap(),
-                    multi_block,
+                    &multi_block,
                     &block_global_info,
                 ),
                 &exec_plan,
@@ -195,7 +202,7 @@ async fn insert_block(
                 txn,
                 (
                     &block_record.cbor_hex.unwrap(),
-                    multi_block,
+                    &multi_block,
                     &block_global_info,
                 ),
                 &exec_plan,

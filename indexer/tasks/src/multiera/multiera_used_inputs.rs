@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::config::ReadonlyConfig::ReadonlyConfig;
 use crate::era_common::input_from_pointer;
-use crate::{types::TxCredentialRelationValue};
+use crate::types::TxCredentialRelationValue;
 use cardano_multiplatform_lib::address::{
     BaseAddress, ByronAddress, EnterpriseAddress, PointerAddress, RewardAddress,
 };
@@ -60,9 +60,13 @@ async fn handle_input(
             let refs = tx_body.inputs().iter().map(|x| x.output_ref()).collect();
             queued_inputs.push((refs, cardano_transaction.id));
         }
-        
+
         if !cardano_transaction.is_valid {
-            let refs = tx_body.collateral().iter().map(|x| x.output_ref()).collect();
+            let refs = tx_body
+                .collateral()
+                .iter()
+                .map(|x| x.output_ref())
+                .collect();
             queued_inputs.push((refs, cardano_transaction.id))
         }
     }
@@ -108,10 +112,7 @@ async fn handle_input(
 
 pub fn add_input_relations(
     vkey_relation_map: &mut RelationMap,
-    inputs: &[(
-        Vec<OutputRef>,
-        i64,
-    )],
+    inputs: &[(Vec<OutputRef>, i64)],
     outputs: &[&TransactionOutputModel],
     input_to_output_map: &BTreeMap<&Vec<u8>, BTreeMap<i64, &TransactionOutputModel>>,
 ) {

@@ -1,7 +1,7 @@
 use crate::config::ReadonlyConfig::ReadonlyConfig;
+use crate::dsl::task_macro::*;
 use crate::era_common::block_from_hash;
 use crate::utils::blake2b256;
-use crate::{dsl::task_macro::*};
 use entity::sea_orm::{DatabaseTransaction, Set};
 use pallas::ledger::primitives::alonzo::{self};
 use pallas::ledger::primitives::Fragment;

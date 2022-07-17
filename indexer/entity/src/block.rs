@@ -28,6 +28,7 @@ pub enum EraValue {
     Allegra,
     Mary,
     Alonzo,
+    Babbage,
 }
 
 impl From<EraValue> for i32 {
@@ -38,6 +39,7 @@ impl From<EraValue> for i32 {
             EraValue::Allegra => 2,
             EraValue::Mary => 3,
             EraValue::Alonzo => 4,
+            EraValue::Babbage => 5,
         }
     }
 }

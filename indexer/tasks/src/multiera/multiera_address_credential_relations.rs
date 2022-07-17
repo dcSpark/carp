@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
 use crate::config::ReadonlyConfig::ReadonlyConfig;
-use crate::{types::AddressCredentialRelationValue};
+use crate::types::AddressCredentialRelationValue;
 use entity::sea_orm::Condition;
 use entity::{
     prelude::*,
