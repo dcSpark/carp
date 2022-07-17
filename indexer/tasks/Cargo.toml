@@ -15,6 +15,7 @@ entity = { path = "../entity" }
 tokio = { version = "1.16.1", features = ["full"] }
 # pallas = "0.11.0"
 pallas = { git = "https://github.com/txpipe/pallas" }
+# pallas = { path = "../../../pallas/pallas" }
 toml = { version = "0.5", features = ["preserve_order"] }
 hex = "0.4.3"
 cryptoxide = "0.4.2"

@@ -7,7 +7,7 @@ use entity::{
     sea_orm::{prelude::*, DatabaseTransaction, Set},
 };
 use pallas::ledger::primitives::Fragment;
-use pallas::ledger::traverse::MultiEraBlock;
+use pallas::ledger::traverse::{MultiEraBlock, MultiEraMeta};
 use pallas::{
     codec::utils::KeyValuePairs,
     ledger::primitives::alonzo::{self, AuxiliaryData, Metadatum, MetadatumLabel},
@@ -26,7 +26,7 @@ carp_task! {
   read [multiera_txs];
   write [multiera_metadata];
   should_add_task |block, _properties| {
-    block.1.auxiliary_data_set.len() > 0
+    block.1.has_aux_data()
   };
   execute |previous_data, task| handle_metadata(
       task.db_tx,
@@ -54,16 +54,17 @@ async fn handle_metadata(
     }
 
     let mut metadata_map =
-        BTreeMap::<i64 /* id */, &KeyValuePairs<MetadatumLabel, Metadatum>>::default();
+        BTreeMap::<i64 /* id */, MultiEraMeta>::default();
 
-    for (idx, tx) in block.1.txs().iter().enumerate() {
-        let tx_id = &multiera_txs[*idx as usize].id;
-        tx.metadata()
-            .iter()
-            // it's possible for metadata to just be an empty list (no labels)
-            // ex: tx hash 3fd58bb02af554c0653be693386525b521ca586cbeb6b2e2cc782ab9a1041708
-            .filter(|x| !x.entries().is_empty())
-            .for_each(|x| metadata_map.insert(*tx_id, x.entries()));
+    let txs = block.1.txs();
+
+    for (idx, tx) in txs.iter().enumerate() {
+        let tx_id = &multiera_txs[idx as usize].id;
+        let meta = tx.metadata();
+
+        if !meta.is_empty() {
+            metadata_map.insert(*tx_id, meta);
+        }
     }
 
     if metadata_map.is_empty() {
@@ -73,7 +74,7 @@ async fn handle_metadata(
     Ok(TransactionMetadata::insert_many(
         metadata_map
             .iter()
-            .flat_map(|(tx_id, metadata)| metadata.iter().zip(std::iter::repeat(tx_id)))
+            .flat_map(|(tx_id, metadata)| metadata.as_alonzo().unwrap().iter().zip(std::iter::repeat(tx_id)))
             .map(
                 |((label, metadata), tx_id)| TransactionMetadataActiveModel {
                     tx_id: Set(*tx_id),

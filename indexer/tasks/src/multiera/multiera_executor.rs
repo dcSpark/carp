@@ -17,7 +17,7 @@ pub async fn process_multiera_block(
     block: BlockInfo<'_, MultiEraBlock<'_>>,
     exec_plan: &ExecutionPlan,
     perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-) -> Result<(), DbErr> {
+) -> Result<(), DbErr>  {
     let ep_start_time = std::time::Instant::now();
 
     let handle = Handle::current();

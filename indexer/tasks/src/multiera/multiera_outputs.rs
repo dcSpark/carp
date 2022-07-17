@@ -26,12 +26,7 @@ carp_task! {
   write [multiera_outputs];
   should_add_task |block, _properties| {
     // recall: txs may have no outputs if they just burn all inputs as fee
-    block.1.transaction_bodies.iter().flat_map(|payload| payload.iter()).any(|component| match component {
-        TransactionBodyComponent::Outputs(outputs) => {
-            outputs.len() > 0
-        },
-        _ => false,
-    })
+    block.1.txs().iter().any(|tx| tx.outputs().len() > 0)
   };
   execute |previous_data, task| handle_output(
       task.db_tx,
@@ -98,13 +93,13 @@ fn queue_output(
     idx: usize,
 ) {
     let addr = output
-        .to_address()
+        .address()
         .map_err(|e| panic!("{:?}{:?}", e, tx_body.hash().to_vec()))
         .unwrap();
 
     queued_output.push(QueuedOutput {
-        payload: output.encode_fragment().unwrap(),
-        address: addr.to_bytes(),
+        payload: output.encode().unwrap(),
+        address: addr.to_vec(),
         tx_id,
         idx,
     });

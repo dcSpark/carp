@@ -1,7 +1,7 @@
 use crate::config::ReadonlyConfig::ReadonlyConfig;
 use crate::era_common::block_from_hash;
 use crate::utils::blake2b256;
-use crate::{dsl::default_impl::has_transaction_multiera, dsl::task_macro::*};
+use crate::{dsl::task_macro::*};
 use entity::sea_orm::{DatabaseTransaction, Set};
 use pallas::ledger::primitives::alonzo::{self};
 use pallas::ledger::primitives::Fragment;
@@ -33,16 +33,16 @@ async fn handle_block(
     block: BlockInfo<'_, MultiEraBlock<'_>>,
     readonly: bool,
 ) -> Result<BlockModel, DbErr> {
-    let hash = blake2b256(&block.1.header.encode_fragment().unwrap());
+    let hash = blake2b256(&block.1.header().cbor());
     if readonly {
         return block_from_hash(db_tx, &hash).await;
     }
     let block = BlockActiveModel {
         era: Set(block.2.era.into()),
         hash: Set(hash.to_vec()),
-        height: Set(block.1.header.header_body.block_number as i32),
+        height: Set(block.1.number() as i32),
         epoch: Set(block.2.epoch.unwrap() as i32),
-        slot: Set(block.1.header.header_body.slot as i32),
+        slot: Set(block.1.slot() as i32),
         ..Default::default()
     };
     Ok(block.insert(db_tx).await?)

@@ -6,7 +6,7 @@ use entity::{
     sea_orm::{prelude::*, Condition, DatabaseTransaction, Set},
 };
 
-use crate::{dsl::default_impl::has_transaction_multiera, types::TxCredentialRelationValue};
+use crate::{types::TxCredentialRelationValue};
 
 use super::{
     multiera_unused_input::MultieraUnusedInputTask, multiera_used_inputs::MultieraUsedInputTask,
@@ -27,7 +27,7 @@ carp_task! {
   read [multiera_txs];
   write [vkey_relation_map, multiera_stake_credential];
   should_add_task |block, _properties| {
-    has_transaction_multiera(block.1)
+    !block.1.is_empty()
   };
   execute |previous_data, task| handle_stake_credentials(
       task.db_tx,

@@ -7,14 +7,13 @@ use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction},
 };
-use pallas::ledger::primitives::alonzo::{
-    self, Certificate, TransactionBody, TransactionBodyComponent,
+use pallas::ledger::{
+    primitives::{alonzo::Certificate, Fragment},
+    traverse::{MultiEraBlock, MultiEraCert, MultiEraOutput, MultiEraTx},
 };
-use pallas::ledger::primitives::Fragment;
 use std::ops::Deref;
 
 use crate::{
-    dsl::default_impl::has_transaction_multiera,
     types::{AddressCredentialRelationValue, TxCredentialRelationValue},
 };
 
@@ -22,8 +21,8 @@ use super::{
     multiera_address_credential_relations::QueuedAddressCredentialRelation,
     multiera_txs::MultieraTransactionTask, relation_map::RelationMap,
 };
-use pallas::ledger::primitives::ToHash;
 use crate::config::EmptyConfig::EmptyConfig;
+use pallas::ledger::primitives::ToHash;
 
 use crate::dsl::task_macro::*;
 
@@ -38,7 +37,7 @@ carp_task! {
   should_add_task |block, _properties| {
     // recall: txs may have no outputs if they just burn all inputs as fee
     // TODO: this runs slightly more than it should
-    has_transaction_multiera(block.1)
+    !block.1.is_empty()
   };
   execute |previous_data, task| handle_addresses(
       task.db_tx,
@@ -54,7 +53,7 @@ carp_task! {
 
 async fn handle_addresses(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, alonzo::Block<'_>>,
+    block: BlockInfo<'_, MultiEraBlock<'_>>,
     multiera_txs: &[TransactionModel],
     vkey_relation_map: &mut RelationMap,
 ) -> Result<
@@ -67,55 +66,44 @@ async fn handle_addresses(
     let mut queued_address_credential = BTreeSet::<QueuedAddressCredentialRelation>::default();
     let mut queued_address = BTreeMap::<Vec<u8>, i64>::default();
 
-    for (tx_body, cardano_transaction) in block.1.transaction_bodies.iter().zip(multiera_txs) {
-        for component in tx_body.iter() {
-            match component {
-                TransactionBodyComponent::Certificates(certs) => {
-                    for cert in certs.iter() {
-                        queue_certificate(
-                            vkey_relation_map,
-                            &mut queued_address_credential,
-                            &mut queued_address,
-                            cardano_transaction.id,
-                            cert,
-                        );
-                    }
-                }
-                TransactionBodyComponent::Outputs(outputs) => {
-                    for output in outputs.iter() {
-                        queue_output(
-                            vkey_relation_map,
-                            &mut queued_address_credential,
-                            &mut queued_address,
-                            tx_body,
-                            cardano_transaction.id,
-                            output,
-                        );
-                    }
-                }
-                TransactionBodyComponent::Withdrawals(withdrawal_pairs) => {
-                    for pair in withdrawal_pairs.deref() {
-                        let reward_addr = RewardAddress::from_address(
-                            &cardano_multiplatform_lib::address::Address::from_bytes(
-                                pair.0.clone().into(),
-                            )
-                            .unwrap(),
-                        )
-                        .unwrap();
-                        queue_address_credential(
-                            vkey_relation_map,
-                            &mut queued_address_credential,
-                            &mut queued_address,
-                            cardano_transaction.id,
-                            &reward_addr.to_address().to_bytes(),
-                            &reward_addr.payment_cred(),
-                            TxCredentialRelationValue::Withdrawal,
-                            AddressCredentialRelationValue::PaymentKey,
-                        );
-                    }
-                }
-                _ => {}
-            }
+    for (tx_body, cardano_transaction) in block.1.txs().iter().zip(multiera_txs) {
+        for cert in tx_body.certs() {
+            queue_certificate(
+                vkey_relation_map,
+                &mut queued_address_credential,
+                &mut queued_address,
+                cardano_transaction.id,
+                &cert,
+            );
+        }
+
+        for output in tx_body.outputs() {
+            queue_output(
+                vkey_relation_map,
+                &mut queued_address_credential,
+                &mut queued_address,
+                tx_body,
+                cardano_transaction.id,
+                &output,
+            );
+        }
+
+        for withdrawal in tx_body.withdrawals().collect::<Vec<(&[u8], u64)>>() {
+            let reward_addr = RewardAddress::from_address(
+                &cardano_multiplatform_lib::address::Address::from_bytes(withdrawal.0.clone().into())
+                    .unwrap(),
+            )
+            .unwrap();
+            queue_address_credential(
+                vkey_relation_map,
+                &mut queued_address_credential,
+                &mut queued_address,
+                cardano_transaction.id,
+                &reward_addr.to_address().to_bytes(),
+                &reward_addr.payment_cred(),
+                TxCredentialRelationValue::Withdrawal,
+                AddressCredentialRelationValue::PaymentKey,
+            );
         }
     }
 
@@ -129,9 +117,13 @@ fn queue_certificate(
     queued_address_credential: &mut BTreeSet<QueuedAddressCredentialRelation>,
     queued_address: &mut BTreeMap<Vec<u8>, i64>,
     tx_id: i64,
-    cert: &Certificate,
+    cert: &MultiEraCert,
 ) {
-    match cert {
+    // TODO: what's the policy for handling options? At the moment of writing, all certificates
+    // are "alonzo-compatible", but that might change in a future HF. Should Carp skip data that
+    // it doesn't understand or instead panic? For now, opting to panic as it seems to be what's
+    // used for other options.
+    match cert.as_alonzo().unwrap() {
         Certificate::StakeDelegation(credential, pool) => {
             let credential = credential.encode_fragment().unwrap();
 
@@ -253,13 +245,13 @@ fn queue_output(
     queued_credentials: &mut RelationMap,
     queued_address_credential: &mut BTreeSet<QueuedAddressCredentialRelation>,
     queued_address: &mut BTreeMap<Vec<u8>, i64>,
-    tx_body: &TransactionBody,
+    tx_body: &MultiEraTx,
     tx_id: i64,
-    output: &alonzo::TransactionOutput,
+    output: &MultiEraOutput,
 ) {
     use cardano_multiplatform_lib::address::Address;
-    let addr = Address::from_bytes(output.address.to_vec())
-        .map_err(|e| panic!("{:?}{:?}", e, tx_body.to_hash().to_vec()))
+    let addr = Address::from_bytes(output.address_raw().to_vec())
+        .map_err(|e| panic!("{:?}{:?}", e, tx_body.hash().to_vec()))
         .unwrap();
 
     let tx_relation = TxCredentialRelationValue::Output;

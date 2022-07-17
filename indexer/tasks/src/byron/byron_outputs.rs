@@ -2,6 +2,7 @@ use super::byron_address::ByronAddressTask;
 use crate::config::EmptyConfig::EmptyConfig;
 use crate::{dsl::task_macro::*, era_common::get_truncated_address};
 use entity::sea_orm::Set;
+use pallas::ledger::traverse::MultiEraOutput;
 use pallas::{
     codec::utils::MaybeIndefArray,
     ledger::primitives::{
@@ -42,31 +43,25 @@ carp_task! {
 
 async fn handle_outputs(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, byron::Block>,
+    block: BlockInfo<'_, MultiEraBlock<'_>>,
     byron_txs: &[TransactionModel],
     byron_addresses: &BTreeMap<Vec<u8>, AddressInBlock>,
 ) -> Result<Vec<TransactionOutputModel>, DbErr> {
-    match &block.1 {
-        // Byron era had Epoch-boundary blocks for calculating stake distribution changes
-        // they don't contain any txs, so we can just ignore them
-        byron::Block::EbBlock(_) => Ok(vec![]),
-        byron::Block::MainBlock(main_block) => {
-            let tx_outputs: Vec<_> = main_block
-                .body
-                .tx_payload
-                .iter()
-                .map(|payload| &payload.transaction.outputs)
-                .zip(byron_txs)
-                .collect();
+    let tx_outputs: Vec<_> = block.1
+        .as_byron()
+        .unwrap()
+        .body.tx_payload
+        .iter()
+        .map(|payload| &payload.transaction.outputs)
+        .zip(byron_txs)
+        .collect();
 
-            if tx_outputs.is_empty() {
-                return Ok(vec![]);
-            }
-
-            // note: outputs have to be added before inputs
-            Ok(insert_byron_outputs(db_tx, byron_addresses, &tx_outputs).await?)
-        }
+    if tx_outputs.is_empty() {
+        return Ok(vec![]);
     }
+
+    // note: outputs have to be added before inputs
+    Ok(insert_byron_outputs(db_tx, byron_addresses, &tx_outputs).await?)
 }
 
 async fn insert_byron_outputs(

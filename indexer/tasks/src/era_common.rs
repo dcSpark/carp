@@ -115,7 +115,7 @@ pub async fn insert_addresses(
 
 pub async fn get_outputs_for_inputs(
     inputs: &[(
-        &Vec<pallas::ledger::primitives::alonzo::TransactionInput>,
+        Vec<pallas::ledger::traverse::OutputRef>,
         i64,
     )],
     txn: &DatabaseTransaction,
@@ -135,8 +135,8 @@ pub async fn get_outputs_for_inputs(
     for input in inputs.iter().flat_map(|inputs| inputs.0.iter()) {
         output_conditions = output_conditions.add(
             Condition::all()
-                .add(TransactionOutputColumn::OutputIndex.eq(input.index))
-                .add(TransactionColumn::Hash.eq(input.transaction_id.to_vec())),
+                .add(TransactionOutputColumn::OutputIndex.eq(input.index()))
+                .add(TransactionColumn::Hash.eq(input.hash().to_vec())),
         );
     }
 
@@ -193,7 +193,7 @@ pub fn gen_input_to_output_map<'a>(
 
 pub async fn insert_inputs(
     inputs: &[(
-        &Vec<pallas::ledger::primitives::alonzo::TransactionInput>,
+        Vec<pallas::ledger::traverse::OutputRef>,
         i64,
     )],
     input_to_output_map: &BTreeMap<&Vec<u8>, BTreeMap<i64, &TransactionOutputModel>>,
@@ -212,7 +212,7 @@ pub async fn insert_inputs(
             .flat_map(|pair| pair.0.iter().enumerate().zip(std::iter::repeat(pair.1)))
             .map(|((idx, input), tx_id)| {
                 let output =
-                    input_to_output_map[&input.transaction_id.to_vec()][&(input.index as i64)];
+                    input_to_output_map[&input.hash().to_vec()][&(input.index() as i64)];
                 TransactionInputActiveModel {
                     utxo_id: Set(output.id),
                     address_id: Set(output.address_id),
