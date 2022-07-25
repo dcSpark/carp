@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-and-deploy:
-    uses: dcSpark/cardano-proxy/.github/workflows/deploy.yml@devops/build-and-push-docker-image
+    uses: dcSpark/carp/.github/workflows/build-workflow.yml@devops/build-and-push-docker-image
     with:
       REGISTRY: dcspark
       REPOSITORY_CARP: carp
