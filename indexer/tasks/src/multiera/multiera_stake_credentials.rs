@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use cardano_multiplatform_lib::{utils::ScriptHashNamespace, RequiredSignersSet};
+use cardano_multiplatform_lib::RequiredSignersSet;
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, Condition, DatabaseTransaction, Set},
@@ -157,8 +157,7 @@ fn queue_witness(
             let script = scripts.get(i);
             vkey_relation_map.add_relation(
                 tx_id,
-                RelationMap::scripthash_to_pallas(&script.hash(ScriptHashNamespace::NativeScript))
-                    .as_slice(),
+                RelationMap::scripthash_to_pallas(&script.hash()).as_slice(),
                 TxCredentialRelationValue::Witness,
             );
 
@@ -173,13 +172,22 @@ fn queue_witness(
         }
     }
 
-    if let Some(scripts) = witness_set.plutus_scripts() {
+    if let Some(scripts) = &witness_set.plutus_v1_scripts() {
         for i in 0..scripts.len() {
             let script = scripts.get(i);
             vkey_relation_map.add_relation(
                 tx_id,
-                RelationMap::scripthash_to_pallas(&script.hash(ScriptHashNamespace::PlutusV1))
-                    .as_slice(),
+                RelationMap::scripthash_to_pallas(&script.hash()).as_slice(),
+                TxCredentialRelationValue::Witness,
+            );
+        }
+    }
+    if let Some(scripts) = &witness_set.plutus_v2_scripts() {
+        for i in 0..scripts.len() {
+            let script = scripts.get(i);
+            vkey_relation_map.add_relation(
+                tx_id,
+                RelationMap::scripthash_to_pallas(&script.hash()).as_slice(),
                 TxCredentialRelationValue::Witness,
             );
         }

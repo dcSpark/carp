@@ -3,8 +3,9 @@ use std::collections::BTreeMap;
 use crate::config::ReadonlyConfig::ReadonlyConfig;
 use crate::era_common::input_from_pointer;
 use crate::types::TxCredentialRelationValue;
-use cardano_multiplatform_lib::address::{
-    BaseAddress, ByronAddress, EnterpriseAddress, PointerAddress, RewardAddress,
+use cardano_multiplatform_lib::{
+    address::{BaseAddress, EnterpriseAddress, PointerAddress, RewardAddress},
+    byron::ByronAddress,
 };
 use entity::{
     prelude::*,
