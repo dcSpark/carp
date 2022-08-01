@@ -1,9 +1,8 @@
 #![allow(non_snake_case)]
 use crate::genesis_helpers::{
-    addr_as_byron, addr_to_tx_hash, arbitrary_block, db_address_as_byron,
-    db_output_as_byron_and_coin, db_tx_to_tx_hash_and_byron, in_memory_db_conn, mainnet_block_info,
-    new_perf_aggregator, pubkey_as_byron, pubkey_to_tx_hash, testnet_block_info, OwnedBlockInfo,
-    GENESIS_HASH,
+    addr_to_tx_hash, arbitrary_block, db_address_as_byron, db_output_as_byron_and_coin,
+    db_tx_to_tx_hash_and_byron, in_memory_db_conn, mainnet_block_info, new_perf_aggregator,
+    pubkey_as_byron, pubkey_to_tx_hash, testnet_block_info, OwnedBlockInfo, GENESIS_HASH,
 };
 use entity::{
     address, block,
@@ -149,7 +148,7 @@ async fn inner__process_genesis_block__when_genesis_tx_task_then_txns_in_db_with
         .non_avvm_balances
         .clone()
         .into_iter()
-        .map(|(addr, _)| (addr_to_tx_hash(addr.clone()), addr_as_byron(addr)))
+        .map(|(addr, _)| (addr_to_tx_hash(addr.clone()), addr))
         .collect();
 
     let exec_plan = Arc::new(ExecutionPlan::from(vec![
@@ -229,13 +228,7 @@ async fn inner__process_genesis_block__when_genesis_tx_task_then_outputs_in_db(
         .map(|(pubkey, coin)| (pubkey_as_byron(&pubkey, protocol_magic), coin))
         .collect();
 
-    let non_avvm_in_block: Vec<_> = block_info
-        .1
-        .non_avvm_balances
-        .clone()
-        .into_iter()
-        .map(|(addr, coin)| (addr_as_byron(addr), coin))
-        .collect();
+    let non_avvm_in_block: Vec<_> = block_info.1.non_avvm_balances.clone().into_iter().collect();
 
     let exec_plan = Arc::new(ExecutionPlan::from(vec![
         "GenesisBlockTask",
@@ -320,7 +313,7 @@ async fn inner__process_genesis_block__when_genesis_tx_task_then_address_in_db(
         .non_avvm_balances
         .clone()
         .into_iter()
-        .map(|(addr, _)| addr_as_byron(addr))
+        .map(|(addr, _)| addr)
         .collect();
 
     let exec_plan = Arc::new(ExecutionPlan::from(vec![

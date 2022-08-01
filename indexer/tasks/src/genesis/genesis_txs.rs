@@ -70,7 +70,7 @@ async fn handle_txs(
 
     add_avvms(
         &block_info,
-        &database_block,
+        database_block,
         &mut transactions,
         &mut address_lambdas,
         &mut outputs,
@@ -78,7 +78,7 @@ async fn handle_txs(
     // note: empty on mainnet
     add_non_avvms(
         &block_info,
-        &database_block,
+        database_block,
         &mut transactions,
         &mut address_lambdas,
         &mut outputs,

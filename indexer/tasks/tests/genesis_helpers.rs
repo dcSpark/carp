@@ -1,12 +1,13 @@
 use cardano_multiplatform_lib::{
-    address::ByronAddress,
+    byron::{AddressContent, ByronAddress, ProtocolMagic},
     chain_crypto::{self, Ed25519, KeyPair, PublicKey},
-    crypto::BlockHeaderHash,
-    fees::LinearFee,
+    crypto::{self, BlockHeaderHash},
     genesis::byron::parse::parse,
-    genesis::byron::{config::GenesisData, config::ProtocolMagic, parse::redeem_pubkey_to_txid},
-    legacy_address::{self, ExtendedAddr},
-    utils::{self, BigNum},
+    genesis::byron::{config::GenesisData, parse::redeem_pubkey_to_txid},
+    ledger::{
+        alonzo::fees::LinearFee,
+        common::value::{BigNum, Coin},
+    },
 };
 use entity::{
     block::EraValue,
@@ -29,12 +30,15 @@ use tasks::{
 pub type OwnedBlockInfo = (String, GenesisData, BlockGlobalInfo);
 
 pub const GENESIS_HASH: [u8; 32] = [1; 32];
-pub const PROTOCOL_MAGIC: ProtocolMagic = ProtocolMagic(10);
+
+fn get_protocol_magic() -> ProtocolMagic {
+    ProtocolMagic::new(10)
+}
 
 #[derive(Default)]
 pub struct GenesisBlockBuilder {
-    avvm_dist: BTreeMap<chain_crypto::PublicKey<Ed25519>, utils::Coin>,
-    non_avvm_balances: BTreeMap<legacy_address::Addr, utils::Coin>,
+    avvm_dist: BTreeMap<chain_crypto::PublicKey<Ed25519>, Coin>,
+    non_avvm_balances: BTreeMap<ByronAddress, Coin>,
 }
 
 impl GenesisBlockBuilder {
@@ -45,7 +49,7 @@ impl GenesisBlockBuilder {
             epoch_stability_depth: 0,
             start_time: SystemTime::UNIX_EPOCH,
             slot_duration: Default::default(),
-            protocol_magic: PROTOCOL_MAGIC,
+            protocol_magic: get_protocol_magic(),
             fee_policy: LinearFee {
                 constant: BigNum::from(0),
                 coefficient: BigNum::from(0),
@@ -64,7 +68,7 @@ impl GenesisBlockBuilder {
 
     pub fn with_avvms(
         &mut self,
-        avvms: Vec<(chain_crypto::PublicKey<Ed25519>, utils::Coin)>,
+        avvms: Vec<(chain_crypto::PublicKey<Ed25519>, Coin)>,
     ) -> &mut Self {
         for (pubkey, coin) in avvms {
             self.avvm_dist.insert(pubkey, coin);
@@ -72,7 +76,7 @@ impl GenesisBlockBuilder {
         self
     }
 
-    pub fn with_non_avvms(&mut self, avvms: Vec<(legacy_address::Addr, utils::Coin)>) -> &mut Self {
+    pub fn with_non_avvms(&mut self, avvms: Vec<(ByronAddress, Coin)>) -> &mut Self {
         for (addr, coin) in avvms {
             self.non_avvm_balances.insert(addr, coin);
         }
@@ -93,16 +97,23 @@ pub fn new_pubkey<R: RngCore + CryptoRng>(rng: &mut R) -> PublicKey<Ed25519> {
     pubkey
 }
 
-pub fn new_address<R: RngCore + CryptoRng>(rng: &mut R) -> legacy_address::Addr {
-    ExtendedAddr::new_redeem(&new_pubkey(rng), Some(PROTOCOL_MAGIC)).into()
+pub fn new_address<R: RngCore + CryptoRng>(rng: &mut R) -> ByronAddress {
+    AddressContent::new_redeem(
+        &crypto::PublicKey::from_bytes(new_pubkey(rng).as_ref()).unwrap(),
+        Some(get_protocol_magic()),
+    )
+    .to_address()
 }
 
 pub fn pubkey_as_byron(
     pubkey: &PublicKey<Ed25519>,
     protocol_magical: ProtocolMagic,
 ) -> ByronAddress {
-    let address = ExtendedAddr::new_redeem(pubkey, Some(protocol_magical));
-    ByronAddress::from_bytes(address.to_address().as_ref().to_vec()).unwrap()
+    let address = AddressContent::new_redeem(
+        &crypto::PublicKey::from_bytes(pubkey.as_ref()).unwrap(),
+        Some(protocol_magical),
+    );
+    address.to_address()
 }
 
 pub fn pubkey_to_tx_hash(
@@ -113,12 +124,8 @@ pub fn pubkey_to_tx_hash(
     tx_hash.to_bytes().to_vec()
 }
 
-pub fn addr_as_byron(addr: legacy_address::Addr) -> ByronAddress {
-    ByronAddress::from_bytes(addr.as_ref().to_vec()).unwrap()
-}
-
-pub fn addr_to_tx_hash(addr: legacy_address::Addr) -> Vec<u8> {
-    blake2b256(addr.as_ref()).to_vec()
+pub fn addr_to_tx_hash(addr: ByronAddress) -> Vec<u8> {
+    blake2b256(&addr.to_bytes()).to_vec()
 }
 
 pub fn db_tx_to_tx_hash_and_byron(tx: &TransactionModel) -> (Vec<u8>, ByronAddress) {
@@ -193,7 +200,7 @@ prop_compose! {
     pub fn arbitrary_non_avvms()(
         mut rng in deterministic_rng(),
         size in 0..100,
-    ) -> Vec<(legacy_address::Addr, BigNum)> {
+    ) -> Vec<(ByronAddress, BigNum)> {
         let mut non_avvms = Vec::new();
         for _ in 0..size {
             let value: u64 = rng.gen();
