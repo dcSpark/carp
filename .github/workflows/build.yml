@@ -3,12 +3,11 @@ name: Build carp & carp webserver
 on:
   push:
     branches:
-      - devops/build-and-push-docker-image
       - main
 
 jobs:
   build-and-deploy:
-    uses: dcSpark/carp/.github/workflows/build-workflow.yml@devops/build-and-push-docker-image
+    uses: dcSpark/carp/.github/workflows/build-workflow.yml@main
     with:
       REGISTRY: dcspark
       REPOSITORY_CARP: carp
