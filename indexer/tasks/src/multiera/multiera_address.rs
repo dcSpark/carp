@@ -1,7 +1,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use cardano_multiplatform_lib::address::{
-    BaseAddress, ByronAddress, EnterpriseAddress, PointerAddress, RewardAddress,
+use cardano_multiplatform_lib::{
+    address::{BaseAddress, EnterpriseAddress, PointerAddress, RewardAddress},
+    byron::ByronAddress,
 };
 use entity::{
     prelude::*,
@@ -88,10 +89,8 @@ async fn handle_addresses(
 
         for withdrawal in tx_body.withdrawals().collect::<Vec<(&[u8], u64)>>() {
             let reward_addr = RewardAddress::from_address(
-                &cardano_multiplatform_lib::address::Address::from_bytes(
-                    withdrawal.0.clone().into(),
-                )
-                .unwrap(),
+                &cardano_multiplatform_lib::address::Address::from_bytes(withdrawal.0.into())
+                    .unwrap(),
             )
             .unwrap();
             queue_address_credential(

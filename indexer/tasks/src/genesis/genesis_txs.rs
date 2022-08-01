@@ -2,9 +2,9 @@ extern crate shred;
 
 use crate::config::EmptyConfig::EmptyConfig;
 use cardano_multiplatform_lib::{
-    address::ByronAddress,
+    byron::ByronAddress,
     genesis::byron::{config::GenesisData, parse::redeem_pubkey_to_txid},
-    utils::Value,
+    ledger::common::value::Value,
 };
 use entity::{
     prelude::*,
@@ -66,8 +66,7 @@ async fn handle_txs(
 
     for (pub_key, amount) in block.1.avvm_distr.iter() {
         let (tx_hash, extended_addr) = redeem_pubkey_to_txid(pub_key, Some(block.1.protocol_magic));
-        let byron_addr =
-            ByronAddress::from_bytes(extended_addr.to_address().as_ref().to_vec()).unwrap();
+        let byron_addr = extended_addr.to_address();
 
         // note: strictly speaking, genesis txs are unordered so there is no defined index
         let tx_index = transactions.len() as i32;
@@ -95,10 +94,8 @@ async fn handle_txs(
     }
 
     // note: empty on mainnet
-    for (addr, amount) in block.1.non_avvm_balances.iter() {
-        let byron_addr = ByronAddress::from_bytes(addr.as_ref().to_vec()).unwrap();
-
-        let tx_hash = blake2b256(addr.as_ref());
+    for (byron_addr, amount) in block.1.non_avvm_balances.iter() {
+        let tx_hash = blake2b256(&byron_addr.to_bytes());
 
         // println!("{}", amount.to_str());
         // println!("{}", byron_addr.to_base58());
