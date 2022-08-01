@@ -5,9 +5,8 @@ use entity::{
     prelude::*,
     sea_orm::{prelude::*, Condition, DatabaseTransaction, Set},
 };
-use pallas::ledger::primitives::alonzo::{self, TransactionBodyComponent};
 
-use crate::{dsl::default_impl::has_transaction_multiera, types::TxCredentialRelationValue};
+use crate::types::TxCredentialRelationValue;
 
 use super::{
     multiera_unused_input::MultieraUnusedInputTask, multiera_used_inputs::MultieraUsedInputTask,
@@ -15,7 +14,7 @@ use super::{
 };
 use crate::config::EmptyConfig::EmptyConfig;
 use crate::dsl::task_macro::*;
-use pallas::ledger::primitives::Fragment;
+use pallas::ledger::{primitives::Fragment, traverse::MultiEraBlock};
 
 carp_task! {
   name MultieraStakeCredentialTask;
@@ -28,7 +27,7 @@ carp_task! {
   read [multiera_txs];
   write [vkey_relation_map, multiera_stake_credential];
   should_add_task |block, _properties| {
-    has_transaction_multiera(block.1)
+    !block.1.is_empty()
   };
   execute |previous_data, task| handle_stake_credentials(
       task.db_tx,
@@ -43,45 +42,30 @@ carp_task! {
 
 async fn handle_stake_credentials(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, alonzo::Block<'_>>,
+    block: BlockInfo<'_, MultiEraBlock<'_>>,
     multiera_txs: &[TransactionModel],
     vkey_relation_map: &mut RelationMap,
 ) -> Result<BTreeMap<Vec<u8>, StakeCredentialModel>, DbErr> {
-    for ((tx_body, cardano_transaction), witness_set) in block
-        .1
-        .transaction_bodies
-        .iter()
-        .zip(multiera_txs)
-        .zip(block.1.transaction_witness_sets.iter())
-    {
+    for (tx_body, cardano_transaction) in block.1.txs().iter().zip(multiera_txs) {
         queue_witness(
             vkey_relation_map,
             cardano_transaction.id,
             &cardano_multiplatform_lib::TransactionWitnessSet::from_bytes(
-                witness_set.encode_fragment().unwrap(),
+                tx_body.witnesses().cbor().to_vec(),
             )
             .unwrap(),
         );
-        for component in tx_body.iter() {
-            #[allow(clippy::single_match)]
-            match component {
-                TransactionBodyComponent::RequiredSigners(key_hashes) => {
-                    for &signer in key_hashes.iter() {
-                        let owner_credential =
-                            pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(
-                                signer,
-                            )
-                            .encode_fragment()
-                            .unwrap();
-                        vkey_relation_map.add_relation(
-                            cardano_transaction.id,
-                            &owner_credential.clone(),
-                            TxCredentialRelationValue::RequiredSigner,
-                        );
-                    }
-                }
-                _ => {}
-            }
+
+        for signer in tx_body.required_signers().collect::<Vec<_>>() {
+            let owner_credential =
+                pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(signer.clone())
+                    .encode_fragment()
+                    .unwrap();
+            vkey_relation_map.add_relation(
+                cardano_transaction.id,
+                &owner_credential.clone(),
+                TxCredentialRelationValue::RequiredSigner,
+            );
         }
     }
 

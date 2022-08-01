@@ -7,6 +7,7 @@ use entity::{
     sea_orm::{prelude::*, DatabaseTransaction, Set},
 };
 use pallas::ledger::primitives::Fragment;
+use pallas::ledger::traverse::{MultiEraBlock, MultiEraMeta};
 use pallas::{
     codec::utils::KeyValuePairs,
     ledger::primitives::alonzo::{self, AuxiliaryData, Metadatum, MetadatumLabel},
@@ -25,7 +26,7 @@ carp_task! {
   read [multiera_txs];
   write [multiera_metadata];
   should_add_task |block, _properties| {
-    block.1.auxiliary_data_set.len() > 0
+    block.1.has_aux_data()
   };
   execute |previous_data, task| handle_metadata(
       task.db_tx,
@@ -40,7 +41,7 @@ carp_task! {
 
 async fn handle_metadata(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, alonzo::Block<'_>>,
+    block: BlockInfo<'_, MultiEraBlock<'_>>,
     multiera_txs: &[TransactionModel],
     readonly: bool,
 ) -> Result<Vec<TransactionMetadataModel>, DbErr> {
@@ -52,28 +53,17 @@ async fn handle_metadata(
             .await;
     }
 
-    let mut metadata_map =
-        BTreeMap::<i64 /* id */, &KeyValuePairs<MetadatumLabel, Metadatum>>::default();
-    for (idx, data) in block.1.auxiliary_data_set.iter() {
-        let tx_id = &multiera_txs[*idx as usize].id;
-        let opt_entries = match data {
-            AuxiliaryData::Shelley(metadata) => Some(metadata),
-            AuxiliaryData::ShelleyMa {
-                transaction_metadata,
-                ..
-            } => Some(transaction_metadata),
-            AuxiliaryData::Alonzo(data) => data.metadata.as_ref(),
-        };
+    let mut metadata_map = BTreeMap::<i64 /* id */, MultiEraMeta>::default();
 
-        opt_entries.and_then(|entries| {
-            if !entries.is_empty() {
-                // it's possible for metadata to just be an empty list (no labels)
-                // ex: tx hash 3fd58bb02af554c0653be693386525b521ca586cbeb6b2e2cc782ab9a1041708
-                metadata_map.insert(*tx_id, entries)
-            } else {
-                None
-            }
-        });
+    let txs = block.1.txs();
+
+    for (idx, tx) in txs.iter().enumerate() {
+        let tx_id = &multiera_txs[idx as usize].id;
+        let meta = tx.metadata();
+
+        if !meta.is_empty() {
+            metadata_map.insert(*tx_id, meta);
+        }
     }
 
     if metadata_map.is_empty() {
@@ -83,7 +73,13 @@ async fn handle_metadata(
     Ok(TransactionMetadata::insert_many(
         metadata_map
             .iter()
-            .flat_map(|(tx_id, metadata)| metadata.iter().zip(std::iter::repeat(tx_id)))
+            .flat_map(|(tx_id, metadata)| {
+                metadata
+                    .as_alonzo()
+                    .unwrap()
+                    .iter()
+                    .zip(std::iter::repeat(tx_id))
+            })
             .map(
                 |((label, metadata), tx_id)| TransactionMetadataActiveModel {
                     tx_id: Set(*tx_id),

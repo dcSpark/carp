@@ -10,11 +10,10 @@ use entity::{
     sea_orm::{prelude::*, Condition, DatabaseTransaction, Set},
 };
 use pallas::ledger::primitives::Fragment;
+use pallas::ledger::traverse::MultiEraBlock;
 use pallas::{
     codec::utils::KeyValuePairs,
-    ledger::primitives::alonzo::{
-        self, AuxiliaryData, Metadatum, MetadatumLabel, TransactionBodyComponent,
-    },
+    ledger::primitives::alonzo::{self, AuxiliaryData, Metadatum, MetadatumLabel},
 };
 
 use crate::dsl::task_macro::*;
@@ -28,12 +27,7 @@ carp_task! {
   read [multiera_block, multiera_txs];
   write [multiera_assets];
   should_add_task |block, _properties| {
-    block.1.transaction_bodies.iter().flat_map(|payload| payload.iter()).any(|component| match component {
-        TransactionBodyComponent::Mint(mints) => {
-            mints.len() > 0
-        },
-        _ => false,
-    })
+    block.1.txs().iter().any(|tx| tx.mint().len() > 0)
   };
   execute |previous_data, task| handle_mints(
       task.db_tx,
@@ -48,27 +42,25 @@ carp_task! {
 
 async fn handle_mints(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, alonzo::Block<'_>>,
+    block: BlockInfo<'_, MultiEraBlock<'_>>,
     multiera_txs: &[TransactionModel],
     readonly: bool,
 ) -> Result<Vec<NativeAssetModel>, DbErr> {
     let mut queued_mints = Vec::<(i64, (Vec<u8>, Vec<u8>), i64)>::default();
-    for (tx_body, cardano_transaction) in block.1.transaction_bodies.iter().zip(multiera_txs) {
-        for component in tx_body.iter() {
-            #[allow(clippy::single_match)]
-            match component {
-                TransactionBodyComponent::Mint(mints) => {
-                    for (policy_id, assets) in mints.iter() {
-                        for (asset_name, amount) in assets.iter() {
-                            queued_mints.push((
-                                cardano_transaction.id,
-                                (policy_id.to_vec(), asset_name.to_vec()),
-                                *amount,
-                            ));
-                        }
-                    }
-                }
-                _ => {}
+    for (tx_body, cardano_transaction) in block.1.txs().iter().zip(multiera_txs) {
+        for (policy_id, assets) in tx_body
+            .mint()
+            .as_alonzo()
+            .iter()
+            .map(|x| x.iter())
+            .flatten()
+        {
+            for (asset_name, amount) in assets.iter() {
+                queued_mints.push((
+                    cardano_transaction.id,
+                    (policy_id.to_vec(), asset_name.to_vec()),
+                    *amount,
+                ));
             }
         }
     }

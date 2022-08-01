@@ -9,9 +9,7 @@ use entity::{
 use pallas::ledger::primitives::Fragment;
 use pallas::{
     codec::utils::KeyValuePairs,
-    ledger::primitives::alonzo::{
-        self, AuxiliaryData, Metadatum, MetadatumLabel, TransactionBodyComponent,
-    },
+    ledger::primitives::alonzo::{self, AuxiliaryData, Metadatum, MetadatumLabel},
 };
 
 use super::{
@@ -32,7 +30,7 @@ carp_task! {
   read [multiera_assets, multiera_metadata];
   write [];
   should_add_task |block, _properties| {
-    block.1.auxiliary_data_set.len() > 0
+    block.1.has_aux_data()
   };
   execute |previous_data, task| handle_entries(
       task.db_tx,
