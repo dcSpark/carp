@@ -28,6 +28,5 @@ oura = "1.5.1"
 clap = { version = "3.1", features = ["derive"] }
 cardano-multiplatform-lib = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "metadata-and-addr" }
 num-integer = "0.1.45"
-# pallas = "0.11.0"
-pallas = { git = "https://github.com/txpipe/pallas" }
+pallas = "0.12.0"
 cryptoxide = "0.4.2"

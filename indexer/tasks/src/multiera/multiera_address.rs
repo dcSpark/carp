@@ -249,7 +249,12 @@ fn queue_output(
     output: &MultiEraOutput,
 ) {
     use cardano_multiplatform_lib::address::Address;
-    let addr = Address::from_bytes(output.address_raw().to_vec())
+
+    let pallas_address = output
+        .address()
+        .map_err(|e| panic!("{:?}{:?}", e, tx_body.hash().to_vec()))
+        .unwrap();
+    let addr = Address::from_bytes(pallas_address.to_vec())
         .map_err(|e| panic!("{:?}{:?}", e, tx_body.hash().to_vec()))
         .unwrap();
 

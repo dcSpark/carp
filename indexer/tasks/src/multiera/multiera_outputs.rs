@@ -94,7 +94,7 @@ fn queue_output(
 ) {
     let addr = output
         .address()
-        .map_err(|e| panic!("{:?}{:?}", e, tx_body.hash().to_vec()))
+        .map_err(|e| panic!("{:?} {:?}", e, hex::encode(tx_body.hash())))
         .unwrap();
 
     queued_output.push(QueuedOutput {
