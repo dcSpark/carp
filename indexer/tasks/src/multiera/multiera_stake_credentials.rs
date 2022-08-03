@@ -47,13 +47,20 @@ async fn handle_stake_credentials(
     vkey_relation_map: &mut RelationMap,
 ) -> Result<BTreeMap<Vec<u8>, StakeCredentialModel>, DbErr> {
     for (tx_body, cardano_transaction) in block.1.txs().iter().zip(multiera_txs) {
+        let witness_cbor = tx_body.witnesses().cbor().to_vec();
         queue_witness(
             vkey_relation_map,
             cardano_transaction.id,
-            &cardano_multiplatform_lib::TransactionWitnessSet::from_bytes(
-                tx_body.witnesses().cbor().to_vec(),
-            )
-            .unwrap(),
+            &cardano_multiplatform_lib::TransactionWitnessSet::from_bytes(witness_cbor)
+                .map_err(|e| {
+                    panic!(
+                        "{:?} {:?} {:?}",
+                        e,
+                        hex::encode(tx_body.hash()),
+                        hex::encode(tx_body.witnesses().cbor())
+                    )
+                })
+                .unwrap(),
         );
 
         for signer in tx_body.required_signers().collect::<Vec<_>>() {

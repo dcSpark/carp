@@ -252,10 +252,10 @@ fn queue_output(
 
     let pallas_address = output
         .address()
-        .map_err(|e| panic!("{:?}{:?}", e, tx_body.hash().to_vec()))
+        .map_err(|e| panic!("{:?} {:?}", e, tx_body.hash().to_vec()))
         .unwrap();
     let addr = Address::from_bytes(pallas_address.to_vec())
-        .map_err(|e| panic!("{:?}{:?}", e, tx_body.hash().to_vec()))
+        .map_err(|e| panic!("{:?} {:?}", e, tx_body.hash().to_vec()))
         .unwrap();
 
     let tx_relation = TxCredentialRelationValue::Output;

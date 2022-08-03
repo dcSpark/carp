@@ -373,8 +373,8 @@ checksum = "c1db59621ec70f09c5e9b597b220c7a2b43611f4710dc03ceb8748637775692c"
 
 [[package]]
 name = "cardano-multiplatform-lib"
-version = "1.0.0-beta.0"
-source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?branch=metadata-and-addr#a3a5719b176ca319247dbe7ed921a2140ca9d85e"
+version = "1.0.0-beta.1"
+source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?branch=metadata-and-addr#88b17d280c965dd8f7038c5d6505d218b7cce98c"
 dependencies = [
  "base64",
  "bech32 0.7.3",
@@ -761,9 +761,9 @@ checksum = "77c90badedccf4105eca100756a0b1289e191f6fcbdadd3cee1d2f614f97da8f"
 
 [[package]]
 name = "dyn-clone"
-version = "1.0.8"
+version = "1.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9d07a982d1fb29db01e5a59b1918e03da4df7297eaeee7686ac45542fd4e59c8"
+checksum = "4f94fa09c2aeea5b8839e414b7b841bf429fd25b9c522116ac97ee87856d88b2"
 
 [[package]]
 name = "ed25519-bip32"
