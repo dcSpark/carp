@@ -31,10 +31,16 @@ export const getAddressTypes = (addresses: string[]): ParsedAddressTypes => {
       updateSet(asCredHex, address);
       continue;
     }
-    const asExactAddressHex = getAsCredentialHex(address);
-    if (asExactAddressHex != null) {
-      result.credentialHex.push(asExactAddressHex);
-      updateSet(asExactAddressHex, address);
+    const asCredentialHex = getAsCredentialHex(address);
+    if (asCredentialHex != null) {
+      result.credentialHex.push(asCredentialHex);
+      updateSet(asCredentialHex, address);
+      continue;
+    }
+    const asExactAddress = getAsExactAddressHex(address);
+    if (asExactAddress != null) {
+      result.exactAddress.push(asExactAddress);
+      updateSet(asExactAddress, address);
       continue;
     }
 
