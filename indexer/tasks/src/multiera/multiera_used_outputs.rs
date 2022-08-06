@@ -19,7 +19,7 @@ use pallas::ledger::primitives::ToHash;
 carp_task! {
   name MultieraOutputTask;
   configuration ReadonlyConfig;
-  doc "Adds the transaction outputs to the database";
+  doc "Adds the used outputs to the database (regular inputs in most cases, collateral inputs if tx fails)";
   era multiera;
   dependencies [MultieraAddressTask];
   read [multiera_txs, multiera_addresses];
@@ -59,14 +59,30 @@ async fn handle_output(
     let mut queued_output = Vec::<QueuedOutput>::default();
 
     for (tx_body, cardano_transaction) in block.1.txs().iter().zip(multiera_txs) {
-        for (idx, output) in tx_body.outputs().iter().enumerate() {
-            queue_output(
-                &mut queued_output,
-                tx_body,
-                cardano_transaction.id,
-                output,
-                idx,
-            );
+        let outputs = tx_body.outputs();
+        if cardano_transaction.is_valid {
+            for (idx, output) in outputs.iter().enumerate() {
+                queue_output(
+                    &mut queued_output,
+                    tx_body,
+                    cardano_transaction.id,
+                    output,
+                    idx,
+                );
+            }
+        }
+        if !cardano_transaction.is_valid {
+            if let Some(output) = tx_body.collateral_return().as_ref() {
+                queue_output(
+                    &mut queued_output,
+                    tx_body,
+                    cardano_transaction.id,
+                    output,
+                    // only one collateral output is allowed
+                    // and its index is output.len()
+                    outputs.len(),
+                );
+            }
         }
     }
 

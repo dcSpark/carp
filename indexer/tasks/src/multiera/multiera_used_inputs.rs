@@ -13,14 +13,14 @@ use entity::{
 };
 use pallas::ledger::traverse::{MultiEraBlock, MultiEraInput, OutputRef};
 
-use super::{multiera_outputs::MultieraOutputTask, relation_map::RelationMap};
+use super::{multiera_used_outputs::MultieraOutputTask, relation_map::RelationMap};
 
 use crate::dsl::task_macro::*;
 
 carp_task! {
   name MultieraUsedInputTask;
   configuration ReadonlyConfig;
-  doc "Adds the used inputs to the database (regular inputs in most cases, collateral inputs if tx fails";
+  doc "Adds the used inputs to the database (regular inputs in most cases, collateral inputs if tx fails)";
   era multiera;
   dependencies [MultieraOutputTask];
   read [multiera_txs];
@@ -126,8 +126,7 @@ pub fn add_input_relations(
                     output_to_input_tx.insert(output_id.id, input_tx_pair.1);
                 }
                 None => {
-                    println!("tx: {}", input.hash());
-                    panic!();
+                    panic!("tx: {} index:{}", input.hash(), input.index());
                 }
             }
         }

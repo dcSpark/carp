@@ -1,5 +1,5 @@
 use super::{
-    multiera_outputs::MultieraOutputTask, multiera_used_inputs::add_input_relations,
+    multiera_used_inputs::add_input_relations, multiera_used_outputs::MultieraOutputTask,
     relation_map::RelationMap,
 };
 use crate::config::EmptyConfig::EmptyConfig;
@@ -14,7 +14,7 @@ use crate::dsl::task_macro::*;
 carp_task! {
   name MultieraUnusedInputTask;
   configuration EmptyConfig;
-  doc "Adds the unused inputs to the database (collateral inputs if tx succeeds, collateral inputs otherwise";
+  doc "Adds the unused inputs to the database (collateral inputs if tx succeeds, collateral inputs otherwise)";
   era multiera;
   dependencies [MultieraOutputTask];
   read [multiera_txs];

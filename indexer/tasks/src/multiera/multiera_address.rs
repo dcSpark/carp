@@ -84,6 +84,21 @@ async fn handle_addresses(
                 tx_body,
                 cardano_transaction.id,
                 &output,
+                TxCredentialRelationValue::Output,
+                TxCredentialRelationValue::OutputStake,
+            );
+        }
+
+        if let Some(collateral_return) = tx_body.collateral_return().as_ref() {
+            queue_output(
+                vkey_relation_map,
+                &mut queued_address_credential,
+                &mut queued_address,
+                tx_body,
+                cardano_transaction.id,
+                collateral_return,
+                TxCredentialRelationValue::UnusedOutput,
+                TxCredentialRelationValue::UnusedOutputStake,
             );
         }
 
@@ -247,6 +262,8 @@ fn queue_output(
     tx_body: &MultiEraTx,
     tx_id: i64,
     output: &MultiEraOutput,
+    output_relation: TxCredentialRelationValue,
+    output_stake_relation: TxCredentialRelationValue,
 ) {
     use cardano_multiplatform_lib::address::Address;
 
@@ -258,7 +275,6 @@ fn queue_output(
         .map_err(|e| panic!("{:?} {:?}", e, tx_body.hash().to_vec()))
         .unwrap();
 
-    let tx_relation = TxCredentialRelationValue::Output;
     let address_relation = AddressCredentialRelationValue::PaymentKey;
 
     if let Some(base_addr) = BaseAddress::from_address(&addr) {
@@ -271,7 +287,7 @@ fn queue_output(
                 tx_id,
                 &addr.to_bytes(),
                 &base_addr.payment_cred(),
-                tx_relation,
+                output_relation,
                 address_relation,
             );
         }
@@ -285,7 +301,7 @@ fn queue_output(
                 tx_id,
                 &addr.to_bytes(),
                 &base_addr.stake_cred(),
-                TxCredentialRelationValue::OutputStake,
+                output_stake_relation,
                 AddressCredentialRelationValue::StakeKey,
             );
         }
@@ -297,7 +313,7 @@ fn queue_output(
             tx_id,
             &addr.to_bytes(),
             &reward_addr.payment_cred(),
-            tx_relation,
+            output_relation,
             address_relation,
         );
     } else if ByronAddress::from_address(&addr).is_some() {
@@ -317,7 +333,7 @@ fn queue_output(
             tx_id,
             &addr.to_bytes(),
             &enterprise_addr.payment_cred(),
-            tx_relation,
+            output_relation,
             address_relation,
         );
     } else if let Some(ptr_addr) = PointerAddress::from_address(&addr) {
@@ -328,7 +344,7 @@ fn queue_output(
             tx_id,
             &addr.to_bytes(),
             &ptr_addr.payment_cred(),
-            tx_relation,
+            output_relation,
             address_relation,
         );
     } else {

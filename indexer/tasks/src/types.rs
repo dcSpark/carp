@@ -5,8 +5,10 @@ pub enum TxCredentialRelationValue {
     UnusedInputStake,
     Input,
     Output,
-    InputStake,  // occurs as the staking key of an input
-    OutputStake, // occurs as the staking key of an output
+    InputStake,   // occurs as the staking key of an input
+    OutputStake,  // occurs as the staking key of an output
+    UnusedOutput, // collateral output when collateral isn't consumed or opposite if collateral was consumed
+    UnusedOutputStake,
     StakeDeregistration,
     StakeDelegation,
     StakeRegistration,
@@ -48,6 +50,8 @@ impl From<TxCredentialRelationValue> for i32 {
             TxCredentialRelationValue::UnusedInputStake => 0b1000000000000000,
             TxCredentialRelationValue::InputStake => 0b10000000000000000,
             TxCredentialRelationValue::OutputStake => 0b100000000000000000,
+            TxCredentialRelationValue::UnusedOutput => 0b1000000000000000000,
+            TxCredentialRelationValue::UnusedOutputStake => 0b10000000000000000000,
         }
     }
 }
