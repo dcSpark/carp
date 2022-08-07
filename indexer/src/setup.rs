@@ -28,8 +28,12 @@ pub async fn get_latest_points(conn: &DatabaseConnection) -> anyhow::Result<Vec<
         .collect();
 
     Ok(points)
-    // Start of Shelley: aa83acbf5904c0edfe4d79b3689d3d00fcfc553cf360fd2229b98d464c28e9de
+    // SELECT * FROM "Block" WHERE "Block".era = 1 ORDER BY "Block".id ASC LIMIT 1;
+    // for mainnet
+    // start of Shelley: aa83acbf5904c0edfe4d79b3689d3d00fcfc553cf360fd2229b98d464c28e9de
+    // start of Allegra: 078d102d0247463f91eef69fc77f3fbbf120f3118e68cd5e6a493c15446dbf8c
     // start of Mary: a650a3f398ba4a9427ec8c293e9f7156d81fd2f7ca849014d8d2c1156c359b3a
+    // start of Alonzo: 8959c0323b94cc670afe44222ab8b4e72cfcad3b5ab665f334bbe642dc6e9ef4
 }
 
 pub async fn get_specific_point(

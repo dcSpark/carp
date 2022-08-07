@@ -32,6 +32,8 @@ pub enum Relation {
     Address,
     #[sea_orm(has_many = "super::stake_credential::Entity")]
     StakeCredential,
+    #[sea_orm(has_many = "super::plutus_data_hash::Entity")]
+    PlutusDataHash,
 }
 
 // TODO: figure out why this isn't automatically handle by the macros above

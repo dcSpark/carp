@@ -11,4 +11,6 @@ pub use sea_orm;
 pub mod asset_mint;
 pub mod cip25_entry;
 pub mod native_asset;
+pub mod plutus_data;
+pub mod plutus_data_hash;
 pub mod transaction_metadata;

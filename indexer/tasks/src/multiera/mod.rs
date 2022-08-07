@@ -3,6 +3,7 @@ pub mod multiera_address_credential_relations;
 pub mod multiera_asset_mint;
 pub mod multiera_block;
 pub mod multiera_cip25entry;
+pub mod multiera_datum;
 pub mod multiera_executor;
 pub mod multiera_metadata;
 pub mod multiera_stake_credentials;

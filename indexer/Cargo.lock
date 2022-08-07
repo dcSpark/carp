@@ -418,7 +418,7 @@ dependencies = [
  "migration",
  "num-integer",
  "oura",
- "pallas 0.12.0",
+ "pallas 0.13.0",
  "serde",
  "serde_json",
  "tasks",
@@ -1583,16 +1583,17 @@ dependencies = [
 
 [[package]]
 name = "pallas"
-version = "0.12.0"
-source = "git+https://github.com/dcSpark/pallas?branch=expose-collateral-return#cee0e99380134d98a4679b588cbb81abb23837a1"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2c010696819e87805a13f391f52b5c5d6ec130a3911aaad0def39e65d601102"
 dependencies = [
- "pallas-addresses 0.12.0",
- "pallas-codec 0.12.0",
- "pallas-crypto 0.12.0",
- "pallas-miniprotocols 0.12.0",
- "pallas-multiplexer 0.12.0",
- "pallas-primitives 0.12.0",
- "pallas-traverse 0.12.0",
+ "pallas-addresses 0.13.0",
+ "pallas-codec 0.13.0",
+ "pallas-crypto 0.13.0",
+ "pallas-miniprotocols 0.13.0",
+ "pallas-multiplexer 0.13.0",
+ "pallas-primitives 0.13.0",
+ "pallas-traverse 0.13.0",
 ]
 
 [[package]]
@@ -1611,14 +1612,15 @@ dependencies = [
 
 [[package]]
 name = "pallas-addresses"
-version = "0.12.0"
-source = "git+https://github.com/dcSpark/pallas?branch=expose-collateral-return#cee0e99380134d98a4679b588cbb81abb23837a1"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "768e408a8f5c283b8cedd674ac6ccacf2823fd19af366f604543336925250126"
 dependencies = [
  "base58",
  "bech32 0.8.1",
  "hex",
- "pallas-codec 0.12.0",
- "pallas-crypto 0.12.0",
+ "pallas-codec 0.13.0",
+ "pallas-crypto 0.13.0",
  "thiserror",
 ]
 
@@ -1633,8 +1635,9 @@ dependencies = [
 
 [[package]]
 name = "pallas-codec"
-version = "0.12.0"
-source = "git+https://github.com/dcSpark/pallas?branch=expose-collateral-return#cee0e99380134d98a4679b588cbb81abb23837a1"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f89a5f5dc36b6ade6a4b0f615c7260c7cb910548907fa96f542beb86cc25cb7d"
 dependencies = [
  "minicbor",
 ]
@@ -1654,12 +1657,13 @@ dependencies = [
 
 [[package]]
 name = "pallas-crypto"
-version = "0.12.0"
-source = "git+https://github.com/dcSpark/pallas?branch=expose-collateral-return#cee0e99380134d98a4679b588cbb81abb23837a1"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "51b8dc3caf13a3ac67650eeafbe9673c1393a6ef5164c45fd1fe415736b912a2"
 dependencies = [
  "cryptoxide",
  "hex",
- "pallas-codec 0.12.0",
+ "pallas-codec 0.13.0",
  "rand_core 0.6.3",
  "thiserror",
 ]
@@ -1680,14 +1684,15 @@ dependencies = [
 
 [[package]]
 name = "pallas-miniprotocols"
-version = "0.12.0"
-source = "git+https://github.com/dcSpark/pallas?branch=expose-collateral-return#cee0e99380134d98a4679b588cbb81abb23837a1"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f867a04e8f990aadf920c4c19e92100ba955769f393449c0201b27c114fa6252"
 dependencies = [
  "hex",
  "itertools",
  "log",
- "pallas-codec 0.12.0",
- "pallas-multiplexer 0.12.0",
+ "pallas-codec 0.13.0",
+ "pallas-multiplexer 0.13.0",
  "thiserror",
 ]
 
@@ -1707,13 +1712,14 @@ dependencies = [
 
 [[package]]
 name = "pallas-multiplexer"
-version = "0.12.0"
-source = "git+https://github.com/dcSpark/pallas?branch=expose-collateral-return#cee0e99380134d98a4679b588cbb81abb23837a1"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ad170bcbf93e19faf816be57c57d867bc5435a9f8a23bb381e9964209bd71875"
 dependencies = [
  "byteorder",
  "hex",
  "log",
- "pallas-codec 0.12.0",
+ "pallas-codec 0.13.0",
  "rand",
  "thiserror",
 ]
@@ -1736,15 +1742,16 @@ dependencies = [
 
 [[package]]
 name = "pallas-primitives"
-version = "0.12.0"
-source = "git+https://github.com/dcSpark/pallas?branch=expose-collateral-return#cee0e99380134d98a4679b588cbb81abb23837a1"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fc13fc6c4a982ebeb3529c59752d0ec403e65a096f2bf6642837a243e1d32dbf"
 dependencies = [
  "base58",
  "bech32 0.9.0",
  "hex",
  "log",
- "pallas-codec 0.12.0",
- "pallas-crypto 0.12.0",
+ "pallas-codec 0.13.0",
+ "pallas-crypto 0.13.0",
  "serde",
  "serde_json",
 ]
@@ -1764,14 +1771,15 @@ dependencies = [
 
 [[package]]
 name = "pallas-traverse"
-version = "0.12.0"
-source = "git+https://github.com/dcSpark/pallas?branch=expose-collateral-return#cee0e99380134d98a4679b588cbb81abb23837a1"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a8729b76322e7838b6c9535779396b909163a749a11fd5fe260efd2ebbb9bcca"
 dependencies = [
  "hex",
- "pallas-addresses 0.12.0",
- "pallas-codec 0.12.0",
- "pallas-crypto 0.12.0",
- "pallas-primitives 0.12.0",
+ "pallas-addresses 0.13.0",
+ "pallas-codec 0.13.0",
+ "pallas-crypto 0.13.0",
+ "pallas-primitives 0.13.0",
  "thiserror",
 ]
 
@@ -2817,7 +2825,7 @@ dependencies = [
  "inventory",
  "markdown-gen",
  "nameof",
- "pallas 0.12.0",
+ "pallas 0.13.0",
  "paste",
  "serde",
  "shred",

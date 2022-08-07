@@ -13,7 +13,7 @@ inventory = "0.2.3"
 cardano-multiplatform-lib = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "metadata-and-addr" }
 entity = { path = "../entity" }
 tokio = { version = "1.16.1", features = ["full"] }
-pallas = { git = "https://github.com/dcSpark/pallas", branch = "expose-collateral-return" }
+pallas = "0.13.0"
 toml = { version = "0.5", features = ["preserve_order"] }
 hex = "0.4.3"
 cryptoxide = "0.4.2"

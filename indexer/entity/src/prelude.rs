@@ -24,6 +24,15 @@ pub use super::native_asset::{
     Model as NativeAssetModel, PrimaryKey as NativeAssetPrimaryKey,
     Relation as NativeAssetRelation,
 };
+pub use super::plutus_data::{
+    ActiveModel as PlutusDataActiveModel, Column as PlutusDataColumn, Entity as PlutusData,
+    Model as PlutusDataModel, PrimaryKey as PlutusDataPrimaryKey, Relation as PlutusDataRelation,
+};
+pub use super::plutus_data_hash::{
+    ActiveModel as PlutusDataHashActiveModel, Column as PlutusDataHashColumn,
+    Entity as PlutusDataHash, Model as PlutusDataHashModel, PrimaryKey as PlutusDataHashPrimaryKey,
+    Relation as PlutusDataHashRelation,
+};
 pub use super::stake_credential::{
     ActiveModel as StakeCredentialActiveModel, Column as StakeCredentialColumn,
     Entity as StakeCredential, Model as StakeCredentialModel,

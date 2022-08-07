@@ -33,7 +33,7 @@ async fn handle_block(
     block: BlockInfo<'_, MultiEraBlock<'_>>,
     readonly: bool,
 ) -> Result<BlockModel, DbErr> {
-    let hash = blake2b256(&block.1.header().cbor());
+    let hash = blake2b256(block.1.header().cbor());
     if readonly {
         return block_from_hash(db_tx, &hash).await;
     }
