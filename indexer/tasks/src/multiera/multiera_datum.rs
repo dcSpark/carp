@@ -4,7 +4,7 @@ use super::{
     multiera_used_inputs::add_input_relations, multiera_used_outputs::MultieraOutputTask,
     relation_map::RelationMap,
 };
-use crate::config::EmptyConfig::EmptyConfig;
+use crate::config::ReadonlyConfig::ReadonlyConfig;
 use entity::sea_orm::QuerySelect;
 use entity::{
     prelude::*,
@@ -23,7 +23,7 @@ use crate::dsl::task_macro::*;
 
 carp_task! {
 name MultieraDatumTask;
-configuration EmptyConfig;
+configuration ReadonlyConfig;
 doc "Adds datum and datum hashes";
 era multiera;
 dependencies [];
@@ -38,6 +38,7 @@ execute |previous_data, task| handle_datum(
     task.db_tx,
     task.block,
     &previous_data.multiera_txs,
+    task.config.readonly
 );
 merge_result |previous_data, _result| {
 };
@@ -47,6 +48,7 @@ async fn handle_datum(
     db_tx: &DatabaseTransaction,
     block: BlockInfo<'_, MultiEraBlock<'_>>,
     multiera_txs: &[TransactionModel],
+    readonly: bool,
 ) -> Result<(), DbErr> {
     let mut hash_to_tx = BTreeMap::<DatumHash, i64>::new();
     // recall: tx may contain datum hash only w/ datum only appearing in a later tx
@@ -114,9 +116,12 @@ async fn handle_datum(
     }
     // 2) Add hashes that were not already in the DB
     {
-        let to_add: Vec<PlutusDataHashActiveModel> = hash_to_tx
+        let keys_to_add: Vec<&DatumHash> = hash_to_tx
             .keys()
             .filter(|key| !hash_to_id.contains_key(key.as_ref()))
+            .collect();
+        let to_add: Vec<PlutusDataHashActiveModel> = keys_to_add
+            .iter()
             .map(|key| PlutusDataHashActiveModel {
                 hash: Set(key.to_vec()),
                 first_tx: Set(*hash_to_tx.get(key).unwrap()),
@@ -124,7 +129,14 @@ async fn handle_datum(
             })
             .collect();
 
-        if !hash_to_tx.is_empty() {
+        if !to_add.is_empty() {
+            if readonly {
+                panic!(
+                    "{} in readonly mode, but unknown Plutus datum hashes were found: {:?}",
+                    "MultieraDatumTask",
+                    keys_to_add.iter().map(|key| hex::encode(key.as_ref()))
+                );
+            }
             let mut new_entries = PlutusDataHash::insert_many(to_add)
                 .exec_many_with_returning(db_tx)
                 .await?;
@@ -149,6 +161,18 @@ async fn handle_datum(
             }
         });
         if !to_add.is_empty() {
+            if readonly {
+                panic!(
+                    "{} in readonly mode, but unknown Plutus data content was found for hashes: {:?}",
+                    "MultieraDatumTask",
+                    to_add.iter().map(|entry| {
+                      let hashes: Vec<String> = hash_to_id.iter()
+                        .filter_map(|(key, &val)| if val == *entry.id.as_ref() { Some(hex::encode(key)) } else { None })
+                        .collect();
+                      hashes
+                    })
+                );
+            }
             PlutusData::insert_many(to_add)
                 .exec_many_with_returning(db_tx)
                 .await?;
