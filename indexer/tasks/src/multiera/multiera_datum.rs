@@ -1,5 +1,6 @@
 use std::collections::BTreeSet;
 
+use super::multiera_txs::MultieraTransactionTask;
 use super::{
     multiera_used_inputs::add_input_relations, multiera_used_outputs::MultieraOutputTask,
     relation_map::RelationMap,
@@ -26,7 +27,7 @@ name MultieraDatumTask;
 configuration ReadonlyConfig;
 doc "Adds datum and datum hashes";
 era multiera;
-dependencies [];
+dependencies [MultieraTransactionTask];
 read [multiera_txs];
 write [];
 should_add_task |block, _properties| {
@@ -93,7 +94,7 @@ async fn handle_datum(
     {
         let mut found_hashes =
             PlutusDataHash::find()
-                .join(JoinType::LeftJoin, PlutusDataRelation::PlutusDataHash.def())
+                .join(JoinType::LeftJoin, PlutusDataHashRelation::PlutusData.def())
                 .filter(Condition::any().add(
                     PlutusDataHashColumn::Hash.is_in(hash_to_tx.keys().map(|hash| hash.as_ref())),
                 ))
