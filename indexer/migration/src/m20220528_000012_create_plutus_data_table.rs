@@ -1,13 +1,13 @@
 use sea_schema::migration::prelude::*;
 
-use entity::plutus_data_hash::*;
+use entity::plutus_data::*;
 use entity::prelude::{PlutusDataHash, PlutusDataHashColumn};
 
 pub struct Migration;
 
 impl MigrationName for Migration {
     fn name(&self) -> &str {
-        "m20220528_000011_create_plutus_data_table"
+        "m20220528_000012_create_plutus_data_table"
     }
 }
 
@@ -33,6 +33,7 @@ impl MigrationTrait for Migration {
                             .to(PlutusDataHash, PlutusDataHashColumn::Id)
                             .on_delete(ForeignKeyAction::Cascade),
                     )
+                    .col(ColumnDef::new(Column::Data).binary().not_null())
                     .to_owned(),
             )
             .await

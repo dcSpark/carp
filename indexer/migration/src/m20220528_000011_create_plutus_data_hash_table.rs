@@ -7,7 +7,7 @@ pub struct Migration;
 
 impl MigrationName for Migration {
     fn name(&self) -> &str {
-        "m20220528_000012_create_plutus_data_hash_table"
+        "m20220528_000011_create_plutus_data_hash_table"
     }
 }
 
