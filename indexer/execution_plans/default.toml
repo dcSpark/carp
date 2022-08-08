@@ -38,6 +38,9 @@ readonly=false
 [MultieraOutputTask]
 readonly=false
 
+[MultieraReferenceInputTask]
+readonly=false
+
 [MultieraUsedInputTask]
 readonly=false
 
