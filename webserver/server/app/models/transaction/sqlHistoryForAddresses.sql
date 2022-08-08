@@ -26,6 +26,17 @@ WITH
           "TransactionInput".tx_id > (:after_tx_id)
         ORDER BY "TransactionInput".tx_id ASC
         LIMIT (:limit)
+  ),
+  ref_inputs AS (
+        SELECT DISTINCT ON ("TransactionReferenceInput".tx_id) "TransactionReferenceInput".tx_id
+        FROM "TransactionReferenceInput"
+        INNER JOIN address_row ON "TransactionReferenceInput".address_id = address_row.id
+        WHERE
+          "TransactionReferenceInput".tx_id <= (:until_tx_id)
+          AND
+          "TransactionReferenceInput".tx_id > (:after_tx_id)
+        ORDER BY "TransactionReferenceInput".tx_id ASC
+        LIMIT (:limit)
   )
 SELECT "Transaction".id,
         "Transaction".payload,
@@ -39,6 +50,6 @@ SELECT "Transaction".id,
         "Block".height
 FROM "Transaction"
 INNER JOIN "Block" ON "Transaction".block_id = "Block".id
-WHERE "Transaction".id IN (SELECT * FROM inputs UNION ALL SELECT * from outputs)
+WHERE "Transaction".id IN (SELECT * FROM inputs UNION ALL SELECT * from ref_inputs UNION ALL SELECT * from outputs)
 ORDER BY "Transaction".id ASC
 LIMIT (:limit);

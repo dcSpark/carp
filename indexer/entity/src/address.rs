@@ -18,6 +18,8 @@ pub enum Relation {
     AddressCredential,
     #[sea_orm(has_many = "super::transaction_output::Entity")]
     TransactionOutput,
+    #[sea_orm(has_many = "super::transaction_reference_input::Entity")]
+    TransactionReferenceInput,
     #[sea_orm(has_many = "super::transaction_input::Entity")]
     TransactionInput,
     #[sea_orm(

@@ -58,6 +58,12 @@ pub use super::transaction_output::{
     Entity as TransactionOutput, Model as TransactionOutputModel,
     PrimaryKey as TransactionOutputPrimaryKey, Relation as TransactionOutputRelation,
 };
+pub use super::transaction_reference_input::{
+    ActiveModel as TransactionReferenceInputActiveModel, Column as TransactionReferenceInputColumn,
+    Entity as TransactionReferenceInput, Model as TransactionReferenceInputModel,
+    PrimaryKey as TransactionReferenceInputPrimaryKey,
+    Relation as TransactionReferenceInputRelation,
+};
 pub use super::tx_credential::{
     ActiveModel as TxCredentialActiveModel, Column as TxCredentialColumn, Entity as TxCredential,
     Model as TxCredentialModel, PrimaryKey as TxCredentialPrimaryKey,

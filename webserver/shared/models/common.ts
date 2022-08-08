@@ -30,6 +30,10 @@ export enum RelationFilterType {
   UnusedInputStake = 0b1000000000000000,
   InputStake = 0b10000000000000000,
   OutputStake = 0b100000000000000000,
+  UnusedOutput = 0b1000000000000000000,
+  UnusedOutputStake = 0b10000000000000000000,
+  ReferenceInput = 0b100000000000000000000,
+  ReferenceInputStake = 0b1000000000000000000000,
   NO_FILTER = 0xff,
 }
 

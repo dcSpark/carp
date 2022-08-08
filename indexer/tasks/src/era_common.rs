@@ -199,7 +199,6 @@ pub async fn insert_inputs(
         return Ok(vec![]);
     }
 
-    // 3) Add inputs themselves
     let result = TransactionInput::insert_many(
         inputs
             .iter()

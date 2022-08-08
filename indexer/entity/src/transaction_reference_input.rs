@@ -1,17 +1,22 @@
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
+// Note: unfortunately large amount of copied logic between this and TransactionInput
+// However, reference inputs have a different relation to other tables (ex: one output -> many ref inputs)
+
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Deserialize, Serialize)]
-#[sea_orm(table_name = "TransactionOutput")]
+#[sea_orm(table_name = "TransactionReferenceInput")]
 pub struct Model {
     #[sea_orm(primary_key, column_type = "BigInteger")]
     pub id: i64,
-    pub payload: Vec<u8>,
     #[sea_orm(column_type = "BigInteger")]
-    pub address_id: i64,
+    pub utxo_id: i64,
     #[sea_orm(column_type = "BigInteger")]
     pub tx_id: i64,
-    pub output_index: i32, // index inside transaction
+    // address_id here is useful for fast pagination without joining w/ txoutput table
+    #[sea_orm(column_type = "BigInteger")]
+    pub address_id: i64,
+    pub input_index: i32, // index inside transaction
 }
 
 #[derive(Copy, Clone, Debug, DeriveRelation, EnumIter)]
@@ -23,21 +28,30 @@ pub enum Relation {
     )]
     Address,
     #[sea_orm(
+        belongs_to = "super::transaction_output::Entity",
+        from = "Column::UtxoId",
+        to = "super::transaction_output::Column::Id"
+    )]
+    TransactionOutput,
+    #[sea_orm(
         belongs_to = "super::transaction::Entity",
         from = "Column::TxId",
         to = "super::transaction::Column::Id"
     )]
     Transaction,
-    #[sea_orm(has_one = "super::transaction_input::Entity")]
-    TransactionInput,
-    #[sea_orm(has_many = "super::transaction_reference_input::Entity")]
-    TransactionReferenceInput,
 }
 
 // TODO: figure out why this isn't automatically handle by the macros above
 impl Related<super::address::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Address.def()
+    }
+}
+
+// TODO: figure out why this isn't automatically handle by the macros above
+impl Related<super::transaction_output::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::TransactionOutput.def()
     }
 }
 
