@@ -89,6 +89,8 @@ async fn handle_input(
                     .collect::<Vec<_>>()
                     .as_slice(),
                 &input_to_output_map,
+                TxCredentialRelationValue::Input,
+                TxCredentialRelationValue::InputStake,
             );
             if readonly {
                 Ok(input_from_pointer(
@@ -116,6 +118,8 @@ pub fn add_input_relations(
     inputs: &[(Vec<OutputRef>, i64)],
     outputs: &[&TransactionOutputModel],
     input_to_output_map: &BTreeMap<&Vec<u8>, BTreeMap<i64, &TransactionOutputModel>>,
+    input_relation: TxCredentialRelationValue,
+    input_stake_relation: TxCredentialRelationValue,
 ) {
     let mut output_to_input_tx = BTreeMap::<i64, i64>::default();
     for input_tx_pair in inputs.iter() {
@@ -139,8 +143,8 @@ pub fn add_input_relations(
                     vkey_relation_map,
                     output_to_input_tx[&output.id],
                     &payload.address(),
-                    TxCredentialRelationValue::Input,
-                    TxCredentialRelationValue::InputStake,
+                    input_relation,
+                    input_stake_relation,
                 );
             }
             Err(_e) => {

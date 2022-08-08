@@ -2,7 +2,7 @@ use super::{
     multiera_used_inputs::add_input_relations, multiera_used_outputs::MultieraOutputTask,
     relation_map::RelationMap,
 };
-use crate::config::EmptyConfig::EmptyConfig;
+use crate::{config::EmptyConfig::EmptyConfig, types::TxCredentialRelationValue};
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction},
@@ -76,6 +76,8 @@ async fn handle_unused_input(
                 .collect::<Vec<_>>()
                 .as_slice(),
             &input_to_output_map,
+            TxCredentialRelationValue::UnusedInput,
+            TxCredentialRelationValue::UnusedInputStake,
         );
     }
 
