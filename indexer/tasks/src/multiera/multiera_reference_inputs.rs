@@ -29,7 +29,7 @@ carp_task! {
   read [multiera_txs];
   write [vkey_relation_map];
   should_add_task |block, _properties| {
-    block.1.txs().iter().any(|tx| tx.reference_inputs().is_some())
+    block.1.txs().iter().any(|tx| !tx.reference_inputs().is_empty())
   };
   execute |previous_data, task| handle_input(
       task.db_tx,
@@ -38,7 +38,7 @@ carp_task! {
       &mut previous_data.vkey_relation_map,
       task.config.readonly
   );
-  merge_result |previous_data, result| {
+  merge_result |previous_data, _result| {
   };
 }
 
