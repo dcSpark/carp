@@ -9,6 +9,8 @@ edition = "2021"
 sea-orm = { git = "https://github.com/dcSpark/sea-orm", branch = "insert-many-returning", features = [
     "runtime-tokio-rustls",
     "sqlx-postgres",
+    "sqlx-sqlite",
+    "mock",
     "macros",
 ], default-features = false }
 serde = "1.0.136"

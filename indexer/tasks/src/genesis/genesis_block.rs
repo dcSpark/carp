@@ -25,11 +25,11 @@ carp_task! {
 
 async fn handle_block(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, GenesisData>,
+    block_info: BlockInfo<'_, GenesisData>,
 ) -> Result<BlockModel, DbErr> {
-    let genesis_hash = block.1.genesis_prev.to_bytes();
+    let genesis_hash = block_info.1.genesis_prev.to_bytes();
 
-    let block = BlockActiveModel {
+    let block_active_model = BlockActiveModel {
         era: Set(EraValue::Byron.into()),
         hash: Set(genesis_hash),
         // note: strictly speaking, the epoch, height, etc. isn't defined for the genesis block
@@ -40,5 +40,7 @@ async fn handle_block(
         ..Default::default()
     };
 
-    Ok(block.insert(db_tx).await?)
+    let block_model = block_active_model.insert(db_tx).await?;
+
+    Ok(block_model)
 }

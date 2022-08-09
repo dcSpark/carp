@@ -19,6 +19,7 @@ pub fn blake2b160(data: &[u8]) -> [u8; 32] {
 
 #[derive(Default, Debug)]
 pub struct TaskPerfAggregator(pub BTreeMap<&'static str, Duration>);
+
 impl TaskPerfAggregator {
     const TOTAL_TIME: &'static str = "TotalPlanExecutionTime";
 

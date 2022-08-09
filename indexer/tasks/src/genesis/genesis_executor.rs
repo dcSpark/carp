@@ -1,10 +1,10 @@
 use std::sync::{Arc, Mutex};
 
-use crate::dsl::database_task::BlockInfo;
-use crate::dsl::database_task::TaskRegistryEntry;
-use crate::execution_plan::ExecutionPlan;
-use crate::utils::find_task_registry_entry;
-use crate::utils::TaskPerfAggregator;
+use crate::{
+    dsl::{database_task::BlockInfo, database_task::TaskRegistryEntry},
+    execution_plan::ExecutionPlan,
+    utils::{find_task_registry_entry, TaskPerfAggregator},
+};
 use cardano_multiplatform_lib::genesis::byron::config::GenesisData;
 use entity::sea_orm::{prelude::*, DatabaseTransaction};
 use shred::{DispatcherBuilder, World};
@@ -12,7 +12,7 @@ use tokio::runtime::Handle;
 
 pub async fn process_genesis_block(
     txn: &DatabaseTransaction,
-    block: BlockInfo<'_, GenesisData>,
+    block_info: BlockInfo<'_, GenesisData>,
     exec_plan: &ExecutionPlan,
     perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
 ) -> Result<(), DbErr> {
@@ -36,7 +36,7 @@ pub async fn process_genesis_block(
                         entry.builder.maybe_add_task(
                             &mut dispatcher_builder,
                             txn,
-                            block,
+                            block_info,
                             &handle,
                             perf_aggregator.clone(),
                             val,

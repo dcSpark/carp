@@ -1,22 +1,26 @@
 extern crate shred;
 
-use crate::config::EmptyConfig::EmptyConfig;
+use crate::{
+    config::EmptyConfig::EmptyConfig,
+    dsl::task_macro::*,
+    utils::{blake2b256, TaskPerfAggregator},
+};
 use cardano_multiplatform_lib::{
     byron::ByronAddress,
     genesis::byron::{config::GenesisData, parse::redeem_pubkey_to_txid},
     ledger::common::value::Value,
 };
 use entity::{
+    address,
     prelude::*,
     sea_orm::{DatabaseTransaction, DbErr, EntityTrait, Set},
+    sea_orm::{IntoActiveModel, Iterable},
+    transaction, transaction_output,
 };
 use shred::{DispatcherBuilder, ResourceId, System, SystemData, World, Write};
 use std::sync::{Arc, Mutex};
 
-use crate::dsl::task_macro::*;
-use crate::utils::{blake2b256, TaskPerfAggregator};
-use entity::sea_orm::Iterable;
-use futures::future::try_join;
+use futures::future::{join_all, try_join};
 
 use super::genesis_block::GenesisBlockTask;
 
@@ -45,7 +49,7 @@ carp_task! {
 
 async fn handle_txs(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, GenesisData>,
+    block_info: BlockInfo<'_, GenesisData>,
     database_block: &BlockModel,
 ) -> Result<
     (
@@ -61,11 +65,65 @@ async fn handle_txs(
     let mut transactions: Vec<TransactionActiveModel> = vec![];
     // note: genesis file is a JSON structure, so there shouldn't be duplicate addresses
     // even across avvm and non-avvm it should be unique, otherwise two txs with the same tx hash would exist
-    let mut addresses: Vec<Box<dyn Fn(i64) -> AddressActiveModel>> = vec![];
+    let mut address_lambdas: Vec<Box<dyn Fn(i64) -> AddressActiveModel>> = vec![];
     let mut outputs: Vec<cardano_multiplatform_lib::TransactionOutput> = vec![];
 
-    for (pub_key, amount) in block.1.avvm_distr.iter() {
-        let (tx_hash, extended_addr) = redeem_pubkey_to_txid(pub_key, Some(block.1.protocol_magic));
+    add_avvms(
+        &block_info,
+        database_block,
+        &mut transactions,
+        &mut address_lambdas,
+        &mut outputs,
+    );
+    // note: empty on mainnet
+    add_non_avvms(
+        &block_info,
+        database_block,
+        &mut transactions,
+        &mut address_lambdas,
+        &mut outputs,
+    );
+
+    let block_id = database_block.id;
+    let inserted_txs = insert_active_transaction_models(db_tx, transactions, block_id).await?;
+
+    let tx_ids = inserted_txs.iter().map(|model| model.id).collect();
+    let addresses: Vec<_> = address_lambdas
+        .iter()
+        .enumerate()
+        .map(|(idx, addr)| addr(inserted_txs[idx].id))
+        .collect();
+    let inserted_addresses = insert_active_address_models(db_tx, addresses, &tx_ids).await?;
+
+    let outputs_to_add: Vec<_> = inserted_txs
+        .iter()
+        .zip(&inserted_addresses)
+        .enumerate()
+        .map(|(i, (tx, addr))| TransactionOutputActiveModel {
+            address_id: Set(addr.id),
+            tx_id: Set(tx.id),
+            payload: Set(outputs[i].to_bytes()),
+            // recall: genesis txs are hashes of addresses
+            // so all txs have a single output
+            output_index: Set(0),
+            ..Default::default()
+        })
+        .collect();
+    let inserted_outputs = insert_active_output_models(db_tx, outputs_to_add, &tx_ids).await?;
+
+    Ok((inserted_txs, inserted_addresses, inserted_outputs))
+}
+
+fn add_avvms(
+    block_info: &BlockInfo<GenesisData>,
+    database_block: &BlockModel,
+    transactions: &mut Vec<TransactionActiveModel>,
+    address_lambdas: &mut Vec<Box<dyn Fn(i64) -> AddressActiveModel>>,
+    outputs: &mut Vec<cardano_multiplatform_lib::TransactionOutput>,
+) {
+    for (pub_key, amount) in block_info.1.avvm_distr.iter() {
+        let (tx_hash, extended_addr) =
+            redeem_pubkey_to_txid(pub_key, Some(block_info.1.protocol_magic));
         let byron_addr = extended_addr.to_address();
 
         // note: strictly speaking, genesis txs are unordered so there is no defined index
@@ -80,7 +138,7 @@ async fn handle_txs(
         });
 
         let addr_copy = byron_addr.clone();
-        addresses.push(Box::new(move |tx_id| AddressActiveModel {
+        address_lambdas.push(Box::new(move |tx_id| AddressActiveModel {
             payload: Set(addr_copy.to_bytes()),
             first_tx: Set(tx_id),
             ..Default::default()
@@ -92,14 +150,17 @@ async fn handle_txs(
             &Value::new(amount),
         ));
     }
+}
 
-    // note: empty on mainnet
-    for (byron_addr, amount) in block.1.non_avvm_balances.iter() {
+fn add_non_avvms(
+    block_info: &BlockInfo<GenesisData>,
+    database_block: &BlockModel,
+    transactions: &mut Vec<TransactionActiveModel>,
+    address_lambdas: &mut Vec<Box<dyn Fn(i64) -> AddressActiveModel>>,
+    outputs: &mut Vec<cardano_multiplatform_lib::TransactionOutput>,
+) {
+    for (byron_addr, amount) in block_info.1.non_avvm_balances.iter() {
         let tx_hash = blake2b256(&byron_addr.to_bytes());
-
-        // println!("{}", amount.to_str());
-        // println!("{}", byron_addr.to_base58());
-        // println!("{}", hex::encode(tx_hash));
 
         // note: strictly speaking, genesis txs are unordered so there is no defined index
         let tx_index = transactions.len() as i32;
@@ -113,7 +174,7 @@ async fn handle_txs(
         });
 
         let addr_copy = byron_addr.clone();
-        addresses.push(Box::new(move |tx_id| AddressActiveModel {
+        address_lambdas.push(Box::new(move |tx_id| AddressActiveModel {
             payload: Set(addr_copy.to_bytes()),
             first_tx: Set(tx_id),
             ..Default::default()
@@ -125,51 +186,71 @@ async fn handle_txs(
             &Value::new(amount),
         ));
     }
-
-    let inserted_txs = bulk_insert_txs(db_tx, &transactions).await?;
-    let inserted_addresses = Address::insert_many(
-        addresses
-            .iter()
-            .enumerate()
-            .map(|(idx, addr)| addr(inserted_txs[idx].id)),
-    )
-    .exec_many_with_returning(db_tx)
-    .await?;
-
-    let outputs_to_add = inserted_txs
-        .iter()
-        .zip(&inserted_addresses)
-        .enumerate()
-        .map(|(i, (tx, addr))| TransactionOutputActiveModel {
-            address_id: Set(addr.id),
-            tx_id: Set(tx.id),
-            payload: Set(outputs[i].to_bytes()),
-            // recall: genesis txs are hashes of addresses
-            // so all txs have a single output
-            output_index: Set(0),
-            ..Default::default()
-        });
-    let inserted_outputs = TransactionOutput::insert_many(outputs_to_add)
-        .exec_many_with_returning(db_tx)
-        .await?;
-
-    Ok((inserted_txs, inserted_addresses, inserted_outputs))
 }
 
 // https://github.com/SeaQL/sea-orm/issues/691
-async fn bulk_insert_txs(
-    txn: &DatabaseTransaction,
-    transactions: &[TransactionActiveModel],
-) -> Result<Vec<TransactionModel>, DbErr> {
-    let mut result: Vec<TransactionModel> = vec![];
-    for chunk in transactions
-        .chunks((u16::MAX / <Transaction as EntityTrait>::Column::iter().count() as u16) as usize)
-    {
-        result.extend(
-            Transaction::insert_many(chunk.to_vec())
-                .exec_many_with_returning(txn)
-                .await?,
-        );
+async fn insert_active_models<ActiveModel>(
+    db_tx: &DatabaseTransaction,
+    active_models: Vec<ActiveModel>,
+) -> Result<(), DbErr>
+where
+    ActiveModel: ActiveModelTrait + ActiveModelBehavior + Send + Sync,
+    <<ActiveModel as ActiveModelTrait>::Entity as EntityTrait>::Model: IntoActiveModel<ActiveModel>,
+{
+    // Max parameter count for SQLite: https://www.sqlite.org/limits.html
+    let batch_size = 32766usize
+        / <<ActiveModel as ActiveModelTrait>::Entity as EntityTrait>::Column::iter().count();
+    for chunk in active_models.chunks(batch_size) {
+        ActiveModel::Entity::insert_many(chunk.to_vec())
+            .exec(db_tx)
+            .await?;
     }
-    Ok(result)
+    Ok(())
+}
+
+async fn insert_active_transaction_models(
+    db_tx: &DatabaseTransaction,
+    active_models: Vec<TransactionActiveModel>,
+    block_id: i32,
+) -> Result<Vec<TransactionModel>, DbErr> {
+    insert_active_models(db_tx, active_models).await?;
+    let models = <entity::prelude::Transaction as EntityTrait>::find()
+        .filter(transaction::Column::BlockId.eq(block_id))
+        .all(db_tx)
+        .await?;
+    Ok(models)
+}
+
+async fn insert_active_address_models(
+    db_tx: &DatabaseTransaction,
+    active_models: Vec<AddressActiveModel>,
+    tx_ids: &Vec<i64>,
+) -> Result<Vec<AddressModel>, DbErr> {
+    insert_active_models(db_tx, active_models).await?;
+    let mut all_models = Vec::new();
+    for tx_id in tx_ids {
+        let models = <entity::prelude::Address as EntityTrait>::find()
+            .filter(address::Column::FirstTx.eq(*tx_id))
+            .all(db_tx)
+            .await?;
+        all_models.extend(models);
+    }
+    Ok(all_models)
+}
+
+async fn insert_active_output_models(
+    db_tx: &DatabaseTransaction,
+    active_models: Vec<TransactionOutputActiveModel>,
+    tx_ids: &Vec<i64>,
+) -> Result<Vec<TransactionOutputModel>, DbErr> {
+    insert_active_models(db_tx, active_models).await?;
+    let mut all_models = Vec::new();
+    for tx_id in tx_ids {
+        let models = <entity::prelude::TransactionOutput as EntityTrait>::find()
+            .filter(transaction_output::Column::TxId.eq(*tx_id))
+            .all(db_tx)
+            .await?;
+        all_models.extend(models);
+    }
+    Ok(all_models)
 }
