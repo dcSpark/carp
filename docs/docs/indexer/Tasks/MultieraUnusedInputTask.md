@@ -1,5 +1,5 @@
 # MultieraUnusedInputTask
-Adds the unused inputs to the database \(collateral inputs if tx succeeds, collateral inputs otherwise
+Adds the unused inputs to the database \(collateral inputs if tx succeeds, collateral inputs otherwise\)
 
 
 <details>

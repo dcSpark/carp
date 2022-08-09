@@ -1,5 +1,5 @@
 # MultieraOutputTask
-Adds the transaction outputs to the database
+Adds the used outputs to the database \(regular inputs in most cases, collateral inputs if tx fails\)
 
 
 <details>
@@ -36,4 +36,4 @@ pub struct ReadonlyConfig {
 
 
 ## Full source
-[source](https://github.com/dcSpark/carp/tree/main/indexer/tasks/src/multiera/multiera_outputs.rs)
+[source](https://github.com/dcSpark/carp/tree/main/indexer/tasks/src/multiera/multiera_used_outputs.rs)

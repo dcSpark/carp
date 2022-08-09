@@ -171,6 +171,65 @@ ALTER SEQUENCE public."NativeAsset_id_seq" OWNED BY public."NativeAsset".id;
 
 
 --
+-- Name: PlutusData; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public."PlutusData" (
+    id bigint NOT NULL,
+    data bytea NOT NULL
+);
+
+
+--
+-- Name: PlutusDataHash; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public."PlutusDataHash" (
+    id bigint NOT NULL,
+    hash bytea NOT NULL,
+    first_tx bigint NOT NULL
+);
+
+
+--
+-- Name: PlutusDataHash_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public."PlutusDataHash_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: PlutusDataHash_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public."PlutusDataHash_id_seq" OWNED BY public."PlutusDataHash".id;
+
+
+--
+-- Name: PlutusData_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public."PlutusData_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: PlutusData_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public."PlutusData_id_seq" OWNED BY public."PlutusData".id;
+
+
+--
 -- Name: StakeCredential; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -310,6 +369,38 @@ ALTER SEQUENCE public."TransactionOutput_id_seq" OWNED BY public."TransactionOut
 
 
 --
+-- Name: TransactionReferenceInput; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public."TransactionReferenceInput" (
+    id bigint NOT NULL,
+    utxo_id bigint NOT NULL,
+    tx_id bigint NOT NULL,
+    address_id bigint NOT NULL,
+    input_index integer NOT NULL
+);
+
+
+--
+-- Name: TransactionReferenceInput_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public."TransactionReferenceInput_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: TransactionReferenceInput_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public."TransactionReferenceInput_id_seq" OWNED BY public."TransactionReferenceInput".id;
+
+
+--
 -- Name: Transaction_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -378,6 +469,20 @@ ALTER TABLE ONLY public."NativeAsset" ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
+-- Name: PlutusData id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."PlutusData" ALTER COLUMN id SET DEFAULT nextval('public."PlutusData_id_seq"'::regclass);
+
+
+--
+-- Name: PlutusDataHash id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."PlutusDataHash" ALTER COLUMN id SET DEFAULT nextval('public."PlutusDataHash_id_seq"'::regclass);
+
+
+--
 -- Name: StakeCredential id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -410,6 +515,13 @@ ALTER TABLE ONLY public."TransactionMetadata" ALTER COLUMN id SET DEFAULT nextva
 --
 
 ALTER TABLE ONLY public."TransactionOutput" ALTER COLUMN id SET DEFAULT nextval('public."TransactionOutput_id_seq"'::regclass);
+
+
+--
+-- Name: TransactionReferenceInput id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."TransactionReferenceInput" ALTER COLUMN id SET DEFAULT nextval('public."TransactionReferenceInput_id_seq"'::regclass);
 
 
 --
@@ -461,6 +573,22 @@ ALTER TABLE ONLY public."NativeAsset"
 
 
 --
+-- Name: PlutusDataHash PlutusDataHash_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."PlutusDataHash"
+    ADD CONSTRAINT "PlutusDataHash_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: PlutusData PlutusData_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."PlutusData"
+    ADD CONSTRAINT "PlutusData_pkey" PRIMARY KEY (id);
+
+
+--
 -- Name: StakeCredential StakeCredential_credential_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -498,6 +626,14 @@ ALTER TABLE ONLY public."TransactionMetadata"
 
 ALTER TABLE ONLY public."TransactionOutput"
     ADD CONSTRAINT "TransactionOutput_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: TransactionReferenceInput TransactionReferenceInput_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."TransactionReferenceInput"
+    ADD CONSTRAINT "TransactionReferenceInput_pkey" PRIMARY KEY (id);
 
 
 --
@@ -626,6 +762,20 @@ CREATE INDEX "index-native_asset_name" ON public."NativeAsset" USING btree (asse
 
 
 --
+-- Name: index-plutus_data_hash-hash; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX "index-plutus_data_hash-hash" ON public."PlutusDataHash" USING btree (hash);
+
+
+--
+-- Name: index-plutus_data_hash-transaction; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "index-plutus_data_hash-transaction" ON public."PlutusDataHash" USING btree (first_tx);
+
+
+--
 -- Name: index-stake_credential-transaction; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -672,6 +822,27 @@ CREATE INDEX "index-transaction_output-address" ON public."TransactionOutput" US
 --
 
 CREATE INDEX "index-transaction_output-transaction" ON public."TransactionOutput" USING btree (tx_id);
+
+
+--
+-- Name: index-transaction_reference_input-address; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "index-transaction_reference_input-address" ON public."TransactionReferenceInput" USING btree (address_id);
+
+
+--
+-- Name: index-transaction_reference_input-transaction; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "index-transaction_reference_input-transaction" ON public."TransactionReferenceInput" USING btree (tx_id);
+
+
+--
+-- Name: index-transaction_reference_input-transaction_output; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "index-transaction_reference_input-transaction_output" ON public."TransactionReferenceInput" USING btree (utxo_id);
 
 
 --
@@ -754,6 +925,22 @@ ALTER TABLE ONLY public."NativeAsset"
 
 
 --
+-- Name: PlutusData fk-plutus_data-plutus_data_hash-tx_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."PlutusData"
+    ADD CONSTRAINT "fk-plutus_data-plutus_data_hash-tx_id" FOREIGN KEY (id) REFERENCES public."PlutusDataHash"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: PlutusDataHash fk-plutus_data_hash-tx_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."PlutusDataHash"
+    ADD CONSTRAINT "fk-plutus_data_hash-tx_id" FOREIGN KEY (first_tx) REFERENCES public."Transaction"(id) ON DELETE CASCADE;
+
+
+--
 -- Name: StakeCredential fk-stake_credential-tx_id; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -807,6 +994,30 @@ ALTER TABLE ONLY public."TransactionOutput"
 
 ALTER TABLE ONLY public."TransactionOutput"
     ADD CONSTRAINT "fk-transaction_output-tx_id" FOREIGN KEY (tx_id) REFERENCES public."Transaction"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: TransactionReferenceInput fk-transaction_reference-input-address_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."TransactionReferenceInput"
+    ADD CONSTRAINT "fk-transaction_reference-input-address_id" FOREIGN KEY (address_id) REFERENCES public."Address"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: TransactionReferenceInput fk-transaction_reference-input-tx_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."TransactionReferenceInput"
+    ADD CONSTRAINT "fk-transaction_reference-input-tx_id" FOREIGN KEY (tx_id) REFERENCES public."Transaction"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: TransactionReferenceInput fk-transaction_reference-input-utxo_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."TransactionReferenceInput"
+    ADD CONSTRAINT "fk-transaction_reference-input-utxo_id" FOREIGN KEY (utxo_id) REFERENCES public."TransactionOutput"(id) ON DELETE CASCADE;
 
 
 --

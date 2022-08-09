@@ -1,5 +1,5 @@
-# MultieraUsedInputTask
-Adds the used inputs to the database \(regular inputs in most cases, collateral inputs if tx fails\)
+# MultieraReferenceInputTask
+Adds the reference inputs to the database\. Data is still written if the tx fails
 
 
 <details>
@@ -32,8 +32,7 @@ pub struct ReadonlyConfig {
 #### Writes to
 
    * ` vkey_relation_map `
-   * ` multiera_used_inputs `
 
 
 ## Full source
-[source](https://github.com/dcSpark/carp/tree/main/indexer/tasks/src/multiera/multiera_used_inputs.rs)
+[source](https://github.com/dcSpark/carp/tree/main/indexer/tasks/src/multiera/multiera_reference_inputs.rs)
