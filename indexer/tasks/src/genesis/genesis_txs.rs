@@ -65,8 +65,7 @@ async fn handle_txs(
     let mut outputs: Vec<cardano_multiplatform_lib::TransactionOutput> = vec![];
 
     for (pub_key, amount) in block.1.avvm_distr.iter() {
-        let (tx_hash, extended_addr) = redeem_pubkey_to_txid(pub_key, Some(block.1.protocol_magic));
-        let byron_addr = extended_addr.to_address();
+        let (tx_hash, byron_addr) = redeem_pubkey_to_txid(pub_key, Some(block.1.protocol_magic));
 
         // note: strictly speaking, genesis txs are unordered so there is no defined index
         let tx_index = transactions.len() as i32;

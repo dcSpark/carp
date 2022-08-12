@@ -14,13 +14,13 @@
   dependencies:
     "@cspotcode/source-map-consumer" "0.8.0"
 
-"@dcspark/cardano-multiplatform-lib-nodejs@1.0.0-beta.1":
-  version "1.0.0-beta.1"
-  resolved "https://registry.yarnpkg.com/@dcspark/cardano-multiplatform-lib-nodejs/-/cardano-multiplatform-lib-nodejs-1.0.0-beta.1.tgz#d70279e7dada745f344ba5cee98743b22b2e4b5d"
-  integrity sha512-ZTUHXmA+rEqhXx50RtYsIScPyQ0pUI5jRUifnKQg5JHxhxYyEssxnNpmLDo+dkRwP1+bMcpHe8coEElnAqKWoQ==
+"@dcspark/cardano-multiplatform-lib-nodejs@1.0.0-beta.2":
+  version "1.0.0-beta.2"
+  resolved "https://registry.yarnpkg.com/@dcspark/cardano-multiplatform-lib-nodejs/-/cardano-multiplatform-lib-nodejs-1.0.0-beta.2.tgz#1419a146687c17477e30c33da18b2ab3de5c839c"
+  integrity sha512-O8mcIcnYZtd7c0lwlftv6CwXJLhuYgfeUUwp1dvzckHx+TPomL9LLUUrU1sS1fIlEqTVQchepJYP+ZBioVrM4Q==
 
 "@dcspark/carp-client@../client/dist":
-  version "1.0.1"
+  version "2.0.0"
   dependencies:
     axios "^0.27.2"
 
