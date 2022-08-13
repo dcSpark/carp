@@ -17,6 +17,8 @@ pub struct Model {
 pub enum Relation {
     #[sea_orm(has_many = "super::transaction::Entity")]
     Transaction,
+    #[sea_orm(has_many = "super::block_minter::Entity")]
+    BlockMinter,
 }
 
 impl ActiveModelBehavior for ActiveModel {}

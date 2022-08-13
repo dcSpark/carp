@@ -3,6 +3,7 @@ import type {
   AddressUsedResponse,
 } from "./models/AddressUsed";
 import { BlockLatestRequest, BlockLatestResponse } from "./models/BlockLatest";
+import { BlockMinterRequest, BlockMinterResponse } from "./models/BlockMinter";
 import type {
   CredentialAddressRequest,
   CredentialAddressResponse,
@@ -23,6 +24,7 @@ export enum Routes {
   addressUsed = "address/used",
   credentialAddress = "credential/address",
   blockLatest = "block/latest",
+  blockMinter = "block/minter",
   metadataNft = "metadata/nft",
 }
 
@@ -46,6 +48,11 @@ export type EndpointTypes = {
     name: typeof Routes.blockLatest;
     input: BlockLatestRequest;
     response: BlockLatestResponse;
+  };
+  [Routes.blockMinter]: {
+    name: typeof Routes.blockMinter;
+    input: BlockMinterRequest;
+    response: BlockMinterResponse;
   };
   [Routes.metadataNft]: {
     name: typeof Routes.metadataNft;

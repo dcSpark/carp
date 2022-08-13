@@ -15,6 +15,11 @@ pub use super::block::{
     ActiveModel as BlockActiveModel, Column as BlockColumn, Entity as Block, Model as BlockModel,
     PrimaryKey as BlockPrimaryKey, Relation as BlockRelation,
 };
+pub use super::block_minter::{
+    ActiveModel as BlockMinterActiveModel, Column as BlockMinterColumn, Entity as BlockMinter,
+    Model as BlockMinterModel, PrimaryKey as BlockMinterPrimaryKey,
+    Relation as BlockMinterRelation,
+};
 pub use super::cip25_entry::{
     ActiveModel as Cip25EntryActiveModel, Column as Cip25EntryColumn, Entity as Cip25Entry,
     Model as Cip25EntryModel, PrimaryKey as Cip25EntryPrimaryKey, Relation as Cip25EntryRelation,

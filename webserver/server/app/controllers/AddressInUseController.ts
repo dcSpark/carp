@@ -78,7 +78,7 @@ export class AddressInUseController extends Controller {
         ]);
         if (until == null) {
           return genErrorMessage(Errors.BlockHashNotFound, {
-            untilBlock: requestBody.untilBlock,
+            block: requestBody.untilBlock,
           });
         }
         if (requestBody.after != null && pageStart == null) {

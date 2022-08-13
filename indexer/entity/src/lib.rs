@@ -10,6 +10,7 @@ pub mod transaction_reference_input;
 pub mod tx_credential;
 pub use sea_orm;
 pub mod asset_mint;
+pub mod block_minter;
 pub mod cip25_entry;
 pub mod native_asset;
 pub mod plutus_data;
