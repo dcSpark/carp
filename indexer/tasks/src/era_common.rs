@@ -204,7 +204,11 @@ pub async fn insert_inputs(
             .iter()
             .flat_map(|pair| pair.0.iter().enumerate().zip(std::iter::repeat(pair.1)))
             .map(|((idx, input), tx_id)| {
-                let output = input_to_output_map[&input.hash().to_vec()][&(input.index() as i64)];
+                let tx_outputs = match input_to_output_map.get(&input.hash().to_vec()) {
+                    Some(outputs) => outputs,
+                    None => panic!("Failed to find transaction {}", &hex::encode(input.hash())),
+                };
+                let output = tx_outputs[&(input.index() as i64)];
                 TransactionInputActiveModel {
                     utxo_id: Set(output.id),
                     address_id: Set(output.address_id),

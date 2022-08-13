@@ -42,20 +42,18 @@ async fn handle_tx(
             .1
             .txs()
             .iter()
-            .map(|tx_body| blake2b256(&tx_body.encode().expect("")).to_vec())
+            .map(|tx| tx.hash().to_vec())
             .collect::<Vec<_>>();
-        let txs = transactions_from_hashes(db_tx, tx_hashes.as_slice()).await;
+        let txs = transactions_from_hashes(db_tx, &tx_hashes).await;
         return txs;
     }
 
     let transaction_inserts =
-        Transaction::insert_many(block.1.txs().iter().enumerate().map(|(idx, tx_body)| {
-            let tx_hash = blake2b256(&tx_body.encode().expect(""));
-
-            let tx_payload = tx_body.encode().unwrap();
+        Transaction::insert_many(block.1.txs().iter().enumerate().map(|(idx, tx)| {
+            let tx_payload = tx.encode().unwrap();
 
             TransactionActiveModel {
-                hash: Set(tx_hash.to_vec()),
+                hash: Set(tx.hash().to_vec()),
                 block_id: Set(database_block.id),
                 tx_index: Set(idx as i32),
                 payload: Set(tx_payload),
