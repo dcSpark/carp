@@ -269,10 +269,10 @@ fn queue_output(
 
     let pallas_address = output
         .address()
-        .map_err(|e| panic!("{:?} {:?}", e, tx_body.hash().to_vec()))
+        .map_err(|e| panic!("{:?} {:?}", e, hex::encode(tx_body.hash())))
         .unwrap();
     let addr = Address::from_bytes(pallas_address.to_vec())
-        .map_err(|e| panic!("{:?} {:?}", e, tx_body.hash().to_vec()))
+        .map_err(|e| panic!("{:?} {:?}", e, hex::encode(tx_body.hash())))
         .unwrap();
 
     let address_relation = AddressCredentialRelationValue::PaymentKey;
