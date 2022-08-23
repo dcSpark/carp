@@ -11,11 +11,13 @@ SELECT
   "TransactionOutput".payload as utxo_payload,
   "Transaction".is_valid,
   "Transaction".tx_index,
+  "Transaction".hash,
   "Block".hash AS block_hash,
   "Block".epoch,
   "Block".slot,
   "Block".era,
-  "Block".height
+  "Block".height,
+  "TransactionOutput".output_index
 FROM
   "Transaction"
   INNER JOIN "TransactionOutput" ON "Transaction".id = "TransactionOutput".tx_id

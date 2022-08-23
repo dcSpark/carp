@@ -30,8 +30,8 @@ describe(`/${Routes.transactionOutput}`, function () {
       {
         utxo: {
           txHash:
-            "7775d5e094b3660cae2464da5ba029134bfa9ca410cc3c7198d23731855bc3d0",
-          index: 0,
+            "00001781e639bdf53cdac97ebbaf43035b35ce59be9f6e480e7b46dcd5c67028",
+          index: 4,
           payload:
             "82582b82d818582183581c962e3a277a62aafd441e9d0e98d79be3d25db0aa57feb7daf52777e3a0001a6acabec11a07794402",
         },
@@ -48,8 +48,8 @@ describe(`/${Routes.transactionOutput}`, function () {
       {
         utxo: {
           txHash:
-            "00001781e639bdf53cdac97ebbaf43035b35ce59be9f6e480e7b46dcd5c67028",
-          index: 4,
+            "7775d5e094b3660cae2464da5ba029134bfa9ca410cc3c7198d23731855bc3d0",
+          index: 0,
           payload:
             "82581d6100000000000000000000000000000000000000000000000000000000821a0014851ea1581cdb01dec7311778ad90b72627a38cd6ec61a298f964d2320b4a67c23ba14356495001",
         },
