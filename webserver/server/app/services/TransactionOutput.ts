@@ -19,20 +19,20 @@ export async function outputsForTransaction(
     request.dbTx
   );
   return {
-    utxos: utxos.map(({ utxo_payload, ...block }, i) => ({
+    utxos: utxos.map(db_utxo => ({
       utxo: {
-        txHash: request.utxoPointers[i].txHash,
-        index: request.utxoPointers[i].index,
-        payload: utxo_payload.toString('hex'),
+        txHash: db_utxo.hash.toString('hex'),
+        index: db_utxo.output_index,
+        payload: db_utxo.utxo_payload.toString('hex'),
       },
       block: {
-        height: block.height,
-        hash: block.block_hash.toString('hex'),
-        epoch: block.epoch,
-        slot: block.slot,
-        era: block.era,
-        indexInBlock: block.tx_index,
-        isValid: block.is_valid,
+        height: db_utxo.height,
+        hash: db_utxo.block_hash.toString('hex'),
+        epoch: db_utxo.epoch,
+        slot: db_utxo.slot,
+        era: db_utxo.era,
+        indexInBlock: db_utxo.tx_index,
+        isValid: db_utxo.is_valid,
       },
     })),
   };
