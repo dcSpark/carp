@@ -8,7 +8,7 @@ sidebar_position: 3
 
 The indexer, by default, is setup to work with a local node.\*, so you will have to run a synced copy of [cardano-node](https://github.com/input-output-hk/cardano-node/)
 
-\*If you want to run on a remote node, you can change the socket in `.env`. If this remote node requires a TCP connection, you can change the `BearerKind` to TCP in the code.
+\*If you want to run on a remote node, you can change the socket in `.env`. If this remote node requires a TCP connection, you can change the `BearerKind` to TCP in the code and replace the usage of `n2c` with `n2n` at `indexer/src/setup.rs`.
 
 ## Setting up the database
 
