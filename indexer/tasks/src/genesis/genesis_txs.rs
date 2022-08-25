@@ -62,7 +62,7 @@ async fn handle_txs(
     // note: genesis file is a JSON structure, so there shouldn't be duplicate addresses
     // even across avvm and non-avvm it should be unique, otherwise two txs with the same tx hash would exist
     let mut addresses: Vec<Box<dyn Fn(i64) -> AddressActiveModel>> = vec![];
-    let mut outputs: Vec<cardano_multiplatform_lib::TransactionOutput> = vec![];
+    let mut outputs: Vec<cardano_multiplatform_lib::byron::ByronTxout> = vec![];
 
     for (pub_key, amount) in block.1.avvm_distr.iter() {
         let (tx_hash, byron_addr) = redeem_pubkey_to_txid(pub_key, Some(block.1.protocol_magic));
@@ -85,10 +85,9 @@ async fn handle_txs(
             ..Default::default()
         }));
 
-        // TODO: this is actually wrong. CML uses the Shelley format, but this should be the Byron format
-        outputs.push(cardano_multiplatform_lib::TransactionOutput::new(
-            &byron_addr.to_address(),
-            &Value::new(amount),
+        outputs.push(cardano_multiplatform_lib::byron::ByronTxout::new(
+            &byron_addr,
+            amount,
         ));
     }
 
@@ -118,10 +117,8 @@ async fn handle_txs(
             ..Default::default()
         }));
 
-        // TODO: this is actually wrong. CML uses the Shelley format, but this should be the Byron format
-        outputs.push(cardano_multiplatform_lib::TransactionOutput::new(
-            &byron_addr.to_address(),
-            &Value::new(amount),
+        outputs.push(cardano_multiplatform_lib::byron::ByronTxout::new(
+            byron_addr, amount,
         ));
     }
 
