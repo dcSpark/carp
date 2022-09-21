@@ -8,8 +8,11 @@ license = "MIT"
 strip = true
 
 [dependencies]
+dcspark-core = { git = "https://github.com/dcSpark/dcspark-core.git", branch = "egostkin/add-sources" }
+dcspark-blockchain-source = { git = "https://github.com/dcSpark/dcspark-core.git", branch = "egostkin/add-sources" }
+
 anyhow = "1.0.53"
-serde = "1.0.136"
+serde = "1.0.144"
 tokio = { version = "1.16.1", features = ["full"] }
 entity = { path = "entity" }
 migration = { path = "migration" }

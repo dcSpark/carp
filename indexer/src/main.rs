@@ -13,6 +13,10 @@ mod perf_aggregator;
 mod postgres_sink;
 mod setup;
 mod types;
+mod sink;
+mod engine;
+mod sources;
+
 use clap::Parser;
 
 #[derive(Parser, Debug)]
