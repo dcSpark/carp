@@ -1,7 +1,23 @@
-target/
-*.session.sql
+# global .gitignore
+*.swp
+
+# IDE
+.idea/
 .vscode/
-secrets/
+
+# Rust
+target/
+
+# Mac files
+**/.DS_STore
+
+# node
 node_modules/
+
+# env
 deployment/.env
 dev_env
+
+# other
+*.session.sql
+secrets/

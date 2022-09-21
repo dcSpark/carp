@@ -298,6 +298,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d86b93f97252c47b41663388e6d155714a9d0c398b99f1005cbc5f978b29f445"
 
 [[package]]
+name = "bigdecimal"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6aaf33151a6429fe9211d1b276eafdf70cdff28b071e76c0b0e1503221ea3744"
+dependencies = [
+ "num-bigint 0.4.3",
+ "num-integer",
+ "num-traits",
+]
+
+[[package]]
 name = "bitflags"
 version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -466,6 +477,8 @@ dependencies = [
  "cardano-multiplatform-lib",
  "clap 3.2.23",
  "cryptoxide",
+ "dcspark-blockchain-source",
+ "dcspark-core",
  "dotenv",
  "entity",
  "hex",
@@ -816,6 +829,37 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "dcspark-blockchain-source"
+version = "0.1.0"
+source = "git+https://github.com/dcSpark/dcspark-core.git?branch=egostkin/add-sources#fa2c870ba889e0b8226b9389aefe401970e61b1b"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "dcspark-core",
+ "deps",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "dcspark-core"
+version = "0.1.0"
+source = "git+https://github.com/dcSpark/dcspark-core.git?branch=egostkin/add-sources#fa2c870ba889e0b8226b9389aefe401970e61b1b"
+dependencies = [
+ "deps",
+ "serde",
+]
+
+[[package]]
+name = "deps"
+version = "0.1.0"
+source = "git+https://github.com/dcSpark/dcspark-core.git?branch=egostkin/add-sources#fa2c870ba889e0b8226b9389aefe401970e61b1b"
+dependencies = [
+ "bigdecimal",
+ "serde_json",
 ]
 
 [[package]]
