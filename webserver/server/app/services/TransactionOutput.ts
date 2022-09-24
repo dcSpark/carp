@@ -1,13 +1,13 @@
-import type { Pool } from 'pg';
 import { sqlTransactionOutput } from '../models/transaction/sqlTransactionOutput.queries';
 import type {
   TransactionOutputRequest,
   TransactionOutputResponse,
 } from '../../../shared/models/TransactionOutput';
+import type { IDatabaseConnection } from '@pgtyped/query/lib/tag';
 
 export async function outputsForTransaction(
   request: TransactionOutputRequest & {
-    dbTx: Pool;
+    dbTx: IDatabaseConnection;
   }
 ): Promise<TransactionOutputResponse> {
   if (request.utxoPointers.length === 0) return { utxos: [] };

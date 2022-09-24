@@ -8,6 +8,8 @@ export type TransactionHistoryRequest = {
   relationFilter?: RelationFilter;
   /** Defaults to `ADDRESS_LIMIT.RESPONSE` */
   limit?: number;
+  /** Whether or not to fetch the payload for the UTXO references by this input */
+  includeInputs?: boolean;
 } & Pagination;
 
 export type BlockInfo = BlockSubset & {
@@ -41,4 +43,10 @@ export type TxAndBlockInfo = {
 };
 export type TransactionHistoryResponse = {
   transactions: TxAndBlockInfo[];
+  includedInputs?: {
+    [transactionHash: string]: {
+      block: BlockInfo;
+      payloads: { [index: string]: string };
+    };
+  };
 };

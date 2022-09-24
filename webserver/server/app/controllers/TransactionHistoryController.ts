@@ -15,6 +15,7 @@ import { Routes } from '../../../shared/routes';
 import sortBy from 'lodash/sortBy';
 import { getAddressTypes } from '../models/utils';
 import { RelationFilterType } from '../../../shared/models/common';
+import { outputsForTransaction } from '../services/TransactionOutput';
 
 const route = Routes.transactionHistory;
 
@@ -59,9 +60,7 @@ export class TransactionHistoryController extends Controller {
 
     // note: we use a SQL transaction to make sure the pagination check works properly
     // otherwise, a rollback could happen between getting the pagination info and the history query
-    const cardanoTxs = await tx<
-      ErrorShape | [TransactionHistoryResponse, TransactionHistoryResponse]
-    >(pool, async dbTx => {
+    const cardanoTxs = await tx<ErrorShape | TransactionHistoryResponse>(pool, async dbTx => {
       const [until, pageStart] = await Promise.all([
         resolveUntilTransaction({
           block_hash: Buffer.from(requestBody.untilBlock, 'hex'),
@@ -93,7 +92,7 @@ export class TransactionHistoryController extends Controller {
         until,
         dbTx,
       };
-      const result = await Promise.all([
+      const cardanoTxs = await Promise.all([
         historyForCredentials({
           stakeCredentials: addressTypes.credentialHex.map(addr => Buffer.from(addr, 'hex')),
           relationFilter: requestBody.relationFilter ?? RelationFilterType.NO_FILTER,
@@ -107,6 +106,25 @@ export class TransactionHistoryController extends Controller {
           ...commonRequest,
         }),
       ]);
+
+      const mergedTxs = sortBy(
+        [...cardanoTxs[0].transactions, ...cardanoTxs[1].transactions],
+        [tx => tx.block.height, tx => tx.block.indexInBlock]
+      );
+
+      const result: TransactionHistoryResponse = {
+        transactions:
+          mergedTxs.length > ADDRESS_LIMIT.RESPONSE
+            ? mergedTxs.slice(0, ADDRESS_LIMIT.RESPONSE)
+            : mergedTxs,
+      };
+      if (requestBody.includeInputs === true) {
+        const { utxos } = await outputsForTransaction({
+          dbTx,
+          utxoPointers: [],
+        });
+      }
+
       return result;
     });
     if ('code' in cardanoTxs) {
@@ -115,16 +133,6 @@ export class TransactionHistoryController extends Controller {
       return errorResponse(StatusCodes.CONFLICT, cardanoTxs);
     }
 
-    const mergedTxs = sortBy(
-      [...cardanoTxs[0].transactions, ...cardanoTxs[1].transactions],
-      [tx => tx.block.height, tx => tx.block.indexInBlock]
-    );
-
-    return {
-      transactions:
-        mergedTxs.length > ADDRESS_LIMIT.RESPONSE
-          ? mergedTxs.slice(0, ADDRESS_LIMIT.RESPONSE)
-          : mergedTxs,
-    };
+    return cardanoTxs;
   }
 }
