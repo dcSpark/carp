@@ -21,7 +21,7 @@ export interface ISqlAddressUsedQuery {
   result: ISqlAddressUsedResult;
 }
 
-const sqlAddressUsedIR: any = {"name":"sqlAddressUsed","params":[{"name":"addresses","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":110,"b":118,"line":5,"col":28}]}},{"name":"until_tx_id","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":155,"b":165,"line":7,"col":28}]}},{"name":"after_tx_id","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":201,"b":211,"line":9,"col":27}]}}],"usedParamSet":{"addresses":true,"until_tx_id":true,"after_tx_id":true},"statement":{"body":"SELECT DISTINCT \"Address\".payload\nFROM \"Address\"\nWHERE\n  \"Address\".payload = ANY (:addresses)\n  AND\n  (\"Address\".first_tx) <= (:until_tx_id)\n  AND\n  (\"Address\".first_tx) > (:after_tx_id)","loc":{"a":27,"b":212,"line":2,"col":0}}};
+const sqlAddressUsedIR: any = {"usedParamSet":{"addresses":true,"until_tx_id":true,"after_tx_id":true},"params":[{"name":"addresses","required":false,"transform":{"type":"scalar"},"locs":[{"a":82,"b":91}]},{"name":"until_tx_id","required":false,"transform":{"type":"scalar"},"locs":[{"a":127,"b":138}]},{"name":"after_tx_id","required":false,"transform":{"type":"scalar"},"locs":[{"a":173,"b":184}]}],"statement":"SELECT DISTINCT \"Address\".payload\nFROM \"Address\"\nWHERE\n  \"Address\".payload = ANY (:addresses)\n  AND\n  (\"Address\".first_tx) <= (:until_tx_id)\n  AND\n  (\"Address\".first_tx) > (:after_tx_id)"};
 
 /**
  * Query generated from SQL:

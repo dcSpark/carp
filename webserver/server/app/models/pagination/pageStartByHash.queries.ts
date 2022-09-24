@@ -19,7 +19,7 @@ export interface IPageStartByHashQuery {
   result: IPageStartByHashResult;
 }
 
-const pageStartByHashIR: any = {"name":"pageStartByHash","params":[{"name":"after_block","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":203,"b":213,"line":7,"col":19}]}},{"name":"after_tx","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":248,"b":255,"line":9,"col":25}]}}],"usedParamSet":{"after_block":true,"after_tx":true},"statement":{"body":"SELECT\n  \"Block\".id as after_block_id,\n  \"Transaction\".id as after_tx_id\nFROM \"Transaction\" INNER JOIN \"Block\" ON \"Transaction\".block_id = \"Block\".id\nWHERE\n  \"Block\".hash = (:after_block)\n  AND \n  \"Transaction\".hash = (:after_tx)","loc":{"a":28,"b":256,"line":2,"col":0}}};
+const pageStartByHashIR: any = {"usedParamSet":{"after_block":true,"after_tx":true},"params":[{"name":"after_block","required":false,"transform":{"type":"scalar"},"locs":[{"a":174,"b":185}]},{"name":"after_tx","required":false,"transform":{"type":"scalar"},"locs":[{"a":219,"b":227}]}],"statement":"SELECT\n  \"Block\".id as after_block_id,\n  \"Transaction\".id as after_tx_id\nFROM \"Transaction\" INNER JOIN \"Block\" ON \"Transaction\".block_id = \"Block\".id\nWHERE\n  \"Block\".hash = (:after_block)\n  AND \n  \"Transaction\".hash = (:after_tx)"};
 
 /**
  * Query generated from SQL:

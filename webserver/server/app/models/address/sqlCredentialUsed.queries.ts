@@ -21,7 +21,7 @@ export interface ISqlCredentialUsedQuery {
   result: ISqlCredentialUsedResult;
 }
 
-const sqlCredentialUsedIR: any = {"name":"sqlCredentialUsed","params":[{"name":"credentials","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":143,"b":153,"line":5,"col":39}]}},{"name":"until_tx_id","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":198,"b":208,"line":7,"col":36}]}},{"name":"after_tx_id","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":252,"b":262,"line":9,"col":35}]}}],"usedParamSet":{"credentials":true,"until_tx_id":true,"after_tx_id":true},"statement":{"body":"SELECT DISTINCT \"StakeCredential\".credential\nFROM \"StakeCredential\"\nWHERE\n  \"StakeCredential\".credential = ANY (:credentials)\n  AND\n  (\"StakeCredential\".first_tx) <= (:until_tx_id)\n  AND\n  (\"StakeCredential\".first_tx) > (:after_tx_id)","loc":{"a":30,"b":263,"line":2,"col":0}}};
+const sqlCredentialUsedIR: any = {"usedParamSet":{"credentials":true,"until_tx_id":true,"after_tx_id":true},"params":[{"name":"credentials","required":false,"transform":{"type":"scalar"},"locs":[{"a":112,"b":123}]},{"name":"until_tx_id","required":false,"transform":{"type":"scalar"},"locs":[{"a":167,"b":178}]},{"name":"after_tx_id","required":false,"transform":{"type":"scalar"},"locs":[{"a":221,"b":232}]}],"statement":"SELECT DISTINCT \"StakeCredential\".credential\nFROM \"StakeCredential\"\nWHERE\n  \"StakeCredential\".credential = ANY (:credentials)\n  AND\n  (\"StakeCredential\".first_tx) <= (:until_tx_id)\n  AND\n  (\"StakeCredential\".first_tx) > (:after_tx_id)"};
 
 /**
  * Query generated from SQL:

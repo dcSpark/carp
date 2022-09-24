@@ -22,7 +22,7 @@ export interface ISqlBlockLatestQuery {
   result: ISqlBlockLatestResult;
 }
 
-const sqlBlockLatestIR: any = {"name":"sqlBlockLatest","params":[{"name":"offset","required":false,"transform":{"type":"scalar"},"codeRefs":{"used":[{"a":91,"b":96,"line":2,"col":64}]}}],"usedParamSet":{"offset":true},"statement":{"body":"SELECT * FROM \"Block\" ORDER BY \"Block\".id DESC LIMIT 1 OFFSET (:offset)","loc":{"a":27,"b":97,"line":2,"col":0}}};
+const sqlBlockLatestIR: any = {"usedParamSet":{"offset":true},"params":[{"name":"offset","required":false,"transform":{"type":"scalar"},"locs":[{"a":63,"b":69}]}],"statement":"SELECT * FROM \"Block\" ORDER BY \"Block\".id DESC LIMIT 1 OFFSET (:offset)"};
 
 /**
  * Query generated from SQL:
