@@ -125,6 +125,9 @@ const config = {
         ],
         copyright: `Copyright © ${new Date().getFullYear()} dcSpark`,
       },
+      colorMode: {
+        respectPrefersColorScheme: true,
+      },
       prism: {
         additionalLanguages: ['rust', 'toml'],
         theme: lightCodeTheme,
