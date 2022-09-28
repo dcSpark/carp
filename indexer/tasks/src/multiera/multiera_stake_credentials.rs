@@ -14,7 +14,7 @@ use super::{
 };
 use crate::config::EmptyConfig::EmptyConfig;
 use crate::dsl::task_macro::*;
-use pallas::ledger::{primitives::Fragment, traverse::MultiEraBlock};
+use pallas::ledger::{primitives::Fragment, traverse::{MultiEraBlock, MultiEraTx}};
 
 carp_task! {
   name MultieraStakeCredentialTask;
@@ -40,6 +40,15 @@ carp_task! {
   };
 }
 
+pub fn to_witness_cbor(tx: &MultiEraTx) -> Vec<u8> {
+    match tx {
+        MultiEraTx::AlonzoCompatible(x, _) => x.transaction_witness_set.encode_fragment().unwrap(),
+        MultiEraTx::Babbage(x) => x.transaction_witness_set.encode_fragment().unwrap(),
+        MultiEraTx::Byron(x) => x.witness.encode_fragment().unwrap(),
+        _ => panic!("to_witness_cbor - Unhandled tx type")
+    }
+}
+
 async fn handle_stake_credentials(
     db_tx: &DatabaseTransaction,
     block: BlockInfo<'_, MultiEraBlock<'_>>,
@@ -47,17 +56,16 @@ async fn handle_stake_credentials(
     vkey_relation_map: &mut RelationMap,
 ) -> Result<BTreeMap<Vec<u8>, StakeCredentialModel>, DbErr> {
     for (tx_body, cardano_transaction) in block.1.txs().iter().zip(multiera_txs) {
-        let witness_cbor = tx_body.witnesses().cbor().to_vec();
         queue_witness(
             vkey_relation_map,
             cardano_transaction.id,
-            &cardano_multiplatform_lib::TransactionWitnessSet::from_bytes(witness_cbor)
+            &cardano_multiplatform_lib::TransactionWitnessSet::from_bytes(to_witness_cbor(tx_body))
                 .map_err(|e| {
                     panic!(
                         "{:?} {:?} {:?}",
                         e,
                         hex::encode(tx_body.hash()),
-                        hex::encode(tx_body.witnesses().cbor())
+                        hex::encode(to_witness_cbor(tx_body))
                     )
                 })
                 .unwrap(),

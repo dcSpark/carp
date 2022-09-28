@@ -14,7 +14,6 @@ use crate::config::ReadonlyConfig::ReadonlyConfig;
 use crate::dsl::task_macro::*;
 use crate::era_common::get_truncated_address;
 use crate::era_common::output_from_pointer;
-use pallas::ledger::primitives::ToHash;
 
 carp_task! {
   name MultieraOutputTask;
@@ -114,7 +113,7 @@ fn queue_output(
         .unwrap();
 
     queued_output.push(QueuedOutput {
-        payload: output.encode().unwrap(),
+        payload: output.encode(),
         address: addr.to_vec(),
         tx_id,
         idx,

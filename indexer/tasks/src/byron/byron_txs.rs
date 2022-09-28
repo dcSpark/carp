@@ -50,7 +50,7 @@ async fn handle_tx(
 
     let transaction_inserts =
         Transaction::insert_many(block.1.txs().iter().enumerate().map(|(idx, tx)| {
-            let tx_payload = tx.encode().unwrap();
+            let tx_payload = tx.encode();
 
             TransactionActiveModel {
                 hash: Set(tx.hash().to_vec()),

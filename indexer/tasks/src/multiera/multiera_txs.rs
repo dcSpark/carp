@@ -7,7 +7,6 @@ use crate::era_common::transactions_from_hashes;
 use entity::sea_orm::{DatabaseTransaction, QueryOrder, Set};
 use pallas::ledger::primitives::alonzo::{self};
 use pallas::ledger::primitives::Fragment;
-use pallas::ledger::primitives::ToHash;
 use pallas::ledger::traverse::MultiEraBlock;
 
 carp_task! {
@@ -62,7 +61,7 @@ async fn handle_tx(
             hash: Set(tx.hash().to_vec()),
             block_id: Set(database_block.id),
             tx_index: Set(idx as i32),
-            payload: Set(tx.encode().unwrap()),
+            payload: Set(tx.encode()),
             is_valid: Set(tx.is_valid()),
             ..Default::default()
         })

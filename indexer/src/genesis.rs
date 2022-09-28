@@ -11,6 +11,8 @@ use tasks::utils::TaskPerfAggregator;
 use tasks::{execution_plan::ExecutionPlan, genesis::genesis_executor::process_genesis_block};
 
 const GENESIS_MAINNET: &str = "./genesis/mainnet-byron-genesis.json";
+const GENESIS_PREVIEW: &str = "./genesis/preview-byron-genesis.json";
+const GENESIS_PREPROD: &str = "./genesis/preprod-byron-genesis.json";
 const GENESIS_TESTNET: &str = "./genesis/testnet-byron-genesis.json";
 
 pub async fn process_genesis(
@@ -18,12 +20,15 @@ pub async fn process_genesis(
     network: &str,
     exec_plan: Arc<ExecutionPlan>,
 ) -> anyhow::Result<()> {
+    // https://github.com/txpipe/oura/blob/67b01e8739ed2927ced270e08daea74b03bcc7f7/src/sources/common.rs#L91
     let genesis_path = match network {
         "mainnet" => GENESIS_MAINNET,
         "testnet" => GENESIS_TESTNET,
+        "preview" => GENESIS_PREVIEW,
+        "preprod" => GENESIS_PREPROD,
         rest => {
             return Err(anyhow!(
-                "{} is invalid. NETWORK must be either mainnet or testnet",
+                "{} is invalid. NETWORK must be either mainnet/preview/preprod/testnet",
                 rest
             ))
         }
