@@ -15,10 +15,10 @@ use pallas::ledger::primitives::Fragment;
 use pallas::ledger::{
     primitives::{
         babbage::{DatumHash, DatumOption},
-        ToHash,
     },
     traverse::{MultiEraBlock, OutputRef},
 };
+use pallas::ledger::traverse::ComputeHash;
 
 use crate::dsl::task_macro::*;
 
@@ -32,7 +32,7 @@ read [multiera_txs];
 write [];
 should_add_task |block, _properties| {
   block.1.txs().iter().any(|tx| {
-    tx.witnesses().plutus_data().is_some() || tx.outputs().iter().any(|output| output.datum().is_some())
+    !tx.plutus_data().is_empty() || tx.outputs().iter().any(|output| output.datum().is_some())
   })
 };
 execute |previous_data, task| handle_datum(
@@ -54,16 +54,14 @@ async fn handle_datum(
     let mut hash_to_tx = BTreeMap::<DatumHash, i64>::new();
     // recall: tx may contain datum hash only w/ datum only appearing in a later tx
     let mut hash_to_data =
-        BTreeMap::<DatumHash, pallas::ledger::primitives::alonzo::PlutusData>::new();
+        BTreeMap::<DatumHash, Vec<u8>>::new();
     for (tx_body, cardano_transaction) in block.1.txs().iter().zip(multiera_txs) {
-        if let Some(datums) = tx_body.witnesses().plutus_data() {
-            for datum in datums.iter() {
-                let hash = datum.to_hash();
-                hash_to_tx
-                    .entry(hash)
-                    .or_insert_with(|| cardano_transaction.id);
-                hash_to_data.entry(hash).or_insert_with(|| datum.clone());
-            }
+        for datum in tx_body.plutus_data() {
+            let hash = datum.compute_hash();
+            hash_to_tx
+                .entry(hash)
+                .or_insert_with(|| cardano_transaction.id);
+            hash_to_data.entry(hash).or_insert_with(|| datum.encode_fragment().unwrap());
         }
         for output in tx_body.outputs().iter() {
             match output.datum().as_ref() {
@@ -73,11 +71,11 @@ async fn handle_datum(
                         .or_insert_with(|| cardano_transaction.id);
                 }
                 Some(DatumOption::Data(datum)) => {
-                    let hash = datum.to_hash();
+                    let hash = datum.compute_hash();
                     hash_to_tx
                         .entry(hash)
                         .or_insert_with(|| cardano_transaction.id);
-                    hash_to_data.entry(hash).or_insert_with(|| datum.0.clone());
+                    hash_to_data.entry(hash).or_insert_with(|| datum.0.encode_fragment().unwrap());
                 }
                 None => {}
             };

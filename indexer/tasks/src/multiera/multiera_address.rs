@@ -21,7 +21,6 @@ use super::{
     multiera_txs::MultieraTransactionTask, relation_map::RelationMap,
 };
 use crate::config::EmptyConfig::EmptyConfig;
-use pallas::ledger::primitives::ToHash;
 
 use crate::dsl::task_macro::*;
 
