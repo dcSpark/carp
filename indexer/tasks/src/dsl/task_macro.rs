@@ -2,8 +2,8 @@ pub(crate) use super::execution_context::*;
 pub use crate::utils::find_task_registry_entry;
 pub use crate::{
     dsl::database_task::{
-        BlockInfo, ByronTaskRegistryEntry, DatabaseTaskMeta, GenesisTaskRegistryEntry,
-        MultieraTaskRegistryEntry, TaskBuilder, TaskRegistryEntry,
+        BlockGlobalInfo, BlockInfo, ByronTaskRegistryEntry, DatabaseTaskMeta,
+        GenesisTaskRegistryEntry, MultieraTaskRegistryEntry, TaskBuilder, TaskRegistryEntry,
     },
     era_common::AddressInBlock,
     utils::TaskPerfAggregator,
@@ -23,6 +23,18 @@ macro_rules! era_to_block {
     };
     (multiera) => {
         MultiEraBlock<'a>
+    };
+}
+
+macro_rules! era_to_block_info {
+    (genesis) => {
+        BlockGlobalInfo
+    };
+    (byron) => {
+        BlockGlobalInfo
+    };
+    (multiera) => {
+        BlockGlobalInfo
     };
 }
 
@@ -230,13 +242,13 @@ cfg_if::cfg_if! {
 
                 pub struct $name<'a> {
                     pub db_tx: &'a DatabaseTransaction,
-                    pub block: BlockInfo<'a, era_to_block!($era)>,
+                    pub block: BlockInfo<'a, era_to_block!($era), BlockGlobalInfo>,
                     pub handle: &'a tokio::runtime::Handle,
                     pub perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
                     pub config: $config,
                 }
 
-                impl<'a> DatabaseTaskMeta<'a, era_to_block!($era), $config> for $name<'a> {
+                impl<'a> DatabaseTaskMeta<'a, era_to_block!($era), era_to_block_info!($era), $config> for $name<'a> {
                     const TASK_NAME: &'static str = stringify!($name);
                     const DEPENDENCIES: &'static [&'static str] = &[
                         $(
@@ -246,7 +258,7 @@ cfg_if::cfg_if! {
 
                     fn new(
                         db_tx: &'a DatabaseTransaction,
-                        block: BlockInfo<'a, era_to_block!($era)>,
+                        block: BlockInfo<'a, era_to_block!($era), BlockGlobalInfo>,
                         handle: &'a tokio::runtime::Handle,
                         perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
                         config: &$config,
@@ -265,7 +277,7 @@ cfg_if::cfg_if! {
                     }
 
                     fn should_add_task(
-                        $block: BlockInfo<'a, era_to_block!($era)>,
+                        $block: BlockInfo<'a, era_to_block!($era), BlockGlobalInfo>,
                         $properties: &toml::value::Value,
                     ) -> bool {
                         $($should_add_task)*
@@ -273,7 +285,7 @@ cfg_if::cfg_if! {
                 }
 
                 paste! { struct [< $name Builder >]; }
-                impl<'a> TaskBuilder<'a, era_to_block!($era)> for paste! { [< $name Builder >] } {
+                impl<'a> TaskBuilder<'a, era_to_block!($era), era_to_block_info!($era)> for paste! { [< $name Builder >] } {
                     fn get_name(&self) -> &'static str {
                         $name::TASK_NAME
                     }
@@ -285,7 +297,7 @@ cfg_if::cfg_if! {
                         &self,
                         dispatcher_builder: &mut DispatcherBuilder<'a, 'c>,
                         db_tx: &'a DatabaseTransaction,
-                        block: BlockInfo<'a, era_to_block!($era)>,
+                        block: BlockInfo<'a, era_to_block!($era), BlockGlobalInfo>,
                         handle: &'a tokio::runtime::Handle,
                         perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
                         configuration: &toml::value::Value,
@@ -350,4 +362,5 @@ cfg_if::cfg_if! {
 
 pub(crate) use carp_task;
 pub(crate) use era_to_block;
+pub(crate) use era_to_block_info;
 pub(crate) use era_to_registry;

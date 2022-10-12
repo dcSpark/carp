@@ -2,6 +2,7 @@ use std::collections::BTreeSet;
 
 use super::multiera_block::MultieraBlockTask;
 use crate::config::ReadonlyConfig::ReadonlyConfig;
+use crate::dsl::database_task::BlockGlobalInfo;
 use crate::dsl::task_macro::*;
 use crate::era_common::transactions_from_hashes;
 use entity::sea_orm::{DatabaseTransaction, QueryOrder, Set};
@@ -33,7 +34,7 @@ carp_task! {
 
 async fn handle_tx(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>>,
+    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
     database_block: &BlockModel,
     readonly: bool,
 ) -> Result<Vec<TransactionModel>, DbErr> {

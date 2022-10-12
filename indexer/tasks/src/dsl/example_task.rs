@@ -1,4 +1,5 @@
 use crate::config::EmptyConfig::EmptyConfig;
+use crate::dsl::database_task::BlockGlobalInfo;
 use crate::dsl::task_macro::*;
 
 carp_task! {
@@ -41,7 +42,7 @@ carp_task! {
 
 async fn handle_dummy(
     _db_tx: &DatabaseTransaction,
-    _block: BlockInfo<'_, MultiEraBlock<'_>>,
+    _block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
 ) -> Result<(), DbErr> {
     Ok(())
 }

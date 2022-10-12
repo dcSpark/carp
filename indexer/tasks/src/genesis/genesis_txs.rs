@@ -45,7 +45,7 @@ carp_task! {
 
 async fn handle_txs(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, GenesisData>,
+    block: BlockInfo<'_, GenesisData, BlockGlobalInfo>,
     database_block: &BlockModel,
 ) -> Result<
     (

@@ -1,5 +1,6 @@
 use super::byron_address::ByronAddressTask;
 use crate::config::EmptyConfig::EmptyConfig;
+use crate::dsl::database_task::BlockGlobalInfo;
 use crate::{dsl::task_macro::*, era_common::get_truncated_address};
 use entity::sea_orm::Set;
 use pallas::ledger::traverse::MultiEraOutput;
@@ -36,7 +37,7 @@ carp_task! {
 
 async fn handle_outputs(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>>,
+    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
     byron_txs: &[TransactionModel],
     byron_addresses: &BTreeMap<Vec<u8>, AddressInBlock>,
 ) -> Result<Vec<TransactionOutputModel>, DbErr> {

@@ -28,7 +28,7 @@ carp_task! {
 
 async fn handle_block(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>>,
+    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
     readonly: bool,
 ) -> Result<BlockModel, DbErr> {
     let hash = block.1.hash().to_vec();

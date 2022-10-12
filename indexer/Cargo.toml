@@ -8,11 +8,13 @@ license = "MIT"
 strip = true
 
 [dependencies]
+deps = { git = "https://github.com/dcSpark/dcspark-core.git", branch = "egostkin/add-sources" }
 dcspark-core = { git = "https://github.com/dcSpark/dcspark-core.git", branch = "egostkin/add-sources" }
 dcspark-blockchain-source = { git = "https://github.com/dcSpark/dcspark-core.git", branch = "egostkin/add-sources" }
 
 anyhow = "1.0.53"
-serde = "1.0.144"
+async-trait = { version = "0.1.57" }
+serde = {version = "1.0.144", features = ["derive", "rc"]}
 tokio = { version = "1.16.1", features = ["full"] }
 entity = { path = "entity" }
 migration = { path = "migration" }
@@ -22,6 +24,7 @@ tracing-subscriber = "0.3.9"
 tracing = "0.1.31"
 dotenv = "0.15.0"
 serde_json = "1.0.79"
+serde_yaml = "0.9.13"
 base64 = "0.13.0"
 bs58 = "0.4.0"
 oura = { git = "https://github.com/txpipe/oura.git", rev = "05e4d987670dea29a2d34ead3d57245ed7bcb205" }

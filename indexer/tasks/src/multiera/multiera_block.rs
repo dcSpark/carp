@@ -1,4 +1,5 @@
 use crate::config::ReadonlyConfig::ReadonlyConfig;
+use crate::dsl::database_task::BlockGlobalInfo;
 use crate::dsl::task_macro::*;
 use crate::era_common::block_from_hash;
 use crate::utils::blake2b256;
@@ -30,7 +31,7 @@ carp_task! {
 
 async fn handle_block(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>>,
+    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
     readonly: bool,
 ) -> Result<BlockModel, DbErr> {
     let hash = blake2b256(block.1.header().cbor());

@@ -7,6 +7,7 @@ pub struct PerfAggregator {
     pub rollback: Duration,
     pub overhead: Duration,
 }
+
 impl PerfAggregator {
     pub fn new() -> Self {
         Self {
@@ -16,6 +17,14 @@ impl PerfAggregator {
             overhead: Duration::new(0, 0),
         }
     }
+
+    pub fn reset(&mut self) {
+        self.block_parse = Duration::new(0, 0);
+        self.block_fetch = Duration::new(0, 0);
+        self.rollback = Duration::new(0, 0);
+        self.overhead = Duration::new(0, 0);
+    }
+
     pub fn set_overhead(&mut self, total_duration: &Duration, tasks: &Duration) {
         let non_duration_sum = self.block_fetch + self.block_parse + self.rollback + *tasks;
         if *total_duration > non_duration_sum {
@@ -31,6 +40,7 @@ impl PerfAggregator {
         }
     }
 }
+
 impl std::ops::Add for PerfAggregator {
     type Output = PerfAggregator;
 
@@ -43,6 +53,7 @@ impl std::ops::Add for PerfAggregator {
         }
     }
 }
+
 impl std::ops::AddAssign for PerfAggregator {
     fn add_assign(&mut self, other: Self) {
         *self = *self + other

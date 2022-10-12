@@ -25,7 +25,7 @@ carp_task! {
 
 async fn handle_block(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, GenesisData>,
+    block: BlockInfo<'_, GenesisData, BlockGlobalInfo>,
 ) -> Result<BlockModel, DbErr> {
     let genesis_hash = block.1.genesis_prev.to_bytes();
 

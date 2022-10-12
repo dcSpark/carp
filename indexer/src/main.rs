@@ -1,111 +1,126 @@
+extern crate core;
+
+use std::fs::File;
 use std::sync::Arc;
 
-use anyhow::anyhow;
-use dotenv::dotenv;
+use anyhow::Context;
 
-use entity::sea_orm::Database;
-use oura::sources::IntersectArg;
 use tasks::execution_plan::ExecutionPlan;
 use tracing_subscriber::prelude::*;
 
+mod common;
+mod engine;
 mod genesis;
 mod perf_aggregator;
-mod postgres_sink;
-mod setup;
-mod types;
 mod sink;
-mod engine;
+mod sinks;
 mod sources;
+mod tracing_utils;
+mod types;
 
+use crate::common::CardanoEventType;
+use crate::sink::Sink;
+use crate::sinks::CardanoSink;
+use crate::sources::OuraSource;
+use crate::tracing_utils::setup_logging;
 use clap::Parser;
+use dcspark_blockchain_source::cardano::Point;
+use dcspark_blockchain_source::Source;
+use migration::async_std::path::PathBuf;
+use serde::{Deserialize, Serialize};
 
 #[derive(Parser, Debug)]
 #[clap(version)]
-struct Args {
+pub struct Cli {
     /// Path of the execution plan to use
     #[clap(short, long, default_value = "execution_plans/default.toml")]
     plan: String,
 
+    /// path to config file
+    #[clap(long, value_parser)]
+    config_path: PathBuf,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+#[serde(deny_unknown_fields)]
+pub enum DbConfig {
+    Postgres {
+        host: String,
+        port: u64,
+        user: String,
+        password: String,
+        db: String,
+    },
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+#[serde(deny_unknown_fields)]
+pub enum SinkConfig {
+    Cardano { db: DbConfig, network: String },
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+#[serde(deny_unknown_fields)]
+pub enum SourceConfig {
+    Oura { network: String, socket: String },
+    DirectSource {},
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[serde(deny_unknown_fields)]
+pub struct Config {
+    source: SourceConfig,
+    sink: SinkConfig,
     /// Starting block hash. This will NOT rollback the database (use the rollback util for that)
     /// This is instead meant to make it easier to write database migrations
-    #[clap(short, long)]
     start_block: Option<String>,
 }
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    // Start logging setup block
-    let fmt_layer = tracing_subscriber::fmt::layer().with_test_writer();
-
-    let sqlx_filter = tracing_subscriber::filter::Targets::new()
-        // sqlx logs every SQL query and how long it took which is very noisy
-        .with_target("sqlx", tracing::Level::WARN)
-        .with_target("oura", tracing::Level::WARN)
-        .with_target("carp", tracing::Level::TRACE)
-        .with_default(tracing_subscriber::fmt::Subscriber::DEFAULT_MAX_LEVEL);
-
-    tracing_subscriber::registry()
-        .with(fmt_layer)
-        .with(sqlx_filter)
-        .init();
-    // End logging setup block
+    setup_logging();
 
     tracing::info!("{}", "Starting Carp");
 
-    dotenv().ok();
-    let args = Args::parse();
+    let Cli { plan, config_path } = Cli::parse();
 
-    let network = std::env::var("NETWORK").expect("env NETWORK not found");
-    let socket = std::env::var("SOCKET").expect("env SOCKET not found");
+    tracing::info!("Execution plan {}", plan);
+    let exec_plan = Arc::new(ExecutionPlan::load_from_file(&plan));
 
-    let postgres_url = std::env::var("DATABASE_URL").expect("env DATABASE_URL not found");
+    tracing::info!("Config file {:?}", config_path);
+    let file = File::open(&config_path).with_context(|| {
+        format!(
+            "Cannot read config file {path}",
+            path = config_path.display()
+        )
+    })?;
+    let config: Config = serde_yaml::from_reader(file).with_context(|| {
+        format!(
+            "Cannot read config file {path}",
+            path = config_path.display()
+        )
+    })?;
 
-    tracing::info!("Execution plan {}", args.plan);
-    let exec_plan = Arc::new(ExecutionPlan::load_from_file(&args.plan));
-
-    tracing::info!("{}", "Connecting to database...");
-    let conn = Database::connect(&postgres_url).await?;
-
-    tracing::info!("{}", "Getting the latest block synced from DB");
-
-    // For rollbacks
-    let points = &match &args.start_block {
-        None => setup::get_latest_points(&conn).await?,
-        Some(block) => setup::get_specific_point(&conn, block).await?,
-    };
-    let intersect = match points {
-        points if points.is_empty() => {
-            // insert genesis then fetch points again
-            genesis::process_genesis(&conn, &network, exec_plan.clone()).await?;
-            // we need a special intersection type when bootstrapping from genesis
-            IntersectArg::Origin
-        }
-        points => {
-            let last_point = points.last().unwrap();
-            tracing::info!(
-                "Starting sync at block #{} ({})",
-                last_point.0,
-                last_point.1
-            );
-            // if last block sync'd was at slot 0,
-            // that means it was the genesis block so we start from origin
-            match last_point.0 {
-                0 => IntersectArg::Origin,
-                _ => IntersectArg::Fallbacks(points.clone()),
-            }
-        }
+    let mut sink: CardanoSink = match config.sink {
+        SinkConfig::Cardano { .. } => CardanoSink::new(config.sink, exec_plan).await?,
+        _ => todo!("not supported yet"),
     };
 
-    let (handles, input) = setup::oura_bootstrap(intersect, &network, socket)?;
+    let start_from = sink.start_from(config.start_block).await?;
 
-    let sink_setup = postgres_sink::Config { conn: &conn };
+    let mut engine = match &config.source {
+        SourceConfig::Oura { .. } => {
+            let source = OuraSource::new(config.source, start_from.clone())?;
+            engine::FetchEngine::new(source, sink)
+        }
+        _ => todo!("not supported yet"),
+    };
 
-    let initial_point = args.start_block.as_ref().map(|_| points.first().unwrap());
-    sink_setup.start(input, exec_plan, initial_point).await?;
-
-    for handle in handles {
-        handle.join().map_err(|_| anyhow!(""))?;
-    }
-
-    Ok(())
+    engine
+        .fetch_and_process(start_from.first().unwrap().clone())
+        .await
 }
