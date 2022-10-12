@@ -12,19 +12,19 @@ pub struct BlockGlobalInfo {
     pub epoch_slot: Option<u64>,
 }
 
-pub type BlockInfo<'a, BlockType> = (
+pub type BlockInfo<'a, BlockType, BlockExtraType> = (
     &'a str, // cbor. Empty for genesis
     &'a BlockType,
-    &'a BlockGlobalInfo,
+    &'a BlockExtraType,
 );
 
-pub trait DatabaseTaskMeta<'a, BlockType, Configuration> {
+pub trait DatabaseTaskMeta<'a, BlockType, BlockExtraType, Configuration> {
     const TASK_NAME: &'static str;
     const DEPENDENCIES: &'static [&'static str];
 
     fn new(
         db_tx: &'a DatabaseTransaction,
-        block: BlockInfo<'a, BlockType>,
+        block: BlockInfo<'a, BlockType, BlockExtraType>,
         handle: &'a tokio::runtime::Handle,
         perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
         config: &Configuration,
@@ -32,10 +32,13 @@ pub trait DatabaseTaskMeta<'a, BlockType, Configuration> {
 
     fn get_configuration(&self) -> &Configuration;
 
-    fn should_add_task(block: BlockInfo<'a, BlockType>, properties: &toml::value::Value) -> bool;
+    fn should_add_task(
+        block: BlockInfo<'a, BlockType, BlockExtraType>,
+        properties: &toml::value::Value,
+    ) -> bool;
 }
 
-pub trait TaskBuilder<'a, BlockType> {
+pub trait TaskBuilder<'a, BlockType, BlockExtraType> {
     fn get_name(&self) -> &'static str;
     fn get_dependencies(&self) -> &'static [&'static str];
 
@@ -43,7 +46,7 @@ pub trait TaskBuilder<'a, BlockType> {
         &self,
         dispatcher_builder: &mut DispatcherBuilder<'a, 'c>,
         db_tx: &'a DatabaseTransaction,
-        block: BlockInfo<'a, BlockType>,
+        block: BlockInfo<'a, BlockType, BlockExtraType>,
         handle: &'a tokio::runtime::Handle,
         perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
         properties: &toml::value::Value,
@@ -59,17 +62,17 @@ pub enum TaskRegistryEntry {
 
 #[derive(Copy, Clone)]
 pub struct GenesisTaskRegistryEntry {
-    pub builder: &'static (dyn for<'a> TaskBuilder<'a, GenesisData> + Sync),
+    pub builder: &'static (dyn for<'a> TaskBuilder<'a, GenesisData, BlockGlobalInfo> + Sync),
 }
 
 #[derive(Copy, Clone)]
 pub struct ByronTaskRegistryEntry {
-    pub builder: &'static (dyn for<'a> TaskBuilder<'a, MultiEraBlock<'a>> + Sync),
+    pub builder: &'static (dyn for<'a> TaskBuilder<'a, MultiEraBlock<'a>, BlockGlobalInfo> + Sync),
 }
 
 #[derive(Copy, Clone)]
 pub struct MultieraTaskRegistryEntry {
-    pub builder: &'static (dyn for<'a> TaskBuilder<'a, MultiEraBlock<'a>> + Sync),
+    pub builder: &'static (dyn for<'a> TaskBuilder<'a, MultiEraBlock<'a>, BlockGlobalInfo> + Sync),
 }
 
 inventory::collect!(TaskRegistryEntry);

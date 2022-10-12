@@ -11,6 +11,7 @@ use pallas::ledger::{
 
 use super::multiera_address::MultieraAddressTask;
 use crate::config::ReadonlyConfig::ReadonlyConfig;
+use crate::dsl::database_task::BlockGlobalInfo;
 use crate::dsl::task_macro::*;
 use crate::era_common::get_truncated_address;
 use crate::era_common::output_from_pointer;
@@ -50,7 +51,7 @@ struct QueuedOutput {
 
 async fn handle_output(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>>,
+    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
     multiera_txs: &[TransactionModel],
     addresses: &BTreeMap<Vec<u8>, AddressInBlock>,
     readonly: bool,

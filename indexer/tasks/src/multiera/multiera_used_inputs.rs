@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
 use crate::config::ReadonlyConfig::ReadonlyConfig;
+use crate::dsl::database_task::BlockGlobalInfo;
 use crate::era_common::input_from_pointer;
 use crate::types::TxCredentialRelationValue;
 use cardano_multiplatform_lib::{
@@ -48,7 +49,7 @@ type QueuedInputs = Vec<(
 
 async fn handle_input(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>>,
+    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
     multiera_txs: &[TransactionModel],
     vkey_relation_map: &mut RelationMap,
     readonly: bool,

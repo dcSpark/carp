@@ -2,6 +2,7 @@ use super::{
     multiera_used_inputs::add_input_relations, multiera_used_outputs::MultieraOutputTask,
     relation_map::RelationMap,
 };
+use crate::dsl::database_task::BlockGlobalInfo;
 use crate::{config::EmptyConfig::EmptyConfig, types::TxCredentialRelationValue};
 use entity::{
     prelude::*,
@@ -37,7 +38,7 @@ type QueuedInputs = Vec<(Vec<OutputRef>, i64)>;
 
 async fn handle_unused_input(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>>,
+    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
     multiera_txs: &[TransactionModel],
     vkey_relation_map: &mut RelationMap,
 ) -> Result<(), DbErr> {

@@ -1,8 +1,8 @@
 use std::sync::{Arc, Mutex};
 
 use crate::config::EmptyConfig::EmptyConfig;
-use crate::dsl::database_task::BlockInfo;
 use crate::dsl::database_task::TaskRegistryEntry;
+use crate::dsl::database_task::{BlockGlobalInfo, BlockInfo};
 use crate::execution_plan::ExecutionPlan;
 use crate::utils::find_task_registry_entry;
 use crate::utils::TaskPerfAggregator;
@@ -14,7 +14,7 @@ use tokio::runtime::Handle;
 
 pub async fn process_multiera_block(
     txn: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>>,
+    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
     exec_plan: &ExecutionPlan,
     perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
 ) -> Result<(), DbErr> {

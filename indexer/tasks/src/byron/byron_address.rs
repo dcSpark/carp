@@ -5,6 +5,7 @@ use pallas::ledger::primitives::{
 
 use super::byron_txs::ByronTransactionTask;
 use crate::config::EmptyConfig::EmptyConfig;
+use crate::dsl::database_task::BlockGlobalInfo;
 use crate::dsl::task_macro::*;
 
 carp_task! {
@@ -38,7 +39,7 @@ carp_task! {
 
 async fn handle_addresses(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>>,
+    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
     byron_txs: &[TransactionModel],
 ) -> Result<BTreeMap<Vec<u8>, AddressInBlock>, DbErr> {
     match &block.1 {

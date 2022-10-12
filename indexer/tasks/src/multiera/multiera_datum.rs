@@ -6,6 +6,7 @@ use super::{
     relation_map::RelationMap,
 };
 use crate::config::ReadonlyConfig::ReadonlyConfig;
+use crate::dsl::database_task::BlockGlobalInfo;
 use entity::sea_orm::QuerySelect;
 use entity::{
     prelude::*,
@@ -45,7 +46,7 @@ merge_result |previous_data, _result| {
 
 async fn handle_datum(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>>,
+    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
     multiera_txs: &[TransactionModel],
     readonly: bool,
 ) -> Result<(), DbErr> {

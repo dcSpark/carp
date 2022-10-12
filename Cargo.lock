@@ -418,6 +418,7 @@ name = "carp"
 version = "2.0.3"
 dependencies = [
  "anyhow",
+ "async-trait",
  "base64",
  "bs58",
  "cardano-multiplatform-lib",
@@ -425,6 +426,7 @@ dependencies = [
  "cryptoxide",
  "dcspark-blockchain-source",
  "dcspark-core",
+ "deps",
  "dotenv",
  "entity",
  "hex",
@@ -434,6 +436,7 @@ dependencies = [
  "pallas 0.14.0-alpha.4",
  "serde",
  "serde_json",
+ "serde_yaml",
  "tasks",
  "tokio",
  "tracing",
@@ -728,7 +731,7 @@ dependencies = [
 [[package]]
 name = "dcspark-blockchain-source"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/dcspark-core.git?branch=egostkin/add-sources#fa2c870ba889e0b8226b9389aefe401970e61b1b"
+source = "git+https://github.com/dcSpark/dcspark-core.git?branch=egostkin/add-sources#524b6583af0809dd4fa21cf67b064146bc5214c3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -741,16 +744,21 @@ dependencies = [
 [[package]]
 name = "dcspark-core"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/dcspark-core.git?branch=egostkin/add-sources#fa2c870ba889e0b8226b9389aefe401970e61b1b"
+source = "git+https://github.com/dcSpark/dcspark-core.git?branch=egostkin/add-sources#524b6583af0809dd4fa21cf67b064146bc5214c3"
 dependencies = [
+ "anyhow",
+ "bech32 0.9.1",
+ "cryptoxide",
  "deps",
+ "hex",
  "serde",
+ "thiserror",
 ]
 
 [[package]]
 name = "deps"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/dcspark-core.git?branch=egostkin/add-sources#fa2c870ba889e0b8226b9389aefe401970e61b1b"
+source = "git+https://github.com/dcSpark/dcspark-core.git?branch=egostkin/add-sources#524b6583af0809dd4fa21cf67b064146bc5214c3"
 dependencies = [
  "bigdecimal",
  "serde_json",
@@ -2505,6 +2513,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_yaml"
+version = "0.9.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8613d593412a0deb7bbd8de9d908efff5a0cb9ccd8f62c641e7b2ed2f57291d1"
+dependencies = [
+ "indexmap",
+ "itoa",
+ "ryu",
+ "serde",
+ "unsafe-libyaml",
+]
+
+[[package]]
 name = "sha-1"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3238,6 +3259,12 @@ name = "unicode_categories"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39ec24b3121d976906ece63c9daad25b85969647682eee313cb5779fdd69e14e"
+
+[[package]]
+name = "unsafe-libyaml"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c1e5fa573d8ac5f1a856f8d7be41d390ee973daf97c806b2c1a465e4e1406e68"
 
 [[package]]
 name = "untrusted"
