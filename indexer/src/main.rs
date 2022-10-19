@@ -15,14 +15,12 @@ mod perf_aggregator;
 mod sink;
 mod sinks;
 mod sources;
-mod tracing_utils;
 mod types;
 
 use crate::common::CardanoEventType;
 use crate::sink::Sink;
 use crate::sinks::CardanoSink;
 use crate::sources::OuraSource;
-use crate::tracing_utils::setup_logging;
 use clap::Parser;
 use dcspark_blockchain_source::cardano::Point;
 use dcspark_blockchain_source::Source;
@@ -82,7 +80,21 @@ pub struct Config {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    setup_logging();
+    // Start logging setup block
+    let fmt_layer = tracing_subscriber::fmt::layer().with_test_writer();
+
+    let sqlx_filter = tracing_subscriber::filter::Targets::new()
+        // sqlx logs every SQL query and how long it took which is very noisy
+        .with_target("sqlx", tracing::Level::WARN)
+        .with_target("oura", tracing::Level::WARN)
+        .with_target("carp", tracing::Level::TRACE)
+        .with_default(tracing_subscriber::fmt::Subscriber::DEFAULT_MAX_LEVEL);
+
+    tracing_subscriber::registry()
+        .with(fmt_layer)
+        .with(sqlx_filter)
+        .init();
+    // End logging setup block
 
     tracing::info!("{}", "Starting Carp");
 
