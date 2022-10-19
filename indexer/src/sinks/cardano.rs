@@ -48,7 +48,7 @@ impl CardanoSink {
                 password,
                 db,
             } => {
-                let url = format!("postgresql://${user}:${password}@${host}:${port}/${db}");
+                let url = format!("postgresql://{user}:{password}@{host}:{port}/{db}");
                 let conn = Database::connect(&url).await?;
 
                 Ok(Self {

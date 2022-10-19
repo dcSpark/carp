@@ -30,16 +30,17 @@ use tasks::dsl::database_task::BlockGlobalInfo;
 pub struct OuraSource {
     handles: Vec<JoinHandle<()>>,
     input: StageReceiver,
+    expected_rollback: Option<PointArg>,
 }
 
 impl OuraSource {
     pub fn new(config: SourceConfig, start_from: Vec<Point>) -> anyhow::Result<Self> {
         match config {
             SourceConfig::Oura { network, socket } => {
-                let intersect = match start_from {
+                let (intersect, rollback) = match start_from {
                     points if points.is_empty() => {
                         // we need a special intersection type when bootstrapping from genesis
-                        IntersectArg::Origin
+                        (IntersectArg::Origin, None)
                     }
                     points => {
                         let (slot_nb, hash) = match points.last().unwrap() {
@@ -52,9 +53,9 @@ impl OuraSource {
                         // if last block sync'd was at slot 0,
                         // that means it was the genesis block so we start from origin
                         match slot_nb {
-                            0 => IntersectArg::Origin,
-                            _ => IntersectArg::Fallbacks(
-                                points
+                            0 => (IntersectArg::Origin, None),
+                            _ => {
+                                let point_args: Vec<PointArg> = points
                                     .iter()
                                     .flat_map(|p| match p {
                                         Point::Origin => vec![],
@@ -62,15 +63,24 @@ impl OuraSource {
                                             vec![PointArg(slot_nb.clone(), hash.clone())]
                                         }
                                     })
-                                    .collect(),
-                            ),
+                                    .collect();
+                                let rollback = point_args.first().cloned();
+                                (
+                                    IntersectArg::Fallbacks(point_args),
+                                    rollback,
+                                )
+                            }
                         }
                     }
                 };
 
                 let (handles, input) = oura_bootstrap(intersect, &network, socket)?;
 
-                Ok(OuraSource { handles, input })
+                Ok(OuraSource {
+                    handles,
+                    input,
+                    expected_rollback: rollback,
+                })
             }
             _ => Err(anyhow!(
                 "Config {:?} is not supported as oura config",
@@ -109,10 +119,18 @@ impl dcspark_blockchain_source::Source for OuraSource {
             EventData::RollBack {
                 block_slot,
                 block_hash,
-            } => Ok(Some(CardanoEventType::RollBack {
-                block_slot,
-                block_hash,
-            })),
+            } => {
+                if let Some(expected) = self.expected_rollback.clone() {
+                    if expected.1 == *block_hash {
+                        self.expected_rollback = None;
+                        return Ok(None);
+                    }
+                };
+                Ok(Some(CardanoEventType::RollBack {
+                    block_slot,
+                    block_hash,
+                }))
+            }
             _ => Ok(None),
         }
     }
