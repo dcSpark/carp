@@ -22,6 +22,7 @@ use crate::sinks::CardanoSink;
 use crate::sources::OuraSource;
 use crate::types::StoppableService;
 use clap::Parser;
+use oura::sources::BearerKind;
 use migration::async_std::path::PathBuf;
 use serde::Deserialize;
 
@@ -61,7 +62,11 @@ pub enum SinkConfig {
 #[serde(tag = "type", rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
 pub enum SourceConfig {
-    Oura { network: String, socket: String },
+    Oura {
+        network: String,
+        socket: String,
+        bearer: BearerKind,
+    },
     DirectSource {},
 }
 

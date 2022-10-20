@@ -10,10 +10,11 @@ use oura::model::EventData;
 use oura::{
     filters::selection::{self, Predicate},
     mapper,
-    pipelining::{FilterProvider, SourceProvider, StageReceiver},
-    sources::{n2c, AddressArg, BearerKind, IntersectArg, MagicArg, PointArg},
+    pipelining::{FilterProvider, StageReceiver},
+    sources::{n2c, n2n, AddressArg, BearerKind, IntersectArg, MagicArg, PointArg},
     utils::{ChainWellKnownInfo, Utils, WithUtils},
 };
+use oura::pipelining::SourceProvider;
 
 pub struct OuraSource {
     handles: Vec<JoinHandle<()>>,
@@ -24,7 +25,7 @@ pub struct OuraSource {
 impl OuraSource {
     pub fn new(config: SourceConfig, start_from: Vec<Point>) -> anyhow::Result<Self> {
         match config {
-            SourceConfig::Oura { network, socket } => {
+            SourceConfig::Oura { network, socket, bearer } => {
                 let (intersect, rollback) = match start_from {
                     points if points.is_empty() => {
                         // we need a special intersection type when bootstrapping from genesis
@@ -59,7 +60,7 @@ impl OuraSource {
                     }
                 };
 
-                let (handles, input) = oura_bootstrap(intersect, &network, socket)?;
+                let (handles, input) = oura_bootstrap(bearer, intersect, &network, socket)?;
 
                 Ok(OuraSource {
                     handles,
@@ -135,6 +136,7 @@ impl StoppableService for OuraSource {
 }
 
 fn oura_bootstrap(
+    mode: BearerKind,
     intersect: IntersectArg,
     network: &str,
     socket: String,
@@ -152,38 +154,51 @@ fn oura_bootstrap(
         ..Default::default()
     };
 
-    #[allow(deprecated)]
-    let source_config = n2c::Config {
-        address: AddressArg(BearerKind::Unix, socket),
-        // address: AddressArg(BearerKind::Tcp, socket),
-        magic: Some(magic),
-        well_known: None,
-        mapper,
-        since: None,
-        min_depth: 0,
-        intersect: Some(intersect),
-        retry_policy: None,
-        finalize: None, // TODO: configurable
-    };
+    tracing::info!("{}", "Attempting to connect to node...");
+    let (source_handle, source_rx) = match mode {
+        #[allow(deprecated)]
+        BearerKind::Unix => {
+            let source_config = n2c::Config {
+                address: AddressArg(BearerKind::Unix, socket),
+                // address: AddressArg(BearerKind::Tcp, socket),
+                magic: Some(magic),
+                well_known: None,
+                mapper,
+                since: None,
+                min_depth: 0,
+                intersect: Some(intersect),
+                retry_policy: None,
+                finalize: None, // TODO: configurable
+            };
+            WithUtils::new(source_config, utils).bootstrap()
+        }
+        #[allow(deprecated)]
+        BearerKind::Tcp => {
+            let source_config = n2n::Config {
+                address: AddressArg(BearerKind::Tcp, socket),
+                magic: Some(magic),
+                well_known: None,
+                mapper,
+                since: None,
+                min_depth: 0,
+                intersect: Some(intersect),
+                retry_policy: None,
+                finalize: None, // TODO: configurable
+            };
+            WithUtils::new(source_config, utils).bootstrap()
+        }
+    }.map_err(|e| {
+        tracing::error!("{}", e);
+        anyhow!("failed to bootstrap source. Are you sure cardano-node is running?")
+    })?;
+    tracing::info!("{}", "Connection to node established");
 
-    let source_setup = WithUtils::new(source_config, utils);
+    let mut handles = Vec::new();
+    handles.push(source_handle);
 
     let check = Predicate::VariantIn(vec![String::from("Block"), String::from("Rollback")]);
 
     let filter_setup = selection::Config { check };
-
-    let mut handles = Vec::new();
-
-    tracing::info!("{}", "Attempting to connect to node...");
-
-    let (source_handle, source_rx) = source_setup.bootstrap().map_err(|e| {
-        tracing::error!("{}", e);
-        anyhow!("failed to bootstrap source. Are you sure cardano-node is running?")
-    })?;
-
-    tracing::info!("{}", "Connection to node established");
-
-    handles.push(source_handle);
 
     let (filter_handle, filter_rx) = filter_setup
         .bootstrap(source_rx)
