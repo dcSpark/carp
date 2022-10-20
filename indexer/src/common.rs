@@ -33,7 +33,7 @@ impl GetNextFrom for CardanoEventType {
                 block_slot,
                 ..
             } => Some(Point::BlockHeader {
-                slot_nb: block_slot.clone(),
+                slot_nb: *block_slot,
                 hash: block_hash.clone(),
             }),
         }

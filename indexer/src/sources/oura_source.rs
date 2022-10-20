@@ -48,7 +48,7 @@ impl OuraSource {
                                     .flat_map(|p| match p {
                                         Point::Origin => vec![],
                                         Point::BlockHeader { slot_nb, hash } => {
-                                            vec![PointArg(slot_nb.clone(), hash.clone())]
+                                            vec![PointArg(*slot_nb, hash.clone())]
                                         }
                                     })
                                     .collect();
@@ -91,7 +91,7 @@ impl dcspark_blockchain_source::Source for OuraSource {
             EventData::Block(block_record) => {
                 let cbor = block_record
                     .cbor_hex
-                    .ok_or(anyhow!("cbor is not presented"))?;
+                    .ok_or_else(|| anyhow!("cbor is not presented"))?;
                 Ok(Some(CardanoEventType::Block {
                     cbor_hex: cbor,
                     epoch: block_record.epoch,
