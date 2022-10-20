@@ -63,11 +63,9 @@ impl<
     async fn stop(self) -> anyhow::Result<()> {
         let _ = self.sink.stop().await.map_err(|err| {
             tracing::warn!("Error during sink shutdown: {:?}", err);
-            ()
         });
         let _ = self.source.stop().await.map_err(|err| {
             tracing::warn!("Error during source shutdown: {:?}", err);
-            ()
         });
 
         Ok(())
