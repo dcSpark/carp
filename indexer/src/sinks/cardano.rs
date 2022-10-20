@@ -131,6 +131,7 @@ impl Sink for CardanoSink {
 
         if start.is_empty() {
             genesis::process_genesis(&self.db, &self.network, self.exec_plan.clone()).await?;
+            return self.get_latest_points().await;
         }
 
         Ok(start)
