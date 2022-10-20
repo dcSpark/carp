@@ -1,18 +1,15 @@
 use crate::common::GetNextFrom;
 use crate::perf_aggregator::PerfAggregator;
 use crate::sink::Sink;
+use crate::types::StoppableService;
+use async_trait::async_trait;
 use dcspark_blockchain_source::{PullFrom, Source};
-use dcspark_core::BlockNumber;
-use migration::async_std::sync::Mutex;
-use oura::model::Event;
-use std::sync::Arc;
-use tasks::utils::TaskPerfAggregator;
 
 pub struct FetchEngine<
     FromType: PullFrom + Clone,
     EventType,
-    SourceType: Source<From = FromType, Event = EventType>,
-    SinkType: Sink<From = FromType, Event = EventType>,
+    SourceType: Source<From = FromType, Event = EventType> + StoppableService + Send,
+    SinkType: Sink<From = FromType, Event = EventType> + StoppableService + Send,
 > {
     source: SourceType,
     sink: SinkType,
@@ -21,8 +18,8 @@ pub struct FetchEngine<
 impl<
         FromType: PullFrom + Clone,
         EventType: GetNextFrom<From = FromType>,
-        SourceType: Source<From = FromType, Event = EventType>,
-        SinkType: Sink<From = FromType, Event = EventType>,
+        SourceType: Source<From = FromType, Event = EventType> + StoppableService + Send,
+        SinkType: Sink<From = FromType, Event = EventType> + StoppableService + Send,
     > FetchEngine<FromType, EventType, SourceType, SinkType>
 {
     pub fn new(
@@ -52,5 +49,27 @@ impl<
             self.sink.process(event, &mut perf_aggregator).await?;
             pull_from = new_from;
         }
+    }
+}
+
+#[async_trait]
+impl<
+        FromType: PullFrom + Clone,
+        EventType: GetNextFrom<From = FromType>,
+        SourceType: Source<From = FromType, Event = EventType> + StoppableService + Send,
+        SinkType: Sink<From = FromType, Event = EventType> + StoppableService + Send,
+    > StoppableService for FetchEngine<FromType, EventType, SourceType, SinkType>
+{
+    async fn stop(self) -> anyhow::Result<()> {
+        let _ = self.sink.stop().await.map_err(|err| {
+            tracing::warn!("Error during sink shutdown: {:?}", err);
+            ()
+        });
+        let _ = self.source.stop().await.map_err(|err| {
+            tracing::warn!("Error during source shutdown: {:?}", err);
+            ()
+        });
+
+        Ok(())
     }
 }

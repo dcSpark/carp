@@ -1,7 +1,7 @@
 use crate::common::CardanoEventType;
 use crate::perf_aggregator::PerfAggregator;
 use crate::sink::Sink;
-use crate::types::MultiEraBlock;
+use crate::types::{MultiEraBlock, StoppableService};
 use crate::{genesis, DbConfig, SinkConfig};
 use async_trait::async_trait;
 use dcspark_blockchain_source::cardano::Point;
@@ -9,7 +9,6 @@ use entity::sea_orm::Database;
 use entity::sea_orm::QueryFilter;
 use entity::{
     block::EraValue,
-    prelude::*,
     sea_orm::{prelude::*, ColumnTrait, DatabaseTransaction, TransactionTrait},
 };
 use entity::{
@@ -19,7 +18,7 @@ use entity::{
 use std::sync::Arc;
 use std::sync::Mutex;
 use tasks::byron::byron_executor::process_byron_block;
-use tasks::dsl::database_task::{BlockGlobalInfo, BlockInfo};
+use tasks::dsl::database_task::BlockGlobalInfo;
 use tasks::execution_plan::ExecutionPlan;
 use tasks::multiera::multiera_executor::process_multiera_block;
 use tasks::utils::TaskPerfAggregator;
@@ -35,6 +34,7 @@ pub struct CardanoSink {
 }
 
 impl CardanoSink {
+    #[allow(unreachable_patterns)]
     pub async fn new(config: SinkConfig, exec_plan: Arc<ExecutionPlan>) -> anyhow::Result<Self> {
         let (db_config, network) = match config {
             SinkConfig::Cardano { db, network } => (db, network),
@@ -148,7 +148,7 @@ impl Sink for CardanoSink {
                 epoch_slot,
                 block_number,
                 block_hash,
-                block_slot,
+                block_slot: _block_slot,
             } => {
                 match epoch {
                     Some(epoch) if epoch as i128 > self.last_epoch => {
@@ -242,8 +242,14 @@ impl Sink for CardanoSink {
 
                 perf_aggregator.rollback += rollback_start.elapsed();
             }
-            _ => (),
         }
+        Ok(())
+    }
+}
+
+#[async_trait]
+impl StoppableService for CardanoSink {
+    async fn stop(self) -> anyhow::Result<()> {
         Ok(())
     }
 }

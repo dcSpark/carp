@@ -17,15 +17,13 @@ mod sinks;
 mod sources;
 mod types;
 
-use crate::common::CardanoEventType;
 use crate::sink::Sink;
 use crate::sinks::CardanoSink;
 use crate::sources::OuraSource;
+use crate::types::StoppableService;
 use clap::Parser;
-use dcspark_blockchain_source::cardano::Point;
-use dcspark_blockchain_source::Source;
 use migration::async_std::path::PathBuf;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 #[derive(Parser, Debug)]
 #[clap(version)]
@@ -78,6 +76,7 @@ pub struct Config {
     start_block: Option<String>,
 }
 
+#[allow(unreachable_patterns)]
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // Start logging setup block
@@ -134,5 +133,7 @@ async fn main() -> anyhow::Result<()> {
 
     engine
         .fetch_and_process(start_from.first().unwrap().clone())
-        .await
+        .await?;
+
+    engine.stop().await
 }
