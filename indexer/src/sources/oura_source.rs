@@ -1,23 +1,12 @@
-use crate::{genesis, SourceConfig};
+use crate::SourceConfig;
 use anyhow::anyhow;
 use dcspark_blockchain_source::cardano::Point;
-use dcspark_blockchain_source::Source;
 
-use deps::bigdecimal::BigDecimal;
 use std::{str::FromStr, sync::Arc, thread::JoinHandle};
 
 use crate::common::CardanoEventType;
-use entity::address::Relation::TransactionOutput;
-use entity::sea_orm::ColumnTrait;
-use entity::sea_orm::QueryFilter;
-use entity::{
-    prelude::{Block, BlockColumn},
-    sea_orm::{DatabaseConnection, EntityTrait, QueryOrder, QuerySelect},
-};
-use oura::model::{
-    BlockRecord, Era, Event, EventData, OutputAssetRecord, TransactionRecord, TxInputRecord,
-    TxOutputRecord,
-};
+use crate::types::StoppableService;
+use oura::model::EventData;
 use oura::{
     filters::selection::{self, Predicate},
     mapper,
@@ -25,7 +14,6 @@ use oura::{
     sources::{n2c, AddressArg, BearerKind, IntersectArg, MagicArg, PointArg},
     utils::{ChainWellKnownInfo, Utils, WithUtils},
 };
-use tasks::dsl::database_task::BlockGlobalInfo;
 
 pub struct OuraSource {
     handles: Vec<JoinHandle<()>>,
@@ -65,10 +53,7 @@ impl OuraSource {
                                     })
                                     .collect();
                                 let rollback = point_args.first().cloned();
-                                (
-                                    IntersectArg::Fallbacks(point_args),
-                                    rollback,
-                                )
+                                (IntersectArg::Fallbacks(point_args), rollback)
                             }
                         }
                     }
@@ -96,7 +81,7 @@ impl dcspark_blockchain_source::Source for OuraSource {
     type From = Point;
 
     /// note: from is ignored here since oura is set up just once
-    async fn pull(&mut self, from: &Self::From) -> anyhow::Result<Option<Self::Event>> {
+    async fn pull(&mut self, _from: &Self::From) -> anyhow::Result<Option<Self::Event>> {
         let input = self
             .input
             .recv()
@@ -133,6 +118,19 @@ impl dcspark_blockchain_source::Source for OuraSource {
             }
             _ => Ok(None),
         }
+    }
+}
+
+#[async_trait::async_trait]
+impl StoppableService for OuraSource {
+    async fn stop(self) -> anyhow::Result<()> {
+        for handle in self.handles {
+            if let Err(err) = handle.join() {
+                tracing::warn!("Error during shutdown: {:?}", err);
+            }
+        }
+
+        Ok(())
     }
 }
 
