@@ -19,6 +19,11 @@ pub use super::cip25_entry::{
     ActiveModel as Cip25EntryActiveModel, Column as Cip25EntryColumn, Entity as Cip25Entry,
     Model as Cip25EntryModel, PrimaryKey as Cip25EntryPrimaryKey, Relation as Cip25EntryRelation,
 };
+pub use super::dex_mean_price::{
+    ActiveModel as DexMeanPriceActiveModel, Column as DexMeanPriceColumn, Entity as DexMeanPrice,
+    Model as DexMeanPriceModel, PrimaryKey as DexMeanPricePrimaryKey,
+    Relation as DexMeanPriceRelation,
+};
 pub use super::native_asset::{
     ActiveModel as NativeAssetActiveModel, Column as NativeAssetColumn, Entity as NativeAsset,
     Model as NativeAssetModel, PrimaryKey as NativeAssetPrimaryKey,
