@@ -7,6 +7,7 @@ use std::{str::FromStr, sync::Arc, thread::JoinHandle};
 use crate::common::CardanoEventType;
 use crate::types::StoppableService;
 use oura::model::EventData;
+use oura::pipelining::SourceProvider;
 use oura::{
     filters::selection::{self, Predicate},
     mapper,
@@ -14,7 +15,6 @@ use oura::{
     sources::{n2c, n2n, AddressArg, BearerKind, IntersectArg, MagicArg, PointArg},
     utils::{ChainWellKnownInfo, Utils, WithUtils},
 };
-use oura::pipelining::SourceProvider;
 
 pub struct OuraSource {
     handles: Vec<JoinHandle<()>>,
@@ -25,7 +25,11 @@ pub struct OuraSource {
 impl OuraSource {
     pub fn new(config: SourceConfig, start_from: Vec<Point>) -> anyhow::Result<Self> {
         match config {
-            SourceConfig::Oura { network, socket, bearer } => {
+            SourceConfig::Oura {
+                network,
+                socket,
+                bearer,
+            } => {
                 let (intersect, rollback) = match start_from {
                     points if points.is_empty() => {
                         // we need a special intersection type when bootstrapping from genesis
@@ -187,7 +191,8 @@ fn oura_bootstrap(
             };
             WithUtils::new(source_config, utils).bootstrap()
         }
-    }.map_err(|e| {
+    }
+    .map_err(|e| {
         tracing::error!("{}", e);
         anyhow!("failed to bootstrap source. Are you sure cardano-node is running?")
     })?;
