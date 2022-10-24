@@ -22,8 +22,8 @@ use crate::sinks::CardanoSink;
 use crate::sources::OuraSource;
 use crate::types::StoppableService;
 use clap::Parser;
-use oura::sources::BearerKind;
 use migration::async_std::path::PathBuf;
+use oura::sources::BearerKind;
 use serde::Deserialize;
 
 #[derive(Parser, Debug)]
