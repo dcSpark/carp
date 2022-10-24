@@ -14,7 +14,10 @@ use super::{
 };
 use crate::config::EmptyConfig::EmptyConfig;
 use crate::dsl::task_macro::*;
-use pallas::ledger::{primitives::Fragment, traverse::{MultiEraBlock, MultiEraTx}};
+use pallas::ledger::{
+    primitives::Fragment,
+    traverse::{MultiEraBlock, MultiEraTx},
+};
 
 carp_task! {
   name MultieraStakeCredentialTask;
@@ -45,7 +48,7 @@ pub fn to_witness_cbor(tx: &MultiEraTx) -> Vec<u8> {
         MultiEraTx::AlonzoCompatible(x, _) => x.transaction_witness_set.encode_fragment().unwrap(),
         MultiEraTx::Babbage(x) => x.transaction_witness_set.encode_fragment().unwrap(),
         MultiEraTx::Byron(x) => x.witness.encode_fragment().unwrap(),
-        _ => panic!("to_witness_cbor - Unhandled tx type")
+        _ => panic!("to_witness_cbor - Unhandled tx type"),
     }
 }
 

@@ -12,13 +12,11 @@ use entity::{
     sea_orm::{prelude::*, Condition, DatabaseTransaction, JoinType, Set},
 };
 use pallas::ledger::primitives::Fragment;
+use pallas::ledger::traverse::ComputeHash;
 use pallas::ledger::{
-    primitives::{
-        babbage::{DatumHash, DatumOption},
-    },
+    primitives::babbage::{DatumHash, DatumOption},
     traverse::{MultiEraBlock, OutputRef},
 };
-use pallas::ledger::traverse::ComputeHash;
 
 use crate::dsl::task_macro::*;
 
@@ -53,15 +51,16 @@ async fn handle_datum(
 ) -> Result<(), DbErr> {
     let mut hash_to_tx = BTreeMap::<DatumHash, i64>::new();
     // recall: tx may contain datum hash only w/ datum only appearing in a later tx
-    let mut hash_to_data =
-        BTreeMap::<DatumHash, Vec<u8>>::new();
+    let mut hash_to_data = BTreeMap::<DatumHash, Vec<u8>>::new();
     for (tx_body, cardano_transaction) in block.1.txs().iter().zip(multiera_txs) {
         for datum in tx_body.plutus_data() {
             let hash = datum.compute_hash();
             hash_to_tx
                 .entry(hash)
                 .or_insert_with(|| cardano_transaction.id);
-            hash_to_data.entry(hash).or_insert_with(|| datum.encode_fragment().unwrap());
+            hash_to_data
+                .entry(hash)
+                .or_insert_with(|| datum.encode_fragment().unwrap());
         }
         for output in tx_body.outputs().iter() {
             match output.datum().as_ref() {
@@ -75,7 +74,9 @@ async fn handle_datum(
                     hash_to_tx
                         .entry(hash)
                         .or_insert_with(|| cardano_transaction.id);
-                    hash_to_data.entry(hash).or_insert_with(|| datum.0.encode_fragment().unwrap());
+                    hash_to_data
+                        .entry(hash)
+                        .or_insert_with(|| datum.0.encode_fragment().unwrap());
                 }
                 None => {}
             };
