@@ -13,5 +13,6 @@ pub mod multiera_txs;
 pub mod multiera_unused_input;
 pub mod multiera_used_inputs;
 pub mod multiera_used_outputs;
+pub mod multiera_wingriders_v1_mean_price;
 pub mod relation_map;
 pub mod utils;

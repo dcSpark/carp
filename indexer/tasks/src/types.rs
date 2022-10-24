@@ -68,3 +68,6 @@ impl From<AddressCredentialRelationValue> for i32 {
         }
     }
 }
+
+// ADA = None, token = Some((policy_id, asset_name))
+pub type AssetPair = Option<(Vec<u8>, Vec<u8>)>;
