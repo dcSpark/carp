@@ -9,8 +9,6 @@ jobs:
       matrix:
         rust:
           - stable
-          - beta
-          - 1.57.0  # Minimum supported rust version
 
     steps:
       - name: "Checkout"
@@ -24,26 +22,30 @@ jobs:
           override: true
           components: rustfmt, clippy
 
+      - name: "Change dir"
+        run: |
+          cd indexer
+
       - name: "Format check"
         uses: actions-rs/cargo@v1
         with:
           command: fmt
-          args: --manifest-path=indexer/Cargo.toml -- --check
+          args: -- --check
 
       - name: "Linter checks"
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --manifest-path=indexer/Cargo.toml --all-features --all-targets -- --deny "clippy::all"
+          args: --all-features --all-targets -- --deny "clippy::all"
 
       - name: "Check"
         uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --manifest-path=indexer/Cargo.toml --all-features --all-targets
+          args: --all-features --all-targets
 
       - name: "Test"
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --manifest-path=indexer/Cargo.toml --all-features --all-targets
+          args: --all-features --all-targets
