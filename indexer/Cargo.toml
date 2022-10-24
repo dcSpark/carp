@@ -8,9 +8,9 @@ license = "MIT"
 strip = true
 
 [dependencies]
-deps = { git = "https://github.com/dcSpark/dcspark-core.git", branch = "egostkin/add-sources" }
-dcspark-core = { git = "https://github.com/dcSpark/dcspark-core.git", branch = "egostkin/add-sources" }
-dcspark-blockchain-source = { git = "https://github.com/dcSpark/dcspark-core.git", branch = "egostkin/add-sources" }
+deps = { git = "https://github.com/dcSpark/dcspark-core.git", branch = "egostkin/add-sources", commit = "ff166d3922f423102f18b300ae51b0c38ae18a4c" }
+dcspark-core = { git = "https://github.com/dcSpark/dcspark-core.git", branch = "egostkin/add-sources", commit = "ff166d3922f423102f18b300ae51b0c38ae18a4c" }
+dcspark-blockchain-source = { git = "https://github.com/dcSpark/dcspark-core.git", branch = "egostkin/add-sources", commit = "ff166d3922f423102f18b300ae51b0c38ae18a4c" }
 
 anyhow = "1.0.53"
 async-trait = { version = "0.1.57" }

@@ -837,7 +837,7 @@ dependencies = [
 [[package]]
 name = "dcspark-blockchain-source"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/dcspark-core.git?branch=egostkin/add-sources#524b6583af0809dd4fa21cf67b064146bc5214c3"
+source = "git+https://github.com/dcSpark/dcspark-core.git?branch=egostkin/add-sources#ff166d3922f423102f18b300ae51b0c38ae18a4c"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -850,7 +850,7 @@ dependencies = [
 [[package]]
 name = "dcspark-core"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/dcspark-core.git?branch=egostkin/add-sources#524b6583af0809dd4fa21cf67b064146bc5214c3"
+source = "git+https://github.com/dcSpark/dcspark-core.git?branch=egostkin/add-sources#ff166d3922f423102f18b300ae51b0c38ae18a4c"
 dependencies = [
  "anyhow",
  "bech32 0.9.1",
@@ -864,7 +864,7 @@ dependencies = [
 [[package]]
 name = "deps"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/dcspark-core.git?branch=egostkin/add-sources#524b6583af0809dd4fa21cf67b064146bc5214c3"
+source = "git+https://github.com/dcSpark/dcspark-core.git?branch=egostkin/add-sources#ff166d3922f423102f18b300ae51b0c38ae18a4c"
 dependencies = [
  "bigdecimal",
  "serde_json",
