@@ -31,7 +31,7 @@ async fn handle_inputs(
     block: BlockInfo<'_, MultiEraBlock<'_>>,
     byron_txs: &[TransactionModel],
 ) -> Result<Vec<TransactionInputModel>, DbErr> {
-    let all_inputs: Vec<(Vec<pallas::ledger::traverse::OutputRef>, i64)> = block
+    let flattened_inputs: Vec<(Vec<pallas::ledger::traverse::OutputRef>, i64)> = block
         .1
         .txs()
         .iter()
@@ -44,10 +44,6 @@ async fn handle_inputs(
         })
         .collect();
 
-    let flattened_inputs: Vec<(Vec<pallas::ledger::traverse::OutputRef>, i64)> = all_inputs
-        .into_iter()
-        .map(|inputs| (inputs.0, inputs.1))
-        .collect();
     let outputs_for_inputs =
         crate::era_common::get_outputs_for_inputs(&flattened_inputs, db_tx).await?;
 

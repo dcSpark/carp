@@ -129,21 +129,19 @@ async fn insert_outputs(
         return Ok(vec![]);
     };
 
-    Ok(
-        TransactionOutput::insert_many(queued_output.iter().map(|entry| {
-            TransactionOutputActiveModel {
-                address_id: Set(address_to_model_map
-                    .get(get_truncated_address(&entry.address))
-                    .unwrap()
-                    .model
-                    .id),
-                tx_id: Set(entry.tx_id),
-                payload: Set(entry.payload.clone()),
-                output_index: Set(entry.idx as i32),
-                ..Default::default()
-            }
-        }))
-        .exec_many_with_returning(txn)
-        .await?,
-    )
+    TransactionOutput::insert_many(queued_output.iter().map(|entry| {
+        TransactionOutputActiveModel {
+            address_id: Set(address_to_model_map
+                .get(get_truncated_address(&entry.address))
+                .unwrap()
+                .model
+                .id),
+            tx_id: Set(entry.tx_id),
+            payload: Set(entry.payload.clone()),
+            output_index: Set(entry.idx as i32),
+            ..Default::default()
+        }
+    }))
+    .exec_many_with_returning(txn)
+    .await
 }
