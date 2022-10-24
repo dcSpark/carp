@@ -13,7 +13,7 @@ use super::user_asset::{AssetName, Cip25ParseError, Payload, PolicyId};
 fn is_policy_key(key: &Metadatum) -> Option<PolicyId> {
     match key {
         Metadatum::Bytes(x) if x.len() == 28 => Some(x.to_vec()),
-        Metadatum::Text(x) if x.len() == 56 => hex::decode(x).map_or(None, Some),
+        Metadatum::Text(x) if x.len() == 56 => hex::decode(x).ok(),
         _ => None,
     }
 }
@@ -23,12 +23,8 @@ fn is_policy_key(key: &Metadatum) -> Option<PolicyId> {
 // There's probably a much more formal approach.
 fn is_asset_key(key: &Metadatum) -> Option<AssetName> {
     match key {
-        Metadatum::Bytes(x) if x.len() <= 32 => {
-            AssetName::try_from(x.as_slice()).map_or(None, Some)
-        }
-        Metadatum::Text(x) if x.as_bytes().len() <= 32 => {
-            AssetName::try_from(x.as_bytes()).map_or(None, Some)
-        }
+        Metadatum::Bytes(x) if x.len() <= 32 => AssetName::try_from(x.as_slice()).ok(),
+        Metadatum::Text(x) if x.as_bytes().len() <= 32 => AssetName::try_from(x.as_bytes()).ok(),
         _ => None,
     }
 }
@@ -66,6 +62,7 @@ fn get_cip25_assets(
     Ok(result)
 }
 
+#[allow(clippy::type_complexity)]
 pub fn get_cip25_pairs(
     content: &Metadatum,
 ) -> Result<(String, BTreeMap<PolicyId, BTreeMap<AssetName, Payload>>), Cip25ParseError> {

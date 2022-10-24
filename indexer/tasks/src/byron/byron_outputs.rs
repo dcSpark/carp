@@ -56,7 +56,7 @@ async fn handle_outputs(
     }
 
     // note: outputs have to be added before inputs
-    Ok(insert_byron_outputs(db_tx, byron_addresses, &tx_outputs).await?)
+    insert_byron_outputs(db_tx, byron_addresses, &tx_outputs).await
 }
 
 async fn insert_byron_outputs(

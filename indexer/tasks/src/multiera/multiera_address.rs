@@ -254,6 +254,7 @@ fn queue_certificate(
     };
 }
 
+#[allow(clippy::too_many_arguments)]
 fn queue_output(
     queued_credentials: &mut RelationMap,
     queued_address_credential: &mut BTreeSet<QueuedAddressCredentialRelation>,

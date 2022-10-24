@@ -76,7 +76,7 @@ async fn handle_stake_credentials(
 
         for signer in tx_body.required_signers().collect::<Vec<_>>() {
             let owner_credential =
-                pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(signer.clone())
+                pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(*signer)
                     .encode_fragment()
                     .unwrap();
             vkey_relation_map.add_relation(

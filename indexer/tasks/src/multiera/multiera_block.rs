@@ -45,5 +45,5 @@ async fn handle_block(
         slot: Set(block.1.slot() as i32),
         ..Default::default()
     };
-    Ok(block.insert(db_tx).await?)
+    block.insert(db_tx).await
 }

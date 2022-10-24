@@ -70,7 +70,7 @@ async fn handle_metadata(
         return Ok(vec![]);
     };
 
-    Ok(TransactionMetadata::insert_many(
+    TransactionMetadata::insert_many(
         metadata_map
             .iter()
             .flat_map(|(tx_id, metadata)| {
@@ -90,5 +90,5 @@ async fn handle_metadata(
             ),
     )
     .exec_many_with_returning(db_tx)
-    .await?)
+    .await
 }

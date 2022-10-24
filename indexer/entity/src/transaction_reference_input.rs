@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 // Note: unfortunately large amount of copied logic between this and TransactionInput
 // However, reference inputs have a different relation to other tables (ex: one output -> many ref inputs)
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Deserialize, Serialize)]
 #[sea_orm(table_name = "TransactionReferenceInput")]
 pub struct Model {
     #[sea_orm(primary_key, column_type = "BigInteger")]

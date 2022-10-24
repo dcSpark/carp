@@ -45,5 +45,5 @@ async fn handle_block(
         ..Default::default()
     };
 
-    Ok(block.insert(db_tx).await?)
+    block.insert(db_tx).await
 }

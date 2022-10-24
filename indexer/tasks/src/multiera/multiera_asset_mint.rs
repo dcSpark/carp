@@ -48,13 +48,7 @@ async fn handle_mints(
 ) -> Result<Vec<NativeAssetModel>, DbErr> {
     let mut queued_mints = Vec::<(i64, (Vec<u8>, Vec<u8>), i64)>::default();
     for (tx_body, cardano_transaction) in block.1.txs().iter().zip(multiera_txs) {
-        for (policy_id, assets) in tx_body
-            .mint()
-            .as_alonzo()
-            .iter()
-            .map(|x| x.iter())
-            .flatten()
-        {
+        for (policy_id, assets) in tx_body.mint().as_alonzo().iter().flat_map(|x| x.iter()) {
             for (asset_name, amount) in assets.iter() {
                 queued_mints.push((
                     cardano_transaction.id,
