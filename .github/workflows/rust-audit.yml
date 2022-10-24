@@ -1,0 +1,24 @@
+name: Rust Audit Check
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/rust-audit.yaml'
+      - "**/Cargo.*"
+      - deny.toml
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/rust-audit.yaml'
+      - "**/Cargo.*"
+      - deny.toml
+  schedule:
+    - cron: '0 5 ? * 0' # Weekly every Sunday 05:00 UTC
+
+jobs:
+  cargo-deny:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: EmbarkStudios/cargo-deny-action@v1

@@ -1,0 +1,49 @@
+name: Linter and unit tests
+
+on: [push]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust:
+          - stable
+          - beta
+          - 1.57.0  # Minimum supported rust version
+
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+
+      - name: "Setup"
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
+          components: rustfmt, clippy
+
+      - name: "Format check"
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --manifest-path=indexer/Cargo.toml -- --check
+
+      - name: "Linter checks"
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --manifest-path=indexer/Cargo.toml --all-features --all-targets -- --deny "clippy::all"
+
+      - name: "Check"
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --manifest-path=indexer/Cargo.toml --all-features --all-targets
+
+      - name: "Test"
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --manifest-path=indexer/Cargo.toml --all-features --all-targets
