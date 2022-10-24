@@ -1,0 +1,11 @@
+[workspace]
+members = [
+    "indexer",
+    "indexer/entity",
+    "indexer/migration",
+    "indexer/rollback",
+    "indexer/reparse",
+    "indexer/tasks",
+    "indexer/plan-visualizer",
+    "indexer/task-docgen"
+]

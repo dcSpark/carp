@@ -22,10 +22,6 @@ jobs:
           override: true
           components: rustfmt, clippy
 
-      - name: "Change dir"
-        run: |
-          cd indexer
-
       - name: "Format check"
         uses: actions-rs/cargo@v1
         with:

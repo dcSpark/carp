@@ -6,22 +6,19 @@ on:
     paths:
       - '.github/workflows/rust-audit.yaml'
       - "**/Cargo.*"
-      - deny.toml
+      - "deny.toml"
   pull_request:
     branches: [ main ]
     paths:
       - '.github/workflows/rust-audit.yaml'
       - "**/Cargo.*"
-      - "indexer/deny.toml"
+      - "deny.toml"
   schedule:
     - cron: '0 5 ? * 0' # Weekly every Sunday 05:00 UTC
 
 jobs:
   cargo-deny:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: indexer
     steps:
       - uses: actions/checkout@v3
       - uses: EmbarkStudios/cargo-deny-action@v1

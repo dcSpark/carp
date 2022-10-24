@@ -1,6 +1,3 @@
-[workspace]
-members = [".", "entity", "migration", "rollback", "reparse", "tasks", "plan-visualizer", "task-docgen"]
-
 [package]
 name = "carp"
 version = "2.0.3"
