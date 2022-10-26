@@ -5,6 +5,7 @@ use crate::types::{MultiEraBlock, StoppableService};
 use crate::{genesis, DbConfig, SinkConfig};
 use async_trait::async_trait;
 use dcspark_blockchain_source::cardano::Point;
+use dcspark_core::{BlockId, SlotNumber};
 use entity::sea_orm::Database;
 use entity::sea_orm::QueryFilter;
 use entity::{
@@ -73,8 +74,8 @@ impl CardanoSink {
             .await?
             .iter()
             .map(|block| Point::BlockHeader {
-                slot_nb: block.slot as u64,
-                hash: hex::encode(&block.hash),
+                slot_nb: SlotNumber::new(block.slot as u64),
+                hash: BlockId::new(hex::encode(&block.hash)),
             })
             .collect();
 
@@ -109,8 +110,8 @@ impl CardanoSink {
             .await?
             .iter()
             .map(|block| Point::BlockHeader {
-                slot_nb: block.slot as u64,
-                hash: hex::encode(&block.hash),
+                slot_nb: SlotNumber::new(block.slot as u64),
+                hash: BlockId::new(hex::encode(&block.hash)),
             })
             .collect();
 
