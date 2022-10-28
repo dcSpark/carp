@@ -7,6 +7,7 @@ import type {
   CredentialAddressRequest,
   CredentialAddressResponse,
 } from "./models/CredentialAddress";
+import { DexMeanPriceRequest, DexMeanPriceResponse } from "./models/DexMeanPrice";
 import { Cip25Response, PolicyIdAssetMapType } from "./models/PolicyIdAssetMap";
 import type {
   TransactionHistoryRequest,
@@ -24,6 +25,7 @@ export enum Routes {
   credentialAddress = "credential/address",
   blockLatest = "block/latest",
   metadataNft = "metadata/nft",
+  dexMeanPrice = "dex/mean-price",
 }
 
 export type EndpointTypes = {
@@ -56,5 +58,10 @@ export type EndpointTypes = {
     name: typeof Routes.credentialAddress;
     input: CredentialAddressRequest;
     response: CredentialAddressResponse;
+  };
+  [Routes.dexMeanPrice]: {
+    name: typeof Routes.dexMeanPrice;
+    input: DexMeanPriceRequest;
+    response: DexMeanPriceResponse;
   };
 };
