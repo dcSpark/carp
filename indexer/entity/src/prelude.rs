@@ -24,6 +24,10 @@ pub use super::dex_mean_price::{
     Model as DexMeanPriceModel, PrimaryKey as DexMeanPricePrimaryKey,
     Relation as DexMeanPriceRelation,
 };
+pub use super::dex_swap::{
+    ActiveModel as DexSwapActiveModel, Column as DexSwapColumn, Entity as DexSwap,
+    Model as DexSwapModel, PrimaryKey as DexSwapPrimaryKey, Relation as DexSwapRelation,
+};
 pub use super::native_asset::{
     ActiveModel as NativeAssetActiveModel, Column as NativeAssetColumn, Entity as NativeAsset,
     Model as NativeAssetModel, PrimaryKey as NativeAssetPrimaryKey,
