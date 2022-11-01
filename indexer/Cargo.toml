@@ -8,9 +8,10 @@ license = "MIT"
 strip = true
 
 [dependencies]
-deps = { git = "https://github.com/dcSpark/dcspark-core.git", branch = "egostkin/add-sources", commit = "ff166d3922f423102f18b300ae51b0c38ae18a4c" }
-dcspark-core = { git = "https://github.com/dcSpark/dcspark-core.git", branch = "egostkin/add-sources", commit = "ff166d3922f423102f18b300ae51b0c38ae18a4c" }
-dcspark-blockchain-source = { git = "https://github.com/dcSpark/dcspark-core.git", branch = "egostkin/add-sources", commit = "ff166d3922f423102f18b300ae51b0c38ae18a4c" }
+deps = { git = "https://github.com/dcSpark/dcspark-core.git", branch = "enzo/byron-workarounds" }
+dcspark-core = { git = "https://github.com/dcSpark/dcspark-core.git", branch = "enzo/byron-workarounds" }
+dcspark-blockchain-source = { git = "https://github.com/dcSpark/dcspark-core.git", branch = "enzo/byron-workarounds" }
+multiverse = { git = "https://github.com/dcSpark/dcspark-core.git", branch = "enzo/byron-workarounds" }
 
 anyhow = "1.0.53"
 async-trait = { version = "0.1.57" }
@@ -32,4 +33,3 @@ clap = { version = "3.1", features = ["derive"] }
 cardano-multiplatform-lib = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "metadata-and-addr" }
 num-integer = "0.1.45"
 pallas = "0.14.0-alpha.4"
-cryptoxide = "0.4.2"

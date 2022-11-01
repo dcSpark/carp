@@ -1,5 +1,5 @@
 use dcspark_blockchain_source::cardano::Point;
-use dcspark_blockchain_source::{EventObject, PullFrom};
+use dcspark_blockchain_source::{EventObject, GetNextFrom};
 use dcspark_core::{BlockId, SlotNumber};
 
 pub enum CardanoEventType {
@@ -15,12 +15,6 @@ pub enum CardanoEventType {
         block_hash: String,
         block_slot: u64,
     },
-}
-
-pub trait GetNextFrom {
-    type From: PullFrom + Clone;
-
-    fn next_from(&self) -> Option<Self::From>;
 }
 
 impl GetNextFrom for CardanoEventType {
