@@ -29,6 +29,7 @@ macro_rules! data_to_type {
   (multiera_metadata) => { Vec<TransactionMetadataModel> };
   (multiera_outputs) => { Vec<TransactionOutputModel> };
   (multiera_used_inputs) => { Vec<TransactionInputModel> };
+  (multiera_used_inputs_to_outputs_map) => { BTreeMap<Vec<u8>, BTreeMap<i64, TransactionOutputModel>> };
   (multiera_assets) => { Vec<NativeAssetModel> };
 }
 

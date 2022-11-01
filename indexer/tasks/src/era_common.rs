@@ -165,22 +165,22 @@ pub async fn get_outputs_for_inputs(
         .collect())
 }
 
-pub fn gen_input_to_output_map<'a>(
-    outputs_for_inputs: &'a [(TransactionOutputModel, TransactionModel)],
-) -> BTreeMap<&'a Vec<u8>, BTreeMap<i64, &'a TransactionOutputModel>> {
+pub fn gen_input_to_output_map(
+    outputs_for_inputs: &[(TransactionOutputModel, TransactionModel)],
+) -> BTreeMap<Vec<u8>, BTreeMap<i64, TransactionOutputModel>> {
     let mut input_to_output_map =
-        BTreeMap::<&Vec<u8>, BTreeMap<i64, &'a TransactionOutputModel>>::default();
+        BTreeMap::<Vec<u8>, BTreeMap<i64, TransactionOutputModel>>::default();
     for output in outputs_for_inputs {
         input_to_output_map
-            .entry(&output.1.hash)
+            .entry(output.1.hash.clone())
             .and_modify(|output_index_map| {
                 // note: we can insert right away instead of doing a 2nd lookup
                 // because the pair <payload, output_index> is unique
-                output_index_map.insert(output.0.output_index as i64, &output.0);
+                output_index_map.insert(output.0.output_index as i64, output.0.clone());
             })
             .or_insert({
-                let mut output_index_map = BTreeMap::<i64, &'a TransactionOutputModel>::default();
-                output_index_map.insert(output.0.output_index as i64, &output.0);
+                let mut output_index_map = BTreeMap::<i64, TransactionOutputModel>::default();
+                output_index_map.insert(output.0.output_index as i64, output.0.clone());
                 output_index_map
             });
     }
@@ -190,7 +190,7 @@ pub fn gen_input_to_output_map<'a>(
 
 pub async fn insert_inputs(
     inputs: &[(Vec<pallas::ledger::traverse::OutputRef>, i64)],
-    input_to_output_map: &BTreeMap<&Vec<u8>, BTreeMap<i64, &TransactionOutputModel>>,
+    input_to_output_map: &BTreeMap<Vec<u8>, BTreeMap<i64, TransactionOutputModel>>,
     txn: &DatabaseTransaction,
 ) -> Result<Vec<TransactionInputModel>, DbErr> {
     // avoid querying the DB if there were no inputs
@@ -208,7 +208,7 @@ pub async fn insert_inputs(
                     Some(outputs) => outputs,
                     None => panic!("Failed to find transaction {}", &hex::encode(input.hash())),
                 };
-                let output = tx_outputs[&(input.index() as i64)];
+                let output = &tx_outputs[&(input.index() as i64)];
                 TransactionInputActiveModel {
                     utxo_id: Set(output.id),
                     address_id: Set(output.address_id),

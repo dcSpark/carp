@@ -106,7 +106,7 @@ async fn handle_input(
 
 pub async fn insert_reference_inputs(
     inputs: &[(Vec<pallas::ledger::traverse::OutputRef>, i64)],
-    input_to_output_map: &BTreeMap<&Vec<u8>, BTreeMap<i64, &TransactionOutputModel>>,
+    input_to_output_map: &BTreeMap<Vec<u8>, BTreeMap<i64, TransactionOutputModel>>,
     txn: &DatabaseTransaction,
 ) -> Result<Vec<TransactionReferenceInputModel>, DbErr> {
     // avoid querying the DB if there were no inputs
@@ -120,7 +120,7 @@ pub async fn insert_reference_inputs(
             .iter()
             .flat_map(|pair| pair.0.iter().enumerate().zip(std::iter::repeat(pair.1)))
             .map(|((idx, input), tx_id)| {
-                let output = input_to_output_map[&input.hash().to_vec()][&(input.index() as i64)];
+                let output = &input_to_output_map[&input.hash().to_vec()][&(input.index() as i64)];
                 TransactionReferenceInputActiveModel {
                     utxo_id: Set(output.id),
                     address_id: Set(output.address_id),

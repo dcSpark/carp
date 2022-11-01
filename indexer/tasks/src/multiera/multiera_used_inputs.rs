@@ -24,7 +24,7 @@ carp_task! {
   era multiera;
   dependencies [MultieraOutputTask];
   read [multiera_txs];
-  write [vkey_relation_map, multiera_used_inputs];
+  write [vkey_relation_map, multiera_used_inputs, multiera_used_inputs_to_outputs_map];
   should_add_task |block, _properties| {
     // txs always have at least one input (even if tx fails)
     !block.1.is_empty()
@@ -37,7 +37,8 @@ carp_task! {
       task.config.readonly
   );
   merge_result |previous_data, result| {
-    *previous_data.multiera_used_inputs = result;
+    *previous_data.multiera_used_inputs = result.0;
+    *previous_data.multiera_used_inputs_to_outputs_map = result.1;
   };
 }
 
@@ -52,7 +53,13 @@ async fn handle_input(
     multiera_txs: &[TransactionModel],
     vkey_relation_map: &mut RelationMap,
     readonly: bool,
-) -> Result<Vec<TransactionInputModel>, DbErr> {
+) -> Result<
+    (
+        Vec<TransactionInputModel>,
+        BTreeMap<Vec<u8>, BTreeMap<i64, TransactionOutputModel>>,
+    ),
+    DbErr,
+> {
     let mut queued_inputs = QueuedInputs::default();
     let txs = block.1.txs();
 
@@ -73,7 +80,7 @@ async fn handle_input(
     }
 
     match queued_inputs.is_empty() {
-        true => Ok(vec![]),
+        true => Ok((vec![], BTreeMap::default())),
         false => {
             let outputs_for_inputs =
                 crate::era_common::get_outputs_for_inputs(&queued_inputs, db_tx).await?;
@@ -93,21 +100,27 @@ async fn handle_input(
                 TxCredentialRelationValue::InputStake,
             );
             if readonly {
-                Ok(input_from_pointer(
-                    db_tx,
-                    queued_inputs
-                        .iter()
-                        .flat_map(|pair| pair.0.iter().enumerate().zip(std::iter::repeat(pair.1)))
-                        .map(|((idx, _), tx_id)| (tx_id, idx))
-                        .collect::<Vec<_>>()
-                        .as_slice(),
-                )
-                .await?)
+                Ok((
+                    input_from_pointer(
+                        db_tx,
+                        queued_inputs
+                            .iter()
+                            .flat_map(|pair| {
+                                pair.0.iter().enumerate().zip(std::iter::repeat(pair.1))
+                            })
+                            .map(|((idx, _), tx_id)| (tx_id, idx))
+                            .collect::<Vec<_>>()
+                            .as_slice(),
+                    )
+                    .await?,
+                    input_to_output_map,
+                ))
             } else {
-                Ok(
+                Ok((
                     crate::era_common::insert_inputs(&queued_inputs, &input_to_output_map, db_tx)
                         .await?,
-                )
+                    input_to_output_map,
+                ))
             }
         }
     }
@@ -117,7 +130,7 @@ pub fn add_input_relations(
     vkey_relation_map: &mut RelationMap,
     inputs: &[(Vec<OutputRef>, i64)],
     outputs: &[&TransactionOutputModel],
-    input_to_output_map: &BTreeMap<&Vec<u8>, BTreeMap<i64, &TransactionOutputModel>>,
+    input_to_output_map: &BTreeMap<Vec<u8>, BTreeMap<i64, TransactionOutputModel>>,
     input_relation: TxCredentialRelationValue,
     input_stake_relation: TxCredentialRelationValue,
 ) {
@@ -126,7 +139,7 @@ pub fn add_input_relations(
         for input in input_tx_pair.0.iter() {
             match input_to_output_map.get(&input.hash().to_vec()) {
                 Some(entry_for_tx) => {
-                    let output_id = entry_for_tx[&(input.index() as i64)];
+                    let output_id = &entry_for_tx[&(input.index() as i64)];
                     output_to_input_tx.insert(output_id.id, input_tx_pair.1);
                 }
                 None => {
