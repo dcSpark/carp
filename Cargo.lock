@@ -2857,6 +2857,7 @@ dependencies = [
  "nameof",
  "pallas 0.14.0-alpha.4",
  "paste",
+ "sea-orm",
  "serde",
  "shred",
  "tokio",

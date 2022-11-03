@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
-use crate::config::ReadonlyConfig::ReadonlyConfig;
 use crate::era_common::input_from_pointer;
 use crate::types::TxCredentialRelationValue;
+use crate::{config::ReadonlyConfig::ReadonlyConfig, era_common::OutputWithTxData};
 use cardano_multiplatform_lib::{
     address::{BaseAddress, EnterpriseAddress, PointerAddress, RewardAddress},
     byron::ByronAddress,
@@ -56,7 +56,7 @@ async fn handle_input(
 ) -> Result<
     (
         Vec<TransactionInputModel>,
-        BTreeMap<Vec<u8>, BTreeMap<i64, TransactionOutputModel>>,
+        BTreeMap<Vec<u8>, BTreeMap<i64, OutputWithTxData>>,
     ),
     DbErr,
 > {
@@ -92,7 +92,7 @@ async fn handle_input(
                 &queued_inputs,
                 outputs_for_inputs
                     .iter()
-                    .map(|(output, _)| output)
+                    .map(|output| &output.model)
                     .collect::<Vec<_>>()
                     .as_slice(),
                 &input_to_output_map,
@@ -130,7 +130,7 @@ pub fn add_input_relations(
     vkey_relation_map: &mut RelationMap,
     inputs: &[(Vec<OutputRef>, i64)],
     outputs: &[&TransactionOutputModel],
-    input_to_output_map: &BTreeMap<Vec<u8>, BTreeMap<i64, TransactionOutputModel>>,
+    input_to_output_map: &BTreeMap<Vec<u8>, BTreeMap<i64, OutputWithTxData>>,
     input_relation: TxCredentialRelationValue,
     input_stake_relation: TxCredentialRelationValue,
 ) {
@@ -139,8 +139,8 @@ pub fn add_input_relations(
         for input in input_tx_pair.0.iter() {
             match input_to_output_map.get(&input.hash().to_vec()) {
                 Some(entry_for_tx) => {
-                    let output_id = &entry_for_tx[&(input.index() as i64)];
-                    output_to_input_tx.insert(output_id.id, input_tx_pair.1);
+                    let output = &entry_for_tx[&(input.index() as i64)];
+                    output_to_input_tx.insert(output.model.id, input_tx_pair.1);
                 }
                 None => {
                     panic!("tx: {} index:{}", input.hash(), input.index());

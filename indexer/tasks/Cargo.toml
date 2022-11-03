@@ -25,6 +25,7 @@ urlencoding = "2.1.0"
 serde = { version = "1.0", features = ["derive"] }
 tracing-subscriber = "0.3.9"
 tracing = "0.1.31"
+sea-orm = { git = "https://github.com/dcSpark/sea-orm", branch = "insert-many-returning", features = [ "macros" ], default-features = false }
 
 [features]
 default = ["build_rust_task"]

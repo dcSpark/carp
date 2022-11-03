@@ -1,3 +1,4 @@
+pub use crate::era_common::OutputWithTxData;
 pub use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction},
@@ -29,7 +30,7 @@ macro_rules! data_to_type {
   (multiera_metadata) => { Vec<TransactionMetadataModel> };
   (multiera_outputs) => { Vec<TransactionOutputModel> };
   (multiera_used_inputs) => { Vec<TransactionInputModel> };
-  (multiera_used_inputs_to_outputs_map) => { BTreeMap<Vec<u8>, BTreeMap<i64, TransactionOutputModel>> };
+  (multiera_used_inputs_to_outputs_map) => { BTreeMap<Vec<u8>, BTreeMap<i64, OutputWithTxData>> };
   (multiera_assets) => { Vec<NativeAssetModel> };
 }
 

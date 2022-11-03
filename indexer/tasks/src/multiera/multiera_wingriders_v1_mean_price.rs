@@ -3,6 +3,7 @@ use std::collections::BTreeSet;
 use super::utils::common::{
     get_asset_amount, get_plutus_datum_for_output, get_sheley_payment_hash,
 };
+use super::utils::constants::{WR_V1_POOL_FIXED_ADA, WR_V1_POOL_SCRIPT_HASH};
 use super::{multiera_address::MultieraAddressTask, utils::common::asset_from_pair};
 use crate::dsl::task_macro::*;
 use crate::{config::EmptyConfig::EmptyConfig, types::AssetPair};
@@ -11,9 +12,6 @@ use pallas::ledger::{
     primitives::ToCanonicalJson,
     traverse::{MultiEraBlock, MultiEraTx},
 };
-
-const POOL_SCRIPT_HASH: &str = "e6c90a5923713af5786963dee0fdffd830ca7e0c86a041d9e5833e91";
-const POOL_FIXED_ADA: u64 = 3_000_000; // every pool UTXO holds this amount of ADA
 
 carp_task! {
   name MultieraWingRidersV1MeanPriceTask;
@@ -111,7 +109,7 @@ fn queue_mean_price(queued_prices: &mut Vec<QueuedMeanPrice>, tx: &MultiEraTx, t
     for output in tx
         .outputs()
         .iter()
-        .find(|o| get_sheley_payment_hash(o.address()).as_deref() == Some(POOL_SCRIPT_HASH))
+        .find(|o| get_sheley_payment_hash(o.address()).as_deref() == Some(WR_V1_POOL_SCRIPT_HASH))
     {
         // Remark: The datum that corresponds to the pool output's datum hash should be present
         // in tx.plutus_data()
@@ -140,7 +138,7 @@ fn queue_mean_price(queued_prices: &mut Vec<QueuedMeanPrice>, tx: &MultiEraTx, t
 
             let get_fixed_ada = |pair: &AssetPair| -> u64 {
                 if pair.is_none() {
-                    POOL_FIXED_ADA
+                    WR_V1_POOL_FIXED_ADA
                 } else {
                     0
                 }

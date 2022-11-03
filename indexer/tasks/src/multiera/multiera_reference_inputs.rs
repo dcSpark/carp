@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
-use crate::config::ReadonlyConfig::ReadonlyConfig;
 use crate::types::TxCredentialRelationValue;
+use crate::{config::ReadonlyConfig::ReadonlyConfig, era_common::OutputWithTxData};
 use cardano_multiplatform_lib::{
     address::{BaseAddress, EnterpriseAddress, PointerAddress, RewardAddress},
     byron::ByronAddress,
@@ -79,7 +79,7 @@ async fn handle_input(
                 &queued_inputs,
                 outputs_for_inputs
                     .iter()
-                    .map(|(output, _)| output)
+                    .map(|output| &output.model)
                     .collect::<Vec<_>>()
                     .as_slice(),
                 &input_to_output_map,
@@ -106,7 +106,7 @@ async fn handle_input(
 
 pub async fn insert_reference_inputs(
     inputs: &[(Vec<pallas::ledger::traverse::OutputRef>, i64)],
-    input_to_output_map: &BTreeMap<Vec<u8>, BTreeMap<i64, TransactionOutputModel>>,
+    input_to_output_map: &BTreeMap<Vec<u8>, BTreeMap<i64, OutputWithTxData>>,
     txn: &DatabaseTransaction,
 ) -> Result<Vec<TransactionReferenceInputModel>, DbErr> {
     // avoid querying the DB if there were no inputs
@@ -122,8 +122,8 @@ pub async fn insert_reference_inputs(
             .map(|((idx, input), tx_id)| {
                 let output = &input_to_output_map[&input.hash().to_vec()][&(input.index() as i64)];
                 TransactionReferenceInputActiveModel {
-                    utxo_id: Set(output.id),
-                    address_id: Set(output.address_id),
+                    utxo_id: Set(output.model.id),
+                    address_id: Set(output.model.address_id),
                     tx_id: Set(tx_id),
                     input_index: Set(idx as i32),
                     ..Default::default()

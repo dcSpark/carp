@@ -3,7 +3,8 @@ use std::collections::BTreeSet;
 use entity::{
     prelude::*,
     sea_orm::{
-        entity::*, prelude::*, ColumnTrait, Condition, DatabaseTransaction, QueryOrder, Set,
+        entity::*, prelude::*, ColumnTrait, Condition, DatabaseTransaction, FromQueryResult,
+        QueryOrder, QuerySelect, Set,
     },
 };
 use std::collections::BTreeMap;
@@ -113,10 +114,17 @@ pub async fn insert_addresses(
     Ok(result_map)
 }
 
+#[derive(Clone)]
+pub struct OutputWithTxData {
+    pub model: TransactionOutputModel,
+    pub tx_hash: Vec<u8>,
+    pub era: i32,
+}
+
 pub async fn get_outputs_for_inputs(
     inputs: &[(Vec<pallas::ledger::traverse::OutputRef>, i64)],
     txn: &DatabaseTransaction,
-) -> Result<Vec<(TransactionOutputModel, TransactionModel)>, DbErr> {
+) -> Result<Vec<OutputWithTxData>, DbErr> {
     // avoid querying the DB if there were no inputs
     let has_input = inputs.iter().any(|input| !input.0.is_empty());
     if !has_input {
@@ -137,16 +145,36 @@ pub async fn get_outputs_for_inputs(
         );
     }
 
-    let mut tx_outputs = TransactionOutput::find()
-        .inner_join(Transaction)
+    #[derive(FromQueryResult)]
+    pub struct QueryOutputResult {
+        id: i64,
+        payload: Vec<u8>,
+        address_id: i64,
+        tx_id: i64,
+        output_index: i32,
+        tx_hash: Vec<u8>,
+        era: i32,
+    }
+
+    let tx_outputs = TransactionOutput::find()
+        .select_only()
+        .column(TransactionOutputColumn::Id)
+        .column(TransactionOutputColumn::Payload)
+        .column(TransactionOutputColumn::AddressId)
+        .column(TransactionOutputColumn::TxId)
+        .column(TransactionOutputColumn::OutputIndex)
+        .column_as(TransactionColumn::Hash, "tx_hash")
+        .column(BlockColumn::Era)
+        .join(
+            entity::sea_orm::JoinType::InnerJoin,
+            TransactionOutputRelation::Transaction.def(),
+        )
+        .join(
+            entity::sea_orm::JoinType::InnerJoin,
+            TransactionRelation::Block.def(),
+        )
         .filter(output_conditions)
-        .select_with(Transaction)
-        // TODO: we only actually need these columns, but sea-orm returns the full join
-        // .column(TransactionOutputColumn::Id)
-        // .column(TransactionOutputColumn::OutputIndex)
-        // .column(TransactionOutputColumn::Payload)
-        // .column(TransactionColumn::Hash)
-        // .column(TransactionColumn::Id)
+        .into_model::<QueryOutputResult>()
         // note: we can use "all" because all utxos are unique so we know:
         // 1) there won't be duplicates in the result set
         // 2) the # results == # of outputs in the filter
@@ -154,33 +182,36 @@ pub async fn get_outputs_for_inputs(
         .await?;
 
     Ok(tx_outputs
-        .drain(..)
-        // <tx, tx_out> is a one-to-one mapping so it's safe to flatten this
-        .map(|(output, txs)| {
-            if txs.len() > 1 {
-                panic!();
-            }
-            (output, txs[0].clone())
+        .iter()
+        .map(|output| OutputWithTxData {
+            model: TransactionOutputModel {
+                id: output.id,
+                payload: output.payload.clone(),
+                address_id: output.address_id,
+                tx_id: output.tx_id.clone(),
+                output_index: output.output_index,
+            },
+            tx_hash: output.tx_hash.clone(),
+            era: output.era,
         })
-        .collect())
+        .collect::<Vec<_>>())
 }
 
 pub fn gen_input_to_output_map(
-    outputs_for_inputs: &[(TransactionOutputModel, TransactionModel)],
-) -> BTreeMap<Vec<u8>, BTreeMap<i64, TransactionOutputModel>> {
-    let mut input_to_output_map =
-        BTreeMap::<Vec<u8>, BTreeMap<i64, TransactionOutputModel>>::default();
+    outputs_for_inputs: &[OutputWithTxData],
+) -> BTreeMap<Vec<u8>, BTreeMap<i64, OutputWithTxData>> {
+    let mut input_to_output_map = BTreeMap::<Vec<u8>, BTreeMap<i64, OutputWithTxData>>::default();
     for output in outputs_for_inputs {
         input_to_output_map
-            .entry(output.1.hash.clone())
+            .entry(output.tx_hash.clone())
             .and_modify(|output_index_map| {
                 // note: we can insert right away instead of doing a 2nd lookup
                 // because the pair <payload, output_index> is unique
-                output_index_map.insert(output.0.output_index as i64, output.0.clone());
+                output_index_map.insert(output.model.output_index as i64, output.clone());
             })
             .or_insert({
-                let mut output_index_map = BTreeMap::<i64, TransactionOutputModel>::default();
-                output_index_map.insert(output.0.output_index as i64, output.0.clone());
+                let mut output_index_map = BTreeMap::<i64, OutputWithTxData>::default();
+                output_index_map.insert(output.model.output_index as i64, output.clone());
                 output_index_map
             });
     }
@@ -190,7 +221,7 @@ pub fn gen_input_to_output_map(
 
 pub async fn insert_inputs(
     inputs: &[(Vec<pallas::ledger::traverse::OutputRef>, i64)],
-    input_to_output_map: &BTreeMap<Vec<u8>, BTreeMap<i64, TransactionOutputModel>>,
+    input_to_output_map: &BTreeMap<Vec<u8>, BTreeMap<i64, OutputWithTxData>>,
     txn: &DatabaseTransaction,
 ) -> Result<Vec<TransactionInputModel>, DbErr> {
     // avoid querying the DB if there were no inputs
@@ -210,8 +241,8 @@ pub async fn insert_inputs(
                 };
                 let output = &tx_outputs[&(input.index() as i64)];
                 TransactionInputActiveModel {
-                    utxo_id: Set(output.id),
-                    address_id: Set(output.address_id),
+                    utxo_id: Set(output.model.id),
+                    address_id: Set(output.model.address_id),
                     tx_id: Set(tx_id),
                     input_index: Set(idx as i32),
                     ..Default::default()

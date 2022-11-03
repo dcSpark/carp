@@ -72,7 +72,7 @@ async fn handle_unused_input(
             &queued_unused_inputs,
             outputs_for_inputs
                 .iter()
-                .map(|(output, _)| output)
+                .map(|output| &output.model)
                 .collect::<Vec<_>>()
                 .as_slice(),
             &input_to_output_map,
