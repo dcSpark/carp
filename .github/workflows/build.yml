@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - greg/add-latest-tag
 
 jobs:
   build-and-deploy:
