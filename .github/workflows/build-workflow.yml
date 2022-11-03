@@ -62,3 +62,4 @@ jobs:
           push: true
           tags: |
             ${{ inputs.REGISTRY }}/${{ inputs.REPOSITORY_CARP_WEBSERVER }}:${{ env.IMAGE_TAG }}
+            ${{ inputs.REGISTRY }}/${{ inputs.REPOSITORY_CARP_WEBSERVER }}:latest
