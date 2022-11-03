@@ -27,7 +27,7 @@ Starting Carp with backup service from scratch will create a dozens of backups u
 For Your convenience You can create a `.env` file alongside `docker-compose.yml` file with:
 
 ```bash
-NETWORK=<network type: mainnet or testnet>
+NETWORK=<network type: mainnet/testnet/preview/preprod>
 
 POSTGRES_USER=<user used for carp logging into DB>
 POSTGRES_PASSWORD=<carp DB name>
