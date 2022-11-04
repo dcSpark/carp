@@ -60,7 +60,6 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ inputs.REGISTRY }}/${{ inputs.REPOSITORY_CARP }}:${{ env.IMAGE_TAG }}
             ${{ inputs.REGISTRY }}/${{ inputs.REPOSITORY_CARP }}:latest
       - name: Build and push carp-webserver
         uses: docker/build-push-action@v3
