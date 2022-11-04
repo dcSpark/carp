@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-and-deploy:
-    uses: dcSpark/carp/.github/workflows/build-workflow.yml@main
+    uses: dcSpark/carp/.github/workflows/build-workflow.yml@greg/add-latest-tag
     with:
       REGISTRY: dcspark
       REPOSITORY_CARP: carp
