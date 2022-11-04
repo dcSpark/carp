@@ -47,7 +47,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-
       - name: Show variables to troubleshoot
         shell: bash
         run: |
@@ -55,8 +54,6 @@ jobs:
           echo "REPOSITORY_CARP: ${{ inputs.REPOSITORY_CARP }}"
           echo "REPOSITORY_CARP_WEBSERVER: ${{ inputs.REPOSITORY_CARP_WEBSERVER }}"
           echo "IMAGE_TAG: ${{ env.IMAGE_TAG }}"
-          
-
       - name: Build and push carp
         uses: docker/build-push-action@v3
         with:
