@@ -4,11 +4,10 @@ on:
   push:
     branches:
       - main
-      - greg/add-latest-tag
 
 jobs:
   build-and-deploy:
-    uses: dcSpark/carp/.github/workflows/build-workflow.yml@greg/add-latest-tag
+    uses: dcSpark/carp/.github/workflows/build-workflow.yml@main
     with:
       REGISTRY: dcspark
       REPOSITORY_CARP: carp
