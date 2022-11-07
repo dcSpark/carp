@@ -16,7 +16,7 @@ use pallas::{
 
 use crate::types::AssetPair;
 
-pub fn get_sheley_payment_hash(
+pub fn get_shelley_payment_hash(
     address: Result<addresses::Address, addresses::Error>,
 ) -> Option<String> {
     if let Ok(addresses::Address::Shelley(shelley_address)) = address {

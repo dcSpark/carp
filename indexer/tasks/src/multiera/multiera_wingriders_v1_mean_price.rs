@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
 use super::utils::common::{
-    get_asset_amount, get_plutus_datum_for_output, get_sheley_payment_hash,
+    get_asset_amount, get_plutus_datum_for_output, get_shelley_payment_hash,
 };
 use super::{multiera_address::MultieraAddressTask, utils::common::asset_from_pair};
 use crate::dsl::task_macro::*;
@@ -111,7 +111,7 @@ fn queue_mean_price(queued_prices: &mut Vec<QueuedMeanPrice>, tx: &MultiEraTx, t
     for output in tx
         .outputs()
         .iter()
-        .find(|o| get_sheley_payment_hash(o.address()).as_deref() == Some(POOL_SCRIPT_HASH))
+        .find(|o| get_shelley_payment_hash(o.address()).as_deref() == Some(POOL_SCRIPT_HASH))
     {
         // Remark: The datum that corresponds to the pool output's datum hash should be present
         // in tx.plutus_data()
