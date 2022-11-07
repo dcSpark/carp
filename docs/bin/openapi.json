@@ -55,19 +55,23 @@
                 ],
                 "type": "object"
             },
+            "BlockHash": {
+                "type": "string",
+                "example": "cf8c63a909d91776e27f7d05457e823a9dba606a7ab499ac435e7904ee70d7c8",
+                "description": "[0-9a-fA-F]{64}"
+            },
+            "TxHash": {
+                "type": "string",
+                "example": "336d520af58ff440b2f20210ddb5ef5b2c035e0ec7ec258bae4b519a87fa1696",
+                "pattern": "[0-9a-fA-F]{64}"
+            },
             "BlockTxPair": {
                 "properties": {
                     "tx": {
-                        "type": "string",
-                        "description": "tx hash",
-                        "example": "336d520af58ff440b2f20210ddb5ef5b2c035e0ec7ec258bae4b519a87fa1696",
-                        "pattern": "[0-9a-fA-F]{64}"
+                        "$ref": "#/components/schemas/TxHash"
                     },
                     "block": {
-                        "type": "string",
-                        "description": "block hash",
-                        "example": "2548ad5d0d9d33d50ab43151f574474454017a733e307229fa509c4987ca9782",
-                        "pattern": "[0-9a-fA-F]{64}"
+                        "$ref": "#/components/schemas/BlockHash"
                     }
                 },
                 "required": [
@@ -204,6 +208,28 @@
                 },
                 "required": [
                     "offset"
+                ],
+                "type": "object"
+            },
+            "BlockMinterResponse": {
+                "properties": {
+                    "pubkey": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "pubkey"
+                ],
+                "type": "object"
+            },
+            "BlockMinterRequest": {
+                "properties": {
+                    "hash": {
+                        "$ref": "#/components/schemas/BlockHash"
+                    }
+                },
+                "required": [
+                    "hash"
                 ],
                 "type": "object"
             },
@@ -648,6 +674,56 @@
                         "application/json": {
                             "schema": {
                                 "$ref": "#/components/schemas/BlockLatestRequest"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/block/minter": {
+            "post": {
+                "operationId": "BlockMinter",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BlockMinterResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Get the latest block. Useful for checking synchronization process and pagination",
+                "security": [],
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/BlockMinterRequest"
                             }
                         }
                     }

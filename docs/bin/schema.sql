@@ -87,6 +87,36 @@ CREATE TABLE public."Block" (
 
 
 --
+-- Name: BlockMinter; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public."BlockMinter" (
+    id integer NOT NULL,
+    key bytea NOT NULL
+);
+
+
+--
+-- Name: BlockMinter_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public."BlockMinter_id_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: BlockMinter_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public."BlockMinter_id_seq" OWNED BY public."BlockMinter".id;
+
+
+--
 -- Name: Block_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -455,6 +485,13 @@ ALTER TABLE ONLY public."Block" ALTER COLUMN id SET DEFAULT nextval('public."Blo
 
 
 --
+-- Name: BlockMinter id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."BlockMinter" ALTER COLUMN id SET DEFAULT nextval('public."BlockMinter_id_seq"'::regclass);
+
+
+--
 -- Name: Cip25Entry id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -538,6 +575,14 @@ ALTER TABLE ONLY public."Address"
 
 ALTER TABLE ONLY public."Address"
     ADD CONSTRAINT "Address_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: BlockMinter BlockMinter_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."BlockMinter"
+    ADD CONSTRAINT "BlockMinter_pkey" PRIMARY KEY (id);
 
 
 --
@@ -890,6 +935,14 @@ ALTER TABLE ONLY public."AssetMint"
 
 ALTER TABLE ONLY public."AssetMint"
     ADD CONSTRAINT "fk-asset_mint-transaction_id" FOREIGN KEY (tx_id) REFERENCES public."Transaction"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: BlockMinter fk-block_minter-block_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."BlockMinter"
+    ADD CONSTRAINT "fk-block_minter-block_id" FOREIGN KEY (id) REFERENCES public."Block"(id) ON DELETE CASCADE;
 
 
 --

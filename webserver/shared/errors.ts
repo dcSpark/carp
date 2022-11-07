@@ -45,8 +45,8 @@ export const Errors = {
   BlockHashNotFound: {
     code: ErrorCodes.BlockHashNotFound,
     prefix: "Block hash not found.",
-    detailsGen: (details: { untilBlock: string }) =>
-      `Searched block hash: ${details.untilBlock}`,
+    detailsGen: (details: { block: string }) =>
+      `Searched block hash: ${details.block}`,
   },
   PageStartNotFound: {
     code: ErrorCodes.PageStartNotFound,

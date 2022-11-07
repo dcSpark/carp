@@ -37,19 +37,20 @@ export enum RelationFilterType {
   NO_FILTER = 0xff,
 }
 
+/**
+ * [0-9a-fA-F]{64}
+ * @example "cf8c63a909d91776e27f7d05457e823a9dba606a7ab499ac435e7904ee70d7c8"
+ */
+export type BlockHash = string;
+/**
+ * @pattern [0-9a-fA-F]{64}
+ * @example "336d520af58ff440b2f20210ddb5ef5b2c035e0ec7ec258bae4b519a87fa1696"
+ */
+export type TxHash = string;
+
 export type BlockTxPair = {
-  /**
-   * block hash
-   * @pattern [0-9a-fA-F]{64}
-   * @example "2548ad5d0d9d33d50ab43151f574474454017a733e307229fa509c4987ca9782"
-   */
-  block: string;
-  /**
-   * tx hash
-   * @pattern [0-9a-fA-F]{64}
-   * @example "336d520af58ff440b2f20210ddb5ef5b2c035e0ec7ec258bae4b519a87fa1696"
-   */
-  tx: string;
+  block: BlockHash;
+  tx: TxHash;
 };
 export type AfterBlockPagination = {
   /**

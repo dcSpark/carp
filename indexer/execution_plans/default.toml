@@ -24,6 +24,9 @@ readonly=false
 
 [ByronInputTask]
 
+[ByronBlockMinterTask]
+readonly=false
+
 [MultieraBlockTask]
 readonly=false
 

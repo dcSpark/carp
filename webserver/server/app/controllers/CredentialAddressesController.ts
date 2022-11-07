@@ -103,7 +103,7 @@ export class CredentialAddressesController extends Controller {
       ]);
       if (until == null) {
         return genErrorMessage(Errors.BlockHashNotFound, {
-          untilBlock: requestBody.untilBlock,
+          block: requestBody.untilBlock,
         });
       }
 

@@ -1,5 +1,6 @@
 pub mod byron_address;
 pub mod byron_block;
+pub mod byron_block_minter;
 pub mod byron_executor;
 pub mod byron_inputs;
 pub mod byron_outputs;
