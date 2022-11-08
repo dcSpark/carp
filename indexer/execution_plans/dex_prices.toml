@@ -30,32 +30,17 @@ readonly=false
 [MultieraTransactionTask]
 readonly=false
 
-[MultieraMetadataTask]
-readonly=false
-
 [MultieraAddressTask]
 
 [MultieraOutputTask]
 readonly=false
 
-[MultieraReferenceInputTask]
-readonly=false
-
 [MultieraUsedInputTask]
 readonly=false
-
-[MultieraUnusedInputTask]
-
-[MultieraStakeCredentialTask]
-
-[MultieraAddressCredentialRelationTask]
-readonly=false
-
-[MultieraTxCredentialRelationTask]
 
 [MultieraAssetMintTask]
 readonly=false
 
-[MultieraCip25EntryTask]
-
 [MultieraWingRidersV1MeanPriceTask]
+
+[MultieraWingRidersV1SwapTask]
