@@ -71,3 +71,18 @@ impl From<AddressCredentialRelationValue> for i32 {
 
 // ADA = None, token = Some((policy_id, asset_name))
 pub type AssetPair = Option<(Vec<u8>, Vec<u8>)>;
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub enum DexSwapDirection {
+    BuyAsset1,
+    SellAsset1,
+}
+
+impl From<DexSwapDirection> for bool {
+    fn from(item: DexSwapDirection) -> Self {
+        match item {
+            DexSwapDirection::BuyAsset1 => false,
+            DexSwapDirection::SellAsset1 => true,
+        }
+    }
+}
