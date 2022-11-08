@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
 use super::utils::common::{
-    get_asset_amount, get_plutus_datum_for_output, get_sheley_payment_hash,
+    get_asset_amount, get_plutus_datum_for_output, get_sheley_payment_hash, QueuedMeanPrice,
 };
 use super::utils::dex::{
     build_asset, reduce_ada_amount, WR_V1_POOL_FIXED_ADA, WR_V1_POOL_SCRIPT_HASH,
@@ -35,15 +35,6 @@ carp_task! {
   );
   merge_result |previous_data, _result| {
   };
-}
-
-struct QueuedMeanPrice {
-    tx_id: i64,
-    address: Vec<u8>, // pallas::crypto::hash::Hash<32>
-    asset1: AssetPair,
-    asset2: AssetPair,
-    amount1: u64,
-    amount2: u64,
 }
 
 async fn handle_mean_price(
