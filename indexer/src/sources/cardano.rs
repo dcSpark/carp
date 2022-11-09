@@ -6,16 +6,22 @@ use dcspark_blockchain_source::{
         BlockEvent, CardanoNetworkEvent, CardanoSource as WrappedCardanoSource,
         NetworkConfiguration, Point, Tip,
     },
-    multiverse::MultiverseSource,
+    multiverse::rollback::{Event as RollbackOrEvent, ForkHandlingSource},
     Source,
 };
 use dcspark_core::BlockId;
 use multiverse::Multiverse;
 use std::time::Duration;
 
+type CardanoSourceEvent = CardanoNetworkEvent<BlockEvent, Tip>;
+
 pub struct CardanoSource {
-    wrapped_source:
-        MultiverseSource<BlockId, CardanoNetworkEvent<BlockEvent, Tip>, WrappedCardanoSource>,
+    wrapped_source: ForkHandlingSource<
+        BlockId,
+        CardanoSourceEvent,
+        WrappedCardanoSource,
+        RollbackOrEvent<CardanoSourceEvent, Point>,
+    >,
     configuration: NetworkConfiguration,
 }
 
@@ -40,8 +46,19 @@ impl Source for CardanoSource {
 
         if let Some(event) = maybe_event {
             match event {
-                CardanoNetworkEvent::Tip(_) => Ok(None),
-                CardanoNetworkEvent::Block(block_event) => {
+                RollbackOrEvent::Rollback(point) => {
+                    let event = match point {
+                        Point::Origin => unreachable!(),
+                        Point::BlockHeader { slot_nb, hash } => CardanoEventType::RollBack {
+                            block_slot: slot_nb.into(),
+                            block_hash: hash.to_string(),
+                        },
+                    };
+
+                    Ok(Some(event))
+                }
+                RollbackOrEvent::InnerEvent(CardanoNetworkEvent::Tip(_)) => Ok(None),
+                RollbackOrEvent::InnerEvent(CardanoNetworkEvent::Block(block_event)) => {
                     if !block_event.is_boundary_block {
                         tracing::debug!(id = %block_event.id, "block event received");
                         Ok(Some(CardanoEventType::Block {
@@ -81,7 +98,7 @@ impl CardanoSource {
             .and_then(|cardano_source| {
                 Multiverse::temporary()
                     .context("failed to create temporary multiverse")
-                    .map(|multiverse| MultiverseSource::new(multiverse, 10, cardano_source))
+                    .map(|multiverse| ForkHandlingSource::new(multiverse, 10, cardano_source))
             })
             .map(|wrapped_source| Self {
                 configuration,

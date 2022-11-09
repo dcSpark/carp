@@ -98,9 +98,8 @@ async fn main() -> anyhow::Result<()> {
         .with_target("sled", tracing::Level::INFO)
         .with_target("carp", tracing::Level::TRACE)
         .with_target("cardano-net", tracing::Level::INFO)
-        .with_target("cardano_net", tracing::Level::INFO)
         .with_target("cardano-sdk", tracing::Level::INFO)
-        .with_target("dcspark-blockchain-source", tracing::Level::TRACE)
+        .with_target("dcspark-blockchain-source", tracing::Level::INFO)
         .with_default(tracing::Level::DEBUG);
 
     tracing_subscriber::registry()
@@ -154,7 +153,11 @@ async fn main() -> anyhow::Result<()> {
                 _ => return Err(anyhow::anyhow!("network not supported by source")),
             };
 
-            let start_from = start_from.into_iter().next().unwrap();
+            // try to find a confirmed point.
+            //
+            // this way the multiverse can be temporary, which saves setting up the extra db
+            // (at the expense of repulling some extra blocks at startup)
+            let start_from = sink.get_latest_points(15).await?.last().unwrap().clone();
 
             let network_config = dcspark_blockchain_source::cardano::NetworkConfiguration {
                 relay: relay.clone(),
