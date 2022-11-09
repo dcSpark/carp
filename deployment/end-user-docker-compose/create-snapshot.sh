@@ -25,9 +25,17 @@ echo "Generating rsnapshot.conf from .env file"
 # Reading env file and export values for envsubst
 export $(cat $ENV | grep -v ^\# | xargs)
 
+if [ "$SNAPSHOTS_TOP_DIR" == "$TOP_DIR" ] || [ -z ${SNAPSHOTS_TOP_DIR+x} ]
+then
+  SNAPSHOT_TOP_DIR=$TOP_DIR/snapshots
+fi
+
 
 TOP_DIR=$(realpath $TOP_DIR)
 SNAPSHOTS_TOP_DIR=$(realpath $SNAPSHOTS_TOP_DIR)
+
+mkdir -p $SNAPSHOTS_TOP_DIR
+
 
 # Replace Variables
 temp_rsnapshot_config=$(mktemp)
@@ -48,7 +56,7 @@ TAR_DATE=`date +%Y%m%d`
 TAR_TIME=`date +%H%M`
 
 
-tar -czf carp-${INSTANCE}-${TAR_DATE}-${TAR_TIME}.tar.gz -C ${SNAPSHOTS_TOP_DIR}/data/${INSTANCE}.0/localhost${TOP_DIR}/${INSTANCE} .
+tar -czf carp-${INSTANCE}-${TAR_DATE}-${TAR_TIME}.tar.gz -C ${SNAPSHOTS_TOP_DIR}/data/${INSTANCE}.0/localhost${TOP_DIR}/ .
 
 echo "Sending file to AWS"
 
