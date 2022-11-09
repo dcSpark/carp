@@ -70,13 +70,6 @@ impl Dex for WingRidersV1 {
                 let asset1 = build_asset(get_asset_item(0, 0), get_asset_item(0, 1));
                 let asset2 = build_asset(get_asset_item(1, 0), get_asset_item(1, 1));
 
-                let get_fixed_ada = |pair: &AssetPair| -> u64 {
-                    if pair.is_none() {
-                        WR_V1_POOL_FIXED_ADA
-                    } else {
-                        0
-                    }
-                };
                 let amount1 = get_asset_amount(output, &asset1)
                     - treasury1
                     - reduce_ada_amount(&asset1, WR_V1_POOL_FIXED_ADA);
