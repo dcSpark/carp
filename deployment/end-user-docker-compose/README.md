@@ -27,7 +27,7 @@ GID - gid of running user (important to set to be able to do backups)
 docker-compose up -d
 ```
 
-- Create snapshot and backup - this needs to be run as sudo
+- Create snapshot and backup - this needs to be run as ***sudo***
 ```
 sudo ./create_snapshot.sh
 ```
