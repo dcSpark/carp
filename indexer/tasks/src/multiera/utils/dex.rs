@@ -1,17 +1,17 @@
-use std::collections::{BTreeMap, BTreeSet};
+use crate::dsl::task_macro::*;
 use entity::sea_orm::{DatabaseTransaction, Set};
 use pallas::ledger::traverse::{MultiEraBlock, MultiEraTx};
-use crate::dsl::task_macro::*;
+use std::collections::{BTreeMap, BTreeSet};
 
-use crate::{types::AssetPair, dsl::database_task::BlockInfo};
+use crate::{dsl::database_task::BlockInfo, types::AssetPair};
 
 use super::common::asset_from_pair;
 
 pub const WR_V1_POOL_SCRIPT_HASH: &str = "e6c90a5923713af5786963dee0fdffd830ca7e0c86a041d9e5833e91";
 pub const WR_V1_POOL_FIXED_ADA: u64 = 3_000_000; // every pool UTXO holds this amount of ADA
+
 pub const WR_V1_SWAP_IN_ADA: u64 = 4_000_000; // oil ADA + agent fee
 pub const WR_V1_SWAP_OUT_ADA: u64 = 2_000_000; // oil ADA
-
 
 pub struct QueuedMeanPrice {
     pub tx_id: i64,
@@ -40,14 +40,13 @@ pub struct SundaeSwapV1;
 #[derive(Debug, PartialEq, Eq)]
 pub struct Empty;
 
-
 impl Dex for Empty {
     fn queue_mean_price(
-            &self,
-            _queued_prices: &mut Vec<QueuedMeanPrice>,
-            _tx: &MultiEraTx,
-            _tx_id: i64,
-        ) {
+        &self,
+        _queued_prices: &mut Vec<QueuedMeanPrice>,
+        _tx: &MultiEraTx,
+        _tx_id: i64,
+    ) {
         unimplemented!();
     }
 }
@@ -64,7 +63,7 @@ struct PoolConfig {
     pub pool_type: PoolType,
 }
 
-impl PoolConfig {    
+impl PoolConfig {
     fn as_trait(&self) -> &dyn Dex {
         match &self.pool_type {
             PoolType::WingRidersV1 => &WingRidersV1 {},
@@ -83,7 +82,7 @@ pub async fn handle_mean_price(
     pool_type: PoolType,
 ) -> Result<(), DbErr> {
     // 1) Parse mean prices
-    let pool = PoolConfig {pool_type};
+    let pool = PoolConfig { pool_type };
     let mean_value_trait = pool.as_trait();
     let mut queued_prices = Vec::<QueuedMeanPrice>::default();
     for (tx_body, cardano_transaction) in block.1.txs().iter().zip(multiera_txs) {

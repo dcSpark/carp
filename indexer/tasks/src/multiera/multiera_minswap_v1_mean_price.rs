@@ -1,7 +1,8 @@
-use std::collections::BTreeSet;
-use super::utils::dex::{handle_mean_price, QueuedMeanPrice, Dex, MinSwapV1, PoolType};
 use super::utils::common::{
     get_asset_amount, get_plutus_datum_for_output, get_sheley_payment_hash,
+};
+use super::utils::dex::{
+    build_asset, handle_mean_price, Dex, MinSwapV1, PoolType, QueuedMeanPrice,
 };
 use super::{multiera_address::MultieraAddressTask, utils::common::asset_from_pair};
 use crate::dsl::task_macro::*;
@@ -11,6 +12,7 @@ use pallas::ledger::{
     primitives::ToCanonicalJson,
     traverse::{MultiEraBlock, MultiEraTx},
 };
+use std::collections::BTreeSet;
 
 const POOL_SCRIPT_HASH: &str = "e1317b152faac13426e6a83e06ff88a4d62cce3c1634ab0a5ec13309";
 const POOL_SCRIPT_HASH2: &str = "57c8e718c201fba10a9da1748d675b54281d3b1b983c5d1687fc7317";
@@ -38,7 +40,12 @@ carp_task! {
 }
 
 impl Dex for MinSwapV1 {
-    fn queue_mean_price(&self, queued_prices: &mut Vec<QueuedMeanPrice>, tx: &MultiEraTx, tx_id: i64) {
+    fn queue_mean_price(
+        &self,
+        queued_prices: &mut Vec<QueuedMeanPrice>,
+        tx: &MultiEraTx,
+        tx_id: i64,
+    ) {
         // Find the pool address (Note: there should be at most one pool output)
         for output in tx.outputs().iter().find(|o| {
             get_sheley_payment_hash(o.address()).as_deref() == Some(POOL_SCRIPT_HASH)
@@ -56,16 +63,9 @@ impl Dex for MinSwapV1 {
                         .to_string();
                     hex::decode(item).unwrap()
                 };
-                let get_asset = |policy_id: Vec<u8>, asset_name: Vec<u8>| {
-                    if policy_id.is_empty() && asset_name.is_empty() {
-                        None
-                    } else {
-                        Some((policy_id, asset_name))
-                    }
-                };
-                // extract plutus
-                let asset1 = get_asset(get_asset_item(0, 0), get_asset_item(0, 1));
-                let asset2 = get_asset(get_asset_item(1, 0), get_asset_item(1, 1));
+
+                let asset1 = build_asset(get_asset_item(0, 0), get_asset_item(0, 1));
+                let asset2 = build_asset(get_asset_item(1, 0), get_asset_item(1, 1));
 
                 let amount1 = get_asset_amount(output, &asset1);
                 let amount2 = get_asset_amount(output, &asset2);

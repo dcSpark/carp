@@ -1,10 +1,10 @@
-use std::collections::BTreeSet;
-use super::utils::dex::{handle_mean_price, QueuedMeanPrice, Dex, WingRidersV1, PoolType};
 use super::utils::common::{
     get_asset_amount, get_plutus_datum_for_output, get_sheley_payment_hash,
 };
 use super::utils::dex::{
-    build_asset, reduce_ada_amount, WR_V1_POOL_FIXED_ADA, WR_V1_POOL_SCRIPT_HASH,
+    WR_V1_POOL_FIXED_ADA, WR_V1_POOL_SCRIPT_HASH,
+    build_asset, handle_mean_price, reduce_ada_amount, Dex, PoolType, QueuedMeanPrice,
+    WingRidersV1,
 };
 use super::{multiera_address::MultieraAddressTask, utils::common::asset_from_pair};
 use crate::dsl::task_macro::*;
@@ -15,6 +15,7 @@ use pallas::ledger::{
     primitives::ToCanonicalJson,
     traverse::{MultiEraBlock, MultiEraOutput, MultiEraTx},
 };
+use std::collections::BTreeSet;
 
 carp_task! {
   name MultieraWingRidersV1MeanPriceTask;
@@ -39,7 +40,12 @@ carp_task! {
 }
 
 impl Dex for WingRidersV1 {
-    fn queue_mean_price(&self, queued_prices: &mut Vec<QueuedMeanPrice>, tx: &MultiEraTx, tx_id: i64) {
+    fn queue_mean_price(
+        &self,
+        queued_prices: &mut Vec<QueuedMeanPrice>,
+        tx: &MultiEraTx,
+        tx_id: i64,
+    ) {
         // Find the pool address (Note: there should be at most one pool output)
         for output in tx
             .outputs()
@@ -61,15 +67,31 @@ impl Dex for WingRidersV1 {
                         .to_string();
                     hex::decode(item).unwrap()
                 };
-                let get_asset = |policy_id: Vec<u8>, asset_name: Vec<u8>| {
-                    if policy_id.is_empty() && asset_name.is_empty() {
-                        None
+                let asset1 = build_asset(get_asset_item(0, 0), get_asset_item(0, 1));
+                let asset2 = build_asset(get_asset_item(1, 0), get_asset_item(1, 1));
+
+                let get_fixed_ada = |pair: &AssetPair| -> u64 {
+                    if pair.is_none() {
+                        WR_V1_POOL_FIXED_ADA
                     } else {
-                        Some((policy_id, asset_name))
+                        0
                     }
                 };
-                let asset1 = get_asset(get_asset_item(0, 0), get_asset_item(0, 1));
-                let asset2 = get_asset(get_asset_item(1, 0), get_asset_item(1, 1));
+                let amount1 = get_asset_amount(output, &asset1)
+                    - treasury1
+                    - reduce_ada_amount(&asset1, WR_V1_POOL_FIXED_ADA);
+                let amount2 = get_asset_amount(output, &asset2)
+                    - treasury2
+                    - reduce_ada_amount(&asset2, WR_V1_POOL_FIXED_ADA);
+
+                queued_prices.push(QueuedMeanPrice {
+                    tx_id,
+                    address: output.address().unwrap().to_vec(),
+                    asset1,
+                    asset2,
+                    amount1,
+                    amount2,
+                });
             }
         }
     }
