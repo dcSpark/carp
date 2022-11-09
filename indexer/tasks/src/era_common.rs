@@ -1,12 +1,14 @@
 use std::collections::BTreeSet;
 
 use entity::{
+    block::EraValue,
     prelude::*,
     sea_orm::{
         entity::*, prelude::*, ColumnTrait, Condition, DatabaseTransaction, FromQueryResult,
         QueryOrder, QuerySelect, Set,
     },
 };
+use pallas::ledger::traverse::Era;
 use std::collections::BTreeMap;
 
 static ADDRESS_TRUNCATE: usize = 500; // 1000 in hex
@@ -118,7 +120,7 @@ pub async fn insert_addresses(
 pub struct OutputWithTxData {
     pub model: TransactionOutputModel,
     pub tx_hash: Vec<u8>,
-    pub era: i32,
+    pub era: Era,
 }
 
 pub async fn get_outputs_for_inputs(
@@ -192,7 +194,9 @@ pub async fn get_outputs_for_inputs(
                 output_index: output.output_index,
             },
             tx_hash: output.tx_hash.clone(),
-            era: output.era,
+            era: <i32 as TryInto<EraValue>>::try_into(output.era)
+                .unwrap()
+                .into(),
         })
         .collect::<Vec<_>>())
 }

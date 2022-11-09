@@ -14,7 +14,7 @@ use crate::era_common::OutputWithTxData;
 use crate::types::DexSwapDirection;
 use crate::{config::EmptyConfig::EmptyConfig, types::AssetPair};
 use entity::sea_orm::{DatabaseTransaction, Set};
-use pallas::ledger::traverse::MultiEraOutput;
+use pallas::ledger::traverse::{Era, MultiEraOutput};
 use pallas::ledger::{
     primitives::ToCanonicalJson,
     traverse::{MultiEraBlock, MultiEraTx},
@@ -162,11 +162,7 @@ fn queue_swap(
                 .map(|i| {
                     let output = &multiera_used_inputs_to_outputs_map[&i.hash().to_vec()]
                         [&(i.index() as i64)];
-                    MultiEraOutput::decode(
-                        (output.era as u16).try_into().unwrap(),
-                        &output.model.payload,
-                    )
-                    .unwrap()
+                    MultiEraOutput::decode(output.era, &output.model.payload).unwrap()
                 })
                 .collect::<Vec<_>>();
             // Zip outputs with redemeer index
@@ -196,7 +192,7 @@ fn queue_swap(
                 // identify operation: 0 = swap
                 let operation = input_datum["fields"][1]["constructor"].as_i64().unwrap();
                 if operation != 0 {
-                    tracing::info!("Operation is not a swap");
+                    tracing::debug!("Operation is not a swap");
                     continue;
                 }
                 let direction = input_datum["fields"][1]["fields"][0]["constructor"]

@@ -12,3 +12,4 @@ sea-orm = { git = "https://github.com/dcSpark/sea-orm", branch = "insert-many-re
     "macros",
 ], default-features = false }
 serde = "1.0.136"
+pallas = "0.14.0-alpha.4"

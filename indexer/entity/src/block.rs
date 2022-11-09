@@ -1,3 +1,4 @@
+use pallas::ledger::traverse::Era;
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -40,6 +41,35 @@ impl From<EraValue> for i32 {
             EraValue::Mary => 3,
             EraValue::Alonzo => 4,
             EraValue::Babbage => 5,
+        }
+    }
+}
+
+impl TryFrom<i32> for EraValue {
+    type Error = ();
+
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(EraValue::Byron),
+            1 => Ok(EraValue::Shelley),
+            2 => Ok(EraValue::Allegra),
+            3 => Ok(EraValue::Mary),
+            4 => Ok(EraValue::Alonzo),
+            5 => Ok(EraValue::Babbage),
+            _ => Err(()),
+        }
+    }
+}
+
+impl From<EraValue> for Era {
+    fn from(item: EraValue) -> Self {
+        match item {
+            EraValue::Byron => Era::Byron,
+            EraValue::Shelley => Era::Shelley,
+            EraValue::Allegra => Era::Allegra,
+            EraValue::Mary => Era::Mary,
+            EraValue::Alonzo => Era::Alonzo,
+            EraValue::Babbage => Era::Babbage,
         }
     }
 }
