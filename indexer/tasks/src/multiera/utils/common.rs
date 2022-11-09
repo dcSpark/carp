@@ -74,12 +74,3 @@ pub async fn asset_from_pair(
         .await?;
     Ok(assets)
 }
-
-pub struct QueuedMeanPrice {
-    pub tx_id: i64,
-    pub address: Vec<u8>, // pallas::crypto::hash::Hash<32>
-    pub asset1: AssetPair,
-    pub asset2: AssetPair,
-    pub amount1: u64,
-    pub amount2: u64,
-}
