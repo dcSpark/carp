@@ -9,6 +9,11 @@ use super::common::asset_from_pair;
 
 pub const WR_V1_POOL_SCRIPT_HASH: &str = "e6c90a5923713af5786963dee0fdffd830ca7e0c86a041d9e5833e91";
 pub const WR_V1_POOL_FIXED_ADA: u64 = 3_000_000; // every pool UTXO holds this amount of ADA
+pub const MS_V1_POOL_SCRIPT_HASH1: &str =
+    "e1317b152faac13426e6a83e06ff88a4d62cce3c1634ab0a5ec13309";
+pub const MS_V1_POOL_SCRIPT_HASH2: &str =
+    "57c8e718c201fba10a9da1748d675b54281d3b1b983c5d1687fc7317";
+pub const SS_V1_POOL_SCRIPT_HASH: &str = "4020e7fc2de75a0729c3cc3af715b34d98381e0cdbcfa99c950bc3ac";
 
 pub const WR_V1_SWAP_IN_ADA: u64 = 4_000_000; // oil ADA + agent fee
 pub const WR_V1_SWAP_OUT_ADA: u64 = 2_000_000; // oil ADA

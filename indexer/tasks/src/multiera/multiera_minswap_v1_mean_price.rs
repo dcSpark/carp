@@ -3,6 +3,7 @@ use super::utils::common::{
 };
 use super::utils::dex::{
     build_asset, handle_mean_price, Dex, MinSwapV1, PoolType, QueuedMeanPrice,
+    MS_V1_POOL_SCRIPT_HASH1, MS_V1_POOL_SCRIPT_HASH2,
 };
 use super::{multiera_address::MultieraAddressTask, utils::common::asset_from_pair};
 use crate::dsl::task_macro::*;
@@ -13,9 +14,6 @@ use pallas::ledger::{
     traverse::{MultiEraBlock, MultiEraTx},
 };
 use std::collections::BTreeSet;
-
-const POOL_SCRIPT_HASH: &str = "e1317b152faac13426e6a83e06ff88a4d62cce3c1634ab0a5ec13309";
-const POOL_SCRIPT_HASH2: &str = "57c8e718c201fba10a9da1748d675b54281d3b1b983c5d1687fc7317";
 
 carp_task! {
     name MultieraMinSwapV1MeanPriceTask;
@@ -48,8 +46,8 @@ impl Dex for MinSwapV1 {
     ) {
         // Find the pool address (Note: there should be at most one pool output)
         for output in tx.outputs().iter().find(|o| {
-            get_sheley_payment_hash(o.address()).as_deref() == Some(POOL_SCRIPT_HASH)
-                || get_sheley_payment_hash(o.address()).as_deref() == Some(POOL_SCRIPT_HASH2)
+            get_sheley_payment_hash(o.address()).as_deref() == Some(MS_V1_POOL_SCRIPT_HASH1)
+                || get_sheley_payment_hash(o.address()).as_deref() == Some(MS_V1_POOL_SCRIPT_HASH2)
         }) {
             // Remark: The datum that corresponds to the pool output's datum hash should be present
             // in tx.plutus_data()

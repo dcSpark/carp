@@ -3,6 +3,7 @@ use super::utils::common::{
 };
 use super::utils::dex::{
     build_asset, handle_mean_price, Dex, PoolType, QueuedMeanPrice, SundaeSwapV1,
+    SS_V1_POOL_SCRIPT_HASH,
 };
 use super::{multiera_address::MultieraAddressTask, utils::common::asset_from_pair};
 use crate::dsl::task_macro::*;
@@ -13,8 +14,6 @@ use pallas::ledger::{
     traverse::{MultiEraBlock, MultiEraTx},
 };
 use std::collections::BTreeSet;
-
-const POOL_SCRIPT_HASH: &str = "4020e7fc2de75a0729c3cc3af715b34d98381e0cdbcfa99c950bc3ac";
 
 carp_task! {
   name MultieraSundaeSwapV1MeanPriceTask;
@@ -46,11 +45,9 @@ impl Dex for SundaeSwapV1 {
         tx_id: i64,
     ) {
         // Find the pool address (Note: there should be at most one pool output)
-        for output in tx
-            .outputs()
-            .iter()
-            .find(|o| get_sheley_payment_hash(o.address()).as_deref() == Some(POOL_SCRIPT_HASH))
-        {
+        for output in tx.outputs().iter().find(|o| {
+            get_sheley_payment_hash(o.address()).as_deref() == Some(SS_V1_POOL_SCRIPT_HASH)
+        }) {
             // Remark: The datum that corresponds to the pool output's datum hash should be present
             // in tx.plutus_data()
             if let Some(datum) = get_plutus_datum_for_output(output, &tx.plutus_data()) {
