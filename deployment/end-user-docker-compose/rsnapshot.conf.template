@@ -1,0 +1,20 @@
+config_version	1.2
+snapshot_root	${SNAPSHOTS_TOP_DIR}/data
+cmd_cp		/bin/cp
+cmd_rm		/bin/rm
+cmd_rsync	/usr/bin/rsync
+cmd_logger	/usr/bin/logger
+
+retain	${INSTANCE}	6
+
+
+verbose		2
+
+loglevel	3
+
+
+lockfile	${SNAPSHOTS_TOP_DIR}/rsnapshot.pid
+
+
+backup	${TOP_DIR}/${INSTANCE}		localhost/
+
