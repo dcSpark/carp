@@ -1,6 +1,7 @@
 use std::collections::BTreeSet;
 
 use super::multiera_used_inputs::MultieraUsedInputTask;
+use super::multiera_wingriders_v1_mean_price::get_pool_output;
 use super::utils::common::{
     asset_from_pair, get_asset_amount, get_plutus_datum_for_output, get_sheley_payment_hash,
 };
@@ -127,12 +128,10 @@ fn queue_swap(
     tx_id: i64,
     multiera_used_inputs_to_outputs_map: &BTreeMap<Vec<u8>, BTreeMap<i64, OutputWithTxData>>,
 ) {
-    // Find the pool address (Note: there should be at most one pool output)
-    for pool_output in tx
-        .outputs()
-        .iter()
-        .find(|o| get_sheley_payment_hash(o.address()).as_deref() == Some(WR_V1_POOL_SCRIPT_HASH))
-    {
+    if let Some((pool_output, _)) = get_pool_output(tx) {
+        if tx.redeemers().is_none() || tx.redeemers().unwrap().len() == 0 {
+            return;
+        }
         let redeemers = tx.redeemers().unwrap();
 
         // Get pool input from redemeers
