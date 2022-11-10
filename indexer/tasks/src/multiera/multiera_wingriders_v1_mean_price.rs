@@ -76,6 +76,7 @@ async fn handle_mean_price(
     }
 
     // 3) Query for asset ids
+    // Note: We assume that a totally new asset will not be created and then traded in the same block
     let found_assets = asset_from_pair(
         db_tx,
         &unique_tokens
@@ -91,15 +92,24 @@ async fn handle_mean_price(
     asset_pair_to_id_map.insert(None, None); // ADA
 
     // 4) Add mean prices to DB
-    DexMeanPrice::insert_many(queued_prices.iter().map(|price| DexMeanPriceActiveModel {
-        tx_id: Set(price.tx_id),
-        address_id: Set(multiera_addresses[&price.address].model.id),
-        asset1_id: Set(asset_pair_to_id_map[&price.asset1]),
-        asset2_id: Set(asset_pair_to_id_map[&price.asset2]),
-        amount1: Set(price.amount1),
-        amount2: Set(price.amount2),
-        ..Default::default()
-    }))
+    DexMeanPrice::insert_many(
+        queued_prices
+            .iter()
+            .filter(|price| {
+                // In the unlikely case that an asset is not in the DB, skip this price update
+                asset_pair_to_id_map.contains_key(&price.asset1)
+                    && asset_pair_to_id_map.contains_key(&price.asset2)
+            })
+            .map(|price| DexMeanPriceActiveModel {
+                tx_id: Set(price.tx_id),
+                address_id: Set(multiera_addresses[&price.address].model.id),
+                asset1_id: Set(asset_pair_to_id_map[&price.asset1]),
+                asset2_id: Set(asset_pair_to_id_map[&price.asset2]),
+                amount1: Set(price.amount1),
+                amount2: Set(price.amount2),
+                ..Default::default()
+            }),
+    )
     .exec(db_tx)
     .await?;
 
