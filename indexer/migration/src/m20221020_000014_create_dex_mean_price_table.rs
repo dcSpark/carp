@@ -44,6 +44,7 @@ impl MigrationTrait for Migration {
                             .to(Address, AddressColumn::Id)
                             .on_delete(ForeignKeyAction::Cascade),
                     )
+                    .col(ColumnDef::new(Column::Dex).big_integer().not_null())
                     .col(ColumnDef::new(Column::Asset1Id).big_integer())
                     .foreign_key(
                         ForeignKey::create()
@@ -70,8 +71,8 @@ impl MigrationTrait for Migration {
             .create_index(
                 Index::create()
                     .table(Entity)
-                    .name("index-dex_mean_price-address-native_asset1-native_asset2-transaction")
-                    .col(Column::AddressId)
+                    .name("index-dex_mean_price-dex-native_asset1-native_asset2-transaction")
+                    .col(Column::Dex)
                     .col(Column::Asset1Id)
                     .col(Column::Asset2Id)
                     .col(Column::TxId)

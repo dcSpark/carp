@@ -10,6 +10,7 @@ pub struct Model {
     pub tx_id: i64,
     #[sea_orm(column_type = "BigInteger")]
     pub address_id: i64,
+    pub dex: i32,
     #[sea_orm(column_type = "BigInteger", nullable)]
     pub asset1_id: Option<i64>,
     #[sea_orm(column_type = "BigInteger", nullable)]
@@ -63,3 +64,16 @@ impl Related<super::address::Entity> for Entity {
 }
 
 impl ActiveModelBehavior for ActiveModel {}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Dex {
+    WingRiders,
+}
+
+impl From<Dex> for i32 {
+    fn from(item: Dex) -> Self {
+        match item {
+            Dex::WingRiders => 0,
+        }
+    }
+}

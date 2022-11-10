@@ -6,6 +6,7 @@ use super::utils::common::{
 use super::{multiera_address::MultieraAddressTask, utils::common::asset_from_pair};
 use crate::dsl::task_macro::*;
 use crate::{config::EmptyConfig::EmptyConfig, types::AssetPair};
+use entity::dex_mean_price::Dex;
 use entity::sea_orm::{DatabaseTransaction, Set};
 use pallas::ledger::{
     primitives::ToCanonicalJson,
@@ -103,6 +104,7 @@ async fn handle_mean_price(
             .map(|price| DexMeanPriceActiveModel {
                 tx_id: Set(price.tx_id),
                 address_id: Set(multiera_addresses[&price.address].model.id),
+                dex: Set(Dex::WingRiders.into()),
                 asset1_id: Set(asset_pair_to_id_map[&price.asset1]),
                 asset2_id: Set(asset_pair_to_id_map[&price.asset2]),
                 amount1: Set(price.amount1),
