@@ -1,13 +1,12 @@
 use std::collections::BTreeSet;
 
 use super::multiera_used_inputs::MultieraUsedInputTask;
-use super::multiera_wingriders_v1_mean_price::get_pool_output;
 use super::utils::common::{
     asset_from_pair, get_asset_amount, get_plutus_datum_for_output, get_sheley_payment_hash,
 };
 use super::utils::dex::{
-    build_asset, reduce_ada_amount, WR_V1_POOL_FIXED_ADA, WR_V1_POOL_SCRIPT_HASH,
-    WR_V1_SWAP_IN_ADA, WR_V1_SWAP_OUT_ADA,
+    build_asset, get_pool_output_and_datum, reduce_ada_amount, WR_V1_POOL_FIXED_ADA,
+    WR_V1_POOL_SCRIPT_HASH, WR_V1_SWAP_IN_ADA, WR_V1_SWAP_OUT_ADA,
 };
 use crate::dsl::task_macro::*;
 use crate::era_common::get_outputs_for_inputs;
@@ -128,7 +127,7 @@ fn queue_swap(
     tx_id: i64,
     multiera_used_inputs_to_outputs_map: &BTreeMap<Vec<u8>, BTreeMap<i64, OutputWithTxData>>,
 ) {
-    if let Some((pool_output, _)) = get_pool_output(tx) {
+    if let Some((pool_output, _)) = get_pool_output_and_datum(tx, &vec![WR_V1_POOL_SCRIPT_HASH]) {
         if tx.redeemers().is_none() || tx.redeemers().unwrap().len() == 0 {
             return;
         }

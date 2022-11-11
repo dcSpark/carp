@@ -1,11 +1,14 @@
 use crate::dsl::task_macro::*;
 use entity::sea_orm::{DatabaseTransaction, Set};
-use pallas::ledger::traverse::{MultiEraBlock, MultiEraTx};
+use pallas::ledger::{
+    primitives::alonzo,
+    traverse::{MultiEraBlock, MultiEraOutput, MultiEraTx},
+};
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{dsl::database_task::BlockInfo, types::AssetPair};
 
-use super::common::asset_from_pair;
+use super::common::{asset_from_pair, get_plutus_datum_for_output, get_sheley_payment_hash};
 
 pub const WR_V1_POOL_SCRIPT_HASH: &str = "e6c90a5923713af5786963dee0fdffd830ca7e0c86a041d9e5833e91";
 pub const WR_V1_POOL_FIXED_ADA: u64 = 3_000_000; // every pool UTXO holds this amount of ADA
@@ -156,5 +159,28 @@ pub fn reduce_ada_amount(pair: &AssetPair, amount: u64) -> u64 {
         amount
     } else {
         0
+    }
+}
+
+pub fn get_pool_output_and_datum<'b>(
+    tx: &'b MultiEraTx,
+    pool_hashes: &[&str],
+) -> Option<(MultiEraOutput<'b>, alonzo::PlutusData)> {
+    let pool_hashes = pool_hashes.iter().map(|&s| Some(s)).collect::<Vec<_>>();
+    // Note: there should be at most one pool output
+    if let Some(output) = tx
+        .outputs()
+        .iter()
+        .find(|o| pool_hashes.contains(&get_sheley_payment_hash(o.address()).as_deref()))
+    {
+        // Remark: The datum that corresponds to the pool output's datum hash should be present
+        // in tx.plutus_data()
+        if let Some(datum) = get_plutus_datum_for_output(output, &tx.plutus_data()) {
+            Some((output.clone(), datum))
+        } else {
+            None
+        }
+    } else {
+        None
     }
 }

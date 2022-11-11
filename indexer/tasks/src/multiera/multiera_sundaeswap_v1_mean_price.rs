@@ -2,8 +2,8 @@ use super::utils::common::{
     get_asset_amount, get_plutus_datum_for_output, get_sheley_payment_hash,
 };
 use super::utils::dex::{
-    build_asset, handle_mean_price, Dex, PoolType, QueuedMeanPrice, SundaeSwapV1,
-    SS_V1_POOL_SCRIPT_HASH,
+    build_asset, get_pool_output_and_datum, handle_mean_price, Dex, PoolType, QueuedMeanPrice,
+    SundaeSwapV1, SS_V1_POOL_SCRIPT_HASH,
 };
 use super::{multiera_address::MultieraAddressTask, utils::common::asset_from_pair};
 use crate::dsl::task_macro::*;
@@ -44,38 +44,32 @@ impl Dex for SundaeSwapV1 {
         tx: &MultiEraTx,
         tx_id: i64,
     ) {
-        // Find the pool address (Note: there should be at most one pool output)
-        for output in tx.outputs().iter().find(|o| {
-            get_sheley_payment_hash(o.address()).as_deref() == Some(SS_V1_POOL_SCRIPT_HASH)
-        }) {
-            // Remark: The datum that corresponds to the pool output's datum hash should be present
-            // in tx.plutus_data()
-            if let Some(datum) = get_plutus_datum_for_output(output, &tx.plutus_data()) {
-                let datum = datum.to_json();
+        if let Some((output, datum)) = get_pool_output_and_datum(tx, &vec![SS_V1_POOL_SCRIPT_HASH])
+        {
+            let datum = datum.to_json();
 
-                let get_asset_item = |i, j| {
-                    let item = datum["fields"][0]["fields"][i]["fields"][j]["bytes"]
-                        .as_str()
-                        .unwrap()
-                        .to_string();
-                    hex::decode(item).unwrap()
-                };
+            let get_asset_item = |i, j| {
+                let item = datum["fields"][0]["fields"][i]["fields"][j]["bytes"]
+                    .as_str()
+                    .unwrap()
+                    .to_string();
+                hex::decode(item).unwrap()
+            };
 
-                let asset1 = build_asset(get_asset_item(0, 0), get_asset_item(0, 1));
-                let asset2 = build_asset(get_asset_item(1, 0), get_asset_item(1, 1));
+            let asset1 = build_asset(get_asset_item(0, 0), get_asset_item(0, 1));
+            let asset2 = build_asset(get_asset_item(1, 0), get_asset_item(1, 1));
 
-                let amount1 = get_asset_amount(output, &asset1);
-                let amount2 = get_asset_amount(output, &asset2);
+            let amount1 = get_asset_amount(&output, &asset1);
+            let amount2 = get_asset_amount(&output, &asset2);
 
-                queued_prices.push(QueuedMeanPrice {
-                    tx_id,
-                    address: output.address().unwrap().to_vec(),
-                    asset1,
-                    asset2,
-                    amount1,
-                    amount2,
-                });
-            }
+            queued_prices.push(QueuedMeanPrice {
+                tx_id,
+                address: output.address().unwrap().to_vec(),
+                asset1,
+                asset2,
+                amount1,
+                amount2,
+            });
         }
     }
 }
