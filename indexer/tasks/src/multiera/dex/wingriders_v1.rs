@@ -13,9 +13,13 @@ use crate::{
 
 use super::common::{
     build_asset, get_pool_output_and_datum, reduce_ada_amount, Dex, QueuedMeanPrice, QueuedSwap,
-    WingRidersV1, WR_V1_POOL_FIXED_ADA, WR_V1_POOL_SCRIPT_HASH, WR_V1_SWAP_IN_ADA,
-    WR_V1_SWAP_OUT_ADA,
+    WingRidersV1,
 };
+
+const POOL_SCRIPT_HASH: &str = "e6c90a5923713af5786963dee0fdffd830ca7e0c86a041d9e5833e91";
+const POOL_FIXED_ADA: u64 = 3_000_000; // every pool UTXO holds this amount of ADA
+const SWAP_IN_ADA: u64 = 4_000_000; // oil ADA + agent fee
+const SWAP_OUT_ADA: u64 = 2_000_000; // oil ADA
 
 impl Dex for WingRidersV1 {
     fn queue_mean_price(
@@ -24,8 +28,7 @@ impl Dex for WingRidersV1 {
         tx: &MultiEraTx,
         tx_id: i64,
     ) {
-        if let Some((output, datum)) = get_pool_output_and_datum(tx, &vec![WR_V1_POOL_SCRIPT_HASH])
-        {
+        if let Some((output, datum)) = get_pool_output_and_datum(tx, &vec![POOL_SCRIPT_HASH]) {
             let datum = datum.to_json();
 
             let treasury1 = datum["fields"][1]["fields"][2]["int"].as_u64().unwrap();
@@ -44,10 +47,10 @@ impl Dex for WingRidersV1 {
 
             let amount1 = get_asset_amount(&output, &asset1)
                 - treasury1
-                - reduce_ada_amount(&asset1, WR_V1_POOL_FIXED_ADA);
+                - reduce_ada_amount(&asset1, POOL_FIXED_ADA);
             let amount2 = get_asset_amount(&output, &asset2)
                 - treasury2
-                - reduce_ada_amount(&asset2, WR_V1_POOL_FIXED_ADA);
+                - reduce_ada_amount(&asset2, POOL_FIXED_ADA);
 
             queued_prices.push(QueuedMeanPrice {
                 tx_id,
@@ -67,8 +70,7 @@ impl Dex for WingRidersV1 {
         tx_id: i64,
         multiera_used_inputs_to_outputs_map: &BTreeMap<Vec<u8>, BTreeMap<i64, OutputWithTxData>>,
     ) {
-        if let Some((pool_output, _)) = get_pool_output_and_datum(tx, &vec![WR_V1_POOL_SCRIPT_HASH])
-        {
+        if let Some((pool_output, _)) = get_pool_output_and_datum(tx, &vec![POOL_SCRIPT_HASH]) {
             if tx.redeemers().is_none() || tx.redeemers().unwrap().len() == 0 {
                 return;
             }
@@ -143,14 +145,14 @@ impl Dex for WingRidersV1 {
                     let amount2;
                     if direction == 0 {
                         amount1 = get_asset_amount(&input, &asset1)
-                            - reduce_ada_amount(&asset1, WR_V1_SWAP_IN_ADA);
+                            - reduce_ada_amount(&asset1, SWAP_IN_ADA);
                         amount2 = get_asset_amount(&output, &asset2)
-                            - reduce_ada_amount(&asset2, WR_V1_SWAP_OUT_ADA);
+                            - reduce_ada_amount(&asset2, SWAP_OUT_ADA);
                     } else {
                         amount1 = get_asset_amount(&output, &asset1)
-                            - reduce_ada_amount(&asset1, WR_V1_SWAP_OUT_ADA);
+                            - reduce_ada_amount(&asset1, SWAP_OUT_ADA);
                         amount2 = get_asset_amount(&input, &asset2)
-                            - reduce_ada_amount(&asset2, WR_V1_SWAP_IN_ADA);
+                            - reduce_ada_amount(&asset2, SWAP_IN_ADA);
                     }
                     queued_swaps.push(QueuedSwap {
                         tx_id,

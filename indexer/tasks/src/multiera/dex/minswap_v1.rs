@@ -6,8 +6,12 @@ use crate::{era_common::OutputWithTxData, multiera::utils::common::get_asset_amo
 
 use super::common::{
     build_asset, get_pool_output_and_datum, Dex, MinSwapV1, QueuedMeanPrice, QueuedSwap,
-    MS_V1_POOL_SCRIPT_HASH1, MS_V1_POOL_SCRIPT_HASH2,
 };
+
+pub const POOL_SCRIPT_HASH1: &str = "e1317b152faac13426e6a83e06ff88a4d62cce3c1634ab0a5ec13309";
+pub const POOL_SCRIPT_HASH2: &str = "57c8e718c201fba10a9da1748d675b54281d3b1b983c5d1687fc7317";
+pub const SWAP_IN_ADA: u64 = 4_000_000; // oil ADA + agent fee
+pub const SWAP_OUT_ADA: u64 = 2_000_000; // oil ADA
 
 impl Dex for MinSwapV1 {
     fn queue_mean_price(
@@ -17,7 +21,7 @@ impl Dex for MinSwapV1 {
         tx_id: i64,
     ) {
         if let Some((output, datum)) =
-            get_pool_output_and_datum(tx, &vec![MS_V1_POOL_SCRIPT_HASH1, MS_V1_POOL_SCRIPT_HASH2])
+            get_pool_output_and_datum(tx, &vec![POOL_SCRIPT_HASH1, POOL_SCRIPT_HASH2])
         {
             let datum = datum.to_json();
 

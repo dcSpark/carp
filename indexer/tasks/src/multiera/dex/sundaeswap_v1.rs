@@ -6,8 +6,11 @@ use crate::{era_common::OutputWithTxData, multiera::utils::common::get_asset_amo
 
 use super::common::{
     build_asset, get_pool_output_and_datum, Dex, QueuedMeanPrice, QueuedSwap, SundaeSwapV1,
-    SS_V1_POOL_SCRIPT_HASH,
 };
+
+pub const POOL_SCRIPT_HASH: &str = "4020e7fc2de75a0729c3cc3af715b34d98381e0cdbcfa99c950bc3ac";
+pub const SWAP_IN_ADA: u64 = 4_500_000; // oil ADA + agent fee
+pub const SWAP_OUT_ADA: u64 = 2_000_000; // oil ADA
 
 impl Dex for SundaeSwapV1 {
     fn queue_mean_price(
@@ -16,8 +19,7 @@ impl Dex for SundaeSwapV1 {
         tx: &MultiEraTx,
         tx_id: i64,
     ) {
-        if let Some((output, datum)) = get_pool_output_and_datum(tx, &vec![SS_V1_POOL_SCRIPT_HASH])
-        {
+        if let Some((output, datum)) = get_pool_output_and_datum(tx, &vec![POOL_SCRIPT_HASH]) {
             let datum = datum.to_json();
 
             let get_asset_item = |i, j| {
