@@ -32,9 +32,7 @@ docker-compose up -d
 sudo ./create_snapshot.sh
 ```
 
-After this in local directory tar with cardano and carp database will be created.
-
-
+After this in local directory tar with backup of cardano and carp database will be created.
 
 #### Restore 
 

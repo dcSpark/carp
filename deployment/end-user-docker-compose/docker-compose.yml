@@ -2,8 +2,8 @@ version: "3.7"
 
 services:
   cardano-node:
-    image: inputoutput/cardano-node:1.35.3-configs 
-    #user: "${UID}:${GID}"
+    image: inputoutput/cardano-node:${CARDANO_TAG}
+    #user: "${UID}"
     environment:
       NETWORK: ${NETWORK}
     ports:
