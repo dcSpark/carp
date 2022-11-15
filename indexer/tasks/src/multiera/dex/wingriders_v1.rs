@@ -41,16 +41,15 @@ impl Dex for WingRidersV1 {
             let treasury1 = datum["fields"][1]["fields"][2]["int"].as_u64().unwrap();
             let treasury2 = datum["fields"][1]["fields"][3]["int"].as_u64().unwrap();
 
-            let get_asset_item = |i, j| {
+            let parse_asset_item = |i, j| {
                 let item = datum["fields"][1]["fields"][0]["fields"][i]["fields"][j]["bytes"]
                     .as_str()
                     .unwrap()
                     .to_string();
                 hex::decode(item).unwrap()
             };
-
-            let asset1 = build_asset(get_asset_item(0, 0), get_asset_item(0, 1));
-            let asset2 = build_asset(get_asset_item(1, 0), get_asset_item(1, 1));
+            let asset1 = build_asset(parse_asset_item(0, 0), parse_asset_item(0, 1));
+            let asset2 = build_asset(parse_asset_item(1, 0), parse_asset_item(1, 1));
 
             let amount1 = get_asset_amount(&output, &asset1)
                 - treasury1
