@@ -6,9 +6,12 @@ use crate::{
     types::DexSwapDirection,
 };
 use entity::sea_orm::{DatabaseTransaction, Set};
-use pallas::ledger::{
-    primitives::alonzo,
-    traverse::{MultiEraBlock, MultiEraOutput, MultiEraTx},
+use pallas::{
+    codec::utils::KeepRaw,
+    ledger::{
+        primitives::alonzo,
+        traverse::{MultiEraBlock, MultiEraOutput, MultiEraTx},
+    },
 };
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -25,27 +28,52 @@ pub const SS_V1_POOL_SCRIPT_HASH: &str = "4020e7fc2de75a0729c3cc3af715b34d98381e
 pub const WR_V1_SWAP_IN_ADA: u64 = 4_000_000; // oil ADA + agent fee
 pub const WR_V1_SWAP_OUT_ADA: u64 = 2_000_000; // oil ADA
 
-pub fn get_pool_output_and_datum<'b>(
-    tx: &'b MultiEraTx,
-    pool_hashes: &[&str],
-) -> Option<(MultiEraOutput<'b>, alonzo::PlutusData)> {
-    let pool_hashes = pool_hashes.iter().map(|&s| Some(s)).collect::<Vec<_>>();
-    // Note: there should be at most one pool output
-    if let Some(output) = tx
-        .outputs()
+/// Returns an output and it's datum only if the output's payment hash is in `payment_hashes`
+/// and the plutus datum is known.
+pub fn filter_outputs_and_datums_by_hash<'b>(
+    outputs: &[MultiEraOutput<'b>],
+    payment_hashes: &[&str],
+    plutus_data: &Vec<&KeepRaw<alonzo::PlutusData>>,
+) -> Vec<(MultiEraOutput<'b>, alonzo::PlutusData)> {
+    let payment_hashes = payment_hashes.iter().map(|&s| Some(s)).collect::<Vec<_>>();
+    outputs
         .iter()
-        .find(|o| pool_hashes.contains(&get_sheley_payment_hash(o.address()).as_deref()))
-    {
-        // Remark: The datum that corresponds to the pool output's datum hash should be present
-        // in tx.plutus_data()
-        if let Some(datum) = get_plutus_datum_for_output(output, &tx.plutus_data()) {
-            Some((output.clone(), datum))
-        } else {
-            None
-        }
-    } else {
-        None
-    }
+        .filter_map(|o| {
+            if payment_hashes.contains(&get_sheley_payment_hash(o.address()).as_deref()) {
+                if let Some(datum) = get_plutus_datum_for_output(&o, plutus_data) {
+                    Some((o.clone(), datum))
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>()
+}
+
+/// Returns an output and it's datum only if the output's address is in `addresses`
+/// and the plutus datum is known.
+pub fn filter_outputs_and_datums_by_address<'b>(
+    outputs: &[MultiEraOutput<'b>],
+    addresses: &[&str],
+    plutus_data: &Vec<&KeepRaw<alonzo::PlutusData>>,
+) -> Vec<(MultiEraOutput<'b>, alonzo::PlutusData)> {
+    let addresses = addresses.iter().map(|&s| Some(s)).collect::<Vec<_>>();
+    outputs
+        .iter()
+        .filter_map(|o| {
+            if addresses.contains(&o.address().ok().and_then(|a| a.to_bech32().ok()).as_deref()) {
+                if let Some(datum) = get_plutus_datum_for_output(&o, plutus_data) {
+                    Some((o.clone(), datum))
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>()
 }
 
 pub struct QueuedMeanPrice {

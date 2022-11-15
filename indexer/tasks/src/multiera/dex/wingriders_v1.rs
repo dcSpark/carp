@@ -12,8 +12,8 @@ use crate::{
 };
 
 use super::common::{
-    build_asset, get_pool_output_and_datum, reduce_ada_amount, Dex, QueuedMeanPrice, QueuedSwap,
-    WingRidersV1,
+    build_asset, filter_outputs_and_datums_by_hash, reduce_ada_amount, Dex, QueuedMeanPrice,
+    QueuedSwap, WingRidersV1,
 };
 
 const POOL_SCRIPT_HASH: &str = "e6c90a5923713af5786963dee0fdffd830ca7e0c86a041d9e5833e91";
@@ -28,7 +28,14 @@ impl Dex for WingRidersV1 {
         tx: &MultiEraTx,
         tx_id: i64,
     ) {
-        if let Some((output, datum)) = get_pool_output_and_datum(tx, &vec![POOL_SCRIPT_HASH]) {
+        // Note: there should be at most one pool output
+        if let Some((output, datum)) = filter_outputs_and_datums_by_hash(
+            &tx.outputs(),
+            &vec![POOL_SCRIPT_HASH],
+            &tx.plutus_data(),
+        )
+        .get(0)
+        {
             let datum = datum.to_json();
 
             let treasury1 = datum["fields"][1]["fields"][2]["int"].as_u64().unwrap();
@@ -70,7 +77,14 @@ impl Dex for WingRidersV1 {
         tx_id: i64,
         multiera_used_inputs_to_outputs_map: &BTreeMap<Vec<u8>, BTreeMap<i64, OutputWithTxData>>,
     ) {
-        if let Some((pool_output, _)) = get_pool_output_and_datum(tx, &vec![POOL_SCRIPT_HASH]) {
+        // Note: there should be at most one pool output
+        if let Some((pool_output, _)) = filter_outputs_and_datums_by_hash(
+            &tx.outputs(),
+            &vec![POOL_SCRIPT_HASH],
+            &tx.plutus_data(),
+        )
+        .get(0)
+        {
             if tx.redeemers().is_none() || tx.redeemers().unwrap().len() == 0 {
                 return;
             }
