@@ -13,7 +13,7 @@ use crate::{
 
 use super::common::{
     build_asset, filter_outputs_and_datums_by_address, filter_outputs_and_datums_by_hash,
-    reduce_ada_amount, Dex, MinSwapV1, QueuedMeanPrice, QueuedSwap,
+    reduce_ada_amount, Dex, MinSwapV1, PoolType, QueuedMeanPrice, QueuedSwap,
 };
 
 pub const POOL_SCRIPT_HASH1: &str = "e1317b152faac13426e6a83e06ff88a4d62cce3c1634ab0a5ec13309";
@@ -56,6 +56,7 @@ impl Dex for MinSwapV1 {
             queued_prices.push(QueuedMeanPrice {
                 tx_id,
                 address: output.address().unwrap().to_vec(),
+                pool_type: PoolType::MinSwapV1,
                 asset1,
                 asset2,
                 amount1,
@@ -172,6 +173,7 @@ impl Dex for MinSwapV1 {
                 queued_swaps.push(QueuedSwap {
                     tx_id,
                     address: main_output.address().unwrap().to_vec(),
+                    pool_type: PoolType::MinSwapV1,
                     asset1: asset1.clone(),
                     asset2: asset2.clone(),
                     amount1,

@@ -79,6 +79,7 @@ pub fn filter_outputs_and_datums_by_address<'b>(
 pub struct QueuedMeanPrice {
     pub tx_id: i64,
     pub address: Vec<u8>, // pallas::crypto::hash::Hash<32>
+    pub pool_type: PoolType,
     pub asset1: AssetPair,
     pub asset2: AssetPair,
     pub amount1: u64,
@@ -88,6 +89,7 @@ pub struct QueuedMeanPrice {
 pub struct QueuedSwap {
     pub tx_id: i64,
     pub address: Vec<u8>, // pallas::crypto::hash::Hash<32>
+    pub pool_type: PoolType,
     pub asset1: AssetPair,
     pub asset2: AssetPair,
     pub amount1: u64,
@@ -142,12 +144,23 @@ impl Dex for Empty {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum PoolType {
     WingRidersV1,
     SundaeSwapV1,
     MinSwapV1,
     MinSwapV2,
+}
+
+impl From<PoolType> for i32 {
+    fn from(item: PoolType) -> Self {
+        match item {
+            PoolType::WingRidersV1 => 0,
+            PoolType::SundaeSwapV1 => 1,
+            PoolType::MinSwapV1 => 2,
+            PoolType::MinSwapV2 => 3,
+        }
+    }
 }
 
 struct PoolConfig {
@@ -228,6 +241,7 @@ pub async fn handle_mean_price(
     DexMeanPrice::insert_many(queued_prices.iter().map(|price| DexMeanPriceActiveModel {
         tx_id: Set(price.tx_id),
         address_id: Set(multiera_addresses[&price.address].model.id),
+        dex: Set(i32::from(price.pool_type.clone())),
         asset1_id: Set(asset_pair_to_id_map[&price.asset1]),
         asset2_id: Set(asset_pair_to_id_map[&price.asset2]),
         amount1: Set(price.amount1),
@@ -322,6 +336,7 @@ pub async fn handle_swap(
     DexSwap::insert_many(queued_swaps.iter().map(|price| DexSwapActiveModel {
         tx_id: Set(price.tx_id),
         address_id: Set(multiera_addresses[&price.address].model.id),
+        dex: Set(i32::from(price.pool_type.clone())),
         asset1_id: Set(asset_pair_to_id_map[&price.asset1]),
         asset2_id: Set(asset_pair_to_id_map[&price.asset2]),
         amount1: Set(price.amount1),

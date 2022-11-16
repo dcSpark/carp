@@ -18,7 +18,7 @@ export interface ISqlDexLastPriceSwapResult {
   amount2: string;
   asset_name1: Buffer | null;
   asset_name2: Buffer | null;
-  dex: string | null;
+  dex: string;
   policy_id1: Buffer | null;
   policy_id2: Buffer | null;
 }
@@ -29,7 +29,7 @@ export interface ISqlDexLastPriceSwapQuery {
   result: ISqlDexLastPriceSwapResult;
 }
 
-const sqlDexLastPriceSwapIR: any = {"usedParamSet":{"policy_id1":true,"asset_name1":true,"policy_id2":true,"asset_name2":true,"direction":true},"params":[{"name":"policy_id1","required":false,"transform":{"type":"scalar"},"locs":[{"a":370,"b":380}]},{"name":"asset_name1","required":false,"transform":{"type":"scalar"},"locs":[{"a":400,"b":411}]},{"name":"policy_id2","required":false,"transform":{"type":"scalar"},"locs":[{"a":431,"b":441}]},{"name":"asset_name2","required":false,"transform":{"type":"scalar"},"locs":[{"a":461,"b":472}]},{"name":"direction","required":false,"transform":{"type":"scalar"},"locs":[{"a":1307,"b":1316},{"a":1678,"b":1687}]}],"statement":"WITH \"AssetPairs\" AS (\n  SELECT policy_id1, asset_name1, policy_id2, asset_name2\n  FROM\n    unnest(\n                                                                                                                                                                                                                                                                      \n      (:policy_id1)::bytea[],\n      (:asset_name1)::bytea[],\n      (:policy_id2)::bytea[],\n      (:asset_name2)::bytea[]\n    ) x(policy_id1, asset_name1, policy_id2, asset_name2)\n)\nSELECT\n  DISTINCT ON(\"DexSwap\".address_id)\n\n  \"Asset1\".policy_id AS \"policy_id1?\",\n  \"Asset1\".asset_name AS \"asset_name1?\",\n  \"Asset2\".policy_id AS \"policy_id2?\",\n  \"Asset2\".asset_name AS \"asset_name2?\",\n  \"DexSwap\".amount1,\n  \"DexSwap\".amount2,\n  'WingRiders' || address_id as dex\nFROM \"DexSwap\"\nLEFT JOIN \"NativeAsset\" as \"Asset1\" ON \"Asset1\".id = \"DexSwap\".asset1_id\nLEFT JOIN \"NativeAsset\" as \"Asset2\" ON \"Asset2\".id = \"DexSwap\".asset2_id\nWHERE\n  (\n    (\n      COALESCE(\"Asset1\".policy_id, ''::bytea),\n      COALESCE(\"Asset1\".asset_name, ''::bytea),\n      COALESCE(\"Asset2\".policy_id, ''::bytea),\n      COALESCE(\"Asset2\".asset_name, ''::bytea)\n    ) IN (SELECT policy_id1, asset_name1, policy_id2, asset_name2 FROM \"AssetPairs\")\n    AND \"DexSwap\".direction = :direction\n  )\n  -- Add swap for another direction\n  OR\n  (\n    (\n      COALESCE(\"Asset2\".policy_id, ''::bytea),\n      COALESCE(\"Asset2\".asset_name, ''::bytea),\n      COALESCE(\"Asset1\".policy_id, ''::bytea),\n      COALESCE(\"Asset1\".asset_name, ''::bytea)\n    ) IN (SELECT policy_id1, asset_name1, policy_id2, asset_name2 FROM \"AssetPairs\")\n    AND \"DexSwap\".direction != :direction\n  )\nORDER BY \"DexSwap\".address_id, \"DexSwap\".tx_id, \"DexSwap\".id"};
+const sqlDexLastPriceSwapIR: any = {"usedParamSet":{"policy_id1":true,"asset_name1":true,"policy_id2":true,"asset_name2":true,"direction":true},"params":[{"name":"policy_id1","required":false,"transform":{"type":"scalar"},"locs":[{"a":370,"b":380}]},{"name":"asset_name1","required":false,"transform":{"type":"scalar"},"locs":[{"a":400,"b":411}]},{"name":"policy_id2","required":false,"transform":{"type":"scalar"},"locs":[{"a":431,"b":441}]},{"name":"asset_name2","required":false,"transform":{"type":"scalar"},"locs":[{"a":461,"b":472}]},{"name":"direction","required":false,"transform":{"type":"scalar"},"locs":[{"a":1287,"b":1296},{"a":1658,"b":1667}]}],"statement":"WITH \"AssetPairs\" AS (\n  SELECT policy_id1, asset_name1, policy_id2, asset_name2\n  FROM\n    unnest(\n                                                                                                                                                                                                                                                                      \n      (:policy_id1)::bytea[],\n      (:asset_name1)::bytea[],\n      (:policy_id2)::bytea[],\n      (:asset_name2)::bytea[]\n    ) x(policy_id1, asset_name1, policy_id2, asset_name2)\n)\nSELECT\n  DISTINCT ON(\"DexSwap\".address_id)\n\n  \"Asset1\".policy_id AS \"policy_id1?\",\n  \"Asset1\".asset_name AS \"asset_name1?\",\n  \"Asset2\".policy_id AS \"policy_id2?\",\n  \"Asset2\".asset_name AS \"asset_name2?\",\n  \"DexSwap\".amount1,\n  \"DexSwap\".amount2,\n  \"DexSwap\".dex\nFROM \"DexSwap\"\nLEFT JOIN \"NativeAsset\" as \"Asset1\" ON \"Asset1\".id = \"DexSwap\".asset1_id\nLEFT JOIN \"NativeAsset\" as \"Asset2\" ON \"Asset2\".id = \"DexSwap\".asset2_id\nWHERE\n  (\n    (\n      COALESCE(\"Asset1\".policy_id, ''::bytea),\n      COALESCE(\"Asset1\".asset_name, ''::bytea),\n      COALESCE(\"Asset2\".policy_id, ''::bytea),\n      COALESCE(\"Asset2\".asset_name, ''::bytea)\n    ) IN (SELECT policy_id1, asset_name1, policy_id2, asset_name2 FROM \"AssetPairs\")\n    AND \"DexSwap\".direction = :direction\n  )\n  -- Add swap for another direction\n  OR\n  (\n    (\n      COALESCE(\"Asset2\".policy_id, ''::bytea),\n      COALESCE(\"Asset2\".asset_name, ''::bytea),\n      COALESCE(\"Asset1\".policy_id, ''::bytea),\n      COALESCE(\"Asset1\".asset_name, ''::bytea)\n    ) IN (SELECT policy_id1, asset_name1, policy_id2, asset_name2 FROM \"AssetPairs\")\n    AND \"DexSwap\".direction != :direction\n  )\nORDER BY \"DexSwap\".address_id, \"DexSwap\".tx_id DESC, \"DexSwap\".id DESC"};
 
 /**
  * Query generated from SQL:
@@ -54,7 +54,7 @@ const sqlDexLastPriceSwapIR: any = {"usedParamSet":{"policy_id1":true,"asset_nam
  *   "Asset2".asset_name AS "asset_name2?",
  *   "DexSwap".amount1,
  *   "DexSwap".amount2,
- *   'WingRiders' || address_id as dex
+ *   "DexSwap".dex
  * FROM "DexSwap"
  * LEFT JOIN "NativeAsset" as "Asset1" ON "Asset1".id = "DexSwap".asset1_id
  * LEFT JOIN "NativeAsset" as "Asset2" ON "Asset2".id = "DexSwap".asset2_id
@@ -79,7 +79,7 @@ const sqlDexLastPriceSwapIR: any = {"usedParamSet":{"policy_id1":true,"asset_nam
  *     ) IN (SELECT policy_id1, asset_name1, policy_id2, asset_name2 FROM "AssetPairs")
  *     AND "DexSwap".direction != :direction
  *   )
- * ORDER BY "DexSwap".address_id, "DexSwap".tx_id, "DexSwap".id
+ * ORDER BY "DexSwap".address_id, "DexSwap".tx_id DESC, "DexSwap".id DESC
  * ```
  */
 export const sqlDexLastPriceSwap = new PreparedQuery<ISqlDexLastPriceSwapParams,ISqlDexLastPriceSwapResult>(sqlDexLastPriceSwapIR);

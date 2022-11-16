@@ -10,6 +10,7 @@ pub struct Model {
     pub tx_id: i64,
     #[sea_orm(column_type = "BigInteger")]
     pub address_id: i64,
+    pub dex: i32,
     #[sea_orm(column_type = "BigInteger", nullable)]
     pub asset1_id: Option<i64>,
     #[sea_orm(column_type = "BigInteger", nullable)]

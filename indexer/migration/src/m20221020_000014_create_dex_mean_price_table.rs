@@ -44,6 +44,7 @@ impl MigrationTrait for Migration {
                             .to(Address, AddressColumn::Id)
                             .on_delete(ForeignKeyAction::Cascade),
                     )
+                    .col(ColumnDef::new(Column::Dex).big_integer().not_null())
                     .col(ColumnDef::new(Column::Asset1Id).big_integer())
                     .foreign_key(
                         ForeignKey::create()

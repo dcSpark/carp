@@ -23,7 +23,7 @@ SELECT
   "Asset2".asset_name AS "asset_name2?",
   "DexSwap".amount1,
   "DexSwap".amount2,
-  'WingRiders' || address_id as dex
+  "DexSwap".dex
 FROM "DexSwap"
 LEFT JOIN "NativeAsset" as "Asset1" ON "Asset1".id = "DexSwap".asset1_id
 LEFT JOIN "NativeAsset" as "Asset2" ON "Asset2".id = "DexSwap".asset2_id

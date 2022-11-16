@@ -12,8 +12,8 @@ use crate::{
 };
 
 use super::common::{
-    build_asset, filter_outputs_and_datums_by_hash, reduce_ada_amount, Dex, QueuedMeanPrice,
-    QueuedSwap, WingRidersV1,
+    build_asset, filter_outputs_and_datums_by_hash, reduce_ada_amount, Dex, PoolType,
+    QueuedMeanPrice, QueuedSwap, WingRidersV1,
 };
 
 const POOL_SCRIPT_HASH: &str = "e6c90a5923713af5786963dee0fdffd830ca7e0c86a041d9e5833e91";
@@ -65,6 +65,7 @@ impl Dex for WingRidersV1 {
             queued_prices.push(QueuedMeanPrice {
                 tx_id,
                 address: output.address().unwrap().to_vec(),
+                pool_type: PoolType::WingRidersV1,
                 asset1,
                 asset2,
                 amount1,
@@ -177,6 +178,7 @@ impl Dex for WingRidersV1 {
                 queued_swaps.push(QueuedSwap {
                     tx_id,
                     address: pool_output.address().unwrap().to_vec(),
+                    pool_type: PoolType::WingRidersV1,
                     asset1,
                     asset2,
                     amount1,

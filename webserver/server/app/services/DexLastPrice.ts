@@ -5,6 +5,15 @@ import { sqlDexLastPriceMean } from '../models/dex/sqlDexLastPriceMean.queries';
 import { parseAssetItem, serializeAsset} from './utils';
 
 
+function dexToString(dex: string): string {
+    switch(dex) {
+        case '0': return 'WingRiders';
+        case '1': return 'SundaeSwap';
+        case '2': return 'MinSwap';
+    }
+    return 'Unknown';
+}
+
 export async function dexLastPrice(
   request: {
     dbTx: PoolClient;
@@ -51,7 +60,7 @@ export async function dexLastPrice(
       asset2: serializeAsset(result.policy_id2, result.asset_name2),
       amount1: result.amount1,
       amount2: result.amount2,
-      dex: String(result.dex),
+      dex: dexToString(result.dex)
     })),
   };
 }
