@@ -9,6 +9,7 @@ import type {
 } from "./models/CredentialAddress";
 import { DexMeanPriceRequest, DexMeanPriceResponse } from "./models/DexMeanPrice";
 import { DexSwapRequest, DexSwapResponse } from "./models/DexSwap";
+import { DexLastPriceRequest, DexLastPriceResponse } from "./models/DexLastPrice";
 import { Cip25Response, PolicyIdAssetMapType } from "./models/PolicyIdAssetMap";
 import type {
   TransactionHistoryRequest,
@@ -28,6 +29,7 @@ export enum Routes {
   metadataNft = "metadata/nft",
   dexMeanPrice = "dex/mean-price",
   dexSwap = "dex/swap",
+  dexLastPrice = "dex/last-price"
 }
 
 export type EndpointTypes = {
@@ -70,5 +72,10 @@ export type EndpointTypes = {
     name: typeof Routes.dexSwap;
     input: DexSwapRequest;
     response: DexSwapResponse;
+  };
+  [Routes.dexLastPrice]: {
+    name: typeof Routes.dexLastPrice;
+    input: DexLastPriceRequest;
+    response: DexLastPriceResponse;
   };
 };

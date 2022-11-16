@@ -2,25 +2,7 @@ import type { Asset, DexMeanPriceResponse } from '../../../shared/models/DexMean
 import type { PoolClient } from 'pg';
 import type { TransactionPaginationType } from './PaginationService';
 import { sqlDexMeanPrice } from '../models/dex/sqlDexMeanPrice.queries';
-
-function parseAssetItem(s: string | undefined | null): Buffer {
-  // For the sake of the query, we represent ADA as ('', '') instead of (NULL, NULL).
-  // (see sqlDexMeanPrice.queries.sql for details)
-  return Buffer.from(s ?? "", 'hex');
-}
-
-function serializeAsset(policyId: Buffer | null, assetName: Buffer | null): Asset {
-  if (policyId === null && assetName === null) {
-    return null;
-  }
-  if (policyId !== null && assetName !== null) {
-    return {
-      policyId: policyId.toString('hex'),
-      assetName: assetName.toString('hex'),
-    };
-  }
-  throw new Error('Invalid asset query response'); // should be unreachable
-}
+import { parseAssetItem, serializeAsset} from './utils';
 
 export async function dexMeanPrices(
   request: TransactionPaginationType & {
