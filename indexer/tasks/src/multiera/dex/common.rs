@@ -101,7 +101,7 @@ pub trait Dex {
         queued_prices: &mut Vec<QueuedMeanPrice>,
         tx: &MultiEraTx,
         tx_id: i64,
-    );
+    ) -> Result<(), String>;
 
     fn queue_swap(
         &self,
@@ -109,7 +109,7 @@ pub trait Dex {
         tx: &MultiEraTx,
         tx_id: i64,
         multiera_used_inputs_to_outputs_map: &BTreeMap<Vec<u8>, BTreeMap<i64, OutputWithTxData>>,
-    );
+    ) -> Result<(), String>;
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -127,7 +127,7 @@ impl Dex for Empty {
         _queued_prices: &mut Vec<QueuedMeanPrice>,
         _tx: &MultiEraTx,
         _tx_id: i64,
-    ) {
+    ) -> Result<(), String> {
         unimplemented!();
     }
 
@@ -137,7 +137,7 @@ impl Dex for Empty {
         _tx: &MultiEraTx,
         _tx_id: i64,
         _multiera_used_inputs_to_outputs_map: &BTreeMap<Vec<u8>, BTreeMap<i64, OutputWithTxData>>,
-    ) {
+    ) -> Result<(), String> {
         unimplemented!();
     }
 }
@@ -178,7 +178,18 @@ pub async fn handle_mean_price(
     let mut queued_prices = Vec::<QueuedMeanPrice>::default();
     for (tx_body, cardano_transaction) in block.1.txs().iter().zip(multiera_txs) {
         if cardano_transaction.is_valid {
-            mean_value_trait.queue_mean_price(&mut queued_prices, tx_body, cardano_transaction.id);
+            let result = mean_value_trait.queue_mean_price(
+                &mut queued_prices,
+                tx_body,
+                cardano_transaction.id,
+            );
+            if result.is_err() {
+                tracing::warn!(
+                    "Failed to parse mean price for tx {}: {}",
+                    cardano_transaction.id,
+                    result.err().unwrap(),
+                );
+            }
         }
     }
 
@@ -259,12 +270,19 @@ pub async fn handle_swap(
     let mut queued_swaps = Vec::<QueuedSwap>::default();
     for (tx_body, cardano_transaction) in block.1.txs().iter().zip(multiera_txs) {
         if cardano_transaction.is_valid {
-            swap_trait.queue_swap(
+            let result = swap_trait.queue_swap(
                 &mut queued_swaps,
                 tx_body,
                 cardano_transaction.id,
                 multiera_used_inputs_to_outputs_map,
             );
+            if result.is_err() {
+                tracing::warn!(
+                    "Failed to parse swaps for tx {}: {}",
+                    cardano_transaction.id,
+                    result.err().unwrap()
+                );
+            }
         }
     }
 

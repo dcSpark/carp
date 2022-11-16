@@ -27,7 +27,7 @@ impl Dex for SundaeSwapV1 {
         queued_prices: &mut Vec<QueuedMeanPrice>,
         tx: &MultiEraTx,
         tx_id: i64,
-    ) {
+    ) -> Result<(), String> {
         // Note: there should be at most one pool output
         if let Some((output, datum)) = filter_outputs_and_datums_by_hash(
             &tx.outputs(),
@@ -38,15 +38,15 @@ impl Dex for SundaeSwapV1 {
         {
             let datum = datum.to_json();
 
-            let parse_asset_item = |i, j| {
+            let parse_asset_item = |i, j| -> Result<Vec<u8>, &str> {
                 let item = datum["fields"][0]["fields"][i]["fields"][j]["bytes"]
                     .as_str()
-                    .unwrap()
+                    .ok_or("Failed to parse asset item")?
                     .to_string();
-                hex::decode(item).unwrap()
+                hex::decode(item).map_err(|_e| "Failed to parse asset item")
             };
-            let asset1 = build_asset(parse_asset_item(0, 0), parse_asset_item(0, 1));
-            let asset2 = build_asset(parse_asset_item(1, 0), parse_asset_item(1, 1));
+            let asset1 = build_asset(parse_asset_item(0, 0)?, parse_asset_item(0, 1)?);
+            let asset2 = build_asset(parse_asset_item(1, 0)?, parse_asset_item(1, 1)?);
 
             let amount1 = get_asset_amount(&output, &asset1);
             let amount2 = get_asset_amount(&output, &asset2);
@@ -60,6 +60,7 @@ impl Dex for SundaeSwapV1 {
                 amount2,
             });
         }
+        Ok(())
     }
 
     fn queue_swap(
@@ -68,7 +69,7 @@ impl Dex for SundaeSwapV1 {
         tx: &MultiEraTx,
         tx_id: i64,
         multiera_used_inputs_to_outputs_map: &BTreeMap<Vec<u8>, BTreeMap<i64, OutputWithTxData>>,
-    ) {
+    ) -> Result<(), String> {
         // Note: there should be at most one pool output
         if let Some((main_output, main_datum)) = filter_outputs_and_datums_by_hash(
             &tx.outputs(),
@@ -81,15 +82,15 @@ impl Dex for SundaeSwapV1 {
             let mut free_utxos: Vec<MultiEraOutput> = tx.outputs();
 
             // Extract asset information from plutus data of pool input
-            let parse_asset_item = |i, j| {
+            let parse_asset_item = |i, j| -> Result<Vec<u8>, &str> {
                 let item = main_datum["fields"][0]["fields"][i]["fields"][j]["bytes"]
                     .as_str()
-                    .unwrap()
+                    .ok_or("Failed to parse asset item")?
                     .to_string();
-                hex::decode(item).unwrap()
+                hex::decode(item).map_err(|_e| "Failed to parse asset item")
             };
-            let asset1 = build_asset(parse_asset_item(0, 0), parse_asset_item(0, 1));
-            let asset2 = build_asset(parse_asset_item(1, 0), parse_asset_item(1, 1));
+            let asset1 = build_asset(parse_asset_item(0, 0)?, parse_asset_item(0, 1)?);
+            let asset2 = build_asset(parse_asset_item(1, 0)?, parse_asset_item(1, 1)?);
 
             let inputs: Vec<MultiEraOutput> = tx
                 .inputs()
@@ -108,7 +109,9 @@ impl Dex for SundaeSwapV1 {
                 let input_datum = input_datum.to_json();
 
                 // identify operation: 0 = swap
-                let operation = input_datum["fields"][3]["constructor"].as_i64().unwrap();
+                let operation = input_datum["fields"][3]["constructor"]
+                    .as_i64()
+                    .ok_or("Failed to parse operation")?;
                 if operation != 0 {
                     tracing::debug!("Operation is not a swap");
                     continue;
@@ -120,21 +123,22 @@ impl Dex for SundaeSwapV1 {
                     input_datum["fields"][1]["fields"][0]["fields"][0]["fields"][0]["fields"][0]
                         ["bytes"]
                         .as_str()
-                        .unwrap()
+                        .ok_or("Failed to parse output address item")?
                         .to_string(),
                     input_datum["fields"][1]["fields"][0]["fields"][0]["fields"][1]["fields"][0]
                         ["fields"][0]["fields"][0]["bytes"]
                         .as_str()
-                        .unwrap()
+                        .ok_or("Failed to parse output address item")?
                         .to_string(),
                 ];
-                let output_address = Address::from_hex(&output_address_items.join("")).unwrap();
+                let output_address = Address::from_hex(&output_address_items.join(""))
+                    .map_err(|_e| "Failed to parse output address")?;
 
                 // Get coresponding UTxO with result
                 let utxo_pos = free_utxos
                     .iter()
                     .position(|o| o.address().ok() == Some(output_address.clone()))
-                    .unwrap();
+                    .ok_or("Failed to find utxo")?;
                 let utxo = free_utxos[utxo_pos].clone();
                 free_utxos.remove(utxo_pos);
 
@@ -143,7 +147,7 @@ impl Dex for SundaeSwapV1 {
                 let amount2;
                 let direction = input_datum["fields"][3]["fields"][0]["constructor"]
                     .as_i64()
-                    .unwrap();
+                    .ok_or("Failed to parse direction")?;
                 if direction == 0 {
                     amount1 =
                         get_asset_amount(&input, &asset1) - reduce_ada_amount(&asset1, SWAP_IN_ADA);
@@ -170,5 +174,6 @@ impl Dex for SundaeSwapV1 {
                 })
             }
         }
+        Ok(())
     }
 }
