@@ -42,4 +42,4 @@ WHERE
     COALESCE("Asset1".policy_id, ''::bytea),
     COALESCE("Asset1".asset_name, ''::bytea)
   ) IN (SELECT policy_id1, asset_name1, policy_id2, asset_name2 FROM "AssetPairs")
-ORDER BY "DexMeanPrice".address_id, "DexMeanPrice".tx_id, "DexMeanPrice".id;
+ORDER BY "DexMeanPrice".address_id, "DexMeanPrice".tx_id DESC, "DexMeanPrice".id DESC;
