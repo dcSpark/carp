@@ -16,7 +16,7 @@ WITH "AssetPairs" AS (
 )
 SELECT
   "Transaction".hash AS tx_hash,
-  "Address".payload AS address,
+  "DexMeanPrice".dex as dex,
   "Asset1".policy_id AS "policy_id1?",
   "Asset1".asset_name AS "asset_name1?",
   "Asset2".policy_id AS "policy_id2?",
@@ -25,18 +25,26 @@ SELECT
   "DexMeanPrice".amount2
 FROM "DexMeanPrice"
 JOIN "Transaction" ON "Transaction".id = "DexMeanPrice".tx_id
-JOIN "Address" ON "Address".id = "DexMeanPrice".address_id
 LEFT JOIN "NativeAsset" as "Asset1" ON "Asset1".id = "DexMeanPrice".asset1_id
 LEFT JOIN "NativeAsset" as "Asset2" ON "Asset2".id = "DexMeanPrice".asset2_id
 WHERE
-  "Address".payload = ANY (:addresses)
+  "DexMeanPrice".dex = ANY (:dexes)
   AND
   (
-    COALESCE("Asset1".policy_id, ''::bytea),
-    COALESCE("Asset1".asset_name, ''::bytea),
-    COALESCE("Asset2".policy_id, ''::bytea),
-    COALESCE("Asset2".asset_name, ''::bytea)
-  ) IN (SELECT policy_id1, asset_name1, policy_id2, asset_name2 FROM "AssetPairs")
+    (
+      COALESCE("Asset1".policy_id, ''::bytea),
+      COALESCE("Asset1".asset_name, ''::bytea),
+      COALESCE("Asset2".policy_id, ''::bytea),
+      COALESCE("Asset2".asset_name, ''::bytea)
+    ) IN (SELECT policy_id1, asset_name1, policy_id2, asset_name2 FROM "AssetPairs")
+    OR
+    (
+      COALESCE("Asset2".policy_id, ''::bytea),
+      COALESCE("Asset2".asset_name, ''::bytea),
+      COALESCE("Asset1".policy_id, ''::bytea),
+      COALESCE("Asset1".asset_name, ''::bytea)
+    ) IN (SELECT policy_id1, asset_name1, policy_id2, asset_name2 FROM "AssetPairs")
+  )
   AND
   "DexMeanPrice".tx_id <= (:until_tx_id)
   AND

@@ -18,7 +18,7 @@ const route = Routes.dexLastPrice;
 @Route('dex/last-price')
 export class DexLastPriceController extends Controller {
     /**
-     * Gets the swap prices for the given liquidity pool addresses and asset pairs.
+     * Gets the swap prices for the given liquidity pool and asset pairs.
      */
     @SuccessResponse(`${StatusCodes.OK}`)
     @Post()

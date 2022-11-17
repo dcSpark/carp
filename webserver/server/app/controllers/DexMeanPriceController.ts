@@ -10,7 +10,6 @@ import { Errors } from '../../../shared/errors';
 import { expectType } from 'tsd';
 import type { EndpointTypes } from '../../../shared/routes';
 import { Routes } from '../../../shared/routes';
-import { getAddressTypes } from '../models/utils';
 import type { DexMeanPriceResponse } from '../../../shared/models/DexMeanPrice';
 import { dexMeanPrices } from '../services/DexMeanPrice';
 
@@ -19,7 +18,7 @@ const route = Routes.dexMeanPrice;
 @Route('dex/mean-price')
 export class DexMeanPriceController extends Controller {
   /**
-   * Gets the mean prices for the given liquidity pool addresses and asset pairs.
+   * Gets the mean prices for the given liquidity pool and asset pairs.
    */
   @SuccessResponse(`${StatusCodes.OK}`)
   @Post()
@@ -32,27 +31,6 @@ export class DexMeanPriceController extends Controller {
       ErrorShape
     >
   ): Promise<EndpointTypes[typeof route]['response']> {
-    if (requestBody.addresses.length > DEX_PRICE_LIMIT.REQUEST_ADDRESSES) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-      return errorResponse(
-        StatusCodes.BAD_REQUEST,
-        genErrorMessage(Errors.AddressLimitExceeded, {
-          limit: DEX_PRICE_LIMIT.REQUEST_ADDRESSES,
-          found: requestBody.addresses.length,
-        })
-      );
-    }
-    const addressTypes = getAddressTypes(requestBody.addresses);
-    if (addressTypes.invalid.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-      return errorResponse(
-        StatusCodes.UNPROCESSABLE_ENTITY,
-        genErrorMessage(Errors.IncorrectAddressFormat, {
-          addresses: addressTypes.invalid,
-        })
-      );
-    }
-
     if (requestBody.assetPairs.length > DEX_PRICE_LIMIT.REQUEST_ASSET_PAIRS) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return errorResponse(
@@ -98,8 +76,7 @@ export class DexMeanPriceController extends Controller {
           after: pageStart,
           until,
           dbTx,
-          addresses: addressTypes.exactAddress.map(addr => Buffer.from(addr, 'hex')),
-          reverseMap: addressTypes.reverseMap,
+          dexes: requestBody.dexes,
           assetPairs: requestBody.assetPairs,
           limit: requestBody.limit ?? DEX_PRICE_LIMIT.RESPONSE,
         });

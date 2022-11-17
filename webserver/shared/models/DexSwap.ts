@@ -1,5 +1,4 @@
-import { Address } from "./Address";
-import { Pagination } from "./common";
+import { Pagination, Dex, Direction } from "./common";
 import { AssetName, PolicyId } from "./PolicyIdAssetMap";
 
 export type Asset = {
@@ -11,11 +10,11 @@ export type Asset = {
  * @example "2042352568679"
  */
 type Amount = string; // uint64
-type Direction = string;
+
 
 export type DexSwap = {
     tx_hash: string;
-    address: Address;
+    dex: Dex;
     asset1: Asset;
     asset2: Asset;
     amount1: Amount;
@@ -24,7 +23,7 @@ export type DexSwap = {
 }
 
 export type DexSwapRequest = {
-  addresses: Address[],
+  dexes: Array<Dex>,
   assetPairs: {asset1: Asset, asset2: Asset}[];
   /** Defaults to `DEX_PRICE_LIMIT.RESPONSE` */
   limit?: number;

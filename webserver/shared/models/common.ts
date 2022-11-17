@@ -89,3 +89,15 @@ export type PageInfo = {
     hasNextPage: boolean;
   };
 };
+
+export enum Direction {
+  Buy = 'buy',
+  Sell = 'sell',
+};
+
+export enum Dex {
+  WingRiders = 'WingRiders',
+  SundaeSwap = 'SundaeSwap',
+  MinSwap = 'MinSwap',
+  Unknown = 'Unknown',
+};

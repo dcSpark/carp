@@ -1,5 +1,4 @@
-import { Address } from "./Address";
-import { Pagination } from "./common";
+import { Dex, Pagination } from "./common";
 import { AssetName, PolicyId } from "./PolicyIdAssetMap";
 
 export type Asset = {
@@ -14,7 +13,7 @@ type Amount = string; // uint64
 
 export type DexMeanPrice = {
     tx_hash: string;
-    address: Address;
+    dex: Dex;
     asset1: Asset;
     asset2: Asset;
     amount1: Amount;
@@ -22,8 +21,8 @@ export type DexMeanPrice = {
 }
 
 export type DexMeanPriceRequest = {
-  addresses: Address[],
   assetPairs: {asset1: Asset, asset2: Asset}[];
+  dexes: Array<Dex>,
   /** Defaults to `DEX_PRICE_LIMIT.RESPONSE` */
   limit?: number;
 } & Pagination;

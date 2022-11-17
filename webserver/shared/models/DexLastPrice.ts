@@ -1,4 +1,5 @@
 import { AssetName, PolicyId } from "./PolicyIdAssetMap";
+import { Dex } from "./common";
 
 export type Asset = {
   policyId: PolicyId;
@@ -9,7 +10,6 @@ export type Asset = {
  * @example "2042352568679"
  */
 type Amount = string; // uint64
-type Dex = string; // enum
 
 export type DexLastPrice = {
     asset1: Asset;
