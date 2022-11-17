@@ -15,7 +15,7 @@ WITH "AssetPairs" AS (
     ) x(policy_id1, asset_name1, policy_id2, asset_name2)
 )
 SELECT
-  DISTINCT ON("DexMeanPrice".address_id)
+  DISTINCT ON("DexMeanPrice".dex)
 
   "Asset1".policy_id AS "policy_id1?",
   "Asset1".asset_name AS "asset_name1?",
@@ -42,4 +42,4 @@ WHERE
     COALESCE("Asset1".policy_id, ''::bytea),
     COALESCE("Asset1".asset_name, ''::bytea)
   ) IN (SELECT policy_id1, asset_name1, policy_id2, asset_name2 FROM "AssetPairs")
-ORDER BY "DexMeanPrice".address_id, "DexMeanPrice".tx_id DESC, "DexMeanPrice".id DESC;
+ORDER BY "DexMeanPrice".dex, "DexMeanPrice".tx_id DESC, "DexMeanPrice".id DESC;

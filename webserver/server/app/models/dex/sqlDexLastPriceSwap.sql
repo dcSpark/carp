@@ -15,7 +15,7 @@ WITH "AssetPairs" AS (
     ) x(policy_id1, asset_name1, policy_id2, asset_name2)
 )
 SELECT
-  DISTINCT ON("DexSwap".address_id)
+  DISTINCT ON("DexSwap".dex)
 
   "Asset1".policy_id AS "policy_id1?",
   "Asset1".asset_name AS "asset_name1?",
@@ -48,4 +48,4 @@ WHERE
     ) IN (SELECT policy_id1, asset_name1, policy_id2, asset_name2 FROM "AssetPairs")
     AND "DexSwap".direction != :direction
   )
-ORDER BY "DexSwap".address_id, "DexSwap".tx_id DESC, "DexSwap".id DESC;
+ORDER BY "DexSwap".dex, "DexSwap".tx_id DESC, "DexSwap".id DESC;
