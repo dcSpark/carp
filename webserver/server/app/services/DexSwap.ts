@@ -1,9 +1,10 @@
 import type { Asset, DexSwapResponse } from '../../../shared/models/DexSwap';
 import type { PoolClient } from 'pg';
 import type { TransactionPaginationType } from './PaginationService';
+import type { Dex } from '../../../shared/models/common';
 import { sqlDexSwap } from '../models/dex/sqlDexSwap.queries';
 import { parseAssetItem, serializeAsset, valueToDex, dexToValue} from './utils';
-import { Dex, Direction } from '../../../shared/models/common';
+import { Direction } from '../../../shared/models/common';
 
 export async function dexSwap(
   request: TransactionPaginationType & {

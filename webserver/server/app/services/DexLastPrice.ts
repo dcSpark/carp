@@ -1,6 +1,6 @@
-import { Asset, PriceType, DexLastPriceResponse } from '../../../shared/models/DexLastPrice';
-import { Dex } from '../../../shared/models/common';
+import type { Asset, DexLastPriceResponse } from '../../../shared/models/DexLastPrice';
 import type { PoolClient } from 'pg';
+import { PriceType } from '../../../shared/models/DexLastPrice';
 import { sqlDexLastPriceSwap } from '../models/dex/sqlDexLastPriceSwap.queries';
 import { sqlDexLastPriceMean } from '../models/dex/sqlDexLastPriceMean.queries';
 import { parseAssetItem, serializeAsset, valueToDex} from './utils';
