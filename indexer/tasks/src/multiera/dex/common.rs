@@ -21,18 +21,14 @@ use std::collections::{BTreeMap, BTreeSet};
 pub fn filter_outputs_and_datums_by_hash<'b>(
     outputs: &[MultiEraOutput<'b>],
     payment_hashes: &[&str],
-    plutus_data: &Vec<&KeepRaw<alonzo::PlutusData>>,
+    plutus_data: &[&KeepRaw<alonzo::PlutusData>],
 ) -> Vec<(MultiEraOutput<'b>, alonzo::PlutusData)> {
     let payment_hashes = payment_hashes.iter().map(|&s| Some(s)).collect::<Vec<_>>();
     outputs
         .iter()
         .filter_map(|o| {
             if payment_hashes.contains(&get_shelley_payment_hash(o.address()).as_deref()) {
-                if let Some(datum) = get_plutus_datum_for_output(&o, plutus_data) {
-                    Some((o.clone(), datum))
-                } else {
-                    None
-                }
+                get_plutus_datum_for_output(o, plutus_data).map(|datum| (o.clone(), datum))
             } else {
                 None
             }
@@ -45,18 +41,14 @@ pub fn filter_outputs_and_datums_by_hash<'b>(
 pub fn filter_outputs_and_datums_by_address<'b>(
     outputs: &[MultiEraOutput<'b>],
     addresses: &[&str],
-    plutus_data: &Vec<&KeepRaw<alonzo::PlutusData>>,
+    plutus_data: &[&KeepRaw<alonzo::PlutusData>],
 ) -> Vec<(MultiEraOutput<'b>, alonzo::PlutusData)> {
     let addresses = addresses.iter().map(|&s| Some(s)).collect::<Vec<_>>();
     outputs
         .iter()
         .filter_map(|o| {
             if addresses.contains(&o.address().ok().and_then(|a| a.to_bech32().ok()).as_deref()) {
-                if let Some(datum) = get_plutus_datum_for_output(&o, plutus_data) {
-                    Some((o.clone(), datum))
-                } else {
-                    None
-                }
+                get_plutus_datum_for_output(o, plutus_data).map(|datum| (o.clone(), datum))
             } else {
                 None
             }
@@ -199,10 +191,10 @@ pub async fn handle_mean_price(
     let mut unique_tokens = BTreeSet::<&(Vec<u8>, Vec<u8>)>::default();
     for p in &queued_prices {
         if let Some(pair) = &p.asset1 {
-            unique_tokens.insert(&pair);
+            unique_tokens.insert(pair);
         }
         if let Some(pair) = &p.asset2 {
-            unique_tokens.insert(&pair);
+            unique_tokens.insert(pair);
         }
     }
 
@@ -301,10 +293,10 @@ pub async fn handle_swap(
     let mut unique_tokens = BTreeSet::<&(Vec<u8>, Vec<u8>)>::default();
     for p in &queued_swaps {
         if let Some(pair) = &p.asset1 {
-            unique_tokens.insert(&pair);
+            unique_tokens.insert(pair);
         }
         if let Some(pair) = &p.asset2 {
-            unique_tokens.insert(&pair);
+            unique_tokens.insert(pair);
         }
     }
 

@@ -29,12 +29,9 @@ impl Dex for WingRidersV1 {
         tx_id: i64,
     ) -> Result<(), String> {
         // Note: there should be at most one pool output
-        if let Some((output, datum)) = filter_outputs_and_datums_by_hash(
-            &tx.outputs(),
-            &vec![POOL_SCRIPT_HASH],
-            &tx.plutus_data(),
-        )
-        .get(0)
+        if let Some((output, datum)) =
+            filter_outputs_and_datums_by_hash(&tx.outputs(), &[POOL_SCRIPT_HASH], &tx.plutus_data())
+                .get(0)
         {
             let datum = datum.to_json();
 
@@ -55,10 +52,10 @@ impl Dex for WingRidersV1 {
             let asset1 = build_asset(parse_asset_item(0, 0)?, parse_asset_item(0, 1)?);
             let asset2 = build_asset(parse_asset_item(1, 0)?, parse_asset_item(1, 1)?);
 
-            let amount1 = get_asset_amount(&output, &asset1)
+            let amount1 = get_asset_amount(output, &asset1)
                 - treasury1
                 - reduce_ada_amount(&asset1, POOL_FIXED_ADA);
-            let amount2 = get_asset_amount(&output, &asset2)
+            let amount2 = get_asset_amount(output, &asset2)
                 - treasury2
                 - reduce_ada_amount(&asset2, POOL_FIXED_ADA);
 
@@ -83,12 +80,9 @@ impl Dex for WingRidersV1 {
         multiera_used_inputs_to_outputs_map: &BTreeMap<Vec<u8>, BTreeMap<i64, OutputWithTxData>>,
     ) -> Result<(), String> {
         // Note: there should be at most one pool output
-        if let Some((pool_output, _)) = filter_outputs_and_datums_by_hash(
-            &tx.outputs(),
-            &vec![POOL_SCRIPT_HASH],
-            &tx.plutus_data(),
-        )
-        .get(0)
+        if let Some((pool_output, _)) =
+            filter_outputs_and_datums_by_hash(&tx.outputs(), &[POOL_SCRIPT_HASH], &tx.plutus_data())
+                .get(0)
         {
             let redeemers = tx.redeemers().ok_or("No redeemers")?;
 
@@ -167,10 +161,10 @@ impl Dex for WingRidersV1 {
                 if direction == 0 {
                     amount1 =
                         get_asset_amount(&input, &asset1) - reduce_ada_amount(&asset1, SWAP_IN_ADA);
-                    amount2 = get_asset_amount(&output, &asset2)
+                    amount2 = get_asset_amount(output, &asset2)
                         - reduce_ada_amount(&asset2, SWAP_OUT_ADA);
                 } else {
-                    amount1 = get_asset_amount(&output, &asset1)
+                    amount1 = get_asset_amount(output, &asset1)
                         - reduce_ada_amount(&asset1, SWAP_OUT_ADA);
                     amount2 =
                         get_asset_amount(&input, &asset2) - reduce_ada_amount(&asset2, SWAP_IN_ADA);

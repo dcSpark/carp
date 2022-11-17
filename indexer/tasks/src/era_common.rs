@@ -190,7 +190,7 @@ pub async fn get_outputs_for_inputs(
                 id: output.id,
                 payload: output.payload.clone(),
                 address_id: output.address_id,
-                tx_id: output.tx_id.clone(),
+                tx_id: output.tx_id,
                 output_index: output.output_index,
             },
             tx_hash: output.tx_hash.clone(),

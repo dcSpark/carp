@@ -29,12 +29,9 @@ impl Dex for SundaeSwapV1 {
         tx_id: i64,
     ) -> Result<(), String> {
         // Note: there should be at most one pool output
-        if let Some((output, datum)) = filter_outputs_and_datums_by_hash(
-            &tx.outputs(),
-            &vec![POOL_SCRIPT_HASH],
-            &tx.plutus_data(),
-        )
-        .get(0)
+        if let Some((output, datum)) =
+            filter_outputs_and_datums_by_hash(&tx.outputs(), &[POOL_SCRIPT_HASH], &tx.plutus_data())
+                .get(0)
         {
             let datum = datum.to_json();
 
@@ -48,8 +45,8 @@ impl Dex for SundaeSwapV1 {
             let asset1 = build_asset(parse_asset_item(0, 0)?, parse_asset_item(0, 1)?);
             let asset2 = build_asset(parse_asset_item(1, 0)?, parse_asset_item(1, 1)?);
 
-            let amount1 = get_asset_amount(&output, &asset1);
-            let amount2 = get_asset_amount(&output, &asset2);
+            let amount1 = get_asset_amount(output, &asset1);
+            let amount2 = get_asset_amount(output, &asset2);
 
             queued_prices.push(QueuedMeanPrice {
                 tx_id,
@@ -72,12 +69,9 @@ impl Dex for SundaeSwapV1 {
         multiera_used_inputs_to_outputs_map: &BTreeMap<Vec<u8>, BTreeMap<i64, OutputWithTxData>>,
     ) -> Result<(), String> {
         // Note: there should be at most one pool output
-        if let Some((main_output, main_datum)) = filter_outputs_and_datums_by_hash(
-            &tx.outputs(),
-            &vec![POOL_SCRIPT_HASH],
-            &tx.plutus_data(),
-        )
-        .get(0)
+        if let Some((main_output, main_datum)) =
+            filter_outputs_and_datums_by_hash(&tx.outputs(), &[POOL_SCRIPT_HASH], &tx.plutus_data())
+                .get(0)
         {
             let main_datum = main_datum.to_json();
             let mut free_utxos: Vec<MultiEraOutput> = tx.outputs();
@@ -104,7 +98,7 @@ impl Dex for SundaeSwapV1 {
                 .collect::<Vec<_>>();
             for (input, input_datum) in filter_outputs_and_datums_by_hash(
                 &inputs,
-                &vec![REQUEST_SCRIPT_HASH],
+                &[REQUEST_SCRIPT_HASH],
                 &tx.plutus_data(),
             ) {
                 let input_datum = input_datum.to_json();
@@ -149,6 +143,7 @@ impl Dex for SundaeSwapV1 {
                 let direction = input_datum["fields"][3]["fields"][0]["constructor"]
                     .as_i64()
                     .ok_or("Failed to parse direction")?;
+
                 if direction == 0 {
                     amount1 =
                         get_asset_amount(&input, &asset1) - reduce_ada_amount(&asset1, SWAP_IN_ADA);
@@ -169,9 +164,9 @@ impl Dex for SundaeSwapV1 {
                     amount1,
                     amount2,
                     direction: if direction == 0 {
-                        DexSwapDirection::BuyAsset1
-                    } else {
                         DexSwapDirection::SellAsset1
+                    } else {
+                        DexSwapDirection::BuyAsset1
                     },
                 })
             }

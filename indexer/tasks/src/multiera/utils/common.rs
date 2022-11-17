@@ -20,7 +20,7 @@ pub fn get_shelley_payment_hash(
     address: Result<addresses::Address, addresses::Error>,
 ) -> Option<String> {
     if let Ok(addresses::Address::Shelley(shelley_address)) = address {
-        Some(hex::encode(shelley_address.payment().as_hash().to_vec()))
+        Some(hex::encode(shelley_address.payment().as_hash()))
     } else {
         None
     }
@@ -42,7 +42,7 @@ pub fn get_asset_amount(output: &MultiEraOutput, pair: &AssetPair) -> u64 {
 
 pub fn get_plutus_datum_for_output(
     output: &MultiEraOutput,
-    plutus_data: &Vec<&KeepRaw<alonzo::PlutusData>>,
+    plutus_data: &[&KeepRaw<alonzo::PlutusData>],
 ) -> Option<alonzo::PlutusData> {
     match output.datum() {
         Some(DatumOption::Data(datum)) => Some(datum.0),

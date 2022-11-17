@@ -33,7 +33,7 @@ impl Dex for MinSwapV1 {
         // Note: there should be at most one pool output
         if let Some((output, datum)) = filter_outputs_and_datums_by_hash(
             &tx.outputs(),
-            &vec![POOL_SCRIPT_HASH1, POOL_SCRIPT_HASH2],
+            &[POOL_SCRIPT_HASH1, POOL_SCRIPT_HASH2],
             &tx.plutus_data(),
         )
         .get(0)
@@ -50,8 +50,8 @@ impl Dex for MinSwapV1 {
             let asset1 = build_asset(parse_asset_item(0, 0)?, parse_asset_item(0, 1)?);
             let asset2 = build_asset(parse_asset_item(1, 0)?, parse_asset_item(1, 1)?);
 
-            let amount1 = get_asset_amount(&output, &asset1);
-            let amount2 = get_asset_amount(&output, &asset2);
+            let amount1 = get_asset_amount(output, &asset1);
+            let amount2 = get_asset_amount(output, &asset2);
 
             queued_prices.push(QueuedMeanPrice {
                 tx_id,
@@ -76,7 +76,7 @@ impl Dex for MinSwapV1 {
         // Note: there should be at most one pool output
         if let Some((main_output, main_datum)) = filter_outputs_and_datums_by_hash(
             &tx.outputs(),
-            &vec![POOL_SCRIPT_HASH1, POOL_SCRIPT_HASH2],
+            &[POOL_SCRIPT_HASH1, POOL_SCRIPT_HASH2],
             &tx.plutus_data(),
         )
         .get(0)
@@ -106,7 +106,7 @@ impl Dex for MinSwapV1 {
                 .collect::<Vec<_>>();
             for (input, input_datum) in filter_outputs_and_datums_by_address(
                 &inputs,
-                &vec![BATCH_ORDER_ADDRESS1, BATCH_ORDER_ADDRESS2],
+                &[BATCH_ORDER_ADDRESS1, BATCH_ORDER_ADDRESS2],
                 &tx.plutus_data(),
             ) {
                 let input_datum = input_datum.to_json();
@@ -162,13 +162,13 @@ impl Dex for MinSwapV1 {
                         get_asset_amount(&input, &asset1) - reduce_ada_amount(&asset1, SWAP_IN_ADA);
                     amount2 =
                         get_asset_amount(&utxo, &asset2) - reduce_ada_amount(&asset2, SWAP_OUT_ADA);
-                    direction = DexSwapDirection::BuyAsset1;
+                    direction = DexSwapDirection::SellAsset1;
                 } else {
                     amount1 =
                         get_asset_amount(&utxo, &asset1) - reduce_ada_amount(&asset1, SWAP_OUT_ADA);
                     amount2 =
                         get_asset_amount(&input, &asset2) - reduce_ada_amount(&asset2, SWAP_IN_ADA);
-                    direction = DexSwapDirection::SellAsset1;
+                    direction = DexSwapDirection::BuyAsset1;
                 }
                 queued_swaps.push(QueuedSwap {
                     tx_id,
