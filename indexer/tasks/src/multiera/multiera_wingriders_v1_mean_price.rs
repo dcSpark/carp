@@ -3,18 +3,12 @@ use super::utils::common::{
 };
 use crate::multiera::dex::common::{
     WR_V1_POOL_SCRIPT_HASH, WR_V1_POOL_FIXED_ADA,
-    build_asset, handle_mean_price, reduce_ada_amount, Dex, PoolType, QueuedMeanPrice,
-    WingRidersV1,
-    get_pool_output_and_datum
+    build_asset, handle_mean_price, reduce_ada_amount, Dex, DexType, QueuedMeanPrice,
+    WingRidersV1
 };
 use pallas::ledger::primitives::alonzo;
 use super::{multiera_address::MultieraAddressTask, utils::common::asset_from_pair};
 use crate::config::EmptyConfig::EmptyConfig;
-/*
-use super::dex::common::{handle_mean_price, PoolType};
-use super::multiera_address::MultieraAddressTask;
-
-*/
 
 use pallas::ledger::{
   primitives::{alonzo::Certificate, Fragment},
@@ -38,7 +32,7 @@ carp_task! {
       task.block,
       &previous_data.multiera_txs,
       &previous_data.multiera_addresses,
-      PoolType::WingRidersV1,
+      DexType::WingRidersV1,
   );
   merge_result |previous_data, _result| {
   };

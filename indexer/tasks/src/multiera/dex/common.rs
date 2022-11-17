@@ -79,7 +79,7 @@ pub fn filter_outputs_and_datums_by_address<'b>(
 pub struct QueuedMeanPrice {
     pub tx_id: i64,
     pub address: Vec<u8>, // pallas::crypto::hash::Hash<32>
-    pub pool_type: PoolType,
+    pub dex_type: DexType,
     pub asset1: AssetPair,
     pub asset2: AssetPair,
     pub amount1: u64,
@@ -89,7 +89,7 @@ pub struct QueuedMeanPrice {
 pub struct QueuedSwap {
     pub tx_id: i64,
     pub address: Vec<u8>, // pallas::crypto::hash::Hash<32>
-    pub pool_type: PoolType,
+    pub dex_type: DexType,
     pub asset1: AssetPair,
     pub asset2: AssetPair,
     pub amount1: u64,
@@ -145,34 +145,30 @@ impl Dex for Empty {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum PoolType {
+pub enum DexType {
     WingRidersV1,
     SundaeSwapV1,
     MinSwapV1,
     MinSwapV2,
 }
 
-impl From<PoolType> for i32 {
-    fn from(item: PoolType) -> Self {
+impl From<DexType> for i32 {
+    fn from(item: DexType) -> Self {
         match item {
-            PoolType::WingRidersV1 => 0,
-            PoolType::SundaeSwapV1 => 1,
-            PoolType::MinSwapV1 => 2,
-            PoolType::MinSwapV2 => 3,
+            DexType::WingRidersV1 => 0,
+            DexType::SundaeSwapV1 => 1,
+            DexType::MinSwapV1 => 2,
+            DexType::MinSwapV2 => 3,
         }
     }
 }
 
-struct PoolConfig {
-    pub pool_type: PoolType,
-}
-
-impl PoolConfig {
+impl DexType {
     fn as_trait(&self) -> &dyn Dex {
-        match &self.pool_type {
-            PoolType::WingRidersV1 => &WingRidersV1 {},
-            PoolType::MinSwapV1 => &MinSwapV1 {},
-            PoolType::SundaeSwapV1 => &SundaeSwapV1 {},
+        match &self {
+            DexType::WingRidersV1 => &WingRidersV1 {},
+            DexType::MinSwapV1 => &MinSwapV1 {},
+            DexType::SundaeSwapV1 => &SundaeSwapV1 {},
             _ => &Empty {},
         }
     }
@@ -183,10 +179,10 @@ pub async fn handle_mean_price(
     block: BlockInfo<'_, MultiEraBlock<'_>>,
     multiera_txs: &[TransactionModel],
     multiera_addresses: &BTreeMap<Vec<u8>, AddressInBlock>,
-    pool_type: PoolType,
+    pool_type: DexType,
 ) -> Result<(), DbErr> {
     // 1) Parse mean prices
-    let pool = PoolConfig { pool_type };
+    let pool = pool_type;
     let mean_value_trait = pool.as_trait();
     let mut queued_prices = Vec::<QueuedMeanPrice>::default();
     for (tx_body, cardano_transaction) in block.1.txs().iter().zip(multiera_txs) {
@@ -241,7 +237,7 @@ pub async fn handle_mean_price(
     DexMeanPrice::insert_many(queued_prices.iter().map(|price| DexMeanPriceActiveModel {
         tx_id: Set(price.tx_id),
         address_id: Set(multiera_addresses[&price.address].model.id),
-        dex: Set(i32::from(price.pool_type.clone())),
+        dex: Set(i32::from(price.dex_type.clone())),
         asset1_id: Set(asset_pair_to_id_map[&price.asset1]),
         asset2_id: Set(asset_pair_to_id_map[&price.asset2]),
         amount1: Set(price.amount1),
@@ -276,11 +272,10 @@ pub async fn handle_swap(
     multiera_txs: &[TransactionModel],
     multiera_addresses: &BTreeMap<Vec<u8>, AddressInBlock>,
     multiera_used_inputs_to_outputs_map: &BTreeMap<Vec<u8>, BTreeMap<i64, OutputWithTxData>>,
-    pool_type: PoolType,
+    dex_type: DexType,
 ) -> Result<(), DbErr> {
     // 1) Parse swaps
-    let pool = PoolConfig { pool_type };
-    let swap_trait = pool.as_trait();
+    let swap_trait = dex_type.as_trait();
     let mut queued_swaps = Vec::<QueuedSwap>::default();
     for (tx_body, cardano_transaction) in block.1.txs().iter().zip(multiera_txs) {
         if cardano_transaction.is_valid {
@@ -336,7 +331,7 @@ pub async fn handle_swap(
     DexSwap::insert_many(queued_swaps.iter().map(|price| DexSwapActiveModel {
         tx_id: Set(price.tx_id),
         address_id: Set(multiera_addresses[&price.address].model.id),
-        dex: Set(i32::from(price.pool_type.clone())),
+        dex: Set(i32::from(price.dex_type.clone())),
         asset1_id: Set(asset_pair_to_id_map[&price.asset1]),
         asset2_id: Set(asset_pair_to_id_map[&price.asset2]),
         amount1: Set(price.amount1),
