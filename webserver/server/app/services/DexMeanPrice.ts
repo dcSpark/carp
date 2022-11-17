@@ -1,5 +1,5 @@
-import type { Asset, DexMeanPriceResponse } from '../../../shared/models/DexMeanPrice';
-import type { Dex } from '../../../shared/models/common';
+import type { DexMeanPriceResponse } from '../../../shared/models/DexMeanPrice';
+import type { Dex, Asset } from '../../../shared/models/common';
 import type { PoolClient } from 'pg';
 import type { TransactionPaginationType } from './PaginationService';
 import { sqlDexMeanPrice } from '../models/dex/sqlDexMeanPrice.queries';

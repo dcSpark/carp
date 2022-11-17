@@ -1,10 +1,4 @@
-import { Pagination, Dex, Direction } from "./common";
-import { AssetName, PolicyId } from "./PolicyIdAssetMap";
-
-export type Asset = {
-  policyId: PolicyId;
-  assetName: AssetName;
-} | null;
+import { Pagination, Dex, Direction, Asset } from "./common";
 
 /**
  * @example "2042352568679"

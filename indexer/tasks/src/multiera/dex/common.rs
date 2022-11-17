@@ -1,7 +1,8 @@
+use crate::{dsl::database_task::BlockInfo, types::AssetPair};
 use crate::{
     dsl::task_macro::*,
     multiera::utils::common::{
-        asset_from_pair, get_plutus_datum_for_output, get_sheley_payment_hash,
+        asset_from_pair, get_plutus_datum_for_output, get_shelley_payment_hash,
     },
     types::DexSwapDirection,
 };
@@ -15,19 +16,6 @@ use pallas::{
 };
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::{dsl::database_task::BlockInfo, types::AssetPair};
-
-pub const WR_V1_POOL_SCRIPT_HASH: &str = "e6c90a5923713af5786963dee0fdffd830ca7e0c86a041d9e5833e91";
-pub const WR_V1_POOL_FIXED_ADA: u64 = 3_000_000; // every pool UTXO holds this amount of ADA
-pub const MS_V1_POOL_SCRIPT_HASH1: &str =
-    "e1317b152faac13426e6a83e06ff88a4d62cce3c1634ab0a5ec13309";
-pub const MS_V1_POOL_SCRIPT_HASH2: &str =
-    "57c8e718c201fba10a9da1748d675b54281d3b1b983c5d1687fc7317";
-pub const SS_V1_POOL_SCRIPT_HASH: &str = "4020e7fc2de75a0729c3cc3af715b34d98381e0cdbcfa99c950bc3ac";
-
-pub const WR_V1_SWAP_IN_ADA: u64 = 4_000_000; // oil ADA + agent fee
-pub const WR_V1_SWAP_OUT_ADA: u64 = 2_000_000; // oil ADA
-
 /// Returns an output and it's datum only if the output's payment hash is in `payment_hashes`
 /// and the plutus datum is known.
 pub fn filter_outputs_and_datums_by_hash<'b>(
@@ -39,7 +27,7 @@ pub fn filter_outputs_and_datums_by_hash<'b>(
     outputs
         .iter()
         .filter_map(|o| {
-            if payment_hashes.contains(&get_sheley_payment_hash(o.address()).as_deref()) {
+            if payment_hashes.contains(&get_shelley_payment_hash(o.address()).as_deref()) {
                 if let Some(datum) = get_plutus_datum_for_output(&o, plutus_data) {
                     Some((o.clone(), datum))
                 } else {
@@ -234,16 +222,25 @@ pub async fn handle_mean_price(
     asset_pair_to_id_map.insert(None, None); // ADA
 
     // 4) Add mean prices to DB
-    DexMeanPrice::insert_many(queued_prices.iter().map(|price| DexMeanPriceActiveModel {
-        tx_id: Set(price.tx_id),
-        address_id: Set(multiera_addresses[&price.address].model.id),
-        dex: Set(i32::from(price.dex_type.clone())),
-        asset1_id: Set(asset_pair_to_id_map[&price.asset1]),
-        asset2_id: Set(asset_pair_to_id_map[&price.asset2]),
-        amount1: Set(price.amount1),
-        amount2: Set(price.amount2),
-        ..Default::default()
-    }))
+    DexMeanPrice::insert_many(
+        queued_prices
+            .iter()
+            .filter(|price| {
+                // In the unlikely case that an asset is not in the DB, skip this price update
+                asset_pair_to_id_map.contains_key(&price.asset1)
+                    && asset_pair_to_id_map.contains_key(&price.asset2)
+            })
+            .map(|price| DexMeanPriceActiveModel {
+                tx_id: Set(price.tx_id),
+                address_id: Set(multiera_addresses[&price.address].model.id),
+                dex: Set(i32::from(price.dex_type.clone())),
+                asset1_id: Set(asset_pair_to_id_map[&price.asset1]),
+                asset2_id: Set(asset_pair_to_id_map[&price.asset2]),
+                amount1: Set(price.amount1),
+                amount2: Set(price.amount2),
+                ..Default::default()
+            }),
+    )
     .exec(db_tx)
     .await?;
 
@@ -328,17 +325,26 @@ pub async fn handle_swap(
     asset_pair_to_id_map.insert(None, None); // ADA
 
     // 4) Add mean prices to DB
-    DexSwap::insert_many(queued_swaps.iter().map(|price| DexSwapActiveModel {
-        tx_id: Set(price.tx_id),
-        address_id: Set(multiera_addresses[&price.address].model.id),
-        dex: Set(i32::from(price.dex_type.clone())),
-        asset1_id: Set(asset_pair_to_id_map[&price.asset1]),
-        asset2_id: Set(asset_pair_to_id_map[&price.asset2]),
-        amount1: Set(price.amount1),
-        amount2: Set(price.amount2),
-        direction: Set(price.direction.into()),
-        ..Default::default()
-    }))
+    DexSwap::insert_many(
+        queued_swaps
+            .iter()
+            .filter(|price| {
+                // In the unlikely case that an asset is not in the DB, skip this price update
+                asset_pair_to_id_map.contains_key(&price.asset1)
+                    && asset_pair_to_id_map.contains_key(&price.asset2)
+            })
+            .map(|price| DexSwapActiveModel {
+                tx_id: Set(price.tx_id),
+                address_id: Set(multiera_addresses[&price.address].model.id),
+                dex: Set(i32::from(price.dex_type.clone())),
+                asset1_id: Set(asset_pair_to_id_map[&price.asset1]),
+                asset2_id: Set(asset_pair_to_id_map[&price.asset2]),
+                amount1: Set(price.amount1),
+                amount2: Set(price.amount2),
+                direction: Set(price.direction.into()),
+                ..Default::default()
+            }),
+    )
     .exec(db_tx)
     .await?;
 

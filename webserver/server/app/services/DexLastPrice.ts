@@ -1,4 +1,5 @@
-import type { Asset, DexLastPriceResponse } from '../../../shared/models/DexLastPrice';
+import type { DexLastPriceResponse } from '../../../shared/models/DexLastPrice';
+import type { Asset } from '../../../shared/models/common';
 import type { PoolClient } from 'pg';
 import { PriceType } from '../../../shared/models/DexLastPrice';
 import { sqlDexLastPriceSwap } from '../models/dex/sqlDexLastPriceSwap.queries';

@@ -1,4 +1,4 @@
-import type { Asset } from '../../../shared/models/DexMeanPrice';
+import type { Asset } from '../../../shared/models/common';
 import { Dex } from '../../../shared/models/common';
 
 export function parseAssetItem(s: string | undefined | null): Buffer {

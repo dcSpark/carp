@@ -72,7 +72,7 @@ impl MigrationTrait for Migration {
                 Index::create()
                     .table(Entity)
                     .name("index-dex_mean_price-address-native_asset1-native_asset2-transaction")
-                    .col(Column::AddressId)
+                    .col(Column::Dex)
                     .col(Column::Asset1Id)
                     .col(Column::Asset2Id)
                     .col(Column::TxId)

@@ -1,4 +1,5 @@
-import type { Asset, DexSwapResponse } from '../../../shared/models/DexSwap';
+import type { DexSwapResponse } from '../../../shared/models/DexSwap';
+import type { Asset } from '../../../shared/models/common';
 import type { PoolClient } from 'pg';
 import type { TransactionPaginationType } from './PaginationService';
 import type { Dex } from '../../../shared/models/common';

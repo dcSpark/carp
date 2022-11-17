@@ -1,3 +1,5 @@
+import { AssetName, PolicyId } from "./PolicyIdAssetMap";
+
 /**
  * Filter which uses of the address are considered relevant for the query.
  *
@@ -101,3 +103,8 @@ export enum Dex {
   MinSwap = 'MinSwap',
   Unknown = 'Unknown',
 };
+
+export type Asset = {
+  policyId: PolicyId;
+  assetName: AssetName;
+} | null;

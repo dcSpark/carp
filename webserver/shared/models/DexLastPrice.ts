@@ -1,10 +1,4 @@
-import { AssetName, PolicyId } from "./PolicyIdAssetMap";
-import { Dex } from "./common";
-
-export type Asset = {
-  policyId: PolicyId;
-  assetName: AssetName;
-} | null;
+import { Dex, Asset } from "./common";
 
 /**
  * @example "2042352568679"
