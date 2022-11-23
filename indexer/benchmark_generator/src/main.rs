@@ -6,6 +6,7 @@ use serde::Deserialize;
 use std::borrow::Cow;
 use std::fs::File;
 use std::sync::Arc;
+use tracing::Level;
 use tracing_subscriber::prelude::*;
 use entity::sea_orm::Database;
 use entity::sea_orm::QueryFilter;
@@ -52,8 +53,7 @@ async fn _main() -> anyhow::Result<()> {
 
     let sqlx_filter = tracing_subscriber::filter::Targets::new()
         // sqlx logs every SQL query and how long it took which is very noisy
-        .with_target("sqlx", tracing::Level::WARN);
-
+        .with_target("sqlx", tracing::Level::INFO);
 
     tracing_subscriber::registry()
         .with(fmt_layer)
@@ -84,12 +84,11 @@ async fn _main() -> anyhow::Result<()> {
     };
 
     let url = format!("postgresql://{user}:{password}@{host}:{port}/{db}");
+    tracing::info!("Connection url {:?}", url);
     let conn = Database::connect(&url).await?;
-    println!("Connection success");
-    let mut transactions_processed = 0;
+    tracing::info!("Connection success");
     let mut transactions = Transaction::find().order_by_asc(TransactionColumn::Id).paginate(&conn, 256);
-    println!("{:?}", transactions.fetch_page(0).await.unwrap());
-    println!("Total transactions: {:?}", transactions.num_items().await.unwrap());
-    println!("Total pages: {:?}", transactions.num_pages().await.unwrap());
+    tracing::info!("Total transactions: {:?}", transactions.num_items().await.unwrap());
+    tracing::info!("Total pages: {:?}", transactions.num_pages().await.unwrap());
     Ok(())
 }
