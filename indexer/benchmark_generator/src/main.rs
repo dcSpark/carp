@@ -105,8 +105,16 @@ async fn _main() -> anyhow::Result<()> {
     while let Some(txs) = stream.try_next().await? {
         tracing::info!("handling page: {:?}", current_page);
         for tx in txs {
-            let payload = tx.payload;
+            let payload: Vec<u8> = tx.payload;
             tracing::info!("payload: {:?}", payload);
+            if let Ok(tx) = cardano_multiplatform_lib::Transaction::from_bytes(payload.clone()) {
+                tracing::info!("tx parsed: {:?}", tx.body().fee());
+            }
+            if let Ok(tx) = cardano_multiplatform_lib::TransactionBody::from_bytes(payload) {
+                tracing::info!("tx body parsed: {:?}", tx.fee());
+            }
+
+            ;
         }
         current_page += 1;
         break;

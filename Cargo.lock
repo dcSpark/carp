@@ -310,7 +310,7 @@ dependencies = [
  "anyhow",
  "base64",
  "bs58",
- "cardano-multiplatform-lib",
+ "cardano-multiplatform-lib 3.1.1",
  "clap 3.2.22",
  "dotenv",
  "entity",
@@ -427,13 +427,45 @@ dependencies = [
 ]
 
 [[package]]
+name = "cardano-multiplatform-lib"
+version = "3.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4f46c7d6055ade2dccc005f61afef200b284f12376e2fe075f7e17f3cc3a000e"
+dependencies = [
+ "base64",
+ "bech32 0.7.3",
+ "cbor_event",
+ "cfg-if 1.0.0",
+ "clear_on_drop",
+ "cryptoxide",
+ "digest 0.9.0",
+ "ed25519-bip32",
+ "fraction",
+ "getrandom",
+ "hex",
+ "itertools",
+ "js-sys",
+ "linked-hash-map",
+ "noop_proc_macro",
+ "num-bigint 0.4.3",
+ "num-integer",
+ "rand",
+ "rand_os",
+ "schemars",
+ "serde",
+ "serde_json",
+ "sha2 0.10.2",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "carp"
 version = "2.0.3"
 dependencies = [
  "anyhow",
  "base64",
  "bs58",
- "cardano-multiplatform-lib",
+ "cardano-multiplatform-lib 1.0.3",
  "clap 3.2.22",
  "cryptoxide",
  "dotenv",
@@ -1009,9 +1041,9 @@ dependencies = [
 
 [[package]]
 name = "getrandom"
-version = "0.2.7"
+version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4eb1a864a501629691edf6c15a593b7a51eebaa1e8468e9ddc623de7c9b58ec6"
+checksum = "c05aeb6a22b8f62540c194aac980f2115af067bfe15a0734d7277a768d396b31"
 dependencies = [
  "cfg-if 1.0.0",
  "js-sys",
@@ -1185,9 +1217,9 @@ dependencies = [
 
 [[package]]
 name = "itertools"
-version = "0.10.3"
+version = "0.10.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a9a9d19fa1e79b6215ff29b9d6880b706147f16e9b1dbb1e4e5947b5b02bc5e3"
+checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
 dependencies = [
  "either",
 ]
@@ -2176,7 +2208,7 @@ name = "reparse"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "cardano-multiplatform-lib",
+ "cardano-multiplatform-lib 1.0.3",
  "dotenv",
  "entity",
  "futures",
@@ -2263,9 +2295,9 @@ checksum = "4501abdff3ae82a1c1b477a17252eb69cee9e66eb915c1abaa4f44d873df9f09"
 
 [[package]]
 name = "schemars"
-version = "0.8.10"
+version = "0.8.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1847b767a3d62d95cbf3d8a9f0e421cf57a0d8aa4f411d4b16525afb0284d4ed"
+checksum = "2a5fb6c61f29e723026dc8e923d94c694313212abbecbbe5f55a7748eec5b307"
 dependencies = [
  "dyn-clone",
  "schemars_derive",
@@ -2275,9 +2307,9 @@ dependencies = [
 
 [[package]]
 name = "schemars_derive"
-version = "0.8.10"
+version = "0.8.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af4d7e1b012cb3d9129567661a63755ea4b8a7386d339dc945ae187e403c6743"
+checksum = "f188d036977451159430f3b8dc82ec76364a42b7e289c2b18a9a18f4470058e9"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2883,7 +2915,7 @@ dependencies = [
 name = "tasks"
 version = "0.0.0"
 dependencies = [
- "cardano-multiplatform-lib",
+ "cardano-multiplatform-lib 1.0.3",
  "cfg-if 0.1.10",
  "cryptoxide",
  "entity",

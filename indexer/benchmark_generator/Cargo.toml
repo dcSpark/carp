@@ -21,7 +21,7 @@ base64 = "0.13.0"
 bs58 = "0.4.0"
 oura = "1.7.0"
 clap = { version = "3.1", features = ["derive"] }
-cardano-multiplatform-lib = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "metadata-and-addr" }
 num-integer = "0.1.45"
 pallas = "0.14.0"
 futures = "0.3.25"
+cardano-multiplatform-lib = "3.1.1"
