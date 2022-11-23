@@ -85,9 +85,10 @@ async fn _main() -> anyhow::Result<()> {
 
     let url = format!("postgresql://{user}:{password}@{host}:{port}/{db}");
     let conn = Database::connect(&url).await?;
-
+    println!("Connection success");
     let mut transactions_processed = 0;
     let mut transactions = Transaction::find().order_by_asc(TransactionColumn::Id).paginate(&conn, 256);
+    println!("{:?}", transactions.fetch_page(0).await.unwrap());
     println!("Total transactions: {:?}", transactions.num_items().await.unwrap());
     println!("Total pages: {:?}", transactions.num_pages().await.unwrap());
     Ok(())
