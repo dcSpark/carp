@@ -33,6 +33,13 @@ pub enum DbConfig {
     },
 }
 
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Config {
+    db: DbConfig,
+    start_from_block: String, // shelley started at 4490511
+}
+
 #[derive(Parser, Debug)]
 #[clap(version)]
 pub struct Cli {
@@ -71,7 +78,7 @@ async fn _main() -> anyhow::Result<()> {
             path = config_path.display()
         )
     })?;
-    let config: DbConfig = serde_yaml::from_reader(file).with_context(|| {
+    let config: Config = serde_yaml::from_reader(file).with_context(|| {
         format!(
             "Cannot read config file {path}",
             path = config_path.display()
@@ -92,5 +99,17 @@ async fn _main() -> anyhow::Result<()> {
     let mut transactions = Transaction::find().order_by_asc(TransactionColumn::Id).paginate(&conn, 256);
     tracing::info!("Total transactions: {:?}", transactions.num_items().await.unwrap());
     tracing::info!("Total pages: {:?}", transactions.num_pages().await.unwrap());
+
+    let mut current_page = transactions.cur_page();
+    let mut stream = transactions.into_stream();
+    while let Some(txs) = stream.try_next().await? {
+        tracing::info!("handling page: {:?}", current_page);
+        for tx in txs {
+            let payload = tx.payload;
+            tracing::info!("payload: {:?}", payload);
+        }
+        current_page += 1;
+        break;
+    }
     Ok(())
 }
