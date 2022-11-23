@@ -10,7 +10,7 @@ use tracing::Level;
 use tracing_subscriber::prelude::*;
 use entity::sea_orm::Database;
 use entity::sea_orm::QueryFilter;
-
+use futures::TryStreamExt;
 use entity::{
     prelude::*,
     block::*,
@@ -86,7 +86,7 @@ async fn _main() -> anyhow::Result<()> {
     })?;
     let (
         user, password, host, port, db
-    ) = match config {
+    ) = match config.db {
         DbConfig::Postgres { host, port, user, password, db } => {
             (user, password, host, port, db)
         }
