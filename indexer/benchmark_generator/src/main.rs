@@ -53,7 +53,9 @@ async fn _main() -> anyhow::Result<()> {
 
     let sqlx_filter = tracing_subscriber::filter::Targets::new()
         // sqlx logs every SQL query and how long it took which is very noisy
-        .with_target("sqlx", tracing::Level::INFO);
+        .with_target("sqlx", tracing::Level::INFO)
+        .with_default(tracing_subscriber::fmt::Subscriber::DEFAULT_MAX_LEVEL);
+    ;
 
     tracing_subscriber::registry()
         .with(fmt_layer)
