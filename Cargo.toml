@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "indexer",
+    "indexer/benchmark_generator",
     "indexer/entity",
     "indexer/migration",
     "indexer/rollback",

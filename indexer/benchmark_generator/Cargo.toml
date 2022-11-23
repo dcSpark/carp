@@ -1,0 +1,26 @@
+[package]
+name = "benchmark_generator"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+entity = { path = "../entity" }
+
+anyhow = "1.0.53"
+serde = {version = "1.0.144", features = ["derive", "rc"]}
+tokio = { version = "1.16.1", features = ["full"] }
+hex = "0.4.3"
+tracing-subscriber = "0.3.9"
+tracing = "0.1.31"
+dotenv = "0.15.0"
+serde_json = "1.0.79"
+serde_yaml = "0.9.13"
+base64 = "0.13.0"
+bs58 = "0.4.0"
+oura = "1.7.0"
+clap = { version = "3.1", features = ["derive"] }
+cardano-multiplatform-lib = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "metadata-and-addr" }
+num-integer = "0.1.45"
+pallas = "0.14.0"
