@@ -1,28 +1,29 @@
 use std::path::PathBuf;
 
 use anyhow::{anyhow, Context};
+use cardano_multiplatform_lib::ledger::common::value::Coin;
+use cardano_multiplatform_lib::{TransactionInput, TransactionOutput};
 use clap::Parser;
+use entity::sea_orm::Database;
+use entity::sea_orm::QueryFilter;
+use entity::{
+    block::*,
+    prelude::*,
+    sea_orm::{
+        entity::*, prelude::*, ColumnTrait, Condition, DatabaseConnection, DatabaseTransaction,
+        EntityTrait, QueryOrder, QuerySelect, Set, TransactionTrait,
+    },
+    transaction::*,
+};
+use futures::TryStreamExt;
+use pallas::ledger::traverse::Era;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::fs::File;
 use std::io::Write;
 use std::sync::Arc;
-use cardano_multiplatform_lib::ledger::common::value::Coin;
-use cardano_multiplatform_lib::{TransactionInput, TransactionOutput};
 use tracing::Level;
 use tracing_subscriber::prelude::*;
-use entity::sea_orm::Database;
-use entity::sea_orm::QueryFilter;
-use futures::TryStreamExt;
-use pallas::ledger::traverse::Era;
-use entity::{
-    prelude::*,
-    block::*,
-    transaction::*,
-    sea_orm::{
-        entity::*, prelude::*, ColumnTrait, Condition, DatabaseTransaction, QueryOrder, Set,TransactionTrait, DatabaseConnection, EntityTrait, QuerySelect
-    },
-};
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
@@ -41,7 +42,7 @@ pub enum DbConfig {
 #[serde(deny_unknown_fields)]
 pub struct Config {
     db: DbConfig,
-    start_from_block: String, // shelley started at 4490511
+    tx_per_page: usize,
 }
 
 #[derive(Parser, Debug)]
@@ -75,16 +76,18 @@ async fn _main() -> anyhow::Result<()> {
 
     let sqlx_filter = tracing_subscriber::filter::Targets::new()
         // sqlx logs every SQL query and how long it took which is very noisy
-        .with_target("sqlx", tracing::Level::INFO)
+        .with_target("sqlx", tracing::Level::WARN)
         .with_default(tracing_subscriber::fmt::Subscriber::DEFAULT_MAX_LEVEL);
-    ;
 
     tracing_subscriber::registry()
         .with(fmt_layer)
         .with(sqlx_filter)
         .init();
 
-    let Cli { config_path, output_path } = Cli::parse();
+    let Cli {
+        config_path,
+        output_path,
+    } = Cli::parse();
 
     tracing::info!("Config file {:?}", config_path);
     let file = File::open(&config_path).with_context(|| {
@@ -99,33 +102,59 @@ async fn _main() -> anyhow::Result<()> {
             path = config_path.display()
         )
     })?;
-    let (
-        user, password, host, port, db
-    ) = match config.db {
-        DbConfig::Postgres { host, port, user, password, db } => {
-            (user, password, host, port, db)
-        }
+    let (user, password, host, port, db) = match config.db {
+        DbConfig::Postgres {
+            host,
+            port,
+            user,
+            password,
+            db,
+        } => (user, password, host, port, db),
     };
 
     let url = format!("postgresql://{user}:{password}@{host}:{port}/{db}");
     tracing::info!("Connection url {:?}", url);
     let conn = Database::connect(&url).await?;
     tracing::info!("Connection success");
-    let shelley_first_blocks = Block::find().filter(BlockColumn::Epoch.eq(208)).order_by_asc(BlockColumn::Id).limit(256).all(&conn).await?;
-    tracing::info!("Shelley first blocks {:?}", shelley_first_blocks.iter().map(|block| (block.id, block.height, block.epoch)).collect::<Vec<(i32, i32, i32)>>());
-    let shelley_first_blocks:Vec<i32> = shelley_first_blocks.iter()
-        .map(|block| block.id)
-        .collect();
+    let shelley_first_blocks = Block::find()
+        .filter(BlockColumn::Epoch.eq(208))
+        .order_by_asc(BlockColumn::Id)
+        .limit(256)
+        .all(&conn)
+        .await?;
+    tracing::info!(
+        "Shelley first blocks {:?}",
+        shelley_first_blocks
+            .iter()
+            .map(|block| (block.id, block.height, block.epoch))
+            .collect::<Vec<(i32, i32, i32)>>()
+    );
+    let shelley_first_blocks: Vec<i32> =
+        shelley_first_blocks.iter().map(|block| block.id).collect();
 
     let mut condition = Condition::any();
     for block in shelley_first_blocks {
         condition = condition.add(TransactionColumn::BlockId.eq(block));
     }
-    let shelley_first_tx: Vec<i64> = Transaction::find().filter(condition).order_by_asc(TransactionColumn::Id).limit(1).all(&conn).await?.iter().map(|tx| tx.id).collect();
-    let shelley_first_tx = shelley_first_tx.first().cloned().ok_or_else(|| anyhow!("Can't find first tx"))?;
+    let shelley_first_tx: Vec<i64> = Transaction::find()
+        .filter(condition)
+        .order_by_asc(TransactionColumn::Id)
+        .limit(1)
+        .all(&conn)
+        .await?
+        .iter()
+        .map(|tx| tx.id)
+        .collect();
+    let shelley_first_tx = shelley_first_tx
+        .first()
+        .cloned()
+        .ok_or_else(|| anyhow!("Can't find first tx"))?;
     tracing::info!("Shelley first tx, {:?}", shelley_first_tx);
 
-    let mut transactions = Transaction::find().filter(TransactionColumn::Id.gte(shelley_first_tx)).order_by_asc(TransactionColumn::Id).paginate(&conn, 256);
+    let mut transactions = Transaction::find()
+        .filter(TransactionColumn::Id.gte(shelley_first_tx))
+        .order_by_asc(TransactionColumn::Id)
+        .paginate(&conn, config.tx_per_page);
     let total_transactions = transactions.num_items().await?;
     let total_pages = transactions.num_pages().await?;
     tracing::info!("Total transactions: {:?}", total_transactions);
@@ -134,7 +163,10 @@ async fn _main() -> anyhow::Result<()> {
     let mut current_page = transactions.cur_page();
     let mut stream = transactions.into_stream();
     let mut out_file = if output_path.exists() && output_path.is_file() {
-        tracing::info!("file {:?} already exists, adding lines to the end", output_path);
+        tracing::info!(
+            "file {:?} already exists, adding lines to the end",
+            output_path
+        );
         File::open(output_path)
     } else {
         File::create(output_path)
@@ -164,8 +196,8 @@ async fn _main() -> anyhow::Result<()> {
                         outputs: out_outputs,
                     };
 
-                    out_file.write_all(serde_json::to_string(&out)?.as_bytes())?;
-                },
+                    out_file.write_all(format!("{}\n", serde_json::to_string(&out)?).as_bytes())?;
+                }
                 Err(err) => {
                     tracing::warn!("can't parse tx: error: {:?}, tx: {:?}", err, tx);
                 }
