@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use clap::Parser;
 use serde::Deserialize;
 use std::borrow::Cow;
@@ -97,7 +97,18 @@ async fn _main() -> anyhow::Result<()> {
     tracing::info!("Connection url {:?}", url);
     let conn = Database::connect(&url).await?;
     tracing::info!("Connection success");
-    let mut transactions = Transaction::find().order_by_asc(TransactionColumn::Id).paginate(&conn, 256);
+    let shelley_first_blocks: Vec<i32> = Block::find().filter(BlockColumn::Era.eq(208)).order_by_asc(BlockColumn::Id).limit(256).all(&conn).await?
+        .iter()
+        .map(|block| block.id)
+        .collect();
+
+    let mut condition = Condition::any();
+    for block in shelley_first_blocks {
+        condition = condition.add(TransactionColumn::BlockId.eq(block));
+    }
+    let shelley_first_tx: Vec<i64> = Transaction::find().filter(condition).order_by_asc(TransactionColumn::Id).limit(1).all(&conn).await?.iter().map(|tx| tx.id).collect();
+    let shelley_first_tx = shelley_first_tx.first().cloned().ok_or_else(|| anyhow!("Can't find first tx"))?;
+    let mut transactions = Transaction::find().filter(TransactionColumn::Id.gte(shelley_first_tx)).order_by_asc(TransactionColumn::Id).paginate(&conn, 256);
     tracing::info!("Total transactions: {:?}", transactions.num_items().await.unwrap());
     tracing::info!("Total pages: {:?}", transactions.num_pages().await.unwrap());
 
