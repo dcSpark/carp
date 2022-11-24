@@ -164,7 +164,7 @@ async fn _main() -> anyhow::Result<()> {
                         outputs: out_outputs,
                     };
 
-                    out_file.write_all(serde_json::to_string_pretty(&out)?.as_bytes())?;
+                    out_file.write_all(serde_json::to_string(&out)?.as_bytes())?;
                 },
                 Err(err) => {
                     tracing::warn!("can't parse tx: error: {:?}, tx: {:?}", err, tx);
@@ -172,7 +172,6 @@ async fn _main() -> anyhow::Result<()> {
             }
         }
         current_page += 1;
-        break;
     }
     Ok(())
 }
