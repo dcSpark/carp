@@ -97,8 +97,9 @@ async fn _main() -> anyhow::Result<()> {
     tracing::info!("Connection url {:?}", url);
     let conn = Database::connect(&url).await?;
     tracing::info!("Connection success");
-    let shelley_first_blocks: Vec<i32> = Block::find().filter(BlockColumn::Era.eq(208)).order_by_asc(BlockColumn::Id).limit(256).all(&conn).await?
-        .iter()
+    let shelley_first_blocks = Block::find().filter(BlockColumn::Epoch.eq(208)).order_by_asc(BlockColumn::Id).limit(256).all(&conn).await?;
+    tracing::info!("Shelley first blocks {:?}", shelley_first_blocks.iter().map(|block| (block.id, block.height, block.epoch)).collect::<Vec<(i32, i32, i32)>>());
+    let shelley_first_blocks:Vec<i32> = shelley_first_blocks.iter()
         .map(|block| block.id)
         .collect();
 
@@ -108,6 +109,8 @@ async fn _main() -> anyhow::Result<()> {
     }
     let shelley_first_tx: Vec<i64> = Transaction::find().filter(condition).order_by_asc(TransactionColumn::Id).limit(1).all(&conn).await?.iter().map(|tx| tx.id).collect();
     let shelley_first_tx = shelley_first_tx.first().cloned().ok_or_else(|| anyhow!("Can't find first tx"))?;
+    tracing::info!("Shelley first tx, {:?}", shelley_first_tx);
+
     let mut transactions = Transaction::find().filter(TransactionColumn::Id.gte(shelley_first_tx)).order_by_asc(TransactionColumn::Id).paginate(&conn, 256);
     tracing::info!("Total transactions: {:?}", transactions.num_items().await.unwrap());
     tracing::info!("Total pages: {:?}", transactions.num_pages().await.unwrap());
