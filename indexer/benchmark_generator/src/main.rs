@@ -114,8 +114,16 @@ async fn _main() -> anyhow::Result<()> {
             if let Ok(tx) = cardano_multiplatform_lib::TransactionBody::from_bytes(payload.clone()) {
                 tracing::info!("tx body parsed: {:?}", tx.fee());
             }
-            if let Ok(tx) = pallas::ledger::traverse::MultiEraTx::decode(Era::Byron, &payload) {
-                tracing::info!("tx body parsed: {:?}", tx.fee());
+            if let Ok(tx) = pallas::ledger::traverse::MultiEraTx::decode(Era::Byron, &payload.clone()) {
+                tracing::info!("tx body parsed byr: {:?}", tx.fee());
+            }
+
+            if let Ok(tx) = pallas::ledger::traverse::MultiEraTx::decode(Era::Shelley, &payload.clone()) {
+                tracing::info!("tx body parsed she: {:?}", tx.fee());
+            }
+
+            if let Ok(tx) = pallas::ledger::traverse::MultiEraTx::decode(Era::Babbage, &payload.clone()) {
+                tracing::info!("tx body parsed bab: {:?}", tx.fee());
             }
 
             ;
