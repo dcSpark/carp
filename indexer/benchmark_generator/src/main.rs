@@ -2,10 +2,13 @@ use std::path::PathBuf;
 
 use anyhow::{anyhow, Context};
 use clap::Parser;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::fs::File;
+use std::io::Write;
 use std::sync::Arc;
+use cardano_multiplatform_lib::ledger::common::value::Coin;
+use cardano_multiplatform_lib::{TransactionInput, TransactionOutput};
 use tracing::Level;
 use tracing_subscriber::prelude::*;
 use entity::sea_orm::Database;
@@ -47,6 +50,17 @@ pub struct Cli {
     /// path to config file
     #[clap(long, value_parser)]
     config_path: PathBuf,
+
+    /// path to output file
+    #[clap(long, value_parser)]
+    output_path: PathBuf,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct TxOutFormat {
+    fee: Coin,
+    inputs: Vec<TransactionInput>,
+    outputs: Vec<TransactionOutput>,
 }
 
 #[tokio::main]
@@ -70,7 +84,7 @@ async fn _main() -> anyhow::Result<()> {
         .with(sqlx_filter)
         .init();
 
-    let Cli { config_path } = Cli::parse();
+    let Cli { config_path, output_path } = Cli::parse();
 
     tracing::info!("Config file {:?}", config_path);
     let file = File::open(&config_path).with_context(|| {
@@ -112,35 +126,50 @@ async fn _main() -> anyhow::Result<()> {
     tracing::info!("Shelley first tx, {:?}", shelley_first_tx);
 
     let mut transactions = Transaction::find().filter(TransactionColumn::Id.gte(shelley_first_tx)).order_by_asc(TransactionColumn::Id).paginate(&conn, 256);
-    tracing::info!("Total transactions: {:?}", transactions.num_items().await.unwrap());
-    tracing::info!("Total pages: {:?}", transactions.num_pages().await.unwrap());
+    let total_transactions = transactions.num_items().await?;
+    let total_pages = transactions.num_pages().await?;
+    tracing::info!("Total transactions: {:?}", total_transactions);
+    tracing::info!("Total pages: {:?}", total_pages);
 
     let mut current_page = transactions.cur_page();
     let mut stream = transactions.into_stream();
+    let mut out_file = if output_path.exists() && output_path.is_file() {
+        tracing::info!("file {:?} already exists, adding lines to the end", output_path);
+        File::open(output_path)
+    } else {
+        File::create(output_path)
+    }?;
+
     while let Some(txs) = stream.try_next().await? {
-        tracing::info!("handling page: {:?}", current_page);
+        tracing::info!("handling page: {:?} of {:?}", current_page, total_pages);
         for tx in txs {
-            let payload: Vec<u8> = tx.payload;
-            tracing::info!("payload: {:?}", payload);
-            if let Ok(tx) = cardano_multiplatform_lib::Transaction::from_bytes(payload.clone()) {
-                tracing::info!("tx parsed: {:?}", tx.body().fee());
-            }
-            if let Ok(tx) = cardano_multiplatform_lib::TransactionBody::from_bytes(payload.clone()) {
-                tracing::info!("tx body parsed: {:?}", tx.fee());
-            }
-            if let Ok(tx) = pallas::ledger::traverse::MultiEraTx::decode(Era::Byron, &payload.clone()) {
-                tracing::info!("tx body parsed byr: {:?}", tx.fee());
-            }
+            let payload: &Vec<u8> = &tx.payload;
+            match cardano_multiplatform_lib::Transaction::from_bytes(payload.clone()) {
+                Ok(parsed) => {
+                    let body = parsed.body();
+                    let inputs = body.inputs();
+                    let mut out_inputs = vec![];
+                    for i in 0..inputs.len() {
+                        out_inputs.push(inputs.get(i));
+                    }
 
-            if let Ok(tx) = pallas::ledger::traverse::MultiEraTx::decode(Era::Shelley, &payload.clone()) {
-                tracing::info!("tx body parsed she: {:?}", tx.fee());
-            }
+                    let outputs = body.outputs();
+                    let mut out_outputs = vec![];
+                    for i in 0..outputs.len() {
+                        out_outputs.push(outputs.get(i));
+                    }
+                    let out = TxOutFormat {
+                        fee: body.fee(),
+                        inputs: out_inputs,
+                        outputs: out_outputs,
+                    };
 
-            if let Ok(tx) = pallas::ledger::traverse::MultiEraTx::decode(Era::Babbage, &payload.clone()) {
-                tracing::info!("tx body parsed bab: {:?}", tx.fee());
+                    out_file.write_all(serde_json::to_string_pretty(&out)?.as_bytes())?;
+                },
+                Err(err) => {
+                    tracing::warn!("can't parse tx: error: {:?}, tx: {:?}", err, tx);
+                }
             }
-
-            ;
         }
         current_page += 1;
         break;
