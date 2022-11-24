@@ -11,6 +11,7 @@ use tracing_subscriber::prelude::*;
 use entity::sea_orm::Database;
 use entity::sea_orm::QueryFilter;
 use futures::TryStreamExt;
+use pallas::ledger::traverse::Era;
 use entity::{
     prelude::*,
     block::*,
@@ -110,7 +111,10 @@ async fn _main() -> anyhow::Result<()> {
             if let Ok(tx) = cardano_multiplatform_lib::Transaction::from_bytes(payload.clone()) {
                 tracing::info!("tx parsed: {:?}", tx.body().fee());
             }
-            if let Ok(tx) = cardano_multiplatform_lib::TransactionBody::from_bytes(payload) {
+            if let Ok(tx) = cardano_multiplatform_lib::TransactionBody::from_bytes(payload.clone()) {
+                tracing::info!("tx body parsed: {:?}", tx.fee());
+            }
+            if let Ok(tx) = pallas::ledger::traverse::MultiEraTx::decode(Era::Byron, &payload) {
                 tracing::info!("tx body parsed: {:?}", tx.fee());
             }
 
