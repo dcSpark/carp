@@ -65,7 +65,7 @@ pub struct Cli {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct TxOutputIntent {
-    address: StakeCredential,
+    address: Option<StakeCredential>,
     amount: cardano_multiplatform_lib::ledger::common::value::Value,
 }
 
@@ -73,13 +73,22 @@ pub struct TxOutputIntent {
 #[serde(tag = "type", rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
 pub enum TxEvent {
-    Parsed {
-        // include changes as well
+    // every from is shelley address. `to` can be any address
+    // we store all amounts in this case: either shelley or byron outputs amounts, since
+    // we can perform the selection for that
+    FromParsed {
         to: Vec<TxOutputIntent>,
         fee: cardano_multiplatform_lib::ledger::common::value::Coin,
         // we can assume we can spend utxos with both credentials if we have multiple froms
         from: Vec<StakeCredential>,
-        partial: bool,
+    },
+    // this applies when some of the from addresses are byron
+    // we store shelley from and to intents
+    // this way we can compute the balance change afterwards
+    PartialParsed {
+        to: Vec<TxOutputIntent>,
+        // we store how much money we spent from the parsed addresses
+        from: Vec<TxOutputIntent>,
     },
     Unparsed {
         tx: TransactionHash,
@@ -194,7 +203,16 @@ async fn _main() -> anyhow::Result<()> {
         File::create(output_path)
     }?;
 
-    let mut previous_outputs = HashMap::<TransactionHash, HashMap<BigNum, StakeCredential>>::new();
+    let mut previous_outputs = HashMap::<
+        TransactionHash,
+        HashMap<
+            BigNum,
+            (
+                StakeCredential,
+                cardano_multiplatform_lib::ledger::common::value::Value,
+            ),
+        >,
+    >::new();
 
     while let Some(txs) = stream.try_next().await? {
         tracing::info!("handling page: {:?} of {:?}", current_page, total_pages);
@@ -206,10 +224,11 @@ async fn _main() -> anyhow::Result<()> {
                     // inputs handle
                     let inputs = body.inputs();
 
-                    let mut is_partial = false;
+                    let mut is_from_partial = false;
 
                     // try to parse input addresses and put in the set
                     let mut input_addresses = HashSet::new();
+                    let mut input_intents = Vec::new();
                     for input_index in 0..inputs.len() {
                         let input = inputs.get(input_index);
                         // try to find output and extract address from there
@@ -217,11 +236,15 @@ async fn _main() -> anyhow::Result<()> {
                             &mut previous_outputs.get_mut(&input.transaction_id())
                         {
                             // we remove the spent input from the list
-                            if let Some(cred) = outputs.remove(&input.index()) {
-                                input_addresses.insert(cred);
+                            if let Some((cred, amount)) = outputs.remove(&input.index()) {
+                                input_addresses.insert(cred.clone());
+                                input_intents.push(TxOutputIntent {
+                                    address: Some(cred),
+                                    amount,
+                                })
                             }
                         } else {
-                            is_partial = true; // might be byron address or sth
+                            is_from_partial = true; // might be byron address or sth
                         }
                         // remove if whole transaction is spent
                         if previous_outputs
@@ -245,22 +268,35 @@ async fn _main() -> anyhow::Result<()> {
                                         .map_err(|err| anyhow!("err: {:?}", err))?,
                                 )
                                 .or_default();
-                            tx_outputs_previous
-                                .insert(BigNum::from(output_index as u64), credential.clone());
+                            tx_outputs_previous.insert(
+                                BigNum::from(output_index as u64),
+                                (credential.clone(), output.amount()),
+                            );
                             output_intents.push(TxOutputIntent {
-                                address: credential,
+                                address: Some(credential),
                                 amount: output.amount(),
                             })
                         } else {
                             // might be byron address
-                            is_partial = true;
+                            if !is_from_partial {
+                                output_intents.push(TxOutputIntent {
+                                    address: None,
+                                    amount: output.amount(),
+                                })
+                            }
                         }
                     }
-                    let event = TxEvent::Parsed {
-                        to: output_intents,
-                        fee: body.fee(),
-                        from: Vec::from_iter(input_addresses.into_iter()),
-                        partial: is_partial,
+                    let event = if !is_from_partial {
+                        TxEvent::FromParsed {
+                            to: output_intents, // all output intents incl byron
+                            fee: body.fee(),
+                            from: Vec::from_iter(input_addresses.into_iter()), // input addresses are parsed fully
+                        }
+                    } else {
+                        TxEvent::PartialParsed {
+                            to: output_intents,  // can lack byron addresses
+                            from: input_intents, // can lack byron addresses
+                        }
                     };
 
                     out_file
