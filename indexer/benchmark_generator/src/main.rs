@@ -1,9 +1,14 @@
 use std::path::PathBuf;
 
 use anyhow::{anyhow, Context};
-use cardano_multiplatform_lib::ledger::common::value::Coin;
+use cardano_multiplatform_lib::address::{Address, StakeCredential};
+use cardano_multiplatform_lib::crypto::TransactionHash;
+use cardano_multiplatform_lib::ledger::common::value::{BigNum, Coin};
 use cardano_multiplatform_lib::{TransactionInput, TransactionOutput};
+use cardano_sdk::chain::TxHash;
 use clap::Parser;
+use dcspark_core::tx::{TransactionId, UtxoPointer};
+use dcspark_core::{Balance, OutputIndex, Regulated, TokenId};
 use entity::sea_orm::Database;
 use entity::sea_orm::QueryFilter;
 use entity::{
@@ -19,6 +24,7 @@ use futures::TryStreamExt;
 use pallas::ledger::traverse::Era;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::Write;
 use std::sync::Arc;
@@ -58,10 +64,25 @@ pub struct Cli {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct TxOutFormat {
-    fee: Coin,
-    inputs: Vec<TransactionInput>,
-    outputs: Vec<TransactionOutput>,
+pub struct TxOutputIntent {
+    address: StakeCredential,
+    amount: cardano_multiplatform_lib::ledger::common::value::Value,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+#[serde(deny_unknown_fields)]
+pub enum TxEvent {
+    ParsedSendRequest {
+        // include changes as well
+        to: Vec<TxOutputIntent>,
+        fee: cardano_multiplatform_lib::ledger::common::value::Coin,
+        // we can assume we can spend utxos with both credentials if we have multiple froms
+        from: Vec<StakeCredential>,
+    },
+    UnparsedSendRequest {
+        tx: TransactionHash,
+    },
 }
 
 #[tokio::main]
@@ -145,7 +166,7 @@ async fn _main() -> anyhow::Result<()> {
         .iter()
         .map(|tx| tx.id)
         .collect();
-    let shelley_first_tx = shelley_first_tx
+    let mut shelley_first_tx = shelley_first_tx
         .first()
         .cloned()
         .ok_or_else(|| anyhow!("Can't find first tx"))?;
@@ -172,6 +193,8 @@ async fn _main() -> anyhow::Result<()> {
         File::create(output_path)
     }?;
 
+    let mut previous_outputs = HashMap::<TransactionHash, HashMap<BigNum, StakeCredential>>::new();
+
     while let Some(txs) = stream.try_next().await? {
         tracing::info!("handling page: {:?} of {:?}", current_page, total_pages);
         for tx in txs {
@@ -179,27 +202,80 @@ async fn _main() -> anyhow::Result<()> {
             match cardano_multiplatform_lib::Transaction::from_bytes(payload.clone()) {
                 Ok(parsed) => {
                     let body = parsed.body();
+                    // inputs handle
                     let inputs = body.inputs();
-                    let mut out_inputs = vec![];
-                    for i in 0..inputs.len() {
-                        out_inputs.push(inputs.get(i));
+
+                    // try to parse input addresses and put in the set
+                    let mut input_addresses = HashSet::new();
+                    for input_index in 0..inputs.len() {
+                        let input = inputs.get(input_index);
+                        // try to find output and extract address from there
+                        if let Some(outputs) =
+                            &mut previous_outputs.get_mut(&input.transaction_id())
+                        {
+                            // we remove the spent input from the list
+                            if let Some(cred) = outputs.remove(&input.index()) {
+                                input_addresses.insert(cred);
+                            }
+                        }
+                        // remove if whole transaction is spent
+                        if previous_outputs
+                            .get(&input.transaction_id())
+                            .map(|outputs| outputs.is_empty())
+                            .unwrap_or(false)
+                        {
+                            previous_outputs.remove(&input.transaction_id());
+                        }
                     }
 
+                    // outputs handle
                     let outputs = body.outputs();
-                    let mut out_outputs = vec![];
-                    for i in 0..outputs.len() {
-                        out_outputs.push(outputs.get(i));
+                    let mut is_supported = true;
+                    let mut output_intents = vec![];
+                    for output_index in 0..outputs.len() {
+                        let output = outputs.get(output_index);
+                        if let Some(credential) = output.address().payment_cred() {
+                            let tx_outputs_previous = previous_outputs
+                                .entry(
+                                    TransactionHash::from_bytes(tx.hash.clone())
+                                        .map_err(|err| anyhow!("err: {:?}", err))?,
+                                )
+                                .or_default();
+                            tx_outputs_previous
+                                .insert(BigNum::from(output_index as u64), credential.clone());
+                            output_intents.push(TxOutputIntent {
+                                address: credential,
+                                amount: output.amount(),
+                            })
+                        } else {
+                            // unsupported tx
+                            is_supported = false;
+                            break;
+                        }
                     }
-                    let out = TxOutFormat {
-                        fee: body.fee(),
-                        inputs: out_inputs,
-                        outputs: out_outputs,
+                    let event = if is_supported {
+                        TxEvent::ParsedSendRequest {
+                            to: output_intents,
+                            fee: body.fee(),
+                            from: Vec::from_iter(input_addresses.into_iter()),
+                        }
+                    } else {
+                        TxEvent::UnparsedSendRequest {
+                            tx: TransactionHash::from_bytes(tx.hash.clone())
+                                .map_err(|err| anyhow!("err: {:?}", err))?,
+                        }
                     };
 
-                    out_file.write_all(format!("{}\n", serde_json::to_string(&out)?).as_bytes())?;
+                    out_file
+                        .write_all(format!("{}\n", serde_json::to_string(&event)?).as_bytes())?;
                 }
                 Err(err) => {
-                    tracing::warn!("can't parse tx: error: {:?}, tx: {:?}", err, tx);
+                    let event = TxEvent::UnparsedSendRequest {
+                        tx: TransactionHash::from_bytes(tx.hash.clone())
+                            .map_err(|err| anyhow!("err: {:?}", err))?,
+                    };
+                    out_file
+                        .write_all(format!("{}\n", serde_json::to_string(&event)?).as_bytes())?;
                 }
             }
         }

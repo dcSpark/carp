@@ -7,7 +7,10 @@ edition = "2021"
 
 [dependencies]
 entity = { path = "../entity" }
+dcspark-core = { git = "https://github.com/dcSpark/dcspark-core.git", branch = "egostkin/utxo-selection" }
+cardano-utils = { git = "https://github.com/dcSpark/dcspark-core.git", branch = "egostkin/utxo-selection" }
 
+cardano-sdk = "0.2.5"
 anyhow = "1.0.53"
 serde = {version = "1.0.144", features = ["derive", "rc"]}
 tokio = { version = "1.16.1", features = ["full"] }
