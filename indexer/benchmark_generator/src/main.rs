@@ -73,14 +73,15 @@ pub struct TxOutputIntent {
 #[serde(tag = "type", rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
 pub enum TxEvent {
-    ParsedSendRequest {
+    Parsed {
         // include changes as well
         to: Vec<TxOutputIntent>,
         fee: cardano_multiplatform_lib::ledger::common::value::Coin,
         // we can assume we can spend utxos with both credentials if we have multiple froms
         from: Vec<StakeCredential>,
+        partial: bool,
     },
-    UnparsedSendRequest {
+    Unparsed {
         tx: TransactionHash,
     },
 }
@@ -205,6 +206,8 @@ async fn _main() -> anyhow::Result<()> {
                     // inputs handle
                     let inputs = body.inputs();
 
+                    let mut is_partial = false;
+
                     // try to parse input addresses and put in the set
                     let mut input_addresses = HashSet::new();
                     for input_index in 0..inputs.len() {
@@ -217,6 +220,8 @@ async fn _main() -> anyhow::Result<()> {
                             if let Some(cred) = outputs.remove(&input.index()) {
                                 input_addresses.insert(cred);
                             }
+                        } else {
+                            is_partial = true; // might be byron address or sth
                         }
                         // remove if whole transaction is spent
                         if previous_outputs
@@ -230,7 +235,6 @@ async fn _main() -> anyhow::Result<()> {
 
                     // outputs handle
                     let outputs = body.outputs();
-                    let mut is_supported = true;
                     let mut output_intents = vec![];
                     for output_index in 0..outputs.len() {
                         let output = outputs.get(output_index);
@@ -248,29 +252,22 @@ async fn _main() -> anyhow::Result<()> {
                                 amount: output.amount(),
                             })
                         } else {
-                            // unsupported tx
-                            is_supported = false;
-                            break;
+                            // might be byron address
+                            is_partial = true;
                         }
                     }
-                    let event = if is_supported {
-                        TxEvent::ParsedSendRequest {
-                            to: output_intents,
-                            fee: body.fee(),
-                            from: Vec::from_iter(input_addresses.into_iter()),
-                        }
-                    } else {
-                        TxEvent::UnparsedSendRequest {
-                            tx: TransactionHash::from_bytes(tx.hash.clone())
-                                .map_err(|err| anyhow!("err: {:?}", err))?,
-                        }
+                    let event = TxEvent::Parsed {
+                        to: output_intents,
+                        fee: body.fee(),
+                        from: Vec::from_iter(input_addresses.into_iter()),
+                        partial: is_partial,
                     };
 
                     out_file
                         .write_all(format!("{}\n", serde_json::to_string(&event)?).as_bytes())?;
                 }
                 Err(err) => {
-                    let event = TxEvent::UnparsedSendRequest {
+                    let event = TxEvent::Unparsed {
                         tx: TransactionHash::from_bytes(tx.hash.clone())
                             .map_err(|err| anyhow!("err: {:?}", err))?,
                     };
