@@ -1,9 +1,5 @@
-import { Dex, Pagination, Asset } from "./common";
+import { Dex, Pagination, Asset, Amount } from "./common";
 
-/**
- * @example "2042352568679"
- */
-type Amount = string; // uint64
 
 export type DexMeanPrice = {
     tx_hash: string;

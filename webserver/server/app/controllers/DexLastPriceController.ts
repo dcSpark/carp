@@ -1,15 +1,12 @@
 import { Body, Controller, TsoaResponse, Res, Post, Route, SuccessResponse } from 'tsoa';
 import { StatusCodes } from 'http-status-codes';
 import { DEX_PRICE_LIMIT } from '../../../shared/constants';
-import tx from 'pg-tx';
 import pool from '../services/PgPoolSingleton';
 import type { ErrorShape } from '../../../shared/errors';
 import { genErrorMessage } from '../../../shared/errors';
 import { Errors } from '../../../shared/errors';
-import { expectType } from 'tsd';
 import type { EndpointTypes } from '../../../shared/routes';
 import { Routes } from '../../../shared/routes';
-import type { DexLastPriceResponse } from '../../../shared/models/DexLastPrice';
 import { dexLastPrice } from '../services/DexLastPrice';
 
 
@@ -42,23 +39,11 @@ export class DexLastPriceController extends Controller {
             );
         }
 
-        // note: we use a SQL transaction to make sure the pagination check works properly
-        // otherwise, a rollback could happen between getting the pagination info and the history query
-        const lastPrices = await tx<ErrorShape | DexLastPriceResponse>(
-            pool,
-            async dbTx => {
-                  return await dexLastPrice({         
-                    dbTx,           
-                    assetPairs: requestBody.assetPairs,
-                    type: requestBody.type
-                });
-            }
-        );
-        if ('code' in lastPrices) {
-            expectType<Equals<typeof lastPrices, ErrorShape>>(true);
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-            return errorResponse(StatusCodes.CONFLICT, lastPrices);
-        }
+        const lastPrices = await dexLastPrice({         
+            dbTx: await pool.connect(),           
+            assetPairs: requestBody.assetPairs,
+            type: requestBody.type
+        });
 
         return lastPrices;
     }

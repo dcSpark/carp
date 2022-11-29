@@ -45,11 +45,11 @@ readonly=false
 
 [MultieraMinSwapV1MeanPriceTask]
 
-[MultieraMinSwapV1SwapTask]
-
 [MultieraSundaeSwapV1MeanPriceTask]
 
 [MultieraWingRidersV1SwapTask]
+
+[MultieraMinSwapV1SwapTask]
 
 [MultieraSundaeSwapV1SwapTask]
 

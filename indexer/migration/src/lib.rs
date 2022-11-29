@@ -15,8 +15,8 @@ mod m20220520_000010_create_cip25_entry_table;
 mod m20220528_000011_create_plutus_data_hash_table;
 mod m20220528_000012_create_plutus_data_table;
 mod m20220808_000013_create_transaction_reference_input_table;
-mod m20221020_000014_create_dex_mean_price_table;
-mod m20221031_000015_create_dex_swap_table;
+mod m20221031_000014_create_dex_table;
+mod m20221031_000015_create_dex_views;
 
 pub struct Migrator;
 
@@ -39,8 +39,8 @@ impl MigratorTrait for Migrator {
             Box::new(m20220528_000011_create_plutus_data_hash_table::Migration),
             Box::new(m20220528_000012_create_plutus_data_table::Migration),
             Box::new(m20220808_000013_create_transaction_reference_input_table::Migration),
-            Box::new(m20221020_000014_create_dex_mean_price_table::Migration),
-            Box::new(m20221031_000015_create_dex_swap_table::Migration),
+            Box::new(m20221031_000014_create_dex_table::Migration),
+            Box::new(m20221031_000015_create_dex_views::Migration),
         ]
     }
 }

@@ -35,7 +35,7 @@ WHERE
       COALESCE("Asset2".policy_id, ''::bytea),
       COALESCE("Asset2".asset_name, ''::bytea)
     ) IN (SELECT policy_id1, asset_name1, policy_id2, asset_name2 FROM "AssetPairs")
-    AND "DexSwap".direction = :direction
+    AND "DexSwap".operation = :operation
   )
   -- Add swap for another direction
   OR
@@ -46,6 +46,6 @@ WHERE
       COALESCE("Asset1".policy_id, ''::bytea),
       COALESCE("Asset1".asset_name, ''::bytea)
     ) IN (SELECT policy_id1, asset_name1, policy_id2, asset_name2 FROM "AssetPairs")
-    AND "DexSwap".direction != :direction
+    AND "DexSwap".operation != :operation
   )
 ORDER BY "DexSwap".dex, "DexSwap".tx_id DESC, "DexSwap".id DESC;

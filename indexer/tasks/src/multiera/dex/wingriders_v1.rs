@@ -5,16 +5,15 @@ use pallas::ledger::{
     traverse::{MultiEraOutput, MultiEraTx},
 };
 
-use crate::{
-    era_common::OutputWithTxData,
-    multiera::utils::common::{get_asset_amount, get_plutus_datum_for_output},
-    types::DexSwapDirection,
-};
-
 use super::common::{
     build_asset, filter_outputs_and_datums_by_hash, reduce_ada_amount, Dex, DexType,
     QueuedMeanPrice, QueuedSwap, WingRidersV1,
 };
+use crate::{
+    era_common::OutputWithTxData,
+    multiera::utils::common::{get_asset_amount, get_plutus_datum_for_output},
+};
+use entity::dex_swap::Operation;
 
 const POOL_SCRIPT_HASH: &str = "e6c90a5923713af5786963dee0fdffd830ca7e0c86a041d9e5833e91";
 const POOL_FIXED_ADA: u64 = 3_000_000; // every pool UTXO holds this amount of ADA
@@ -177,10 +176,9 @@ impl Dex for WingRidersV1 {
                     asset2,
                     amount1,
                     amount2,
-                    direction: if direction == 0 {
-                        DexSwapDirection::SellAsset1
-                    } else {
-                        DexSwapDirection::BuyAsset1
+                    operation: match direction == 0 {
+                        true => Operation::Sell,
+                        false => Operation::Buy,
                     },
                 })
             }

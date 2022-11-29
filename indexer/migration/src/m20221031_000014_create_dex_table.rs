@@ -9,7 +9,7 @@ pub struct Migration;
 
 impl MigrationName for Migration {
     fn name(&self) -> &str {
-        "m20221031_000015_create_dex_swap_table"
+        "m20221031_000014_create_dex_table"
     }
 }
 
@@ -31,7 +31,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Column::TxId).big_integer().not_null())
                     .foreign_key(
                         ForeignKey::create()
-                            .name("fk-dex_swap-tx_id")
+                            .name("fk-dex-tx_id")
                             .from(Entity, Column::TxId)
                             .to(Transaction, TransactionColumn::Id)
                             .on_delete(ForeignKeyAction::Cascade),
@@ -39,7 +39,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Column::AddressId).big_integer().not_null())
                     .foreign_key(
                         ForeignKey::create()
-                            .name("fk-dex_swap-address_id")
+                            .name("fk-dex-address_id")
                             .from(Entity, Column::AddressId)
                             .to(Address, AddressColumn::Id)
                             .on_delete(ForeignKeyAction::Cascade),
@@ -48,7 +48,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Column::Asset1Id).big_integer())
                     .foreign_key(
                         ForeignKey::create()
-                            .name("fk-dex_swap-asset1_id")
+                            .name("fk-dex-asset1_id")
                             .from(Entity, Column::Asset1Id)
                             .to(NativeAsset, NativeAssetColumn::Id)
                             .on_delete(ForeignKeyAction::Cascade),
@@ -56,14 +56,14 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Column::Asset2Id).big_integer())
                     .foreign_key(
                         ForeignKey::create()
-                            .name("fk-dex_swap-asset2_id")
+                            .name("fk-dex-asset2_id")
                             .from(Entity, Column::Asset2Id)
                             .to(NativeAsset, NativeAssetColumn::Id)
                             .on_delete(ForeignKeyAction::Cascade),
                     )
                     .col(ColumnDef::new(Column::Amount1).big_unsigned().not_null())
                     .col(ColumnDef::new(Column::Amount2).big_unsigned().not_null())
-                    .col(ColumnDef::new(Column::Direction).boolean().not_null())
+                    .col(ColumnDef::new(Column::Operation).big_integer().not_null())
                     .to_owned(),
             )
             .await?;
@@ -72,11 +72,21 @@ impl MigrationTrait for Migration {
             .create_index(
                 Index::create()
                     .table(Entity)
-                    .name("index-dex_swap-address-native_asset1-native_asset2-transaction")
+                    .name("index-dex-address-native_asset1-native_asset2-transaction")
                     .col(Column::Dex)
                     .col(Column::Asset1Id)
                     .col(Column::Asset2Id)
                     .col(Column::TxId)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .table(Entity)
+                    .name("index-dex-operation")
+                    .col(Column::Operation)
                     .to_owned(),
             )
             .await

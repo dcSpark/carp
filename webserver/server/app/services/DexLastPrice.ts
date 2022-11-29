@@ -33,7 +33,7 @@ export async function dexLastPrice(
                     asset_name1: request.assetPairs.map(pair => parseAssetItem(pair.asset1?.assetName)),
                     policy_id2: request.assetPairs.map(pair => parseAssetItem(pair.asset2?.policyId)),
                     asset_name2: request.assetPairs.map(pair => parseAssetItem(pair.asset2?.assetName)),
-                    direction: false
+                    operation: '0'
                 }, request.dbTx);
 
             case PriceType.Buy:
@@ -42,7 +42,7 @@ export async function dexLastPrice(
                     asset_name1: request.assetPairs.map(pair => parseAssetItem(pair.asset1?.assetName)),
                     policy_id2: request.assetPairs.map(pair => parseAssetItem(pair.asset2?.policyId)),
                     asset_name2: request.assetPairs.map(pair => parseAssetItem(pair.asset2?.assetName)),
-                    direction: true
+                    operation: '1'
                 }, request.dbTx);
         }
     })();
@@ -51,9 +51,9 @@ export async function dexLastPrice(
     lastPrice: lastPrice.map(result => ({
       asset1: serializeAsset(result.policy_id1, result.asset_name1),
       asset2: serializeAsset(result.policy_id2, result.asset_name2),
-      amount1: result.amount1,
-      amount2: result.amount2,
-      dex: valueToDex(result.dex)
+      amount1: result.amount1 || '0',
+      amount2: result.amount2 || '0',
+      dex: valueToDex(result.dex || '-1')
     })),
   };
 }

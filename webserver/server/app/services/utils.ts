@@ -27,7 +27,7 @@ export function valueToDex(dex: string) {
         case '1': return Dex.SundaeSwap;
         case '2': return Dex.MinSwap;
     }
-    return Dex.Unknown;
+    throw new Error(`Unsupported dex: '${dex}'`);
 }
 
 export function dexToValue(dex: Dex) {
@@ -36,5 +36,4 @@ export function dexToValue(dex: Dex) {
         case Dex.SundaeSwap: return '1';
         case Dex.MinSwap: return '2';
     }
-    return '-1';
 }

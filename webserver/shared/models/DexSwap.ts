@@ -1,10 +1,4 @@
-import { Pagination, Dex, Direction, Asset } from "./common";
-
-/**
- * @example "2042352568679"
- */
-type Amount = string; // uint64
-
+import { Pagination, Dex, Direction, Asset, Amount } from "./common";
 
 export type DexSwap = {
     tx_hash: string;

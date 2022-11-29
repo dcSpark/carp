@@ -13,11 +13,11 @@ export interface ISqlDexLastPriceMeanParams {
 
 /** 'SqlDexLastPriceMean' return type */
 export interface ISqlDexLastPriceMeanResult {
-  amount1: string;
-  amount2: string;
+  amount1: string | null;
+  amount2: string | null;
   asset_name1: Buffer | null;
   asset_name2: Buffer | null;
-  dex: string;
+  dex: string | null;
   policy_id1: Buffer | null;
   policy_id2: Buffer | null;
 }

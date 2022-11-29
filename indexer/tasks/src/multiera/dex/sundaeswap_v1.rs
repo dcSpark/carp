@@ -6,15 +6,12 @@ use pallas::ledger::{
     traverse::{MultiEraOutput, MultiEraTx},
 };
 
-use crate::{
-    era_common::OutputWithTxData, multiera::utils::common::get_asset_amount,
-    types::DexSwapDirection,
-};
-
 use super::common::{
     build_asset, filter_outputs_and_datums_by_address, filter_outputs_and_datums_by_hash,
     reduce_ada_amount, Dex, DexType, QueuedMeanPrice, QueuedSwap, SundaeSwapV1,
 };
+use crate::{era_common::OutputWithTxData, multiera::utils::common::get_asset_amount};
+use entity::dex_swap::Operation;
 
 pub const POOL_SCRIPT_HASH: &str = "4020e7fc2de75a0729c3cc3af715b34d98381e0cdbcfa99c950bc3ac";
 pub const REQUEST_SCRIPT_HASH: &str = "ba158766c1bae60e2117ee8987621441fac66a5e0fb9c7aca58cf20a";
@@ -163,10 +160,9 @@ impl Dex for SundaeSwapV1 {
                     asset2: asset2.clone(),
                     amount1,
                     amount2,
-                    direction: if direction == 0 {
-                        DexSwapDirection::SellAsset1
-                    } else {
-                        DexSwapDirection::BuyAsset1
+                    operation: match direction == 0 {
+                        true => Operation::Sell,
+                        false => Operation::Buy,
                     },
                 })
             }

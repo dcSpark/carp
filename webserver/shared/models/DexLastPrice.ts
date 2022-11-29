@@ -1,9 +1,4 @@
-import { Dex, Asset } from "./common";
-
-/**
- * @example "2042352568679"
- */
-type Amount = string; // uint64
+import { Dex, Asset, Amount } from "./common";
 
 export type DexLastPrice = {
     asset1: Asset;

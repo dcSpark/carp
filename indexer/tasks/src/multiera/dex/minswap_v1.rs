@@ -6,15 +6,12 @@ use pallas::ledger::{
     traverse::{MultiEraOutput, MultiEraTx},
 };
 
-use crate::{
-    era_common::OutputWithTxData, multiera::utils::common::get_asset_amount,
-    types::DexSwapDirection,
-};
-
 use super::common::{
     build_asset, filter_outputs_and_datums_by_address, filter_outputs_and_datums_by_hash,
     reduce_ada_amount, Dex, DexType, MinSwapV1, QueuedMeanPrice, QueuedSwap,
 };
+use crate::{era_common::OutputWithTxData, multiera::utils::common::get_asset_amount};
+use entity::dex_swap::Operation;
 
 pub const POOL_SCRIPT_HASH1: &str = "e1317b152faac13426e6a83e06ff88a4d62cce3c1634ab0a5ec13309";
 pub const POOL_SCRIPT_HASH2: &str = "57c8e718c201fba10a9da1748d675b54281d3b1b983c5d1687fc7317";
@@ -156,19 +153,19 @@ impl Dex for MinSwapV1 {
                 // Get amount and direction
                 let amount1;
                 let amount2;
-                let direction;
+                let operation;
                 if target_asset == asset2 {
                     amount1 =
                         get_asset_amount(&input, &asset1) - reduce_ada_amount(&asset1, SWAP_IN_ADA);
                     amount2 =
                         get_asset_amount(&utxo, &asset2) - reduce_ada_amount(&asset2, SWAP_OUT_ADA);
-                    direction = DexSwapDirection::SellAsset1;
+                    operation = Operation::Sell;
                 } else {
                     amount1 =
                         get_asset_amount(&utxo, &asset1) - reduce_ada_amount(&asset1, SWAP_OUT_ADA);
                     amount2 =
                         get_asset_amount(&input, &asset2) - reduce_ada_amount(&asset2, SWAP_IN_ADA);
-                    direction = DexSwapDirection::BuyAsset1;
+                    operation = Operation::Buy
                 }
                 queued_swaps.push(QueuedSwap {
                     tx_id,
@@ -178,7 +175,7 @@ impl Dex for MinSwapV1 {
                     asset2: asset2.clone(),
                     amount1,
                     amount2,
-                    direction,
+                    operation,
                 })
             }
         }

@@ -4,8 +4,8 @@ use crate::{
     multiera::utils::common::{
         asset_from_pair, get_plutus_datum_for_output, get_shelley_payment_hash,
     },
-    types::DexSwapDirection,
 };
+use entity::dex_swap::Operation;
 use entity::sea_orm::{DatabaseTransaction, Set};
 use pallas::{
     codec::utils::KeepRaw,
@@ -74,7 +74,7 @@ pub struct QueuedSwap {
     pub asset2: AssetPair,
     pub amount1: u64,
     pub amount2: u64,
-    pub direction: DexSwapDirection,
+    pub operation: Operation,
 }
 
 pub trait Dex {
@@ -214,7 +214,7 @@ pub async fn handle_mean_price(
     asset_pair_to_id_map.insert(None, None); // ADA
 
     // 4) Add mean prices to DB
-    DexMeanPrice::insert_many(
+    DexSwap::insert_many(
         queued_prices
             .iter()
             .filter(|price| {
@@ -222,7 +222,7 @@ pub async fn handle_mean_price(
                 asset_pair_to_id_map.contains_key(&price.asset1)
                     && asset_pair_to_id_map.contains_key(&price.asset2)
             })
-            .map(|price| DexMeanPriceActiveModel {
+            .map(|price| DexSwapActiveModel {
                 tx_id: Set(price.tx_id),
                 address_id: Set(multiera_addresses[&price.address].model.id),
                 dex: Set(i32::from(price.dex_type.clone())),
@@ -230,6 +230,7 @@ pub async fn handle_mean_price(
                 asset2_id: Set(asset_pair_to_id_map[&price.asset2]),
                 amount1: Set(price.amount1),
                 amount2: Set(price.amount2),
+                operation: Set(Operation::Mean.into()),
                 ..Default::default()
             }),
     )
@@ -301,7 +302,6 @@ pub async fn handle_swap(
     }
 
     // 3) Query for asset ids
-    // TODO use the query result from mean price task?
     let found_assets = asset_from_pair(
         db_tx,
         &unique_tokens
@@ -328,12 +328,12 @@ pub async fn handle_swap(
             .map(|price| DexSwapActiveModel {
                 tx_id: Set(price.tx_id),
                 address_id: Set(multiera_addresses[&price.address].model.id),
-                dex: Set(i32::from(price.dex_type.clone())),
+                dex: Set(price.dex_type.clone().into()),
                 asset1_id: Set(asset_pair_to_id_map[&price.asset1]),
                 asset2_id: Set(asset_pair_to_id_map[&price.asset2]),
                 amount1: Set(price.amount1),
                 amount2: Set(price.amount2),
-                direction: Set(price.direction.into()),
+                operation: Set(price.operation.into()),
                 ..Default::default()
             }),
     )

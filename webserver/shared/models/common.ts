@@ -101,10 +101,15 @@ export enum Dex {
   WingRiders = 'WingRiders',
   SundaeSwap = 'SundaeSwap',
   MinSwap = 'MinSwap',
-  Unknown = 'Unknown',
 };
 
 export type Asset = {
   policyId: PolicyId;
   assetName: AssetName;
 } | null;
+
+/**
+ * @pattern [0-9]+
+ * @example: "2042352568679"
+ */
+export type Amount = string;

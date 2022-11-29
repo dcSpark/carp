@@ -2,7 +2,7 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Deserialize, Serialize)]
-#[sea_orm(table_name = "DexSwap")]
+#[sea_orm(table_name = "Dex")]
 pub struct Model {
     #[sea_orm(primary_key, column_type = "BigInteger")]
     pub id: i64,
@@ -19,7 +19,7 @@ pub struct Model {
     pub amount1: u64,
     #[sea_orm(column_type = "BigUnsigned")]
     pub amount2: u64,
-    pub direction: bool,
+    pub operation: i32,
 }
 
 #[derive(Copy, Clone, Debug, DeriveRelation, EnumIter)]
@@ -50,20 +50,6 @@ pub enum Relation {
     Asset2,
 }
 
-// TODO: figure out why this isn't automatically handle by the macros above
-impl Related<super::transaction::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Transaction.def()
-    }
-}
-
-// TODO: figure out why this isn't automatically handle by the macros above
-impl Related<super::address::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Address.def()
-    }
-}
-
 impl ActiveModelBehavior for ActiveModel {}
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -79,6 +65,22 @@ impl From<Dex> for i32 {
             Dex::WingRidersV1 => 0,
             Dex::SundaeSwapV1 => 1,
             Dex::MinSwapV1 => 2,
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Operation {
+    Sell,
+    Buy,
+    Mean,
+}
+impl From<Operation> for i32 {
+    fn from(item: Operation) -> Self {
+        match item {
+            Operation::Sell => 0,
+            Operation::Buy => 1,
+            Operation::Mean => 2,
         }
     }
 }

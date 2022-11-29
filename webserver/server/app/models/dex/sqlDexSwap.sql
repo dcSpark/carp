@@ -22,7 +22,7 @@ SELECT
   "Asset2".asset_name AS "asset_name2?",
   "DexSwap".amount1,
   "DexSwap".amount2,
-  "DexSwap".direction,
+  "DexSwap".operation,
   "DexSwap".dex
 FROM "DexSwap"
 JOIN "Transaction" ON "Transaction".id = "DexSwap".tx_id

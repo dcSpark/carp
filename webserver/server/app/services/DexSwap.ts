@@ -30,12 +30,12 @@ export async function dexSwap(
   return {
     swap: swap.map(result => ({
       tx_hash: result.tx_hash.toString('hex'),
-      dex: valueToDex(result.dex),
+      dex: valueToDex(result.dex || '-1'),
       asset1: serializeAsset(result.policy_id1, result.asset_name1),
       asset2: serializeAsset(result.policy_id2, result.asset_name2),
-      amount1: result.amount1,
-      amount2: result.amount2,
-      direction: (result.direction ? Direction.Buy : Direction.Sell)
+      amount1: result.amount1 || '0',
+      amount2: result.amount2 || '0',
+      direction: (result.operation ? Direction.Buy : Direction.Sell)
     })),
   };
 }
