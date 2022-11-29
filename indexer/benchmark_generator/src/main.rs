@@ -24,6 +24,7 @@ use futures::TryStreamExt;
 use pallas::ledger::traverse::Era;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
+use std::cmp::{max, min};
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::Write;
@@ -48,7 +49,7 @@ pub enum DbConfig {
 #[serde(deny_unknown_fields)]
 pub struct Config {
     db: DbConfig,
-    tx_per_page: usize,
+    tx_per_page: i64,
 }
 
 #[derive(Parser, Debug)]
@@ -145,8 +146,10 @@ async fn _main() -> anyhow::Result<()> {
 
     let url = format!("postgresql://{user}:{password}@{host}:{port}/{db}");
     tracing::info!("Connection url {:?}", url);
-    let conn = Database::connect(&url).await?;
+    let mut conn = Database::connect(&url).await?;
     tracing::info!("Connection success");
+
+    /////////
     let shelley_first_blocks = Block::find()
         .filter(BlockColumn::Epoch.eq(208))
         .order_by_asc(BlockColumn::Id)
@@ -182,17 +185,17 @@ async fn _main() -> anyhow::Result<()> {
         .ok_or_else(|| anyhow!("Can't find first tx"))?;
     tracing::info!("Shelley first tx, {:?}", shelley_first_tx);
 
+    //////////////
+
     let mut transactions = Transaction::find()
         .filter(TransactionColumn::Id.gte(shelley_first_tx))
         .order_by_asc(TransactionColumn::Id)
-        .paginate(&conn, config.tx_per_page);
+        .paginate(&conn, config.tx_per_page as usize);
     let total_transactions = transactions.num_items().await?;
     let total_pages = transactions.num_pages().await?;
     tracing::info!("Total transactions: {:?}", total_transactions);
     tracing::info!("Total pages: {:?}", total_pages);
 
-    let mut current_page = transactions.cur_page();
-    let mut stream = transactions.into_stream();
     let mut out_file = if output_path.exists() && output_path.is_file() {
         tracing::info!(
             "file {:?} already exists, adding lines to the end",
@@ -214,9 +217,31 @@ async fn _main() -> anyhow::Result<()> {
         >,
     >::new();
 
-    while let Some(txs) = stream.try_next().await? {
-        tracing::info!("handling page: {:?} of {:?}", current_page, total_pages);
-        for tx in txs {
+    let mut current_start = shelley_first_tx;
+    let mut current_end = shelley_first_tx + config.tx_per_page;
+    let max_end = shelley_first_tx + total_transactions as i64;
+    let mut processed_transactions: usize = 0;
+
+    let mut current_query = Transaction::find()
+        .filter(
+            Condition::all()
+                .add(TransactionColumn::Id.gte(current_start))
+                .add(TransactionColumn::Id.lt(current_end)),
+        )
+        .order_by_asc(TransactionColumn::Id)
+        .all(&conn)
+        .await?;
+
+    while !current_query.is_empty() {
+        let tx_count = current_query.len();
+        tracing::info!(
+            "fetched txs from {:?} to {:?}, total: {:?}, max: {:?}",
+            current_start,
+            current_end,
+            tx_count,
+            max_end
+        );
+        for tx in current_query {
             let payload: &Vec<u8> = &tx.payload;
             match cardano_multiplatform_lib::Transaction::from_bytes(payload.clone()) {
                 Ok(parsed) => {
@@ -312,7 +337,20 @@ async fn _main() -> anyhow::Result<()> {
                 }
             }
         }
-        current_page += 1;
+
+        current_start = current_end;
+        processed_transactions += tx_count;
+        current_end += config.tx_per_page;
+        current_end = min(current_end, max_end);
+        current_query = Transaction::find()
+            .filter(
+                Condition::all()
+                    .add(TransactionColumn::Id.gte(current_start))
+                    .add(TransactionColumn::Id.lt(current_end)),
+            )
+            .order_by_asc(TransactionColumn::Id)
+            .all(&conn)
+            .await?;
     }
     Ok(())
 }
