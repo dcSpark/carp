@@ -66,7 +66,7 @@ pub struct Cli {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct TxOutputIntent {
-    address: Option<StakeCredential>,
+    address: Option<Address>,
     amount: cardano_multiplatform_lib::ledger::common::value::Value,
 }
 
@@ -81,7 +81,7 @@ pub enum TxEvent {
         to: Vec<TxOutputIntent>,
         fee: cardano_multiplatform_lib::ledger::common::value::Coin,
         // we can assume we can spend utxos with both credentials if we have multiple froms
-        from: Vec<StakeCredential>,
+        from: Vec<TxOutputIntent>,
     },
     // this applies when some of the from addresses are byron
     // we store shelley from and to intents
@@ -211,7 +211,7 @@ async fn _main() -> anyhow::Result<()> {
         HashMap<
             BigNum,
             (
-                StakeCredential,
+                Address,
                 cardano_multiplatform_lib::ledger::common::value::Value,
             ),
         >,
@@ -252,7 +252,6 @@ async fn _main() -> anyhow::Result<()> {
                     let mut is_from_partial = false;
 
                     // try to parse input addresses and put in the set
-                    let mut input_addresses = HashSet::new();
                     let mut input_intents = Vec::new();
                     for input_index in 0..inputs.len() {
                         let input = inputs.get(input_index);
@@ -262,7 +261,6 @@ async fn _main() -> anyhow::Result<()> {
                         {
                             // we remove the spent input from the list
                             if let Some((cred, amount)) = outputs.remove(&input.index()) {
-                                input_addresses.insert(cred.clone());
                                 input_intents.push(TxOutputIntent {
                                     address: Some(cred),
                                     amount,
@@ -286,7 +284,7 @@ async fn _main() -> anyhow::Result<()> {
                     let mut output_intents = vec![];
                     for output_index in 0..outputs.len() {
                         let output = outputs.get(output_index);
-                        if let Some(credential) = output.address().payment_cred() {
+                        if let Some(_) = output.address().payment_cred() {
                             let tx_outputs_previous = previous_outputs
                                 .entry(
                                     TransactionHash::from_bytes(tx.hash.clone())
@@ -295,10 +293,10 @@ async fn _main() -> anyhow::Result<()> {
                                 .or_default();
                             tx_outputs_previous.insert(
                                 BigNum::from(output_index as u64),
-                                (credential.clone(), output.amount()),
+                                (output.address(), output.amount()),
                             );
                             output_intents.push(TxOutputIntent {
-                                address: Some(credential),
+                                address: Some(output.address()),
                                 amount: output.amount(),
                             })
                         } else {
@@ -315,7 +313,7 @@ async fn _main() -> anyhow::Result<()> {
                         TxEvent::FromParsed {
                             to: output_intents, // all output intents incl byron
                             fee: body.fee(),
-                            from: Vec::from_iter(input_addresses.into_iter()), // input addresses are parsed fully
+                            from: input_intents, // input addresses are parsed fully
                         }
                     } else {
                         TxEvent::PartialParsed {
