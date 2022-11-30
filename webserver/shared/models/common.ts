@@ -109,7 +109,7 @@ export type Asset = {
 } | null;
 
 /**
- * @pattern [0-9]+
- * @example: "2042352568679"
+ * @pattern [1-9][0-9]*
+ * @example "2042352568679"
  */
 export type Amount = string;

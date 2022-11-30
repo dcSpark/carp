@@ -9,7 +9,7 @@ export async function dexMeanPrices(
   request: TransactionPaginationType & {
     dbTx: PoolClient;
     dexes: Array<Dex>;
-    assetPairs: {asset1: Asset, asset2: Asset}[];
+    assetPairs: { asset1: Asset, asset2: Asset }[];
     limit: number;
   }
 ): Promise<DexMeanPriceResponse> {
@@ -28,11 +28,11 @@ export async function dexMeanPrices(
   return {
     meanPrices: meanPrices.map(result => ({
       tx_hash: result.tx_hash.toString('hex'),
-      dex: valueToDex(result.dex || '-1'),
+      dex: valueToDex(result.dex ?? '-1'),
       asset1: serializeAsset(result.policy_id1, result.asset_name1),
       asset2: serializeAsset(result.policy_id2, result.asset_name2),
-      amount1: result.amount1 || '0',
-      amount2: result.amount2 || '0',
+      amount1: result.amount1 ?? '0',
+      amount2: result.amount2 ?? '0',
     })),
   };
 }
