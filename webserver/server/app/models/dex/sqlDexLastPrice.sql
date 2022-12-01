@@ -1,4 +1,4 @@
-/* @name sqlDexLastPriceSwap */
+/* @name sqlDexLastPrice */
 WITH "AssetPairs" AS (
   SELECT policy_id1, asset_name1, policy_id2, asset_name2
   FROM
@@ -15,18 +15,18 @@ WITH "AssetPairs" AS (
     ) x(policy_id1, asset_name1, policy_id2, asset_name2)
 )
 SELECT
-  DISTINCT ON("DexSwap".dex)
+  DISTINCT ON("Dex".dex)
 
   "Asset1".policy_id AS "policy_id1?",
   "Asset1".asset_name AS "asset_name1?",
   "Asset2".policy_id AS "policy_id2?",
   "Asset2".asset_name AS "asset_name2?",
-  "DexSwap".amount1,
-  "DexSwap".amount2,
-  "DexSwap".dex
-FROM "DexSwap"
-LEFT JOIN "NativeAsset" as "Asset1" ON "Asset1".id = "DexSwap".asset1_id
-LEFT JOIN "NativeAsset" as "Asset2" ON "Asset2".id = "DexSwap".asset2_id
+  "Dex".amount1,
+  "Dex".amount2,
+  "Dex".dex
+FROM "Dex"
+LEFT JOIN "NativeAsset" as "Asset1" ON "Asset1".id = "Dex".asset1_id
+LEFT JOIN "NativeAsset" as "Asset2" ON "Asset2".id = "Dex".asset2_id
 WHERE
   (
     (
@@ -35,7 +35,7 @@ WHERE
       COALESCE("Asset2".policy_id, ''::bytea),
       COALESCE("Asset2".asset_name, ''::bytea)
     ) IN (SELECT policy_id1, asset_name1, policy_id2, asset_name2 FROM "AssetPairs")
-    AND "DexSwap".operation = :operation
+    AND "Dex".operation = :operation1
   )
   -- Add swap for another direction
   OR
@@ -46,6 +46,6 @@ WHERE
       COALESCE("Asset1".policy_id, ''::bytea),
       COALESCE("Asset1".asset_name, ''::bytea)
     ) IN (SELECT policy_id1, asset_name1, policy_id2, asset_name2 FROM "AssetPairs")
-    AND "DexSwap".operation != :operation
+    AND "Dex".operation = :operation2
   )
-ORDER BY "DexSwap".dex, "DexSwap".tx_id DESC, "DexSwap".id DESC;
+ORDER BY "Dex".dex, "Dex".tx_id DESC, "Dex".id DESC;

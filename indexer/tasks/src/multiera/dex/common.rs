@@ -78,6 +78,7 @@ pub struct QueuedSwap {
 }
 
 pub trait Dex {
+    /// Handle the rest of the assets on the pool address
     fn queue_mean_price(
         &self,
         queued_prices: &mut Vec<QueuedMeanPrice>,
@@ -85,6 +86,7 @@ pub trait Dex {
         tx_id: i64,
     ) -> Result<(), String>;
 
+    /// Handle amount of each swap operation
     fn queue_swap(
         &self,
         queued_swaps: &mut Vec<QueuedSwap>,

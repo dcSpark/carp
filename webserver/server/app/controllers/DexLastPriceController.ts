@@ -16,6 +16,7 @@ const route = Routes.dexLastPrice;
 export class DexLastPriceController extends Controller {
     /**
      * Gets the swap prices for the given liquidity pool and asset pairs.
+     * Operation "mean" is not AVG from the last values, but the remaining amount of assets on the pool output
      */
     @SuccessResponse(`${StatusCodes.OK}`)
     @Post()

@@ -19,6 +19,7 @@ const route = Routes.dexMeanPrice;
 export class DexMeanPriceController extends Controller {
   /**
    * Gets the mean prices for the given liquidity pool and asset pairs.
+   * Mean is not AVG from the last values, but the remaining amount of assets on the pool output
    */
   @SuccessResponse(`${StatusCodes.OK}`)
   @Post()
