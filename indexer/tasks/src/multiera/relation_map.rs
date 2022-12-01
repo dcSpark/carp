@@ -29,7 +29,7 @@ impl RelationMap {
     }
 
     pub fn for_transaction(&mut self, tx_id: i64) -> &mut BTreeMap<Hash<32>, i32> {
-        self.0.entry(tx_id).or_insert(BTreeMap::new())
+        self.0.entry(tx_id).or_default()
     }
 
     pub fn add_relation(
