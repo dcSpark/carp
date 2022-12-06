@@ -193,6 +193,7 @@ async fn _main() -> anyhow::Result<()> {
     let mut asset_name_to_num = DataMapper::<String>::new();
     let mut address_to_mapping = HashMap::<String, (u64, Option<u64>)>::new();
     let mut banned_addresses = HashSet::<(u64, Option<u64>)>::new();
+    let mut already_seen = HashSet::<TransactionHash>::new();
 
     while !current_query.is_empty() {
         let tx_count = current_query.len();
@@ -207,6 +208,9 @@ async fn _main() -> anyhow::Result<()> {
             let payload: &Vec<u8> = &tx.payload;
             let tx_hash = TransactionHash::from_bytes(tx.hash.clone())
                 .map_err(|err| anyhow!("Can't parse tx hash: {:?}", err))?;
+            if already_seen.contains(&tx_hash) {
+                tracing::warn!("already seen tx: {:?}", tx_hash);
+            }
             match cardano_multiplatform_lib::Transaction::from_bytes(payload.clone()) {
                 Ok(parsed) => {
                     let body = parsed.body();
@@ -385,8 +389,8 @@ fn get_input_intents(
         // try to find output that is now used as an input
         if let Some(outputs) = &mut previous_outputs.get_mut(&input.transaction_id()) {
             // we remove the spent input from the list
-            if let Some(output) = outputs.get(&input.index()) {
-                parsed_inputs.push(output.clone());
+            if let Some(output) = outputs.remove(&input.index()) {
+                parsed_inputs.push(output);
             } else {
                 return Err(anyhow!("Can't find matching output for used input: {:?}@{:?}, tx: {:?}", input.transaction_id(), input.index(), tx_hash));
             }
