@@ -223,12 +223,19 @@ async fn _main() -> anyhow::Result<()> {
                     // inputs handle
                     let inputs = body.inputs();
 
-                    let (has_banned_addresses, input_events) = get_input_intents(
+                    let (has_banned_addresses, input_events) = match get_input_intents(
                         &tx_hash,
+                        tx.id as u64,
                         inputs,
                         &mut previous_outputs,
                         &banned_addresses,
-                    )?;
+                    ) {
+                        Ok(result) => result,
+                        Err(err) => {
+                            tracing::warn!("problem with tx {:?}: {:?}", tx.id, err);
+                            continue;
+                        }
+                    };
                     if has_banned_addresses {
                         ban_addresses_for_events(&input_events, &mut banned_addresses)?;
                     }
@@ -385,6 +392,7 @@ fn clean_events(
 
 fn get_input_intents(
     tx_hash: &String,
+    tx_id: u64,
     inputs: cardano_multiplatform_lib::TransactionInputs,
     previous_outputs: &mut HashMap<String, HashMap<BigNum, TxOutput>>,
     banned_addresses: &HashSet<(u64, Option<u64>)>,
@@ -402,12 +410,21 @@ fn get_input_intents(
             if let Some(output) = outputs.remove(&input.index()) {
                 parsed_inputs.push(output);
             } else {
-                return Err(anyhow!(
-                    "Can't find matching output for used input: {:?}@{:?}, tx: {:?}",
+                // invalid transaction
+                tracing::warn!("Can't find matching output for used input: {:?}@{:?}, tx: {:?}, id: {:?}",
                     input.transaction_id(),
                     input.index(),
-                    tx_hash
-                ));
+                    tx_hash,
+                    tx_id,
+                );
+                return Err(anyhow!(
+                    "Can't find matching output for used input: {:?}@{:?}, tx: {:?}, id: {:?}",
+                    input.transaction_id(),
+                    input.index(),
+                    tx_hash,
+                                    tx_id,
+                )
+                );
             }
         } else {
             has_byron_inputs = true; // might be byron address or sth
