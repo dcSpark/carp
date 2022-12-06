@@ -185,7 +185,7 @@ async fn _main() -> anyhow::Result<()> {
         .all(&conn)
         .await?;
 
-    let mut previous_outputs = HashMap::<TransactionHash, HashMap<BigNum, TxOutput>>::new();
+    let mut previous_outputs = HashMap::<String, HashMap<BigNum, TxOutput>>::new();
 
     let mut stake_address_to_num = DataMapper::<StakeCredential>::new();
     let mut payment_address_to_num = DataMapper::<StakeCredential>::new();
@@ -206,18 +206,17 @@ async fn _main() -> anyhow::Result<()> {
         );
         for tx in current_query {
             let payload: &Vec<u8> = &tx.payload;
-            let tx_hash = TransactionHash::from_bytes(tx.hash.clone())
-                .map_err(|err| anyhow!("Can't parse tx hash: {:?}", err))?;
-            if seen_txes.contains_key(&tx_hash.to_hex()) {
+            let tx_hash = hex::encode(tx.hash);
+            if seen_txes.contains_key(&tx_hash) {
                 tracing::warn!(
                     "duplicate transaction: {:?}, {:?}, {:?}",
                     tx_hash,
                     tx.id,
-                    seen_txes.get(&tx_hash.to_hex())
+                    seen_txes.get(&tx_hash)
                 );
                 continue;
             }
-            seen_txes.insert(tx_hash.to_hex(), tx.id as u64);
+            seen_txes.insert(tx_hash.clone(), tx.id as u64);
             match cardano_multiplatform_lib::Transaction::from_bytes(payload.clone()) {
                 Ok(parsed) => {
                     let body = parsed.body();
@@ -276,7 +275,7 @@ async fn _main() -> anyhow::Result<()> {
                 Err(err) => {
                     tracing::warn!(
                         "Can't parse tx: {:?}, err: {:?}",
-                        serde_json::to_string(&tx_hash),
+                        tx_hash.clone(),
                         err
                     );
                 }
@@ -385,9 +384,9 @@ fn clean_events(
 }
 
 fn get_input_intents(
-    tx_hash: &TransactionHash,
+    tx_hash: &String,
     inputs: cardano_multiplatform_lib::TransactionInputs,
-    previous_outputs: &mut HashMap<TransactionHash, HashMap<BigNum, TxOutput>>,
+    previous_outputs: &mut HashMap<String, HashMap<BigNum, TxOutput>>,
     banned_addresses: &HashSet<(u64, Option<u64>)>,
 ) -> anyhow::Result<(bool, Vec<TxOutput>)> {
     let mut has_byron_inputs = false;
@@ -398,7 +397,7 @@ fn get_input_intents(
         let input = inputs.get(input_index);
 
         // try to find output that is now used as an input
-        if let Some(outputs) = &mut previous_outputs.get_mut(&input.transaction_id()) {
+        if let Some(outputs) = &mut previous_outputs.get_mut(&input.transaction_id().to_hex()) {
             // we remove the spent input from the list
             if let Some(output) = outputs.remove(&input.index()) {
                 parsed_inputs.push(output);
@@ -415,11 +414,11 @@ fn get_input_intents(
         }
         // remove if whole transaction is spent
         if previous_outputs
-            .get(&input.transaction_id())
+            .get(&input.transaction_id().to_hex())
             .map(|outputs| outputs.is_empty())
             .unwrap_or(false)
         {
-            previous_outputs.remove(&input.transaction_id());
+            previous_outputs.remove(&input.transaction_id().to_hex());
         }
     }
 
@@ -431,9 +430,9 @@ fn get_input_intents(
 }
 
 fn get_output_intents(
-    tx_hash: &TransactionHash,
+    tx_hash: &String,
     outputs: cardano_multiplatform_lib::TransactionOutputs,
-    previous_outputs: &mut HashMap<TransactionHash, HashMap<BigNum, TxOutput>>,
+    previous_outputs: &mut HashMap<String, HashMap<BigNum, TxOutput>>,
     payment_address_mapping: &mut DataMapper<StakeCredential>,
     stake_address_mapping: &mut DataMapper<StakeCredential>,
     policy_to_num: &mut DataMapper<PolicyID>,
