@@ -193,7 +193,6 @@ async fn _main() -> anyhow::Result<()> {
     let mut asset_name_to_num = DataMapper::<String>::new();
     let mut address_to_mapping = HashMap::<String, (u64, Option<u64>)>::new();
     let mut banned_addresses = HashSet::<(u64, Option<u64>)>::new();
-    let mut seen_txes = HashMap::<String, u64>::new();
 
     while !current_query.is_empty() {
         let tx_count = current_query.len();
@@ -207,35 +206,20 @@ async fn _main() -> anyhow::Result<()> {
         for tx in current_query {
             let payload: &Vec<u8> = &tx.payload;
             let tx_hash = hex::encode(tx.hash);
-            if seen_txes.contains_key(&tx_hash) {
-                tracing::warn!(
-                    "duplicate transaction: {:?}, {:?}, {:?}",
-                    tx_hash,
-                    tx.id,
-                    seen_txes.get(&tx_hash)
-                );
-                continue;
-            }
-            seen_txes.insert(tx_hash.clone(), tx.id as u64);
             match cardano_multiplatform_lib::Transaction::from_bytes(payload.clone()) {
                 Ok(parsed) => {
                     let body = parsed.body();
                     // inputs handle
                     let inputs = body.inputs();
 
-                    let (has_banned_addresses, input_events) = match get_input_intents(
+                    let (has_banned_addresses, input_events) = get_input_intents(
                         &tx_hash,
                         tx.id as u64,
                         inputs,
                         &mut previous_outputs,
                         &banned_addresses,
-                    ) {
-                        Ok(result) => result,
-                        Err(err) => {
-                            tracing::warn!("problem with tx {:?}: {:?}", tx.id, err);
-                            continue;
-                        }
-                    };
+                    )?;
+
                     if has_banned_addresses {
                         ban_addresses_for_events(&input_events, &mut banned_addresses)?;
                     }
@@ -280,11 +264,7 @@ async fn _main() -> anyhow::Result<()> {
                     }
                 }
                 Err(err) => {
-                    tracing::warn!(
-                        "Can't parse tx: {:?}, err: {:?}",
-                        tx_hash.clone(),
-                        err
-                    );
+                    tracing::warn!("Can't parse tx: {:?}, err: {:?}", tx_hash.clone(), err);
                 }
             }
         }
@@ -401,6 +381,8 @@ fn get_input_intents(
 
     // try to parse input addresses and put in the set
     let mut parsed_inputs = Vec::new();
+    let mut utxos_same_tx = HashSet::<(String, u64)>::new();
+
     for input_index in 0..inputs.len() {
         let input = inputs.get(input_index);
 
@@ -408,23 +390,35 @@ fn get_input_intents(
         if let Some(outputs) = &mut previous_outputs.get_mut(&input.transaction_id().to_hex()) {
             // we remove the spent input from the list
             if let Some(output) = outputs.remove(&input.index()) {
+                utxos_same_tx.insert((input.transaction_id().to_hex(), u64::from(input.index())));
                 parsed_inputs.push(output);
             } else {
+                if utxos_same_tx
+                    .contains(&(input.transaction_id().to_hex(), u64::from(input.index())))
+                {
+                    tracing::info!("Found tx using same output as an input multiple times: {:?}@{:?}, tx: {:?}, id: {:?}",
+                        input.transaction_id().to_hex(),
+                        input.index(),
+                        tx_hash,
+                        tx_id,
+                    );
+                    continue;
+                }
                 // invalid transaction
-                tracing::warn!("Can't find matching output for used input: {:?}@{:?}, tx: {:?}, id: {:?}",
-                    input.transaction_id(),
+                tracing::warn!(
+                    "Can't find matching output for used input: {:?}@{:?}, tx: {:?}, id: {:?}",
+                    input.transaction_id().to_hex(),
                     input.index(),
                     tx_hash,
                     tx_id,
                 );
                 return Err(anyhow!(
                     "Can't find matching output for used input: {:?}@{:?}, tx: {:?}, id: {:?}",
-                    input.transaction_id(),
+                    input.transaction_id().to_hex(),
                     input.index(),
                     tx_hash,
-                                    tx_id,
-                )
-                );
+                    tx_id,
+                ));
             }
         } else {
             has_byron_inputs = true; // might be byron address or sth
