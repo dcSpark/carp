@@ -193,7 +193,7 @@ async fn _main() -> anyhow::Result<()> {
     let mut asset_name_to_num = DataMapper::<String>::new();
     let mut address_to_mapping = HashMap::<String, (u64, Option<u64>)>::new();
     let mut banned_addresses = HashSet::<(u64, Option<u64>)>::new();
-    let mut already_used_inputs = HashMap::<(TransactionHash, BigNum), Vec<TransactionHash>>::new();
+    let mut seen_txes = HashMap::<TransactionHash, u64>::new();
 
     while !current_query.is_empty() {
         let tx_count = current_query.len();
@@ -208,16 +208,27 @@ async fn _main() -> anyhow::Result<()> {
             let payload: &Vec<u8> = &tx.payload;
             let tx_hash = TransactionHash::from_bytes(tx.hash.clone())
                 .map_err(|err| anyhow!("Can't parse tx hash: {:?}", err))?;
+            if seen_txes.contains_key(&tx_hash) {
+                tracing::warn!(
+                    "duplicate transaction: {:?}, {:?}, {:?}",
+                    tx_hash,
+                    tx.id,
+                    seen_txes.get(&tx_hash)
+                );
+            }
+            seen_txes.insert(tx_hash.clone(), tx.id as u64);
             match cardano_multiplatform_lib::Transaction::from_bytes(payload.clone()) {
                 Ok(parsed) => {
                     let body = parsed.body();
                     // inputs handle
                     let inputs = body.inputs();
 
-                    let (has_banned_addresses, input_events) =
-                        get_input_intents(&tx_hash, inputs, &mut previous_outputs, &banned_addresses,
-                                          &mut already_used_inputs,
-                        )?;
+                    let (has_banned_addresses, input_events) = get_input_intents(
+                        &tx_hash,
+                        inputs,
+                        &mut previous_outputs,
+                        &banned_addresses,
+                    )?;
                     if has_banned_addresses {
                         ban_addresses_for_events(&input_events, &mut banned_addresses)?;
                     }
@@ -286,13 +297,6 @@ async fn _main() -> anyhow::Result<()> {
     }
 
     drop(out_file);
-
-    tracing::info!("These outputs were spent twice according to the data: ");
-    for ((input_tx, input_index), used_by) in already_used_inputs.into_iter() {
-        if used_by.len() > 1 {
-            tracing::warn!("{:?}@{:?}: {:?}", input_tx.to_hex(), input_index, used_by.into_iter().map(|tx| tx.to_hex()).collect::<Vec<String>>());
-        }
-    }
 
     tracing::info!("Parsing finished, dumping files");
 
@@ -384,7 +388,6 @@ fn get_input_intents(
     inputs: cardano_multiplatform_lib::TransactionInputs,
     previous_outputs: &mut HashMap<TransactionHash, HashMap<BigNum, TxOutput>>,
     banned_addresses: &HashSet<(u64, Option<u64>)>,
-    already_used_inputs: &mut HashMap<(TransactionHash, BigNum), Vec<TransactionHash>>,
 ) -> anyhow::Result<(bool, Vec<TxOutput>)> {
     let mut has_byron_inputs = false;
 
@@ -396,18 +399,26 @@ fn get_input_intents(
         // try to find output that is now used as an input
         if let Some(outputs) = &mut previous_outputs.get_mut(&input.transaction_id()) {
             // we remove the spent input from the list
-            if let Some(output) = outputs.get(&input.index()) {
-                parsed_inputs.push(output.clone());
-                let entry = already_used_inputs.entry((input.transaction_id(), input.index())).or_default();
-                entry.push(tx_hash.clone());
-                if entry.len() > 1 {
-                    tracing::warn!("Same output is spent twice: {:?}@{:?}, txes: {:?}", input.transaction_id().to_hex(), input.index(), entry.iter().map(|tx| tx.to_hex()).collect::<Vec<String>>());
-                }
+            if let Some(output) = outputs.remove(&input.index()) {
+                parsed_inputs.push(output);
             } else {
-                return Err(anyhow!("Can't find matching output for used input: {:?}@{:?}, tx: {:?}", input.transaction_id(), input.index(), tx_hash));
+                return Err(anyhow!(
+                    "Can't find matching output for used input: {:?}@{:?}, tx: {:?}",
+                    input.transaction_id(),
+                    input.index(),
+                    tx_hash
+                ));
             }
         } else {
             has_byron_inputs = true; // might be byron address or sth
+        }
+        // remove if whole transaction is spent
+        if previous_outputs
+            .get(&input.transaction_id())
+            .map(|outputs| outputs.is_empty())
+            .unwrap_or(false)
+        {
+            previous_outputs.remove(&input.transaction_id());
         }
     }
 
@@ -508,14 +519,17 @@ fn ban_addresses_for_events(
     Ok(())
 }
 
-
 #[cfg(test)]
 mod tests {
     use cardano_multiplatform_lib::crypto::TransactionHash;
 
     #[test]
     fn test() {
-        let tx_hash = TransactionHash::from_bytes(vec![101, 106, 250, 127, 137, 49, 211, 112, 238, 220, 189, 229, 84, 138, 171, 84, 242, 131, 186, 7, 51, 239, 48, 123, 135, 235, 45, 50, 19, 86, 67, 142]).unwrap();
+        let tx_hash = TransactionHash::from_bytes(vec![
+            101, 106, 250, 127, 137, 49, 211, 112, 238, 220, 189, 229, 84, 138, 171, 84, 242, 131,
+            186, 7, 51, 239, 48, 123, 135, 235, 45, 50, 19, 86, 67, 142,
+        ])
+        .unwrap();
         println!("{}", tx_hash.to_hex());
     }
 }
