@@ -387,7 +387,7 @@ fn get_input_intents(
             if let Some(output) = outputs.get(&input.index()) {
                 parsed_inputs.push(output.clone());
             } else {
-                return Err(anyhow!("Can't find matching output for used input"));
+                return Err(anyhow!("Can't find matching output for used input: {:?}@{:?}", input.transaction_id(), input.index()));
             }
         } else {
             has_byron_inputs = true; // might be byron address or sth
