@@ -384,8 +384,8 @@ fn get_input_intents(
         // try to find output that is now used as an input
         if let Some(outputs) = &mut previous_outputs.get_mut(&input.transaction_id()) {
             // we remove the spent input from the list
-            if let Some(output) = outputs.remove(&input.index()) {
-                parsed_inputs.push(output);
+            if let Some(output) = outputs.get(&input.index()) {
+                parsed_inputs.push(output.clone());
             } else {
                 return Err(anyhow!("Can't find matching output for used input"));
             }
