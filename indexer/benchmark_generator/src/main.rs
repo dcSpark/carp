@@ -205,7 +205,7 @@ async fn _main() -> anyhow::Result<()> {
         );
         for tx in current_query {
             let payload: &Vec<u8> = &tx.payload;
-            let hash = TransactionHash::from_bytes(tx.hash.clone())
+            let tx_hash = TransactionHash::from_bytes(tx.hash.clone())
                 .map_err(|err| anyhow!("Can't parse tx hash: {:?}", err))?;
             match cardano_multiplatform_lib::Transaction::from_bytes(payload.clone()) {
                 Ok(parsed) => {
@@ -214,7 +214,7 @@ async fn _main() -> anyhow::Result<()> {
                     let inputs = body.inputs();
 
                     let (has_banned_addresses, input_events) =
-                        get_input_intents(inputs, &mut previous_outputs, &banned_addresses)?;
+                        get_input_intents(&tx_hash, inputs, &mut previous_outputs, &banned_addresses)?;
                     if has_banned_addresses {
                         ban_addresses_for_events(&input_events, &mut banned_addresses)?;
                     }
@@ -222,7 +222,7 @@ async fn _main() -> anyhow::Result<()> {
                     // outputs handle
                     let outputs = body.outputs();
                     let output_events = get_output_intents(
-                        hash,
+                        &tx_hash,
                         outputs,
                         &mut previous_outputs,
                         &mut payment_address_to_num,
@@ -261,7 +261,7 @@ async fn _main() -> anyhow::Result<()> {
                 Err(err) => {
                     tracing::warn!(
                         "Can't parse tx: {:?}, err: {:?}",
-                        serde_json::to_string(&hash),
+                        serde_json::to_string(&tx_hash),
                         err
                     );
                 }
@@ -370,6 +370,7 @@ fn clean_events(
 }
 
 fn get_input_intents(
+    tx_hash: &TransactionHash,
     inputs: cardano_multiplatform_lib::TransactionInputs,
     previous_outputs: &mut HashMap<TransactionHash, HashMap<BigNum, TxOutput>>,
     banned_addresses: &HashSet<(u64, Option<u64>)>,
@@ -387,7 +388,7 @@ fn get_input_intents(
             if let Some(output) = outputs.get(&input.index()) {
                 parsed_inputs.push(output.clone());
             } else {
-                return Err(anyhow!("Can't find matching output for used input: {:?}@{:?}", input.transaction_id(), input.index()));
+                return Err(anyhow!("Can't find matching output for used input: {:?}@{:?}, tx: {:?}", input.transaction_id(), input.index(), tx_hash));
             }
         } else {
             has_byron_inputs = true; // might be byron address or sth
@@ -410,7 +411,7 @@ fn get_input_intents(
 }
 
 fn get_output_intents(
-    tx_hash: TransactionHash,
+    tx_hash: &TransactionHash,
     outputs: cardano_multiplatform_lib::TransactionOutputs,
     previous_outputs: &mut HashMap<TransactionHash, HashMap<BigNum, TxOutput>>,
     payment_address_mapping: &mut DataMapper<StakeCredential>,
