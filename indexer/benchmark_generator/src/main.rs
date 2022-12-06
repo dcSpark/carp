@@ -193,7 +193,7 @@ async fn _main() -> anyhow::Result<()> {
     let mut asset_name_to_num = DataMapper::<String>::new();
     let mut address_to_mapping = HashMap::<String, (u64, Option<u64>)>::new();
     let mut banned_addresses = HashSet::<(u64, Option<u64>)>::new();
-    let mut seen_txes = HashMap::<TransactionHash, u64>::new();
+    let mut seen_txes = HashMap::<String, u64>::new();
 
     while !current_query.is_empty() {
         let tx_count = current_query.len();
@@ -208,16 +208,16 @@ async fn _main() -> anyhow::Result<()> {
             let payload: &Vec<u8> = &tx.payload;
             let tx_hash = TransactionHash::from_bytes(tx.hash.clone())
                 .map_err(|err| anyhow!("Can't parse tx hash: {:?}", err))?;
-            if seen_txes.contains_key(&tx_hash) {
+            if seen_txes.contains_key(&tx_hash.to_hex()) {
                 tracing::warn!(
                     "duplicate transaction: {:?}, {:?}, {:?}",
                     tx_hash,
                     tx.id,
-                    seen_txes.get(&tx_hash)
+                    seen_txes.get(&tx_hash.to_hex())
                 );
                 continue;
             }
-            seen_txes.insert(tx_hash.clone(), tx.id as u64);
+            seen_txes.insert(tx_hash.to_hex(), tx.id as u64);
             match cardano_multiplatform_lib::Transaction::from_bytes(payload.clone()) {
                 Ok(parsed) => {
                     let body = parsed.body();
