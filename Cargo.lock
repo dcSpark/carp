@@ -308,20 +308,11 @@ name = "benchmark_generator"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "base64",
- "bs58",
  "cardano-multiplatform-lib 3.1.1",
- "cardano-sdk",
- "cardano-utils",
  "clap 3.2.22",
  "dcspark-core",
- "dotenv",
  "entity",
- "futures",
  "hex",
- "num-integer",
- "oura",
- "pallas 0.14.2",
  "serde",
  "serde_json",
  "serde_yaml",
@@ -339,15 +330,6 @@ dependencies = [
  "num-bigint 0.4.3",
  "num-integer",
  "num-traits",
-]
-
-[[package]]
-name = "bip39-dict"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33b74d395d6b577a1e3c1348545cef70a418281c83abbe50f5662ae4d4abf6d8"
-dependencies = [
- "cryptoxide",
 ]
 
 [[package]]
@@ -519,38 +501,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cardano-sdk"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e67795439ca871ba2b0d67f7805248f00fd0e6f6b40014a07a9693568e9c54a6"
-dependencies = [
- "bech32 0.9.1",
- "bip39-dict",
- "cbored",
- "cryptoxide",
- "ed25519-bip32",
- "hex",
- "strum",
- "thiserror",
-]
-
-[[package]]
-name = "cardano-utils"
-version = "0.1.0"
-source = "git+https://github.com/dcSpark/dcspark-core.git?branch=egostkin/utxo-selection#989a68181b5b28bbd44a9f0cb1f403cfabac24d8"
-dependencies = [
- "anyhow",
- "bech32 0.9.1",
- "cardano-multiplatform-lib 3.1.0",
- "cryptoxide",
- "dcspark-core",
- "deps",
- "hex",
- "rand",
- "serde",
-]
-
-[[package]]
 name = "carp"
 version = "2.0.3"
 dependencies = [
@@ -580,26 +530,6 @@ name = "cbor_event"
 version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "52b3d8b289b6c7d6d8832c8e2bf151c7677126afa627f51e19a6320aec8237cb"
-
-[[package]]
-name = "cbored"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ce0a6521c9a023378105b4501d7b27302c6654b7ffee4c3e87d51f50fa068aa"
-dependencies = [
- "cbored-derive",
-]
-
-[[package]]
-name = "cbored-derive"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b022e0f030c53dd61dd217b64e663d348004f598361d6a9ff6db2faf0584578e"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
 
 [[package]]
 name = "cc"
@@ -3036,9 +2966,6 @@ name = "strum"
 version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "063e6045c0e62079840579a7e47a355ae92f60eb74daaf156fb1e84ba164e63f"
-dependencies = [
- "strum_macros",
-]
 
 [[package]]
 name = "strum_macros"

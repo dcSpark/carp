@@ -8,23 +8,14 @@ edition = "2021"
 [dependencies]
 entity = { path = "../entity" }
 dcspark-core = { git = "https://github.com/dcSpark/dcspark-core.git", branch = "egostkin/utxo-selection" }
-cardano-utils = { git = "https://github.com/dcSpark/dcspark-core.git", branch = "egostkin/utxo-selection" }
 
-cardano-sdk = "0.2.5"
 anyhow = "1.0.53"
 serde = {version = "1.0.144", features = ["derive", "rc"]}
 tokio = { version = "1.16.1", features = ["full"] }
 hex = "0.4.3"
 tracing-subscriber = "0.3.9"
 tracing = "0.1.31"
-dotenv = "0.15.0"
 serde_json = "1.0.79"
 serde_yaml = "0.9.13"
-base64 = "0.13.0"
-bs58 = "0.4.0"
-oura = "1.7.0"
 clap = { version = "3.1", features = ["derive"] }
-num-integer = "0.1.45"
-pallas = "0.14.0"
-futures = "0.3.25"
 cardano-multiplatform-lib = "3.1.1"

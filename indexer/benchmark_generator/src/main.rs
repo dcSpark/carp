@@ -1,35 +1,30 @@
+mod mapper;
+mod tx_event;
+mod utils;
+
 use std::path::PathBuf;
 
+use crate::mapper::DataMapper;
+use crate::tx_event::{TxAsset, TxEvent, TxOutput};
+use crate::utils::{dump_hashmap_to_file, dump_hashset_to_file};
 use anyhow::{anyhow, Context};
-use cardano_multiplatform_lib::address::{Address, StakeCredential};
+use cardano_multiplatform_lib::address::StakeCredential;
 use cardano_multiplatform_lib::crypto::TransactionHash;
-use cardano_multiplatform_lib::ledger::common::value::{BigNum, Coin};
-use cardano_multiplatform_lib::{TransactionInput, TransactionOutput};
-use cardano_sdk::chain::TxHash;
+use cardano_multiplatform_lib::ledger::common::value::BigNum;
+use cardano_multiplatform_lib::PolicyID;
 use clap::Parser;
-use dcspark_core::tx::{TransactionId, UtxoPointer};
-use dcspark_core::{Balance, OutputIndex, Regulated, TokenId};
+use dcspark_core::Regulated;
 use entity::sea_orm::Database;
 use entity::sea_orm::QueryFilter;
 use entity::{
-    block::*,
     prelude::*,
-    sea_orm::{
-        entity::*, prelude::*, ColumnTrait, Condition, DatabaseConnection, DatabaseTransaction,
-        EntityTrait, QueryOrder, QuerySelect, Set, TransactionTrait,
-    },
-    transaction::*,
+    sea_orm::{prelude::*, ColumnTrait, Condition, EntityTrait, QueryOrder, QuerySelect},
 };
-use futures::TryStreamExt;
-use pallas::ledger::traverse::Era;
-use serde::{Deserialize, Serialize};
-use std::borrow::Cow;
-use std::cmp::{max, min};
+use serde::Deserialize;
+use std::cmp::min;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
-use std::io::Write;
-use std::sync::Arc;
-use tracing::Level;
+use std::io::{BufRead, BufReader, Write};
 use tracing_subscriber::prelude::*;
 
 #[derive(Debug, Clone, Deserialize)]
@@ -49,6 +44,14 @@ pub enum DbConfig {
 #[serde(deny_unknown_fields)]
 pub struct Config {
     db: DbConfig,
+    payment_creds_mapping: PathBuf,
+    staking_creds_mapping: PathBuf,
+    policy_mapping: PathBuf,
+    asset_name_mapping: PathBuf,
+    address_to_mapping: PathBuf,
+    banned_addresses: PathBuf,
+    events_output_path: PathBuf,
+    cleaned_events_output_path: PathBuf,
     tx_per_page: i64,
 }
 
@@ -58,42 +61,6 @@ pub struct Cli {
     /// path to config file
     #[clap(long, value_parser)]
     config_path: PathBuf,
-
-    /// path to output file
-    #[clap(long, value_parser)]
-    output_path: PathBuf,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct TxOutputIntent {
-    address: Option<Address>,
-    amount: cardano_multiplatform_lib::ledger::common::value::Value,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(tag = "type", rename_all = "snake_case")]
-#[serde(deny_unknown_fields)]
-pub enum TxEvent {
-    // every from is shelley address. `to` can be any address
-    // we store all amounts in this case: either shelley or byron outputs amounts, since
-    // we can perform the selection for that
-    FromParsed {
-        to: Vec<TxOutputIntent>,
-        fee: cardano_multiplatform_lib::ledger::common::value::Coin,
-        // we can assume we can spend utxos with both credentials if we have multiple froms
-        from: Vec<TxOutputIntent>,
-    },
-    // this applies when some of the from addresses are byron
-    // we store shelley from and to intents
-    // this way we can compute the balance change afterwards
-    PartialParsed {
-        to: Vec<TxOutputIntent>,
-        // we store how much money we spent from the parsed addresses
-        from: Vec<TxOutputIntent>,
-    },
-    Unparsed {
-        tx: TransactionHash,
-    },
 }
 
 #[tokio::main]
@@ -116,10 +83,7 @@ async fn _main() -> anyhow::Result<()> {
         .with(sqlx_filter)
         .init();
 
-    let Cli {
-        config_path,
-        output_path,
-    } = Cli::parse();
+    let Cli { config_path } = Cli::parse();
 
     tracing::info!("Config file {:?}", config_path);
     let file = File::open(&config_path).with_context(|| {
@@ -146,7 +110,7 @@ async fn _main() -> anyhow::Result<()> {
 
     let url = format!("postgresql://{user}:{password}@{host}:{port}/{db}");
     tracing::info!("Connection url {:?}", url);
-    let mut conn = Database::connect(&url).await?;
+    let conn = Database::connect(&url).await?;
     tracing::info!("Connection success");
 
     /////////
@@ -179,7 +143,7 @@ async fn _main() -> anyhow::Result<()> {
         .iter()
         .map(|tx| tx.id)
         .collect();
-    let mut shelley_first_tx = shelley_first_tx
+    let shelley_first_tx = shelley_first_tx
         .first()
         .cloned()
         .ok_or_else(|| anyhow!("Can't find first tx"))?;
@@ -187,7 +151,7 @@ async fn _main() -> anyhow::Result<()> {
 
     //////////////
 
-    let mut transactions = Transaction::find()
+    let transactions = Transaction::find()
         .filter(TransactionColumn::Id.gte(shelley_first_tx))
         .order_by_asc(TransactionColumn::Id)
         .paginate(&conn, config.tx_per_page as usize);
@@ -196,31 +160,20 @@ async fn _main() -> anyhow::Result<()> {
     tracing::info!("Total transactions: {:?}", total_transactions);
     tracing::info!("Total pages: {:?}", total_pages);
 
-    let mut out_file = if output_path.exists() && output_path.is_file() {
+    let mut out_file = if config.events_output_path.exists() && config.events_output_path.is_file()
+    {
         tracing::info!(
             "file {:?} already exists, adding lines to the end",
-            output_path
+            config.events_output_path
         );
-        File::open(output_path)
+        File::open(config.events_output_path.clone())
     } else {
-        File::create(output_path)
+        File::create(config.events_output_path.clone())
     }?;
-
-    let mut previous_outputs = HashMap::<
-        TransactionHash,
-        HashMap<
-            BigNum,
-            (
-                Address,
-                cardano_multiplatform_lib::ledger::common::value::Value,
-            ),
-        >,
-    >::new();
 
     let mut current_start = shelley_first_tx;
     let mut current_end = shelley_first_tx + config.tx_per_page;
     let max_end = shelley_first_tx + total_transactions as i64;
-    let mut processed_transactions: usize = 0;
 
     let mut current_query = Transaction::find()
         .filter(
@@ -231,6 +184,15 @@ async fn _main() -> anyhow::Result<()> {
         .order_by_asc(TransactionColumn::Id)
         .all(&conn)
         .await?;
+
+    let mut previous_outputs = HashMap::<TransactionHash, HashMap<BigNum, TxOutput>>::new();
+
+    let mut stake_address_to_num = DataMapper::<StakeCredential>::new();
+    let mut payment_address_to_num = DataMapper::<StakeCredential>::new();
+    let mut policy_id_to_num = DataMapper::<PolicyID>::new();
+    let mut asset_name_to_num = DataMapper::<String>::new();
+    let mut address_to_mapping = HashMap::<String, (u64, Option<u64>)>::new();
+    let mut banned_addresses = HashSet::<(u64, Option<u64>)>::new();
 
     while !current_query.is_empty() {
         let tx_count = current_query.len();
@@ -243,101 +205,70 @@ async fn _main() -> anyhow::Result<()> {
         );
         for tx in current_query {
             let payload: &Vec<u8> = &tx.payload;
+            let hash = TransactionHash::from_bytes(tx.hash.clone())
+                .map_err(|err| anyhow!("Can't parse tx hash: {:?}", err))?;
             match cardano_multiplatform_lib::Transaction::from_bytes(payload.clone()) {
                 Ok(parsed) => {
                     let body = parsed.body();
                     // inputs handle
                     let inputs = body.inputs();
 
-                    let mut is_from_partial = false;
-
-                    // try to parse input addresses and put in the set
-                    let mut input_intents = Vec::new();
-                    for input_index in 0..inputs.len() {
-                        let input = inputs.get(input_index);
-                        // try to find output and extract address from there
-                        if let Some(outputs) =
-                            &mut previous_outputs.get_mut(&input.transaction_id())
-                        {
-                            // we remove the spent input from the list
-                            if let Some((cred, amount)) = outputs.remove(&input.index()) {
-                                input_intents.push(TxOutputIntent {
-                                    address: Some(cred),
-                                    amount,
-                                })
-                            }
-                        } else {
-                            is_from_partial = true; // might be byron address or sth
-                        }
-                        // remove if whole transaction is spent
-                        if previous_outputs
-                            .get(&input.transaction_id())
-                            .map(|outputs| outputs.is_empty())
-                            .unwrap_or(false)
-                        {
-                            previous_outputs.remove(&input.transaction_id());
-                        }
+                    let (has_banned_addresses, input_events) =
+                        get_input_intents(inputs, &mut previous_outputs, &banned_addresses)?;
+                    if has_banned_addresses {
+                        ban_addresses_for_events(&input_events, &mut banned_addresses)?;
                     }
 
                     // outputs handle
                     let outputs = body.outputs();
-                    let mut output_intents = vec![];
-                    for output_index in 0..outputs.len() {
-                        let output = outputs.get(output_index);
-                        if let Some(_) = output.address().payment_cred() {
-                            let tx_outputs_previous = previous_outputs
-                                .entry(
-                                    TransactionHash::from_bytes(tx.hash.clone())
-                                        .map_err(|err| anyhow!("err: {:?}", err))?,
-                                )
-                                .or_default();
-                            tx_outputs_previous.insert(
-                                BigNum::from(output_index as u64),
-                                (output.address(), output.amount()),
-                            );
-                            output_intents.push(TxOutputIntent {
-                                address: Some(output.address()),
-                                amount: output.amount(),
+                    let output_events = get_output_intents(
+                        hash,
+                        outputs,
+                        &mut previous_outputs,
+                        &mut payment_address_to_num,
+                        &mut stake_address_to_num,
+                        &mut policy_id_to_num,
+                        &mut asset_name_to_num,
+                        &mut address_to_mapping,
+                    )?;
+
+                    let event = if has_banned_addresses {
+                        let output_events: Vec<TxOutput> = output_events
+                            .into_iter()
+                            .filter(|output| {
+                                !output.is_byron() && !output.is_banned(&banned_addresses)
                             })
+                            .collect();
+                        if output_events.is_empty() {
+                            None
                         } else {
-                            // might be byron address
-                            if !is_from_partial {
-                                output_intents.push(TxOutputIntent {
-                                    address: None,
-                                    amount: output.amount(),
-                                })
-                            }
-                        }
-                    }
-                    let event = if !is_from_partial {
-                        TxEvent::FromParsed {
-                            to: output_intents, // all output intents incl byron
-                            fee: body.fee(),
-                            from: input_intents, // input addresses are parsed fully
+                            Some(TxEvent::Partial { to: output_events })
                         }
                     } else {
-                        TxEvent::PartialParsed {
-                            to: output_intents,  // can lack byron addresses
-                            from: input_intents, // can lack byron addresses
-                        }
+                        Some(TxEvent::Full {
+                            to: output_events,
+                            fee: dcspark_core::Value::<Regulated>::from(u64::from(body.fee())),
+                            from: input_events,
+                        })
                     };
 
-                    out_file
-                        .write_all(format!("{}\n", serde_json::to_string(&event)?).as_bytes())?;
+                    if let Some(event) = event {
+                        out_file.write_all(
+                            format!("{}\n", serde_json::to_string(&event)?).as_bytes(),
+                        )?;
+                    }
                 }
                 Err(err) => {
-                    let event = TxEvent::Unparsed {
-                        tx: TransactionHash::from_bytes(tx.hash.clone())
-                            .map_err(|err| anyhow!("err: {:?}", err))?,
-                    };
-                    out_file
-                        .write_all(format!("{}\n", serde_json::to_string(&event)?).as_bytes())?;
+                    tracing::warn!(
+                        "Can't parse tx: {:?}, err: {:?}",
+                        serde_json::to_string(&hash),
+                        err
+                    );
                 }
             }
         }
 
         current_start = current_end;
-        processed_transactions += tx_count;
         current_end += config.tx_per_page;
         current_end = min(current_end, max_end);
         current_query = Transaction::find()
@@ -349,6 +280,221 @@ async fn _main() -> anyhow::Result<()> {
             .order_by_asc(TransactionColumn::Id)
             .all(&conn)
             .await?;
+    }
+
+    drop(out_file);
+
+    tracing::info!("Parsing finished, dumping files");
+
+    payment_address_to_num.dump_to_file(config.payment_creds_mapping)?;
+    stake_address_to_num.dump_to_file(config.staking_creds_mapping)?;
+    policy_id_to_num.dump_to_file(config.policy_mapping)?;
+    asset_name_to_num.dump_to_file(config.asset_name_mapping)?;
+    dump_hashmap_to_file(&address_to_mapping, config.address_to_mapping)?;
+    dump_hashset_to_file(&banned_addresses, config.banned_addresses)?;
+
+    tracing::info!("Dumping finished, cleaning events");
+
+    clean_events(
+        config.events_output_path,
+        config.cleaned_events_output_path,
+        &banned_addresses,
+    )?;
+
+    tracing::info!("Cleaning finished");
+
+    Ok(())
+}
+
+fn clean_events(
+    events_output_path: PathBuf,
+    cleaned_events_output_path: PathBuf,
+    banned_addresses: &HashSet<(u64, Option<u64>)>,
+) -> anyhow::Result<()> {
+    let file = File::open(events_output_path)?;
+    let mut cleaned_file = File::create(cleaned_events_output_path)?;
+
+    let reader = BufReader::new(file);
+    let lines = reader.lines();
+    for (num, line) in lines.enumerate() {
+        let event: TxEvent = serde_json::from_str(line?.as_str())?;
+        let event = match event {
+            TxEvent::Partial { to } => {
+                let to: Vec<TxOutput> = to
+                    .into_iter()
+                    .filter(|output| !output.is_byron() && !output.is_banned(&banned_addresses))
+                    .collect();
+                if !to.is_empty() {
+                    Some(TxEvent::Partial { to })
+                } else {
+                    None
+                }
+            }
+            TxEvent::Full { mut to, fee, from } => {
+                if from
+                    .iter()
+                    .any(|input| input.is_byron() || input.is_banned(&banned_addresses))
+                {
+                    to = to
+                        .into_iter()
+                        .filter(|output| !output.is_byron() && !output.is_banned(&banned_addresses))
+                        .collect();
+                    if !to.is_empty() {
+                        Some(TxEvent::Partial { to })
+                    } else {
+                        None
+                    }
+                } else {
+                    to = to
+                        .into_iter()
+                        .map(|mut output| {
+                            if output.is_banned(&banned_addresses) {
+                                output.address = None;
+                            }
+                            output
+                        })
+                        .collect();
+                    Some(TxEvent::Full { to, fee, from })
+                }
+            }
+        };
+        if let Some(event) = event {
+            cleaned_file.write_all(format!("{}\n", serde_json::to_string(&event)?).as_bytes())?;
+        }
+        if num % 100000 == 0 {
+            tracing::info!("Processed {:?} entries", num + 1);
+        }
+    }
+
+    Ok(())
+}
+
+fn get_input_intents(
+    inputs: cardano_multiplatform_lib::TransactionInputs,
+    previous_outputs: &mut HashMap<TransactionHash, HashMap<BigNum, TxOutput>>,
+    banned_addresses: &HashSet<(u64, Option<u64>)>,
+) -> anyhow::Result<(bool, Vec<TxOutput>)> {
+    let mut has_byron_inputs = false;
+
+    // try to parse input addresses and put in the set
+    let mut parsed_inputs = Vec::new();
+    for input_index in 0..inputs.len() {
+        let input = inputs.get(input_index);
+
+        // try to find output that is now used as an input
+        if let Some(outputs) = &mut previous_outputs.get_mut(&input.transaction_id()) {
+            // we remove the spent input from the list
+            if let Some(output) = outputs.remove(&input.index()) {
+                parsed_inputs.push(output);
+            } else {
+                return Err(anyhow!("Can't find matching output for used input"));
+            }
+        } else {
+            has_byron_inputs = true; // might be byron address or sth
+        }
+        // remove if whole transaction is spent
+        if previous_outputs
+            .get(&input.transaction_id())
+            .map(|outputs| outputs.is_empty())
+            .unwrap_or(false)
+        {
+            previous_outputs.remove(&input.transaction_id());
+        }
+    }
+
+    let has_banned_addresses = parsed_inputs.iter().any(|input| {
+        input.address.is_some() && banned_addresses.contains(&input.address.clone().unwrap())
+    });
+
+    Ok((has_byron_inputs || has_banned_addresses, parsed_inputs))
+}
+
+fn get_output_intents(
+    tx_hash: TransactionHash,
+    outputs: cardano_multiplatform_lib::TransactionOutputs,
+    previous_outputs: &mut HashMap<TransactionHash, HashMap<BigNum, TxOutput>>,
+    payment_address_mapping: &mut DataMapper<StakeCredential>,
+    stake_address_mapping: &mut DataMapper<StakeCredential>,
+    policy_to_num: &mut DataMapper<PolicyID>,
+    asset_name_to_num: &mut DataMapper<String>,
+    address_to_num: &mut HashMap<String, (u64, Option<u64>)>,
+) -> anyhow::Result<Vec<TxOutput>> {
+    let mut parsed_outputs = Vec::new();
+    for output_index in 0..outputs.len() {
+        let output = outputs.get(output_index);
+
+        let address = output.address();
+        let address = match address.payment_cred() {
+            None => {
+                // this is byron output
+                None
+            }
+            Some(payment) => {
+                let payment_mapping = payment_address_mapping.add_if_not_presented(payment);
+                let staking_mapping = address
+                    .staking_cred()
+                    .map(|staking| stake_address_mapping.add_if_not_presented(staking));
+                address_to_num.insert(
+                    address
+                        .to_bech32(None)
+                        .map_err(|err| anyhow!("Can't convert address to bech32: {:?}", err))?,
+                    (payment_mapping, staking_mapping),
+                );
+                Some((payment_mapping, staking_mapping))
+            }
+        };
+
+        let amount = output.amount();
+        let value = dcspark_core::Value::<Regulated>::from(u64::from(amount.coin()));
+        let mut assets = Vec::new();
+
+        if let Some(multiasset) = amount.multiasset() {
+            let policy_ids = multiasset.keys();
+            for policy_id_index in 0..policy_ids.len() {
+                let policy_id = policy_ids.get(policy_id_index);
+                if let Some(assets_by_policy_id) = multiasset.get(&policy_id) {
+                    let asset_names = assets_by_policy_id.keys();
+                    for asset_name_id in 0..asset_names.len() {
+                        let asset_name = asset_names.get(asset_name_id);
+                        let value = assets_by_policy_id.get(&asset_name);
+                        if let Some(value) = value {
+                            let policy_mapping =
+                                policy_to_num.add_if_not_presented(policy_id.clone());
+                            let asset_name_mapping = asset_name_to_num
+                                .add_if_not_presented(hex::encode(asset_name.name()));
+                            assets.push(TxAsset {
+                                asset_id: (policy_mapping, asset_name_mapping),
+                                value: dcspark_core::Value::<Regulated>::from(u64::from(value)),
+                            })
+                        }
+                    }
+                }
+            }
+        }
+
+        parsed_outputs.push(TxOutput {
+            address,
+            value,
+            assets,
+        })
+    }
+
+    let entry = previous_outputs.entry(tx_hash.clone()).or_default();
+    for (output_index, parsed_output) in parsed_outputs.iter().enumerate() {
+        entry.insert(BigNum::from(output_index as u64), parsed_output.clone());
+    }
+
+    Ok(parsed_outputs)
+}
+
+fn ban_addresses_for_events(
+    events: &Vec<TxOutput>,
+    banned_addresses: &mut HashSet<(u64, Option<u64>)>,
+) -> anyhow::Result<()> {
+    for event in events.iter() {
+        if let Some((payment, staking)) = event.address {
+            banned_addresses.insert((payment, staking));
+        }
     }
     Ok(())
 }
