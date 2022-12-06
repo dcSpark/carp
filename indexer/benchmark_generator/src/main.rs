@@ -215,6 +215,7 @@ async fn _main() -> anyhow::Result<()> {
                     tx.id,
                     seen_txes.get(&tx_hash)
                 );
+                continue;
             }
             seen_txes.insert(tx_hash.clone(), tx.id as u64);
             match cardano_multiplatform_lib::Transaction::from_bytes(payload.clone()) {
