@@ -13,6 +13,9 @@ staking_creds_mapping: staking_credentials.mapping
 policy_mapping: policy_id.mapping
 asset_name_mapping: asset_name.mapping
 address_to_mapping: address_to_mappings.mapping
+
 banned_addresses: banned_addresses.txt
+unparsed_transactions: unparsed_transactions.txt
+
 events_output_path: raw_events.ev
 cleaned_events_output_path: cleaned_events.ev

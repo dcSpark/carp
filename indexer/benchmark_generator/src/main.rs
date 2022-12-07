@@ -22,7 +22,7 @@ use entity::{
 };
 use serde::Deserialize;
 use std::cmp::min;
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
 use tracing_subscriber::prelude::*;
@@ -44,6 +44,7 @@ pub enum DbConfig {
 #[serde(deny_unknown_fields)]
 pub struct Config {
     db: DbConfig,
+    unparsed_transactions: PathBuf,
     payment_creds_mapping: PathBuf,
     staking_creds_mapping: PathBuf,
     policy_mapping: PathBuf,
@@ -185,7 +186,7 @@ async fn _main() -> anyhow::Result<()> {
         .all(&conn)
         .await?;
 
-    let mut previous_outputs = HashMap::<String, HashMap<BigNum, TxOutput>>::new();
+    let mut previous_outputs = HashMap::<String, HashMap<u64, TxOutput>>::new();
 
     let mut stake_address_to_num = DataMapper::<StakeCredential>::new();
     let mut payment_address_to_num = DataMapper::<StakeCredential>::new();
@@ -193,6 +194,9 @@ async fn _main() -> anyhow::Result<()> {
     let mut asset_name_to_num = DataMapper::<String>::new();
     let mut address_to_mapping = HashMap::<String, (u64, Option<u64>)>::new();
     let mut banned_addresses = HashSet::<(u64, Option<u64>)>::new();
+
+    let mut unparsed_transactions = Vec::<TransactionModel>::new();
+    let mut duplicated_inputs_txs: u64 = 0;
 
     while !current_query.is_empty() {
         let tx_count = current_query.len();
@@ -205,20 +209,35 @@ async fn _main() -> anyhow::Result<()> {
         );
         for tx in current_query {
             let payload: &Vec<u8> = &tx.payload;
-            let tx_hash = hex::encode(tx.hash);
+            let tx_hash = hex::encode(tx.hash.clone());
             match cardano_multiplatform_lib::Transaction::from_bytes(payload.clone()) {
                 Ok(parsed) => {
                     let body = parsed.body();
                     // inputs handle
                     let inputs = body.inputs();
 
-                    let (has_banned_addresses, input_events) = get_input_intents(
-                        &tx_hash,
-                        tx.id as u64,
-                        inputs,
-                        &mut previous_outputs,
-                        &banned_addresses,
-                    )?;
+                    let (has_banned_addresses, has_duplicated_inputs, input_events) =
+                        match get_input_intents(
+                            &tx_hash,
+                            tx.id as u64,
+                            inputs,
+                            &mut previous_outputs,
+                            &banned_addresses,
+                        ) {
+                            Ok(output) => output,
+                            Err(err) => {
+                                tracing::warn!(
+                                    "error occurred while trying to get inputs: {:?}",
+                                    err
+                                );
+                                unparsed_transactions.push(tx.clone());
+                                continue;
+                            }
+                        };
+
+                    if has_duplicated_inputs {
+                        duplicated_inputs_txs += 1;
+                    }
 
                     if has_banned_addresses {
                         ban_addresses_for_events(&input_events, &mut banned_addresses)?;
@@ -226,7 +245,7 @@ async fn _main() -> anyhow::Result<()> {
 
                     // outputs handle
                     let outputs = body.outputs();
-                    let output_events = get_output_intents(
+                    let output_events = match get_output_intents(
                         &tx_hash,
                         outputs,
                         &mut previous_outputs,
@@ -235,7 +254,19 @@ async fn _main() -> anyhow::Result<()> {
                         &mut policy_id_to_num,
                         &mut asset_name_to_num,
                         &mut address_to_mapping,
-                    )?;
+                    ) {
+                        Ok(result) => result,
+                        Err(err) => {
+                            tracing::warn!("error occurred while trying to get outputs: {:?}", err);
+                            unparsed_transactions.push(tx.clone());
+                            for input in input_events.into_iter() {
+                                if let Some(addr) = input.address {
+                                    banned_addresses.insert(addr);
+                                }
+                            }
+                            continue;
+                        }
+                    };
 
                     let event = if has_banned_addresses {
                         let output_events: Vec<TxOutput> = output_events
@@ -265,6 +296,7 @@ async fn _main() -> anyhow::Result<()> {
                 }
                 Err(err) => {
                     tracing::warn!("Can't parse tx: {:?}, err: {:?}", tx_hash.clone(), err);
+                    unparsed_transactions.push(tx.clone());
                 }
             }
         }
@@ -286,6 +318,16 @@ async fn _main() -> anyhow::Result<()> {
     drop(out_file);
 
     tracing::info!("Parsing finished, dumping files");
+    tracing::info!(
+        "Total unparsed transactions: {:?}",
+        unparsed_transactions.len()
+    );
+    tracing::info!(
+        "Total transactions with duplicated inputs: {:?}",
+        duplicated_inputs_txs
+    );
+
+    dump_unparsed_transactions_to_file(config.unparsed_transactions, unparsed_transactions)?;
 
     payment_address_to_num.dump_to_file(config.payment_creds_mapping)?;
     stake_address_to_num.dump_to_file(config.staking_creds_mapping)?;
@@ -307,6 +349,17 @@ async fn _main() -> anyhow::Result<()> {
     Ok(())
 }
 
+fn dump_unparsed_transactions_to_file(
+    path: PathBuf,
+    txs: Vec<TransactionModel>,
+) -> anyhow::Result<()> {
+    let mut output = File::create(path)?;
+    output.write_all(format!("{}\n", txs.len()).as_bytes())?;
+    for tx in txs.into_iter() {
+        output.write_all(format!("{}\n", serde_json::to_string(&tx)?).as_bytes())?;
+    }
+    Ok(())
+}
 fn clean_events(
     events_output_path: PathBuf,
     cleaned_events_output_path: PathBuf,
@@ -374,31 +427,34 @@ fn get_input_intents(
     tx_hash: &String,
     tx_id: u64,
     inputs: cardano_multiplatform_lib::TransactionInputs,
-    previous_outputs: &mut HashMap<String, HashMap<BigNum, TxOutput>>,
+    previous_outputs: &mut HashMap<String, HashMap<u64, TxOutput>>,
     banned_addresses: &HashSet<(u64, Option<u64>)>,
-) -> anyhow::Result<(bool, Vec<TxOutput>)> {
+) -> anyhow::Result<(bool, bool, Vec<TxOutput>)> {
     let mut has_byron_inputs = false;
 
     // try to parse input addresses and put in the set
     let mut parsed_inputs = Vec::new();
-    let mut utxos_same_tx = HashSet::<(String, u64)>::new();
+    let mut inputs_pointers = HashSet::<(String, u64)>::new();
+
+    let mut duplicated_pointers_found = false;
 
     for input_index in 0..inputs.len() {
         let input = inputs.get(input_index);
+        let input_tx_id = input.transaction_id().to_hex();
+        let input_tx_index = u64::from(input.index());
 
         // try to find output that is now used as an input
-        if let Some(outputs) = &mut previous_outputs.get_mut(&input.transaction_id().to_hex()) {
+        if let Some(outputs) = &mut previous_outputs.get_mut(&input_tx_id) {
             // we remove the spent input from the list
-            if let Some(output) = outputs.remove(&input.index()) {
-                utxos_same_tx.insert((input.transaction_id().to_hex(), u64::from(input.index())));
+            if let Some(output) = outputs.remove(&input_tx_index) {
+                inputs_pointers.insert((input_tx_id.clone(), input_tx_index.clone()));
                 parsed_inputs.push(output);
             } else {
-                if utxos_same_tx
-                    .contains(&(input.transaction_id().to_hex(), u64::from(input.index())))
-                {
-                    tracing::info!("Found tx using same output as an input multiple times: {:?}@{:?}, tx: {:?}, id: {:?}",
-                        input.transaction_id().to_hex(),
-                        input.index(),
+                if inputs_pointers.contains(&(input_tx_id.clone(), input_tx_index.clone())) {
+                    duplicated_pointers_found = true;
+                    tracing::info!("Found tx using same output as an input multiple times: {:?}@{:?}, current tx: {:?}, id: {:?}",
+                        input_tx_id,
+                        input_tx_index,
                         tx_hash,
                         tx_id,
                     );
@@ -406,14 +462,14 @@ fn get_input_intents(
                 }
                 // invalid transaction
                 tracing::warn!(
-                    "Can't find matching output for used input: {:?}@{:?}, tx: {:?}, id: {:?}",
-                    input.transaction_id().to_hex(),
-                    input.index(),
+                    "Can't find matching output for used input: {:?}@{:?}, current tx: {:?}, id: {:?}",
+                    input_tx_id,
+                    input_tx_index,
                     tx_hash,
                     tx_id,
                 );
                 return Err(anyhow!(
-                    "Can't find matching output for used input: {:?}@{:?}, tx: {:?}, id: {:?}",
+                    "Can't find matching output for used input: {:?}@{:?}, current tx: {:?}, id: {:?}",
                     input.transaction_id().to_hex(),
                     input.index(),
                     tx_hash,
@@ -423,27 +479,34 @@ fn get_input_intents(
         } else {
             has_byron_inputs = true; // might be byron address or sth
         }
+
         // remove if whole transaction is spent
         if previous_outputs
-            .get(&input.transaction_id().to_hex())
+            .get(&input_tx_id)
             .map(|outputs| outputs.is_empty())
             .unwrap_or(false)
         {
-            previous_outputs.remove(&input.transaction_id().to_hex());
+            previous_outputs.remove(&input_tx_id);
         }
     }
 
     let has_banned_addresses = parsed_inputs.iter().any(|input| {
-        input.address.is_some() && banned_addresses.contains(&input.address.clone().unwrap())
+        input.address.is_none()
+            || (input.address.is_some()
+                && banned_addresses.contains(&input.address.clone().unwrap()))
     });
 
-    Ok((has_byron_inputs || has_banned_addresses, parsed_inputs))
+    Ok((
+        has_byron_inputs || has_banned_addresses,
+        duplicated_pointers_found,
+        parsed_inputs,
+    ))
 }
 
 fn get_output_intents(
     tx_hash: &String,
     outputs: cardano_multiplatform_lib::TransactionOutputs,
-    previous_outputs: &mut HashMap<String, HashMap<BigNum, TxOutput>>,
+    previous_outputs: &mut HashMap<String, HashMap<u64, TxOutput>>,
     payment_address_mapping: &mut DataMapper<StakeCredential>,
     stake_address_mapping: &mut DataMapper<StakeCredential>,
     policy_to_num: &mut DataMapper<PolicyID>,
@@ -512,7 +575,7 @@ fn get_output_intents(
 
     let entry = previous_outputs.entry(tx_hash.clone()).or_default();
     for (output_index, parsed_output) in parsed_outputs.iter().enumerate() {
-        entry.insert(BigNum::from(output_index as u64), parsed_output.clone());
+        entry.insert(output_index as u64, parsed_output.clone());
     }
 
     Ok(parsed_outputs)
