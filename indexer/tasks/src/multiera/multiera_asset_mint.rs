@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
+use super::utils::common::asset_from_pair;
 use super::{multiera_txs::MultieraTransactionTask, utils::user_asset::AssetName};
 use crate::config::ReadonlyConfig::ReadonlyConfig;
 use crate::utils::blake2b160;
@@ -99,22 +100,16 @@ async fn handle_mints(
     }
 
     // 2) Query for which of these pairs already exist in the database
-    // https://github.com/dcSpark/carp/issues/46
-    let mut mint_conditions = Condition::any();
-    for (&asset_name, &policy_id) in unique_pairs
-        .iter()
-        .flat_map(|(policy_id, assets)| assets.keys().zip(std::iter::repeat(policy_id)))
-    {
-        mint_conditions = mint_conditions.add(
-            Condition::all()
-                .add(NativeAssetColumn::PolicyId.eq(policy_id.clone()))
-                .add(NativeAssetColumn::AssetName.eq(asset_name.clone())),
-        );
-    }
-    let mut found_assets = NativeAsset::find()
-        .filter(mint_conditions)
-        .all(db_tx)
-        .await?;
+    let mut found_assets = asset_from_pair(
+        db_tx,
+        &unique_pairs
+            .iter()
+            .flat_map(|(&policy_id, assets)| {
+                assets.keys().map(|&name| (policy_id.clone(), name.clone()))
+            })
+            .collect::<Vec<(Vec<u8>, Vec<u8>)>>(),
+    )
+    .await?;
 
     // 3) Find which pairs we need that weren't in the database
     let mut remaining_pairs = unique_pairs.clone();

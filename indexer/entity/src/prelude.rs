@@ -19,6 +19,10 @@ pub use super::cip25_entry::{
     ActiveModel as Cip25EntryActiveModel, Column as Cip25EntryColumn, Entity as Cip25Entry,
     Model as Cip25EntryModel, PrimaryKey as Cip25EntryPrimaryKey, Relation as Cip25EntryRelation,
 };
+pub use super::dex_swap::{
+    ActiveModel as DexSwapActiveModel, Column as DexSwapColumn, Entity as DexSwap,
+    Model as DexSwapModel, PrimaryKey as DexSwapPrimaryKey, Relation as DexSwapRelation,
+};
 pub use super::native_asset::{
     ActiveModel as NativeAssetActiveModel, Column as NativeAssetColumn, Entity as NativeAsset,
     Model as NativeAssetModel, PrimaryKey as NativeAssetPrimaryKey,

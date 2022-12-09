@@ -11,6 +11,7 @@ pub mod tx_credential;
 pub use sea_orm;
 pub mod asset_mint;
 pub mod cip25_entry;
+pub mod dex_swap;
 pub mod native_asset;
 pub mod plutus_data;
 pub mod plutus_data_hash;
