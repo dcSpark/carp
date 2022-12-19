@@ -10,7 +10,7 @@ use pallas::{
     ledger::{
         addresses,
         primitives::{alonzo, babbage::DatumOption},
-        traverse::{MultiEraOutput, Subject},
+        traverse::{Asset, MultiEraOutput},
     },
 };
 
@@ -30,13 +30,16 @@ pub fn get_asset_amount(output: &MultiEraOutput, pair: &AssetPair) -> u64 {
     output
         .assets()
         .iter()
-        .filter(|asset| match &asset.subject {
-            Subject::Lovelace => pair.is_none(),
-            Subject::NativeAsset(policy_id, asset_name) => {
+        .filter(|asset| match &asset {
+            Asset::Ada(_quantity) => pair.is_none(),
+            Asset::NativeAsset(policy_id, asset_name, _quantity) => {
                 pair == &Some((policy_id.to_vec(), asset_name.to_vec()))
             }
         })
-        .map(|a| a.quantity)
+        .map(|asset| match &asset {
+            Asset::Ada(quantity) => quantity,
+            Asset::NativeAsset(_, _, quantity) => quantity,
+        })
         .sum()
 }
 
