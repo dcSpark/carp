@@ -59,7 +59,7 @@ async fn handle_metadata(
     let txs = block.1.txs();
 
     for (idx, tx) in txs.iter().enumerate() {
-        let tx_id = &multiera_txs[idx as usize].id;
+        let tx_id = &multiera_txs[idx].id;
         let meta = tx.metadata();
 
         if !meta.is_empty() {

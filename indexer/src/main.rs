@@ -68,7 +68,6 @@ pub enum SourceConfig {
         socket: String,
         bearer: BearerKind,
     },
-    DirectSource {},
     CardanoNet {
         relay: (Cow<'static, str>, u16),
     },
@@ -169,7 +168,6 @@ async fn main() -> anyhow::Result<()> {
 
             main_loop(source, sink, start_from).await
         }
-        SourceConfig::DirectSource {} => todo!("not supported yet"),
     };
 
     Ok(())
