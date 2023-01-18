@@ -8,10 +8,10 @@ license = "MIT"
 strip = true
 
 [dependencies]
-deps = { git = "https://github.com/dcSpark/dcspark-core.git", branch = "enzo/byron-workarounds" }
-dcspark-core = { git = "https://github.com/dcSpark/dcspark-core.git", branch = "enzo/byron-workarounds" }
-dcspark-blockchain-source = { git = "https://github.com/dcSpark/dcspark-core.git", branch = "enzo/byron-workarounds" }
-multiverse = { git = "https://github.com/dcSpark/dcspark-core.git", branch = "enzo/byron-workarounds" }
+deps = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "e8b2c7303b5117094d027f7d0f82de06c65db1a7" }
+dcspark-core = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "e8b2c7303b5117094d027f7d0f82de06c65db1a7" }
+dcspark-blockchain-source = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "e8b2c7303b5117094d027f7d0f82de06c65db1a7" }
+multiverse = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "e8b2c7303b5117094d027f7d0f82de06c65db1a7" }
 
 anyhow = "1.0.53"
 async-trait = { version = "0.1.57" }

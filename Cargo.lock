@@ -806,7 +806,7 @@ checksum = "3ee2393c4a91429dffb4bedf19f4d6abf27d8a732c8ce4980305d782e5426d57"
 [[package]]
 name = "dcspark-blockchain-source"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/dcspark-core.git?branch=enzo/byron-workarounds#bd267f63d2066c9b50caa576bb908b6dd4149b2c"
+source = "git+https://github.com/dcSpark/dcspark-core.git?rev=e8b2c7303b5117094d027f7d0f82de06c65db1a7#e8b2c7303b5117094d027f7d0f82de06c65db1a7"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -828,7 +828,7 @@ dependencies = [
 [[package]]
 name = "dcspark-core"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/dcspark-core.git?branch=enzo/byron-workarounds#bd267f63d2066c9b50caa576bb908b6dd4149b2c"
+source = "git+https://github.com/dcSpark/dcspark-core.git?rev=e8b2c7303b5117094d027f7d0f82de06c65db1a7#e8b2c7303b5117094d027f7d0f82de06c65db1a7"
 dependencies = [
  "anyhow",
  "bech32 0.9.1",
@@ -842,7 +842,7 @@ dependencies = [
 [[package]]
 name = "deps"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/dcspark-core.git?branch=enzo/byron-workarounds#bd267f63d2066c9b50caa576bb908b6dd4149b2c"
+source = "git+https://github.com/dcSpark/dcspark-core.git?rev=e8b2c7303b5117094d027f7d0f82de06c65db1a7#e8b2c7303b5117094d027f7d0f82de06c65db1a7"
 dependencies = [
  "bigdecimal",
  "serde_json",
@@ -1584,7 +1584,7 @@ checksum = "a785740271256c230f57462d3b83e52f998433a7062fc18f96d5999474a9f915"
 [[package]]
 name = "multiverse"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/dcspark-core.git?branch=enzo/byron-workarounds#bd267f63d2066c9b50caa576bb908b6dd4149b2c"
+source = "git+https://github.com/dcSpark/dcspark-core.git?rev=e8b2c7303b5117094d027f7d0f82de06c65db1a7#e8b2c7303b5117094d027f7d0f82de06c65db1a7"
 dependencies = [
  "dcspark-core",
  "deps",

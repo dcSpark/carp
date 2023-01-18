@@ -62,7 +62,7 @@ impl Source for CardanoSource {
                     if !block_event.is_boundary_block {
                         tracing::debug!(id = %block_event.id, "block event received");
                         Ok(Some(CardanoEventType::Block {
-                            cbor_hex: hex::encode(block_event.raw_block.as_ref()),
+                            cbor_hex: hex::encode(block_event.raw_block),
                             epoch: block_event.epoch.or_else(|| {
                                 self.configuration
                                     .shelley_era_config
