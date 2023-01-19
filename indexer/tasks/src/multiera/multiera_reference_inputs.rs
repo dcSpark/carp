@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
-use crate::types::TxCredentialRelationValue;
 use crate::dsl::database_task::BlockGlobalInfo;
+use crate::types::TxCredentialRelationValue;
 use crate::{config::ReadonlyConfig::ReadonlyConfig, era_common::OutputWithTxData};
 use cardano_multiplatform_lib::{
     address::{BaseAddress, EnterpriseAddress, PointerAddress, RewardAddress},
