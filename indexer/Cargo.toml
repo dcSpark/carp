@@ -16,7 +16,7 @@ multiverse = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "e8b2c
 anyhow = "1.0.53"
 async-trait = { version = "0.1.57" }
 serde = {version = "1.0.144", features = ["derive", "rc"]}
-tokio = { version = "1.16.1", features = ["full"] }
+tokio = { version = "1.24.2", features = ["full"] }
 entity = { path = "entity" }
 migration = { path = "migration" }
 tasks = { path = "tasks" }
