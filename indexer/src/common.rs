@@ -1,5 +1,6 @@
 use dcspark_blockchain_source::cardano::Point;
-use dcspark_blockchain_source::{EventObject, PullFrom};
+use dcspark_blockchain_source::{EventObject, GetNextFrom};
+use dcspark_core::{BlockId, SlotNumber};
 
 pub enum CardanoEventType {
     RollBack {
@@ -16,12 +17,6 @@ pub enum CardanoEventType {
     },
 }
 
-pub trait GetNextFrom {
-    type From: PullFrom + Clone;
-
-    fn next_from(&self) -> Option<Self::From>;
-}
-
 impl GetNextFrom for CardanoEventType {
     type From = Point;
 
@@ -33,8 +28,8 @@ impl GetNextFrom for CardanoEventType {
                 block_slot,
                 ..
             } => Some(Point::BlockHeader {
-                slot_nb: *block_slot,
-                hash: block_hash.clone(),
+                slot_nb: SlotNumber::new(*block_slot),
+                hash: BlockId::new(block_hash.clone()),
             }),
         }
     }

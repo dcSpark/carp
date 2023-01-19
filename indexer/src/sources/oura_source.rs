@@ -45,15 +45,15 @@ impl OuraSource {
                         tracing::info!("Starting sync at block #{} ({})", slot_nb, hash,);
                         // if last block sync'd was at slot 0,
                         // that means it was the genesis block so we start from origin
-                        match slot_nb {
-                            0 => (IntersectArg::Origin, None),
+                        match (*slot_nb).into() {
+                            0u64 => (IntersectArg::Origin, None),
                             _ => {
                                 let point_args: Vec<PointArg> = points
-                                    .iter()
+                                    .into_iter()
                                     .flat_map(|p| match p {
                                         Point::Origin => vec![],
                                         Point::BlockHeader { slot_nb, hash } => {
-                                            vec![PointArg(*slot_nb, hash.clone())]
+                                            vec![PointArg(slot_nb.into(), hash.to_string())]
                                         }
                                     })
                                     .collect();

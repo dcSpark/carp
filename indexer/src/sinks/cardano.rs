@@ -5,6 +5,7 @@ use crate::types::{MultiEraBlock, StoppableService};
 use crate::{genesis, DbConfig, SinkConfig};
 use async_trait::async_trait;
 use dcspark_blockchain_source::cardano::Point;
+use dcspark_core::{BlockId, SlotNumber};
 use entity::sea_orm::Database;
 use entity::sea_orm::QueryFilter;
 use entity::{
@@ -65,16 +66,21 @@ impl CardanoSink {
     }
 
     /// note: points are sorted from newest to oldest
-    pub(crate) async fn get_latest_points(&self) -> anyhow::Result<Vec<Point>> {
+    pub(crate) async fn get_latest_point(&self) -> anyhow::Result<Vec<Point>> {
+        self.get_latest_points(1u64).await
+    }
+
+    /// note: points are sorted from newest to oldest
+    pub(crate) async fn get_latest_points(&self, count: u64) -> anyhow::Result<Vec<Point>> {
         let points: Vec<Point> = Block::find()
             .order_by_desc(BlockColumn::Id)
-            .limit(1)
+            .limit(count)
             .all(&self.db)
             .await?
             .iter()
             .map(|block| Point::BlockHeader {
-                slot_nb: block.slot as u64,
-                hash: hex::encode(&block.hash),
+                slot_nb: SlotNumber::new(block.slot as u64),
+                hash: BlockId::new(hex::encode(&block.hash)),
             })
             .collect();
 
@@ -109,8 +115,8 @@ impl CardanoSink {
             .await?
             .iter()
             .map(|block| Point::BlockHeader {
-                slot_nb: block.slot as u64,
-                hash: hex::encode(&block.hash),
+                slot_nb: SlotNumber::new(block.slot as u64),
+                hash: BlockId::new(hex::encode(&block.hash)),
             })
             .collect();
 
@@ -125,13 +131,13 @@ impl Sink for CardanoSink {
 
     async fn start_from(&mut self, from: Option<String>) -> anyhow::Result<Vec<Self::From>> {
         let start = match &from {
-            None => self.get_latest_points().await?,
+            None => self.get_latest_point().await?,
             Some(block) => self.get_specific_point(block).await?,
         };
 
         if start.is_empty() {
             genesis::process_genesis(&self.db, &self.network, self.exec_plan.clone()).await?;
-            return self.get_latest_points().await;
+            return self.get_latest_point().await;
         }
 
         Ok(start)

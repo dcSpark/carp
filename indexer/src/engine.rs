@@ -1,9 +1,8 @@
-use crate::common::GetNextFrom;
 use crate::perf_aggregator::PerfAggregator;
 use crate::sink::Sink;
 use crate::types::StoppableService;
 use async_trait::async_trait;
-use dcspark_blockchain_source::{PullFrom, Source};
+use dcspark_blockchain_source::{GetNextFrom, PullFrom, Source};
 
 pub struct FetchEngine<
     FromType: PullFrom + Clone,
