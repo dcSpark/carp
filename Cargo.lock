@@ -1757,21 +1757,6 @@ dependencies = [
 
 [[package]]
 name = "pallas"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6283be88c4c1fb9ad16af2aea085770e8bcf162c1f52c4d4d94c3f33e378d7ae"
-dependencies = [
- "pallas-addresses 0.15.0",
- "pallas-codec 0.15.0",
- "pallas-crypto 0.15.0",
- "pallas-miniprotocols 0.15.0",
- "pallas-multiplexer 0.15.0",
- "pallas-primitives 0.15.0",
- "pallas-traverse 0.15.0",
-]
-
-[[package]]
-name = "pallas"
 version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d42834c7249fd8e713eb4610456b72fb6031f02566150f8203381c7f30d624e3"
@@ -1801,20 +1786,6 @@ dependencies = [
 
 [[package]]
 name = "pallas-addresses"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd7fd1f771df7df6633754266691339e16604e238728c6029c90e665b1999bdf"
-dependencies = [
- "base58",
- "bech32 0.9.1",
- "hex",
- "pallas-codec 0.15.0",
- "pallas-crypto 0.15.0",
- "thiserror",
-]
-
-[[package]]
-name = "pallas-addresses"
 version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "31a4845f1022856fd77af2ff563bce420470ec589e1f6f08897492b4948f78d0"
@@ -1838,17 +1809,6 @@ dependencies = [
 
 [[package]]
 name = "pallas-codec"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c442bcd7a26b8b3fd5babe4c817c02449999b2e57fdc9e173084127345b8e750"
-dependencies = [
- "hex",
- "minicbor 0.18.0",
- "serde",
-]
-
-[[package]]
-name = "pallas-codec"
 version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "36db2e36825d8c037a54a5be551e5b903f8007b1b1259bc7a737c3aeb904c9b7"
@@ -1868,20 +1828,6 @@ dependencies = [
  "hex",
  "pallas-codec 0.13.4",
  "rand_core 0.6.4",
- "thiserror",
-]
-
-[[package]]
-name = "pallas-crypto"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d01d19bd518c8284b2c2b0752b7446aa1e8a8594c9962a4030cc1a612b8d181"
-dependencies = [
- "cryptoxide",
- "hex",
- "pallas-codec 0.15.0",
- "rand_core 0.6.4",
- "serde",
  "thiserror",
 ]
 
@@ -1915,20 +1861,6 @@ dependencies = [
 
 [[package]]
 name = "pallas-miniprotocols"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f014a3b434ddbb8f6637b65cced6e8d57f48796336646d9e218b3b6c581373b5"
-dependencies = [
- "hex",
- "itertools",
- "log",
- "pallas-codec 0.15.0",
- "pallas-multiplexer 0.15.0",
- "thiserror",
-]
-
-[[package]]
-name = "pallas-miniprotocols"
 version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d14b607bcc609fa2c6b35c180b8471fdf21eb5a60d20be2b87b71beb2beda61f"
@@ -1951,20 +1883,6 @@ dependencies = [
  "hex",
  "log",
  "pallas-codec 0.13.4",
- "rand",
- "thiserror",
-]
-
-[[package]]
-name = "pallas-multiplexer"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ee2874b21d2c9f16bc9a6f9145835bc2a3d8df62e856270844a1054fb171696"
-dependencies = [
- "byteorder",
- "hex",
- "log",
- "pallas-codec 0.15.0",
  "rand",
  "thiserror",
 ]
@@ -2002,22 +1920,6 @@ dependencies = [
 
 [[package]]
 name = "pallas-primitives"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c82778ec57ab7ca5e8e30d9d605e259ea397fe3e2be6f17e51abd88c1e5f553"
-dependencies = [
- "base58",
- "bech32 0.9.1",
- "hex",
- "log",
- "pallas-codec 0.15.0",
- "pallas-crypto 0.15.0",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "pallas-primitives"
 version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "df74101aa78f8702d7e45ea22260ab8d2597e83b847924db3fbef1eb6f806c41"
@@ -2043,20 +1945,6 @@ dependencies = [
  "pallas-codec 0.13.4",
  "pallas-crypto 0.13.4",
  "pallas-primitives 0.13.4",
- "thiserror",
-]
-
-[[package]]
-name = "pallas-traverse"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "163fc5496f22838e972dd08011d4ebe2bb742ffaf05b463cddb797d592918ec1"
-dependencies = [
- "hex",
- "pallas-addresses 0.15.0",
- "pallas-codec 0.15.0",
- "pallas-crypto 0.15.0",
- "pallas-primitives 0.15.0",
  "thiserror",
 ]
 
@@ -3194,7 +3082,7 @@ dependencies = [
  "inventory",
  "markdown-gen",
  "nameof",
- "pallas 0.15.0",
+ "pallas 0.16.0",
  "paste",
  "sea-orm",
  "serde",
