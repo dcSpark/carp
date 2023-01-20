@@ -5,15 +5,16 @@ on:
   push:
     branches:
       - 'main'
+      - 'greg/carp-docker-improvements'
     tags:
-      - 'v*'
+      - '[0-9]+.[0-9]+.[0-9]+'
   pull_request:
     branches:
       - 'main'
 
 jobs:
   build-and-deploy:
-    uses: dcSpark/carp/.github/workflows/build-workflow.yml@main
+    uses: dcSpark/carp/.github/workflows/build-workflow.yml@greg/carp-docker-improvements
     with:
       REGISTRY: dcspark
       REPOSITORY_CARP: carp
