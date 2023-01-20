@@ -56,7 +56,7 @@ jobs:
             ${{ inputs.REGISTRY }}/${{ inputs.REPOSITORY_CARP }}
           tags: |
             type=ref,event=branch
-            type=semver,pattern={{version}}
+            type=pep440,pattern={{version}}
             type=sha
 
       - name: Get docker tags carp webserver
@@ -76,7 +76,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ steps.meta-webserver.outputs.tags }}
+          tags: ${{ steps.meta.outputs.tags }}
 
       - name: Build and push carp-webserver
         uses: docker/build-push-action@v3
