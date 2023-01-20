@@ -1,3 +1,5 @@
+import { AssetName, PolicyId } from "./PolicyIdAssetMap";
+
 /**
  * Filter which uses of the address are considered relevant for the query.
  *
@@ -89,3 +91,25 @@ export type PageInfo = {
     hasNextPage: boolean;
   };
 };
+
+export enum Direction {
+  Buy = 'buy',
+  Sell = 'sell',
+};
+
+export enum Dex {
+  WingRiders = 'WingRiders',
+  SundaeSwap = 'SundaeSwap',
+  MinSwap = 'MinSwap',
+};
+
+export type Asset = {
+  policyId: PolicyId;
+  assetName: AssetName;
+} | null;
+
+/**
+ * @pattern [1-9][0-9]*
+ * @example "2042352568679"
+ */
+export type Amount = string;

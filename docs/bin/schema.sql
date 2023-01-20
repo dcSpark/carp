@@ -139,6 +139,42 @@ ALTER SEQUENCE public."Cip25Entry_id_seq" OWNED BY public."Cip25Entry".id;
 
 
 --
+-- Name: Dex; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public."Dex" (
+    id bigint NOT NULL,
+    tx_id bigint NOT NULL,
+    address_id bigint NOT NULL,
+    dex bigint NOT NULL,
+    asset1_id bigint,
+    asset2_id bigint,
+    amount1 bigint NOT NULL,
+    amount2 bigint NOT NULL,
+    operation bigint NOT NULL
+);
+
+
+--
+-- Name: Dex_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public."Dex_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: Dex_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public."Dex_id_seq" OWNED BY public."Dex".id;
+
+
+--
 -- Name: NativeAsset; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -462,6 +498,13 @@ ALTER TABLE ONLY public."Cip25Entry" ALTER COLUMN id SET DEFAULT nextval('public
 
 
 --
+-- Name: Dex id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."Dex" ALTER COLUMN id SET DEFAULT nextval('public."Dex_id_seq"'::regclass);
+
+
+--
 -- Name: NativeAsset id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -562,6 +605,14 @@ ALTER TABLE ONLY public."Block"
 
 ALTER TABLE ONLY public."Cip25Entry"
     ADD CONSTRAINT "Cip25Entry_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: Dex Dex_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."Dex"
+    ADD CONSTRAINT "Dex_pkey" PRIMARY KEY (id);
 
 
 --
@@ -717,6 +768,20 @@ CREATE INDEX "index-cip25_entry-metadata" ON public."Cip25Entry" USING btree (me
 --
 
 CREATE INDEX "index-cip25_entry-native_asset" ON public."Cip25Entry" USING btree (asset_id);
+
+
+--
+-- Name: index-dex-address-native_asset1-native_asset2-transaction; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "index-dex-address-native_asset1-native_asset2-transaction" ON public."Dex" USING btree (dex, asset1_id, asset2_id, tx_id);
+
+
+--
+-- Name: index-dex-operation; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "index-dex-operation" ON public."Dex" USING btree (operation);
 
 
 --
@@ -906,6 +971,38 @@ ALTER TABLE ONLY public."Cip25Entry"
 
 ALTER TABLE ONLY public."Cip25Entry"
     ADD CONSTRAINT "fk-cip25_entry-metadata" FOREIGN KEY (metadata_id) REFERENCES public."TransactionMetadata"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: Dex fk-dex-address_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."Dex"
+    ADD CONSTRAINT "fk-dex-address_id" FOREIGN KEY (address_id) REFERENCES public."Address"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: Dex fk-dex-asset1_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."Dex"
+    ADD CONSTRAINT "fk-dex-asset1_id" FOREIGN KEY (asset1_id) REFERENCES public."NativeAsset"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: Dex fk-dex-asset2_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."Dex"
+    ADD CONSTRAINT "fk-dex-asset2_id" FOREIGN KEY (asset2_id) REFERENCES public."NativeAsset"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: Dex fk-dex-tx_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."Dex"
+    ADD CONSTRAINT "fk-dex-tx_id" FOREIGN KEY (tx_id) REFERENCES public."Transaction"(id) ON DELETE CASCADE;
 
 
 --

@@ -48,20 +48,39 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Get docker tags carp
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            ${{ inputs.REGISTRY }}/${{ inputs.REPOSITORY_CARP }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=sha
+
+      - name: Get docker tags carp webserver
+        id: meta-webserver
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            ${{ inputs.REGISTRY }}/${{ inputs.REPOSITORY_CARP_WEBSERVER }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=sha
+
+
       - name: Build and push carp
         uses: docker/build-push-action@v3
         with:
           context: .
           push: true
-          tags: |
-            ${{ inputs.REGISTRY }}/${{ inputs.REPOSITORY_CARP }}:${{ env.IMAGE_TAG }}
-            ${{ inputs.REGISTRY }}/${{ inputs.REPOSITORY_CARP }}:latest
+          tags: ${{ steps.meta-webserver.outputs.tags }}
 
       - name: Build and push carp-webserver
         uses: docker/build-push-action@v3
         with:
           context: ./webserver
           push: true
-          tags: |
-            ${{ inputs.REGISTRY }}/${{ inputs.REPOSITORY_CARP_WEBSERVER }}:${{ env.IMAGE_TAG }}
-            ${{ inputs.REGISTRY }}/${{ inputs.REPOSITORY_CARP_WEBSERVER }}:latest
+          tags: ${{ steps.meta-webserver.outputs.tags }} 

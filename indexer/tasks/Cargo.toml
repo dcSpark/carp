@@ -13,7 +13,7 @@ inventory = "0.2.3"
 cardano-multiplatform-lib = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "metadata-and-addr" }
 entity = { path = "../entity" }
 tokio = { version = "1.16.1", features = ["full"] }
-pallas = "0.14.0-alpha.4"
+pallas = "0.16.0"
 toml = { version = "0.5", features = ["preserve_order"] }
 hex = "0.4.3"
 cryptoxide = "0.4.2"
@@ -25,6 +25,7 @@ urlencoding = "2.1.0"
 serde = { version = "1.0", features = ["derive"] }
 tracing-subscriber = "0.3.9"
 tracing = "0.1.31"
+sea-orm = { git = "https://github.com/dcSpark/sea-orm", branch = "insert-many-returning", features = [ "macros" ], default-features = false }
 
 [features]
 default = ["build_rust_task"]

@@ -11,6 +11,7 @@ export enum ErrorCodes {
   OffsetBlockNotFound = 7,
   AssetLimitExceeded = 8,
   CredentialLimitExceeded = 9,
+  AssetPairLimitExceeded = 10,
 }
 
 export type ErrorShape = {
@@ -76,6 +77,12 @@ export const Errors = {
   CredentialLimitExceeded: {
     code: ErrorCodes.CredentialLimitExceeded,
     prefix: "Exceeded request credential limit.",
+    detailsGen: (details: { limit: number; found: number }) =>
+      `Limit of ${details.limit}, found ${details.found}`,
+  },
+  AssetPairLimitExceeded: {
+    code: ErrorCodes.AssetPairLimitExceeded,
+    prefix: "Exceeded request asset pair limit.",
     detailsGen: (details: { limit: number; found: number }) =>
       `Limit of ${details.limit}, found ${details.found}`,
   },

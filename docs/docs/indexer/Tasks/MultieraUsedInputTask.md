@@ -33,6 +33,7 @@ pub struct ReadonlyConfig {
 
    * ` vkey_relation_map `
    * ` multiera_used_inputs `
+   * ` multiera_used_inputs_to_outputs_map `
 
 
 ## Full source

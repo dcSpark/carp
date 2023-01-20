@@ -282,6 +282,315 @@
                     }
                 ]
             },
+            "PolicyId": {
+                "type": "string",
+                "example": "b863bc7369f46136ac1048adb2fa7dae3af944c3bbb2be2f216a8d4f",
+                "pattern": "[0-9a-fA-F]{56}"
+            },
+            "AssetName": {
+                "type": "string",
+                "example": "42657272794e617679",
+                "pattern": "[0-9a-fA-F]{0,64}"
+            },
+            "Asset": {
+                "properties": {
+                    "assetName": {
+                        "$ref": "#/components/schemas/AssetName"
+                    },
+                    "policyId": {
+                        "$ref": "#/components/schemas/PolicyId"
+                    }
+                },
+                "required": [
+                    "assetName",
+                    "policyId"
+                ],
+                "type": "object",
+                "nullable": true
+            },
+            "Amount": {
+                "type": "string",
+                "example": "2042352568679",
+                "pattern": "[1-9][0-9]*"
+            },
+            "Dex": {
+                "enum": [
+                    "WingRiders",
+                    "SundaeSwap",
+                    "MinSwap"
+                ],
+                "type": "string"
+            },
+            "DexLastPrice": {
+                "properties": {
+                    "dex": {
+                        "$ref": "#/components/schemas/Dex"
+                    },
+                    "amount2": {
+                        "$ref": "#/components/schemas/Amount"
+                    },
+                    "amount1": {
+                        "$ref": "#/components/schemas/Amount"
+                    },
+                    "asset2": {
+                        "$ref": "#/components/schemas/Asset"
+                    },
+                    "asset1": {
+                        "$ref": "#/components/schemas/Asset"
+                    }
+                },
+                "required": [
+                    "dex",
+                    "amount2",
+                    "amount1",
+                    "asset2",
+                    "asset1"
+                ],
+                "type": "object"
+            },
+            "DexLastPriceResponse": {
+                "properties": {
+                    "lastPrice": {
+                        "items": {
+                            "$ref": "#/components/schemas/DexLastPrice"
+                        },
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "lastPrice"
+                ],
+                "type": "object"
+            },
+            "PriceType": {
+                "enum": [
+                    "buy",
+                    "sell",
+                    "mean"
+                ],
+                "type": "string"
+            },
+            "DexLastPriceRequest": {
+                "properties": {
+                    "type": {
+                        "$ref": "#/components/schemas/PriceType"
+                    },
+                    "assetPairs": {
+                        "items": {
+                            "properties": {
+                                "asset2": {
+                                    "$ref": "#/components/schemas/Asset"
+                                },
+                                "asset1": {
+                                    "$ref": "#/components/schemas/Asset"
+                                }
+                            },
+                            "required": [
+                                "asset2",
+                                "asset1"
+                            ],
+                            "type": "object"
+                        },
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "type",
+                    "assetPairs"
+                ],
+                "type": "object"
+            },
+            "DexMeanPrice": {
+                "properties": {
+                    "amount2": {
+                        "$ref": "#/components/schemas/Amount"
+                    },
+                    "amount1": {
+                        "$ref": "#/components/schemas/Amount"
+                    },
+                    "asset2": {
+                        "$ref": "#/components/schemas/Asset"
+                    },
+                    "asset1": {
+                        "$ref": "#/components/schemas/Asset"
+                    },
+                    "dex": {
+                        "$ref": "#/components/schemas/Dex"
+                    },
+                    "tx_hash": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "amount2",
+                    "amount1",
+                    "asset2",
+                    "asset1",
+                    "dex",
+                    "tx_hash"
+                ],
+                "type": "object"
+            },
+            "DexMeanPriceResponse": {
+                "properties": {
+                    "meanPrices": {
+                        "items": {
+                            "$ref": "#/components/schemas/DexMeanPrice"
+                        },
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "meanPrices"
+                ],
+                "type": "object"
+            },
+            "DexMeanPriceRequest": {
+                "allOf": [
+                    {
+                        "properties": {
+                            "limit": {
+                                "type": "number",
+                                "format": "double",
+                                "description": "Defaults to `DEX_PRICE_LIMIT.RESPONSE`"
+                            },
+                            "dexes": {
+                                "items": {
+                                    "$ref": "#/components/schemas/Dex"
+                                },
+                                "type": "array"
+                            },
+                            "assetPairs": {
+                                "items": {
+                                    "properties": {
+                                        "asset2": {
+                                            "$ref": "#/components/schemas/Asset"
+                                        },
+                                        "asset1": {
+                                            "$ref": "#/components/schemas/Asset"
+                                        }
+                                    },
+                                    "required": [
+                                        "asset2",
+                                        "asset1"
+                                    ],
+                                    "type": "object"
+                                },
+                                "type": "array"
+                            }
+                        },
+                        "required": [
+                            "dexes",
+                            "assetPairs"
+                        ],
+                        "type": "object"
+                    },
+                    {
+                        "$ref": "#/components/schemas/Pagination"
+                    }
+                ]
+            },
+            "Direction": {
+                "enum": [
+                    "buy",
+                    "sell"
+                ],
+                "type": "string"
+            },
+            "DexSwap": {
+                "properties": {
+                    "direction": {
+                        "$ref": "#/components/schemas/Direction"
+                    },
+                    "amount2": {
+                        "$ref": "#/components/schemas/Amount"
+                    },
+                    "amount1": {
+                        "$ref": "#/components/schemas/Amount"
+                    },
+                    "asset2": {
+                        "$ref": "#/components/schemas/Asset"
+                    },
+                    "asset1": {
+                        "$ref": "#/components/schemas/Asset"
+                    },
+                    "dex": {
+                        "$ref": "#/components/schemas/Dex"
+                    },
+                    "tx_hash": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "direction",
+                    "amount2",
+                    "amount1",
+                    "asset2",
+                    "asset1",
+                    "dex",
+                    "tx_hash"
+                ],
+                "type": "object"
+            },
+            "DexSwapResponse": {
+                "properties": {
+                    "swap": {
+                        "items": {
+                            "$ref": "#/components/schemas/DexSwap"
+                        },
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "swap"
+                ],
+                "type": "object"
+            },
+            "DexSwapRequest": {
+                "allOf": [
+                    {
+                        "properties": {
+                            "limit": {
+                                "type": "number",
+                                "format": "double",
+                                "description": "Defaults to `DEX_PRICE_LIMIT.RESPONSE`"
+                            },
+                            "assetPairs": {
+                                "items": {
+                                    "properties": {
+                                        "asset2": {
+                                            "$ref": "#/components/schemas/Asset"
+                                        },
+                                        "asset1": {
+                                            "$ref": "#/components/schemas/Asset"
+                                        }
+                                    },
+                                    "required": [
+                                        "asset2",
+                                        "asset1"
+                                    ],
+                                    "type": "object"
+                                },
+                                "type": "array"
+                            },
+                            "dexes": {
+                                "items": {
+                                    "$ref": "#/components/schemas/Dex"
+                                },
+                                "type": "array"
+                            }
+                        },
+                        "required": [
+                            "assetPairs",
+                            "dexes"
+                        ],
+                        "type": "object"
+                    },
+                    {
+                        "$ref": "#/components/schemas/Pagination"
+                    }
+                ]
+            },
             "Cip25Metadata": {
                 "type": "string",
                 "example": "a365636f6c6f72672330303030383065696d616765783a697066733a2f2f697066732f516d534b593167317a5375506b3536635869324b38524e766961526b44485633505a756a7474663755676b343379646e616d656a4265727279204e617679",
@@ -310,11 +619,6 @@
                     "cip25"
                 ],
                 "type": "object"
-            },
-            "AssetName": {
-                "type": "string",
-                "example": "42657272794e617679",
-                "pattern": "[0-9a-fA-F]{0,64}"
             },
             "PolicyIdAssetMapType": {
                 "properties": {
@@ -533,7 +837,7 @@
     },
     "info": {
         "title": "carp",
-        "version": "2.0.0",
+        "version": "2.1.1",
         "description": "API for the Postgres database generated by Carp",
         "license": {
             "name": "MIT"
@@ -698,6 +1002,186 @@
                         "application/json": {
                             "schema": {
                                 "$ref": "#/components/schemas/CredentialAddressRequest"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/dex/last-price": {
+            "post": {
+                "operationId": "DexLastPrice",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DexLastPriceResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Gets the swap prices for the given liquidity pool and asset pairs.\nOperation \"mean\" is not AVG from the last values, but the remaining amount of assets on the pool output",
+                "security": [],
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DexLastPriceRequest"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/dex/mean-price": {
+            "post": {
+                "operationId": "DexMeanPrice",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DexMeanPriceResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Gets the mean prices for the given liquidity pool and asset pairs.\nMean is not AVG from the last values, but the remaining amount of assets on the pool output",
+                "security": [],
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DexMeanPriceRequest"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/dex/swap-price": {
+            "post": {
+                "operationId": "DexSwap",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DexSwapResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Gets the swap prices for the given liquidity pool and asset pairs.",
+                "security": [],
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DexSwapRequest"
                             }
                         }
                     }

@@ -20,3 +20,9 @@ export const CREDENTIAL_LIMIT = {
 export const BLOCK_LIMIT = {
   OFFSET: 21600, // k parameter
 };
+
+export const DEX_PRICE_LIMIT = {
+  REQUEST_ADDRESSES: 100,
+  REQUEST_ASSET_PAIRS: 100,
+  RESPONSE: 1000,
+};
