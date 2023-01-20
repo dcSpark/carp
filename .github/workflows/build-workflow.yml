@@ -66,8 +66,8 @@ jobs:
           images: |
             ${{ inputs.REGISTRY }}/${{ inputs.REPOSITORY_CARP_WEBSERVER }}
           tags: |
-            type=pep440,event=branch
-            type=semver,pattern={{version}}
+            type=ref,event=branch
+            type=pep440,pattern={{version}}
             type=sha
 
 
