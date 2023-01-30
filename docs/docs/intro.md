@@ -4,10 +4,10 @@ sidebar_position: 1
 
 # Carp (Cardano Postgres Indexer)
 
-Syncs Cardano blockchain information a Postgres database.
+Syncs Cardano blockchain information with a Postgres database.
 
 - Backend: written in Rust using [Oura](https://github.com/txpipe/oura) and [CML](https://github.com/dcSpark/cardano-multiplatform-lib).
-- Sever & Client: Written using Typescript
+- Server & Client: Written using Typescript
 
 The source code can be found here on github: [dcSpark/carp](https://github.com/dcSpark/carp).
 
@@ -26,10 +26,10 @@ The source code can be found here on github: [dcSpark/carp](https://github.com/d
 # FAQ
 
 Q) How does it take to sync the database from scratch?<br />
-A) Around 4-5 days. The first epochs are really fast, but Alonzo takes about ~1hr per epoch. We recommend tacking occasional snapshots of the database so that you can easily spin up new nodes or recover from crashes without having to resync from scratch.
+A) Around 4-5 days. The first epochs are really fast, but Alonzo takes about ~1hr per epoch. We recommend taking occasional snapshots of the database so that you can easily spin up new nodes or recover from crashes without having to resync from scratch.
 
 Q) How long to query history?<br />
-A) Querying the transaction history for an address should a <10ms for local queries (no network overhead). Of course, it will take longer if you're using a slow machine or if your machine is at max utilization.
+A) Querying the transaction history for an address should take <10ms for local queries (no network overhead). Of course, it will take longer if you're using a slow machine or if your machine is at max utilization.
 
 Q) How to launch my own network?<br />
 A) TBD. We support parsing genesis blocks so it should be doable. Feel free to make a PR for more concrete steps.
