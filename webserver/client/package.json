@@ -1,6 +1,6 @@
 {
   "name": "@dcspark/carp-client",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "Web client for the Carp server",
   "main": "app/index.js",
   "scripts": {
