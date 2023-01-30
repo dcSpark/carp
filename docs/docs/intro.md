@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Carp (Cardano Postgres Indexer)
 
-Syncs Cardano blockchain information with a Postgres database.
+Syncs data from Cardano blockchain and stores it into a Postgres database
 
 - Backend: written in Rust using [Oura](https://github.com/txpipe/oura) and [CML](https://github.com/dcSpark/cardano-multiplatform-lib).
 - Server & Client: Written using Typescript
