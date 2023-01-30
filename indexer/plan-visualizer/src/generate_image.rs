@@ -40,7 +40,7 @@ pub fn generate(exec_plan: &ExecutionPlan, plan_name: &str) -> Graph {
             let entry = find_task_registry_entry(task_name);
             match &entry {
                 None => {
-                    panic!("Could not find task named {}", task_name);
+                    panic!("Could not find task named {task_name}");
                 }
                 Some(task) => match task {
                     TaskRegistryEntry::Genesis(entry) => {
@@ -99,7 +99,7 @@ impl<'a> dot::Labeller<'a, NodeIdentifier, &'a EdgeType, SubgraphIdentifier> for
         dot::Id::new(self.name.clone()).unwrap()
     }
     fn node_id(&'a self, n: &NodeIdentifier) -> dot::Id<'a> {
-        dot::Id::new(format!("N{}", n)).unwrap()
+        dot::Id::new(format!("N{n}")).unwrap()
     }
     fn node_label<'b>(&'b self, n: &NodeIdentifier) -> dot::LabelText<'b> {
         dot::LabelText::LabelStr(self.nodes[*n].clone().into())

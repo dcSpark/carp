@@ -30,7 +30,7 @@ pub async fn process_byron_block(
             let entry = find_task_registry_entry(task_name);
             match &entry {
                 None => {
-                    panic!("Could not find task named {}", task_name);
+                    panic!("Could not find task named {task_name}");
                 }
                 Some(task) => {
                     if let TaskRegistryEntry::Byron(entry) = task {

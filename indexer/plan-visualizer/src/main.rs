@@ -44,8 +44,8 @@ fn main() -> anyhow::Result<()> {
     use std::fs::File;
 
     let base_path = Path::new(&args.output);
-    let dot_file = base_path.join(format!("{}.dot", plan_name));
-    let svg_file = base_path.join(format!("{}.svg", plan_name));
+    let dot_file = base_path.join(format!("{plan_name}.dot"));
+    let svg_file = base_path.join(format!("{plan_name}.svg"));
 
     let mut output = File::create(&dot_file).unwrap();
     dot::render(&graph, &mut output).unwrap();

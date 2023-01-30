@@ -33,7 +33,7 @@ fn main() -> anyhow::Result<()> {
 
     let get_md = |name| {
         let base_path = Path::new(&args.output);
-        let full_path = base_path.join(format!("{}.md", name));
+        let full_path = base_path.join(format!("{name}.md"));
         let file = File::create(full_path).unwrap();
         Markdown::new(file)
     };
