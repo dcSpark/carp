@@ -8,13 +8,53 @@ pub async fn start_reparse(conn: DatabaseConnection) -> anyhow::Result<()> {
     tracing::info!("{}", "Starting to process txs");
 
     // TODO: switch to join_all();
-    reparse_addresses(&conn, 0).await?;
-    reparse_tx_out(&conn, 0).await?;
-    reparse_txs(&conn, 0).await?;
+    // reparse_addresses(&conn, 0).await?;
+    // reparse_tx_out(&conn, 0).await?;
+    // reparse_txs(&conn, 0).await?;
+    reparse_nft(&conn, 0).await?;
     Ok(())
 }
 
 static PAGE_SIZE: usize = 8192 * 4;
+
+async fn reparse_nft(conn: &DatabaseConnection, start_index: u64) -> Result<(), DbErr> {
+    let cip25_count = Cip25Entry::find().count(conn).await?;
+    let mut cip25_stream = Cip25Entry::find()
+        .order_by_asc(Cip25EntryColumn::Id)
+        .filter(Cip25EntryColumn::Id.gt(start_index))
+        .paginate(conn, PAGE_SIZE)
+        .into_stream();
+
+    while let Some(cip25_entries) = &cip25_stream.try_next().await? {
+        println!(
+            "cip25 entries: {} / {} ({:.1}%)",
+            cip25_entries.first().unwrap().id,
+            cip25_count,
+            (100.0 * cip25_entries.first().unwrap().id as f64) / (cip25_count as f64)
+        );
+        for cip25_entry in cip25_entries {
+            // TODO: replace this with the CIP25 rust crate parsing once it's available
+            if let Err(e) =
+                &cardano_multiplatform_lib::Transaction::from_bytes(cip25_entry.payload.clone())
+            {
+                let asset = NativeAsset::find()
+                    .filter(NativeAssetColumn::Id.eq(cip25_entry.asset_id))
+                    .one(conn)
+                    .await?
+                    .unwrap();
+                println!(
+                    "\nFailed cip25 entry {}.{} {:?} {}\n",
+                    hex::encode(&asset.policy_id),
+                    hex::encode(&asset.asset_name),
+                    e,
+                    hex::encode(&cip25_entry.payload)
+                );
+            };
+        }
+    }
+    println!("Done parsing transactions");
+    Ok(())
+}
 
 async fn reparse_txs(conn: &DatabaseConnection, start_index: u64) -> Result<(), DbErr> {
     let tx_count = Transaction::find().count(conn).await?;
