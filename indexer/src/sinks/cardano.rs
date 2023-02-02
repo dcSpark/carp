@@ -100,7 +100,7 @@ impl CardanoSink {
             .await?;
 
         if provided_point.is_none() {
-            panic!("Block not found in database: {}", block_hash);
+            panic!("Block not found in database: {block_hash}");
         }
 
         // for the intersection, we need to provide the block BEFORE the one the user passed in
