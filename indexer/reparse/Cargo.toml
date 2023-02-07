@@ -18,3 +18,4 @@ entity = { path = "../entity" }
 futures = "0.3.21"
 cardano-multiplatform-lib = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "metadata-and-addr" }
 hex = "0.4.0"
+cml-cip25 = { "path" = "../../../cardano-multiplatform-lib/cip25/rust" }
