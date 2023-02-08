@@ -51,7 +51,6 @@ services:
     image: carp:${CARP_VERSION}
     environment:
       - NETWORK=${NETWORK:-testnet}
-      - SOCKET=/app/node-ipc/node.socket
       - PGPASSFILE=/run/secrets/.pgpass
       - DATABASE_URL=${DATABASE_URL}
       - RUST_BACKTRACE=full

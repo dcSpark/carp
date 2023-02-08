@@ -3,6 +3,9 @@ use crate::sink::Sink;
 use crate::types::StoppableService;
 use async_trait::async_trait;
 use dcspark_blockchain_source::{GetNextFrom, PullFrom, Source};
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering::SeqCst;
+use std::sync::Arc;
 
 pub struct FetchEngine<
     FromType: PullFrom + Clone,
@@ -12,6 +15,7 @@ pub struct FetchEngine<
 > {
     source: SourceType,
     sink: SinkType,
+    running: Arc<AtomicBool>,
 }
 
 impl<
@@ -24,8 +28,13 @@ impl<
     pub fn new(
         source: SourceType,
         sink: SinkType,
+        running: Arc<AtomicBool>,
     ) -> FetchEngine<FromType, EventType, SourceType, SinkType> {
-        Self { source, sink }
+        Self {
+            source,
+            sink,
+            running,
+        }
     }
 
     pub async fn fetch_and_process(&mut self, from: FromType) -> anyhow::Result<()> {
@@ -34,7 +43,7 @@ impl<
 
         let mut perf_aggregator = PerfAggregator::new();
 
-        loop {
+        while self.running.load(SeqCst) {
             let event_fetch_start = std::time::Instant::now();
             let event = self.source.pull(&pull_from).await?;
             let event = if let Some(event) = event {
@@ -48,6 +57,8 @@ impl<
             self.sink.process(event, &mut perf_aggregator).await?;
             pull_from = new_from;
         }
+
+        Ok(())
     }
 }
 
@@ -61,10 +72,10 @@ impl<
 {
     async fn stop(self) -> anyhow::Result<()> {
         let _ = self.sink.stop().await.map_err(|err| {
-            tracing::warn!("Error during sink shutdown: {:?}", err);
+            tracing::error!("Error during sink shutdown: {:?}", err);
         });
         let _ = self.source.stop().await.map_err(|err| {
-            tracing::warn!("Error during source shutdown: {:?}", err);
+            tracing::error!("Error during source shutdown: {:?}", err);
         });
 
         Ok(())

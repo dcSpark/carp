@@ -23,13 +23,13 @@ pub struct OuraSource {
 }
 
 impl OuraSource {
-    pub fn new(config: SourceConfig, start_from: Vec<Point>) -> anyhow::Result<Self> {
+    pub fn new(
+        config: SourceConfig,
+        network: String,
+        start_from: Vec<Point>,
+    ) -> anyhow::Result<Self> {
         match config {
-            SourceConfig::Oura {
-                network,
-                socket,
-                bearer,
-            } => {
+            SourceConfig::Oura { socket, bearer } => {
                 let (intersect, rollback) = match start_from {
                     points if points.is_empty() => {
                         // we need a special intersection type when bootstrapping from genesis
@@ -43,7 +43,7 @@ impl OuraSource {
                             Point::BlockHeader { slot_nb, hash } => (slot_nb, hash),
                         };
                         tracing::info!("Starting sync at block #{} ({})", slot_nb, hash,);
-                        // if last block sync'd was at slot 0,
+                        // if last block synced was at slot 0,
                         // that means it was the genesis block so we start from origin
                         match (*slot_nb).into() {
                             0u64 => (IntersectArg::Origin, None),
@@ -131,7 +131,7 @@ impl StoppableService for OuraSource {
     async fn stop(self) -> anyhow::Result<()> {
         for handle in self.handles {
             if let Err(err) = handle.join() {
-                tracing::warn!("Error during shutdown: {:?}", err);
+                tracing::error!("Error during oura shutdown: {:?}", err);
             }
         }
 
@@ -164,7 +164,6 @@ fn oura_bootstrap(
         BearerKind::Unix => {
             let source_config = n2c::Config {
                 address: AddressArg(BearerKind::Unix, socket),
-                // address: AddressArg(BearerKind::Tcp, socket),
                 magic: Some(magic),
                 well_known: None,
                 mapper,

@@ -1,4 +1,8 @@
 source:
+#  type: oura
+#  network: mainnet
+#  socket: "relays-new.cardano-mainnet.iohk.io:3001"
+#  bearer: tcp
   type: cardano_net
   relay: 
     - relays-new.cardano-mainnet.iohk.io
@@ -13,10 +17,10 @@ sink:
   db:
     type: postgres
     host: localhost
-    port: 5455
+    port: 5432
     user: carp
     password: "1234"
     db: carp_mainnet
-  network: preprod
+  network: mainnet
 
 start_block:

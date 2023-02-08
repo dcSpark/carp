@@ -12,6 +12,7 @@ use oura::sources::BearerKind;
 use serde::Deserialize;
 use std::borrow::Cow;
 use std::fs::File;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tasks::execution_plan::ExecutionPlan;
 use tracing_subscriber::prelude::*;
@@ -63,14 +64,8 @@ pub enum Network {}
 #[serde(tag = "type", rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
 pub enum SourceConfig {
-    Oura {
-        network: String,
-        socket: String,
-        bearer: BearerKind,
-    },
-    CardanoNet {
-        relay: (Cow<'static, str>, u16),
-    },
+    Oura { socket: String, bearer: BearerKind },
+    CardanoNet { relay: (Cow<'static, str>, u16) },
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -99,13 +94,20 @@ async fn main() -> anyhow::Result<()> {
         .with_target("cardano-net", tracing::Level::INFO)
         .with_target("cardano-sdk", tracing::Level::INFO)
         .with_target("dcspark-blockchain-source", tracing::Level::INFO)
-        .with_default(tracing::Level::DEBUG);
+        .with_default(tracing::Level::INFO);
 
     tracing_subscriber::registry()
         .with(fmt_layer)
         .with(sqlx_filter)
         .init();
     // End logging setup block
+
+    let running = Arc::new(AtomicBool::new(true));
+    let r = running.clone();
+    ctrlc::set_handler(move || {
+        r.store(false, Ordering::SeqCst);
+    })
+    .expect("Error setting terminate handler");
 
     tracing::info!("{}", "Starting Carp");
 
@@ -139,10 +141,10 @@ async fn main() -> anyhow::Result<()> {
 
     match &config.source {
         SourceConfig::Oura { .. } => {
-            let source = OuraSource::new(config.source, start_from.clone())?;
+            let source = OuraSource::new(config.source, network, start_from.clone())?;
             let start_from = start_from.into_iter().next().unwrap();
 
-            main_loop(source, sink, start_from).await
+            main_loop(source, sink, start_from, running).await
         }
         SourceConfig::CardanoNet { relay } => {
             let base_config = match network.as_ref() {
@@ -166,29 +168,35 @@ async fn main() -> anyhow::Result<()> {
 
             let source = sources::cardano::CardanoSource::new(network_config).await?;
 
-            main_loop(source, sink, start_from).await
+            main_loop(source, sink, start_from, running).await
         }
     };
 
     Ok(())
 }
 
-async fn main_loop<S>(source: S, sink: CardanoSink, start_from: <S as Source>::From)
-where
+async fn main_loop<S>(
+    source: S,
+    sink: CardanoSink,
+    start_from: <S as Source>::From,
+    running: Arc<AtomicBool>,
+) where
     S: Source<From = <CardanoSink as Sink>::From, Event = <CardanoSink as Sink>::Event>
         + StoppableService
         + Send,
     <S as Source>::Event: GetNextFrom,
     <S as Source>::From: Clone,
 {
-    let mut engine = engine::FetchEngine::new(source, sink);
+    let mut engine = engine::FetchEngine::new(source, sink, running);
 
-    // TODO: add signal handling to stop the engine correctly
-    //
     if let Err(error) = engine.fetch_and_process(start_from).await {
-        tracing::error!(%error, "processing loop finished with error, stopping engine");
-        if let Err(error) = engine.stop().await {
-            tracing::error!(%error, "couldn't stop engine succesfully");
-        }
+        tracing::error!(%error, "Processing loop finished with error, stopping engine");
+    } else {
+        tracing::info!("Processing loop finished successfully, stopping engine");
+    }
+    if let Err(error) = engine.stop().await {
+        tracing::error!(%error, "Couldn't stop engine successfully");
+    } else {
+        tracing::info!("Engine is stopped successfully");
     }
 }

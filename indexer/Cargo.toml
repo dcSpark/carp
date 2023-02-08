@@ -26,6 +26,7 @@ tracing = "0.1.31"
 dotenv = "0.15.0"
 serde_json = "1.0.79"
 serde_yaml = "0.9.13"
+ctrlc = {version = "3.2.4", features = ["termination"] }
 base64 = "0.13.0"
 bs58 = "0.4.0"
 oura = { git = "https://github.com/txpipe/oura.git", rev = "05e4d987670dea29a2d34ead3d57245ed7bcb205" }
