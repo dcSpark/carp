@@ -1,3 +1,3 @@
-pub mod cardano;
+mod cardano;
 
-pub use cardano::*;
+pub use cardano::CardanoSink;

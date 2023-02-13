@@ -2,9 +2,9 @@ extern crate core;
 
 use crate::sink::Sink;
 use crate::sinks::CardanoSink;
-use crate::sources::OuraSource;
+use crate::sources::{CardanoSource, OuraSource};
 use crate::types::StoppableService;
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use clap::Parser;
 use dcspark_blockchain_source::{GetNextFrom, Source};
 use migration::async_std::path::PathBuf;
@@ -114,18 +114,18 @@ async fn main() -> anyhow::Result<()> {
     let Cli { plan, config_path } = Cli::parse();
 
     tracing::info!("Execution plan {}", plan);
-    let exec_plan = Arc::new(ExecutionPlan::load_from_file(&plan));
+    let exec_plan = Arc::new(ExecutionPlan::load_from_file(&plan)?);
 
     tracing::info!("Config file {:?}", config_path);
     let file = File::open(&config_path).with_context(|| {
         format!(
-            "Cannot read config file {path}",
+            "Cannot open config file {path}",
             path = config_path.display()
         )
     })?;
     let config: Config = serde_yaml::from_reader(file).with_context(|| {
         format!(
-            "Cannot read config file {path}",
+            "Cannot parse config file {path}",
             path = config_path.display()
         )
     })?;
@@ -133,16 +133,25 @@ async fn main() -> anyhow::Result<()> {
     let (network, mut sink) = match config.sink {
         SinkConfig::Cardano { ref network, .. } => (
             network.clone(),
-            CardanoSink::new(config.sink, exec_plan).await?,
+            CardanoSink::new(config.sink, exec_plan)
+                .await
+                .context("Can't create cardano sink")?,
         ),
     };
 
-    let start_from = sink.start_from(config.start_block).await?;
+    let start_from = sink
+        .start_from(config.start_block)
+        .await
+        .context("Can't get starting point from sink")?;
 
     match &config.source {
         SourceConfig::Oura { .. } => {
-            let source = OuraSource::new(config.source, network, start_from.clone())?;
-            let start_from = start_from.into_iter().next().unwrap();
+            let source = OuraSource::new(config.source, network, start_from.clone())
+                .context("Can't create oura source")?;
+            let start_from = start_from
+                .last()
+                .cloned()
+                .ok_or_else(|| anyhow!("Starting points list is empty"))?;
 
             main_loop(source, sink, start_from, running).await
         }
@@ -158,7 +167,12 @@ async fn main() -> anyhow::Result<()> {
             //
             // this way the multiverse can be temporary, which saves setting up the extra db
             // (at the expense of repulling some extra blocks at startup)
-            let start_from = sink.get_latest_points(15).await?.last().unwrap().clone();
+            let start_from = sink
+                .get_latest_points(15)
+                .await?
+                .last()
+                .cloned()
+                .ok_or_else(|| anyhow!("Starting points list is empty"))?;
 
             let network_config = dcspark_blockchain_source::cardano::NetworkConfiguration {
                 relay: relay.clone(),
@@ -166,7 +180,7 @@ async fn main() -> anyhow::Result<()> {
                 ..base_config
             };
 
-            let source = sources::cardano::CardanoSource::new(network_config).await?;
+            let source = CardanoSource::new(network_config).await?;
 
             main_loop(source, sink, start_from, running).await
         }

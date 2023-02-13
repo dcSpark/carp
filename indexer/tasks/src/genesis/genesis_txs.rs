@@ -16,7 +16,6 @@ use std::sync::{Arc, Mutex};
 use crate::dsl::task_macro::*;
 use crate::utils::{blake2b256, TaskPerfAggregator};
 use entity::sea_orm::Iterable;
-use futures::future::try_join;
 
 use super::genesis_block::GenesisBlockTask;
 

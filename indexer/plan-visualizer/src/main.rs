@@ -36,7 +36,7 @@ fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
     tracing::info!("Execution plan {}", args.plan);
-    let exec_plan = ExecutionPlan::load_from_file(&args.plan);
+    let exec_plan = ExecutionPlan::load_from_file(&args.plan)?;
     let plan_name = Path::new(&args.plan).file_stem().unwrap().to_str().unwrap();
 
     let graph = generate(&exec_plan, plan_name);

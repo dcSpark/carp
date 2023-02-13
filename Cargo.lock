@@ -20,6 +20,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "ahash"
+version = "0.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2c99f64d1e06488f620f932677e24bc6e2897582980441ae90a671415bd7ec2f"
+dependencies = [
+ "cfg-if 1.0.0",
+ "once_cell",
+ "version_check",
+]
+
+[[package]]
 name = "aho-corasick"
 version = "0.7.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -286,6 +297,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 
 [[package]]
+name = "base64"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a4a4ddaa51a5bc52a6948f74c06d20aaaddb71924eab79b8c97a8c556e942d6a"
+
+[[package]]
 name = "bech32"
 version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -348,19 +365,19 @@ dependencies = [
 
 [[package]]
 name = "borsh"
-version = "0.10.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "822462c1e7b17b31961798a6874b36daea6818e99e0cb7d3b7b0fa3c477751c3"
+checksum = "a3ef05d137e34b7ac51dbec170ee523a9b728cff71385796771d259771d592f8"
 dependencies = [
  "borsh-derive",
- "hashbrown 0.11.2",
+ "hashbrown 0.13.2",
 ]
 
 [[package]]
 name = "borsh-derive"
-version = "0.10.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37626c9e941a687ee9abef6065b44c379478ae563b7483c613dd705ef1dff59e"
+checksum = "190b1188f062217531748807129459c8c14641b648e887e39681a433db7fc939"
 dependencies = [
  "borsh-derive-internal",
  "borsh-schema-derive-internal",
@@ -371,9 +388,9 @@ dependencies = [
 
 [[package]]
 name = "borsh-derive-internal"
-version = "0.10.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "61820b4c5693eafb998b1e67485423c923db4a75f72585c247bdee32bad81e7b"
+checksum = "b0fcf747a3e4eb47869441664df09d0eb88dcc9a85d499860efb82c2cfe6affc"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -382,20 +399,14 @@ dependencies = [
 
 [[package]]
 name = "borsh-schema-derive-internal"
-version = "0.10.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c76cdbfa13def20d1f8af3ae7b3c6771f06352a74221d8851262ac384c122b8e"
+checksum = "f671d085f791c5fd3331c843ded45454b034b6188bf0f78ed28e7fd66a8b3f69"
 dependencies = [
  "proc-macro2",
  "quote",
  "syn",
 ]
-
-[[package]]
-name = "bs58"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "771fe0050b883fcc3ea2359b1a96bcfbc090b7116eae7c3c512c7a083fdf23d3"
 
 [[package]]
 name = "bumpalo"
@@ -441,7 +452,7 @@ name = "cardano-multiplatform-lib"
 version = "3.1.3"
 source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?branch=metadata-and-addr#74462e5c442648b81da8e3dbb7781d817690565b"
 dependencies = [
- "base64",
+ "base64 0.13.1",
  "bech32 0.7.3",
  "cbor_event",
  "cfg-if 1.0.0",
@@ -504,22 +515,18 @@ version = "2.1.2"
 dependencies = [
  "anyhow",
  "async-trait",
- "base64",
- "bs58",
+ "base64 0.21.0",
  "cardano-multiplatform-lib",
  "clap 3.2.23",
  "ctrlc",
  "dcspark-blockchain-source",
  "dcspark-core",
- "deps",
- "dotenv",
  "entity",
  "hex",
  "migration",
  "multiverse",
- "num-integer",
  "oura",
- "pallas",
+ "pallas 0.17.0",
  "serde",
  "serde_json",
  "serde_yaml",
@@ -863,9 +870,9 @@ dependencies = [
 
 [[package]]
 name = "cxx"
-version = "1.0.89"
+version = "1.0.90"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc831ee6a32dd495436e317595e639a587aa9907bef96fe6e6abc290ab6204e9"
+checksum = "90d59d9acd2a682b4e40605a242f6670eaa58c5957471cbf85e8aa6a0b97a5e8"
 dependencies = [
  "cc",
  "cxxbridge-flags",
@@ -875,9 +882,9 @@ dependencies = [
 
 [[package]]
 name = "cxx-build"
-version = "1.0.89"
+version = "1.0.90"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94331d54f1b1a8895cd81049f7eaaaef9d05a7dcb4d1fd08bf3ff0806246789d"
+checksum = "ebfa40bda659dd5c864e65f4c9a2b0aff19bea56b017b9b77c73d3766a453a38"
 dependencies = [
  "cc",
  "codespan-reporting",
@@ -890,15 +897,15 @@ dependencies = [
 
 [[package]]
 name = "cxxbridge-flags"
-version = "1.0.89"
+version = "1.0.90"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "48dcd35ba14ca9b40d6e4b4b39961f23d835dbb8eed74565ded361d93e1feb8a"
+checksum = "457ce6757c5c70dc6ecdbda6925b958aae7f959bda7d8fb9bde889e34a09dc03"
 
 [[package]]
 name = "cxxbridge-macro"
-version = "1.0.89"
+version = "1.0.90"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81bbeb29798b407ccd82a3324ade1a7286e0d29851475990b612670f6f5124d2"
+checksum = "ebf883b7aacd7b2aeb2a7b338648ee19f57c140d4ee8e52c68979c6b2f7f2263"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -914,7 +921,7 @@ checksum = "23d8666cb01533c39dde32bcbab8e227b4ed6679b2c925eba05feabea39508fb"
 [[package]]
 name = "dcspark-blockchain-source"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/dcspark-core.git?rev=e8b2c7303b5117094d027f7d0f82de06c65db1a7#e8b2c7303b5117094d027f7d0f82de06c65db1a7"
+source = "git+https://github.com/dcSpark/dcspark-core.git?rev=399d5b92cc5aed531d72b7c533b59093df627ae9#399d5b92cc5aed531d72b7c533b59093df627ae9"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -936,7 +943,7 @@ dependencies = [
 [[package]]
 name = "dcspark-core"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/dcspark-core.git?rev=e8b2c7303b5117094d027f7d0f82de06c65db1a7#e8b2c7303b5117094d027f7d0f82de06c65db1a7"
+source = "git+https://github.com/dcSpark/dcspark-core.git?rev=399d5b92cc5aed531d72b7c533b59093df627ae9#399d5b92cc5aed531d72b7c533b59093df627ae9"
 dependencies = [
  "anyhow",
  "bech32 0.9.1",
@@ -950,7 +957,7 @@ dependencies = [
 [[package]]
 name = "deps"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/dcspark-core.git?rev=e8b2c7303b5117094d027f7d0f82de06c65db1a7#e8b2c7303b5117094d027f7d0f82de06c65db1a7"
+source = "git+https://github.com/dcSpark/dcspark-core.git?rev=399d5b92cc5aed531d72b7c533b59093df627ae9#399d5b92cc5aed531d72b7c533b59093df627ae9"
 dependencies = [
  "bigdecimal",
  "serde_json",
@@ -1038,7 +1045,7 @@ checksum = "7fcaabb2fef8c910e7f4c7ce9f67a1283a1715879a7c230ca9d6d1ae31f16d91"
 name = "entity"
 version = "0.0.0"
 dependencies = [
- "pallas",
+ "pallas 0.17.0",
  "sea-orm",
  "serde",
 ]
@@ -1325,7 +1332,7 @@ version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ab5ef0d4909ef3724cc8cce6ccc8572c5c817592e9285f5464f8e86f8bd3726e"
 dependencies = [
- "ahash",
+ "ahash 0.7.6",
 ]
 
 [[package]]
@@ -1334,7 +1341,16 @@ version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888"
 dependencies = [
- "ahash",
+ "ahash 0.7.6",
+]
+
+[[package]]
+name = "hashbrown"
+version = "0.13.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "43a3c133739dddd0d2990f9a4bdf8eb4b21ef50e4851ca85ab661199821d510e"
+dependencies = [
+ "ahash 0.8.3",
 ]
 
 [[package]]
@@ -1725,7 +1741,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2a20020e8e2d1881d8736f64011bb5ff99f1db9947ce3089706945c8915695cb"
 dependencies = [
  "half",
- "minicbor-derive",
+ "minicbor-derive 0.12.0",
+]
+
+[[package]]
+name = "minicbor"
+version = "0.19.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d319d47468f164e5138b1c629bdd82ea3da0784ed1d41a22f8e0bcef76c2ae52"
+dependencies = [
+ "half",
+ "minicbor-derive 0.13.0",
 ]
 
 [[package]]
@@ -1733,6 +1759,17 @@ name = "minicbor-derive"
 version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8608fb1c805b5b6b3d5ab7bd95c40c396df622b64d77b2d621a5eae1eed050ee"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "minicbor-derive"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1154809406efdb7982841adb6311b3d095b46f78342dd646736122fe6b19e267"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1766,7 +1803,7 @@ checksum = "a785740271256c230f57462d3b83e52f998433a7062fc18f96d5999474a9f915"
 [[package]]
 name = "multiverse"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/dcspark-core.git?rev=e8b2c7303b5117094d027f7d0f82de06c65db1a7#e8b2c7303b5117094d027f7d0f82de06c65db1a7"
+source = "git+https://github.com/dcSpark/dcspark-core.git?rev=399d5b92cc5aed531d72b7c533b59093df627ae9#399d5b92cc5aed531d72b7c533b59093df627ae9"
 dependencies = [
  "dcspark-core",
  "deps",
@@ -1954,8 +1991,9 @@ checksum = "9b7820b9daea5457c9f21c69448905d723fbd21136ccf521748f23fd49e723ee"
 
 [[package]]
 name = "oura"
-version = "1.7.3"
-source = "git+https://github.com/txpipe/oura.git?rev=05e4d987670dea29a2d34ead3d57245ed7bcb205#05e4d987670dea29a2d34ead3d57245ed7bcb205"
+version = "1.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "814bec57619db0486594ac5a0abfce32cdd09ebd6e35621084ba20bb5f7d026a"
 dependencies = [
  "bech32 0.9.1",
  "clap 3.2.23",
@@ -1966,7 +2004,7 @@ dependencies = [
  "log",
  "merge",
  "net2",
- "pallas",
+ "pallas 0.18.0",
  "prometheus_exporter",
  "serde",
  "serde_json",
@@ -2010,13 +2048,28 @@ version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3aa33418b6ad94a42dde318b035af9b3ea958ca43ca77e6e8a5e9f259f44a837"
 dependencies = [
- "pallas-addresses",
- "pallas-codec",
- "pallas-crypto",
- "pallas-miniprotocols",
- "pallas-multiplexer",
- "pallas-primitives",
- "pallas-traverse",
+ "pallas-addresses 0.17.0",
+ "pallas-codec 0.17.0",
+ "pallas-crypto 0.17.0",
+ "pallas-miniprotocols 0.17.0",
+ "pallas-multiplexer 0.17.0",
+ "pallas-primitives 0.17.0",
+ "pallas-traverse 0.17.0",
+]
+
+[[package]]
+name = "pallas"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1dbf8964263ee8b776741a0e25d73475e4d1834ec890d686a05e891f11e7701e"
+dependencies = [
+ "pallas-addresses 0.18.0",
+ "pallas-codec 0.18.0",
+ "pallas-crypto 0.18.0",
+ "pallas-miniprotocols 0.18.0",
+ "pallas-multiplexer 0.18.0",
+ "pallas-primitives 0.18.0",
+ "pallas-traverse 0.18.0",
 ]
 
 [[package]]
@@ -2028,8 +2081,22 @@ dependencies = [
  "base58",
  "bech32 0.9.1",
  "hex",
- "pallas-codec",
- "pallas-crypto",
+ "pallas-codec 0.17.0",
+ "pallas-crypto 0.17.0",
+ "thiserror",
+]
+
+[[package]]
+name = "pallas-addresses"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8af9e9683d7adb7c45b58bf8949c16af0556214c14b01cac92761b3c221377b9"
+dependencies = [
+ "base58",
+ "bech32 0.9.1",
+ "hex",
+ "pallas-codec 0.18.0",
+ "pallas-crypto 0.18.0",
  "thiserror",
 ]
 
@@ -2040,7 +2107,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0121cf6f8a780c073437f98f0bf35014de8f2661aa04ea63469b9360670b1263"
 dependencies = [
  "hex",
- "minicbor",
+ "minicbor 0.18.0",
+ "serde",
+]
+
+[[package]]
+name = "pallas-codec"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "848a3cd192a1afa0e8c7121e40e0c5991715722399c51359dbf9246443a649fb"
+dependencies = [
+ "hex",
+ "minicbor 0.19.0",
  "serde",
 ]
 
@@ -2052,7 +2130,21 @@ checksum = "ea13446a83190ea3d4fac6c4d177d001eda6a91edb9e01ffeb4570ac6d5dd929"
 dependencies = [
  "cryptoxide",
  "hex",
- "pallas-codec",
+ "pallas-codec 0.17.0",
+ "rand_core 0.6.4",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "pallas-crypto"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f3d7e5248d3c81960fa2a1a430edc54d99601cf963ad7a4da8f9e13808d98c7f"
+dependencies = [
+ "cryptoxide",
+ "hex",
+ "pallas-codec 0.18.0",
  "rand_core 0.6.4",
  "serde",
  "thiserror",
@@ -2066,8 +2158,22 @@ checksum = "02feb6060d0d421e17126291cb1e87e0131028827607096063939718336a909d"
 dependencies = [
  "hex",
  "itertools",
- "pallas-codec",
- "pallas-multiplexer",
+ "pallas-codec 0.17.0",
+ "pallas-multiplexer 0.17.0",
+ "thiserror",
+ "tracing",
+]
+
+[[package]]
+name = "pallas-miniprotocols"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "625e7c774664644f252d2ab2632eaed446239f180e1f03c87ffed2b8ff180f43"
+dependencies = [
+ "hex",
+ "itertools",
+ "pallas-codec 0.18.0",
+ "pallas-multiplexer 0.18.0",
  "thiserror",
  "tracing",
 ]
@@ -2081,7 +2187,22 @@ dependencies = [
  "byteorder",
  "hex",
  "log",
- "pallas-codec",
+ "pallas-codec 0.17.0",
+ "rand",
+ "thiserror",
+ "tracing",
+]
+
+[[package]]
+name = "pallas-multiplexer"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e66af1c76d81a6baf905828d2e527f29c7877e33486e4f955a90d93b357636bf"
+dependencies = [
+ "byteorder",
+ "hex",
+ "log",
+ "pallas-codec 0.18.0",
  "rand",
  "thiserror",
  "tracing",
@@ -2097,8 +2218,24 @@ dependencies = [
  "bech32 0.9.1",
  "hex",
  "log",
- "pallas-codec",
- "pallas-crypto",
+ "pallas-codec 0.17.0",
+ "pallas-crypto 0.17.0",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "pallas-primitives"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "286a2d69437c9b3deaa58b8832edce3b80868ca6afeee8aff7d78f338ada9854"
+dependencies = [
+ "base58",
+ "bech32 0.9.1",
+ "hex",
+ "log",
+ "pallas-codec 0.18.0",
+ "pallas-crypto 0.18.0",
  "serde",
  "serde_json",
 ]
@@ -2110,10 +2247,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f2315201959af3f9ecc8ac22a37ed31d0043aa33fe9115242f8e69d8814ded8e"
 dependencies = [
  "hex",
- "pallas-addresses",
- "pallas-codec",
- "pallas-crypto",
- "pallas-primitives",
+ "pallas-addresses 0.17.0",
+ "pallas-codec 0.17.0",
+ "pallas-crypto 0.17.0",
+ "pallas-primitives 0.17.0",
+ "thiserror",
+]
+
+[[package]]
+name = "pallas-traverse"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "519f950d87a031770d302fdd510dc0b744c283b65d99a1a9896f399122a9c182"
+dependencies = [
+ "hex",
+ "pallas-addresses 0.18.0",
+ "pallas-codec 0.18.0",
+ "pallas-crypto 0.18.0",
+ "pallas-primitives 0.18.0",
  "thiserror",
 ]
 
@@ -2618,7 +2769,7 @@ version = "0.19.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "35edb675feee39aec9c99fa5ff985081995a06d594114ae14cbe797ad7b7a6d7"
 dependencies = [
- "base64",
+ "base64 0.13.1",
  "log",
  "ring",
  "sct",
@@ -2863,9 +3014,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.92"
+version = "1.0.93"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7434af0dc1cbd59268aa98b4c22c131c0584d2232f6fb166efb993e2832e896a"
+checksum = "cad406b69c91885b5107daf2c29572f6c8cdb3c66826821e286c533490c0bc76"
 dependencies = [
  "itoa",
  "ryu",
@@ -2957,9 +3108,9 @@ dependencies = [
 
 [[package]]
 name = "signal-hook"
-version = "0.3.14"
+version = "0.3.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a253b5e89e2698464fc26b545c9edceb338e18a89effeeecfea192c3025be29d"
+checksum = "732768f1176d21d09e076c23a93123d40bba92d50c4058da34d45c8de8e682b9"
 dependencies = [
  "libc",
  "signal-hook-registry",
@@ -2978,9 +3129,9 @@ dependencies = [
 
 [[package]]
 name = "signal-hook-registry"
-version = "1.4.0"
+version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e51e73328dc4ac0c7ccbda3a494dfa03df1de2f46018127f60c693f2648455b0"
+checksum = "d8229b473baa5980ac72ef434c4415e70c4b5e71b423043adb4ba059f89c99a1"
 dependencies = [
  "libc",
 ]
@@ -3059,9 +3210,9 @@ version = "0.5.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e48c61941ccf5ddcada342cd59e3e5173b007c509e1e8e990dafc830294d9dc5"
 dependencies = [
- "ahash",
+ "ahash 0.7.6",
  "atoi",
- "base64",
+ "base64 0.13.1",
  "bitflags",
  "byteorder",
  "bytes",
@@ -3283,16 +3434,16 @@ dependencies = [
 name = "tasks"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "cardano-multiplatform-lib",
  "cfg-if 0.1.10",
  "cryptoxide",
  "entity",
- "futures",
  "hex",
  "inventory",
  "markdown-gen",
  "nameof",
- "pallas",
+ "pallas 0.17.0",
  "paste",
  "sea-orm",
  "serde",
@@ -3350,10 +3501,11 @@ dependencies = [
 
 [[package]]
 name = "thread_local"
-version = "1.1.4"
+version = "1.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5516c27b78311c50bf42c071425c560ac799b11c30b31f87e3081965fe5e0180"
+checksum = "3fdd6f064ccff2d6567adcb3873ca630700f00b5ad3f060c25b5dcfd9a4ce152"
 dependencies = [
+ "cfg-if 1.0.0",
  "once_cell",
 ]
 

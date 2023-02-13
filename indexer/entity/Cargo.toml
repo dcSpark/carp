@@ -6,10 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+pallas = "0.17.0"
 sea-orm = { git = "https://github.com/dcSpark/sea-orm", branch = "insert-many-returning", features = [
     "runtime-tokio-rustls",
     "sqlx-postgres",
     "macros",
 ], default-features = false }
-serde = "1.0.136"
-pallas = "0.17.0"
+serde = "1.0.152"

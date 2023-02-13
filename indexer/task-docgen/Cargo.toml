@@ -5,12 +5,13 @@ edition = "2021"
 publish = false
 
 [dependencies]
-anyhow = "1.0.53"
-clap = { version = "3.1", features = ["derive"] }
-tracing-subscriber = "0.3.9"
-tracing = "0.1.31"
-
+# [local]
 tasks = { path = "../tasks", default-features = false, features = ["build_markdown_task"] }
-inventory = "0.2.3"
-markdown-gen = { git = "https://github.com/dcSpark/markdown-gen-rs", branch = "hbina-add-ability-to-write-raw-str" }
 
+# [task-docgen]
+anyhow = { version = "1.0.69" }
+clap = { version = "3.1", features = ["derive"] }
+inventory = { version = "0.2.3" }
+markdown-gen = { git = "https://github.com/dcSpark/markdown-gen-rs", branch = "hbina-add-ability-to-write-raw-str" }
+tracing = { version = "0.1.31" }
+tracing-subscriber = { version = "0.3.16" }

@@ -5,16 +5,19 @@ edition = "2021"
 publish = false
 
 [dependencies]
+# [local]
+entity = { path = "../entity" }
+
+# [reparse]
+anyhow = { version = "1.0.69" }
+cardano-multiplatform-lib = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "metadata-and-addr" }
+dotenv = { version = "0.15.0" }
+futures = { version = "0.3.21" }
+hex = { version = "0.4.0" }
 sea-schema = { git = "https://github.com/dcSpark/sea-schema", branch = "bump-sea-x", default-features = false, features = [
     "migration",
     "debug-print",
 ] }
-anyhow = "1.0.53"
-tracing-subscriber = "0.3.9"
-tracing = "0.1.31"
-dotenv = "0.15.0"
-tokio = { version = "1.16.1", features = ["full"] }
-entity = { path = "../entity" }
-futures = "0.3.21"
-cardano-multiplatform-lib = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "metadata-and-addr" }
-hex = "0.4.0"
+tokio = { version = "1.25.0", features = ["full"] }
+tracing = { version = "0.1.37" }
+tracing-subscriber = { version = "0.3.16" }

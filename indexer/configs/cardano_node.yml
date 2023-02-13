@@ -1,8 +1,4 @@
 source:
-#  type: oura
-#  network: mainnet
-#  socket: "relays-new.cardano-mainnet.iohk.io:3001"
-#  bearer: tcp
   type: cardano_net
   relay: 
     - relays-new.cardano-mainnet.iohk.io
