@@ -1,4 +1,9 @@
 version: "3.5"
+networks:
+  carp_network:
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
 
 services:
   postgres:
@@ -24,6 +29,9 @@ services:
         max-file: "10"
     ports:
       - "5432:5432"
+    networks:
+      carp_network:
+        ipv4_address: 172.20.0.3
 
   cardano-node:
     restart: unless-stopped
@@ -38,6 +46,11 @@ services:
       options:
         max-size: "200k"
         max-file: "10"
+    ports:
+      - "3001:3001"
+    networks:
+      carp_network:
+        ipv4_address: 172.20.0.4
 
   carp:
     restart: unless-stopped
@@ -65,7 +78,7 @@ services:
       - -c
       - |
         /app/migration up ;
-        /app/carp --config-path /app/config/indexer/${CONFIG_FILE:-oura.yml} ;
+        /app/carp --config-path /app/config/indexer/${CONFIG_FILE:-oura_docker.yml} ;
     depends_on:
       - postgres
       - cardano-node
@@ -74,6 +87,9 @@ services:
       options:
         max-size: "1m"
         max-file: "10"
+    networks:
+      carp_network:
+        ipv4_address: 172.20.0.5
 
   carp_web:
     restart: unless-stopped
@@ -81,9 +97,12 @@ services:
       context: ../webserver/
       dockerfile: Dockerfile
     ports:
-    - "3000:3000"
+      - "3000:3000"
     environment:
-    - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_URL=${DATABASE_URL}
+    networks:
+      carp_network:
+        ipv4_address: 172.20.0.6
 
   # to run stack with backup, please uncomment this
   # currently supports only AWS s3. GCP and Azure TODO
