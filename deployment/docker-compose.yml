@@ -65,7 +65,7 @@ services:
       - -c
       - |
         /app/migration up ;
-        /app/carp ;
+        /app/carp --config-path /app/config/indexer/${CONFIG_FILE:-oura.yml} ;
     depends_on:
       - postgres
       - cardano-node
