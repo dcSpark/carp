@@ -7,15 +7,15 @@ services:
     shm_size: 8gb
     environment:
       - POSTGRES_LOGGING=true
-      - POSTGRES_DB=${POSTGRES_DB:-carp}
+      - POSTGRES_DB=${POSTGRES_DB:-carp_mainnet}
+      - POSTGRES_USER=${PGUSER:?Export PG username}
+      - POSTGRES_PASSWORD=${PGPASSWORD:?Export PG password}
       - PGPASSFILE=/run/secrets/.pgpass
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?Export PG password}
-      - POSTGRES_USER=${POSTGRES_USER:?Export PG username}
     secrets:
       - source: pgpass
         target: .pgpass
     volumes:
-      - ./${NETWORK:-testnet}/postgres-data:/var/lib/postgresql/data
+      - ./${NETWORK:-mainnet}/postgres-data:/var/lib/postgresql/data
 
     logging:
       driver: "json-file"
@@ -31,8 +31,8 @@ services:
     environment:
       - NETWORK=${NETWORK:-testnet}
     volumes:
-      - ./${NETWORK:-testnet}/node-db:/data/db
-      - ./${NETWORK:-testnet}/node-ipc:/ipc
+      - ./${NETWORK:-mainnet}/node-db:/data/db
+      - ./${NETWORK:-mainnet}/node-ipc:/ipc
     logging:
       driver: "json-file"
       options:
@@ -58,7 +58,8 @@ services:
       - source: pgpass
         target: .pgpass
     volumes:
-      - ./${NETWORK:-testnet}/node-ipc:/app/node-ipc:rw
+      - ./${NETWORK:-mainnet}/node-ipc:/app/node-ipc:rw
+      - ./config/indexer/:/app/config/indexer:r
     entrypoint:
       - /bin/bash
       - -c
@@ -80,9 +81,9 @@ services:
       context: ../webserver/
       dockerfile: Dockerfile
     ports:
-    - 3000:3000
+    - "3000:3000"
     environment:
-    - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+    - DATABASE_URL=${DATABASE_URL}
 
   # to run stack with backup, please uncomment this
   # currently supports only AWS s3. GCP and Azure TODO
@@ -92,10 +93,11 @@ services:
   #     dockerfile: Dockerfile
   #   restart: unless-stopped
   #   environment:
-  #   - NETWORK=${NETWORK:-testnet}
+  #   - NETWORK=${NETWORK:-mainnet}
   #   - CARDANO_NODE_SOCKET_PATH=/app/node-ipc/node.socket
-  #   - POSTGRES_DB=${POSTGRES_DB:-carp}
-  #   - POSTGRES_USER=${POSTGRES_USER:?Export PG username}
+  #   - POSTGRES_DB=${POSTGRES_DB:-carp_mainnet}
+  #   - POSTGRES_USER=${PGUSER:?Export PG username}
+  #   - POSTGRES_PASSWORD=${PGPASSWORD:?Export PG password}
   #   - PGPASSFILE=/run/secrets/.pgpass
   #   - S3_BUCKET=${S3_BUCKET:?Please set me}
   #   - S3_FOLDER=${S3_FOLDER:?Recommend as hostname}
@@ -103,7 +105,7 @@ services:
   #   - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:?Please set me}
   #   - CARP_VERSION=${CARP_VERSION}
   #   volumes:
-  #   - ./${NETWORK:-testnet}/node-ipc:/app/node-ipc:rw
+  #   - ./${NETWORK:-mainnet}/node-ipc:/app/node-ipc:rw
   #   secrets:
   #   - source: pgpass
   #     target: .pgpass
@@ -115,4 +117,4 @@ services:
 
 secrets:
   pgpass:
-    file: ./config/secrets/${NETWORK:-testnet}/.pgpass
+    file: ./config/secrets/${NETWORK:-mainnet}/.pgpass

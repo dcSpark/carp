@@ -1,8 +1,10 @@
 source:
   type: cardano_net
-  relay: 
-    - relays-new.cardano-mainnet.iohk.io
+  relay:
+    - cardano-node
     - 3001
+      # - relays-new.cardano-mainnet.iohk.io
+      # - 3001
       # - preview-node.world.dev.cardano.org
       # - 30002
       # - preprod-node.world.dev.cardano.org
@@ -12,10 +14,10 @@ sink:
   type: cardano
   db:
     type: postgres
-    host: localhost
-    port: 5432
+    host: postgres # name of postgres container
+    port: 5432 # internal postgres port
     user: carp
-    password: "1234"
+    password: ""
     db: carp_mainnet
   network: mainnet # preview / preprod / testnet
 

@@ -1,6 +1,5 @@
 source:
   type: oura
-  network: mainnet # preview / preprod / testnet
   socket: "relays-new.cardano-mainnet.iohk.io:3001"
   bearer: tcp # unix
 
@@ -13,6 +12,6 @@ sink:
     user: carp
     password: "1234"
     db: carp_mainnet
-  network: mainnet
+  network: mainnet # preview / preprod / testnet
 
 start_block:
