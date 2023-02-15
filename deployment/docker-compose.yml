@@ -37,7 +37,7 @@ services:
     restart: unless-stopped
     image: inputoutput/cardano-node:1.34.1
     environment:
-      - NETWORK=${NETWORK:-testnet}
+      - NETWORK=${NETWORK:-mainnet}
     volumes:
       - ./${NETWORK:-mainnet}/node-db:/data/db
       - ./${NETWORK:-mainnet}/node-ipc:/ipc
@@ -63,7 +63,7 @@ services:
         - APP=/app
     image: carp:${CARP_VERSION}
     environment:
-      - NETWORK=${NETWORK:-testnet}
+      - NETWORK=${NETWORK:-mainnet}
       - PGPASSFILE=/run/secrets/.pgpass
       - DATABASE_URL=${DATABASE_URL}
       - RUST_BACKTRACE=full
