@@ -19,6 +19,10 @@ use oura::{
 pub struct OuraSource {
     handles: Vec<JoinHandle<()>>,
     input: StageReceiver,
+
+    // cardano-node always triggers a rollback event when you connect to it
+    // if all the intersection points existed, if will return the most recent point you gave it
+    // to avoid this causing a rollback when applying a migration starting from an old block, we skip this rollback
     expected_rollback: Option<PointArg>,
 }
 
