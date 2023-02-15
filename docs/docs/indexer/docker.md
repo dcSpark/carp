@@ -45,7 +45,7 @@ NETWORK=mainnet
 # any custom filename located in deployment/config/indexer folder 
 CONFIG_FILE=cardano_node_docker.yml
 
-CARP_VERSION=2.2.0
+CARP_VERSION=2.2.1
 
 # these credentials are utilized by postgres, carp and carp_web services
 # host should be container name or static ip

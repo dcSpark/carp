@@ -1,6 +1,6 @@
 [package]
 name = "carp"
-version = "2.2.0"
+version = "2.2.1"
 edition = "2021"
 license = "MIT"
 
@@ -9,9 +9,9 @@ strip = true
 
 [dependencies]
 # [core]
-dcspark-core = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "399d5b92cc5aed531d72b7c533b59093df627ae9" }
-dcspark-blockchain-source = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "399d5b92cc5aed531d72b7c533b59093df627ae9" }
-multiverse = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "399d5b92cc5aed531d72b7c533b59093df627ae9" }
+dcspark-core = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "81d14efde2fac3e00ab74c89da15e961ec231c6a" }
+dcspark-blockchain-source = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "81d14efde2fac3e00ab74c89da15e961ec231c6a" }
+multiverse = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "81d14efde2fac3e00ab74c89da15e961ec231c6a" }
 
 # [local]
 entity = { path = "entity" }
