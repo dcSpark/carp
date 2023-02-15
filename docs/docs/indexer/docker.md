@@ -77,6 +77,10 @@ AWS_ACCESS_KEY_ID=<Access key for given s3 bucket with creation permissions>
 AWS_SECRET_ACCESS_KEY=<Secret for given account>
 ```
 
+## `.pgpass` location
+
+`.pgpass` file should be stored in `deployment/config/secrets/<NETWORK>/.pgpass`.
+
 ## Carp configuration
 
 We mentioned config files above, they should be stored in `deployment/config/indexer` folder, and you should set `CONFIG_FILE` env variable with the config name.
@@ -124,3 +128,23 @@ source:
 **Note**: `cardano-node` container has static ip `172.20.0.4` in docker-compose.
 
 **WARNING**: `cardano_net` can't resolve docker names itself, that's why static ip is assigned.
+
+## Troubleshooting
+
+Docker deployment shares with local filesystem in paths:
+```shell
+# cardano-node container
+deployment/<NETWORK>/node-ipc
+deployment/<NETWORK>/node-db
+
+# postgres container
+deployment/<NETWORK>/postgres-data
+
+# carp container
+deployment/<NETWORK>/node-ipc # to read unix socket
+deployment/config/indexer/ # to get config for carp
+```
+
+If at any point you broke the consistency (by running multiple deployments with access to the same folders / running incompatible software versions), you can remove non-config folders from above (but all progress will be **lost**).
+
+Don't hesitate to submit issues to [carp repository](https://github.com/dcSpark/carp/issues) as well.
