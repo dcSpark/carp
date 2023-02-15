@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
 use crate::config::ReadonlyConfig::ReadonlyConfig;
+use crate::dsl::database_task::BlockGlobalInfo;
 use entity::sea_orm::QueryOrder;
 use entity::{
     prelude::*,
@@ -41,7 +42,7 @@ carp_task! {
 
 async fn handle_metadata(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>>,
+    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
     multiera_txs: &[TransactionModel],
     readonly: bool,
 ) -> Result<Vec<TransactionMetadataModel>, DbErr> {

@@ -158,7 +158,7 @@ impl DexType {
 
 pub async fn handle_mean_price(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>>,
+    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
     multiera_txs: &[TransactionModel],
     multiera_addresses: &BTreeMap<Vec<u8>, AddressInBlock>,
     pool_type: DexType,
@@ -260,7 +260,7 @@ pub fn reduce_ada_amount(pair: &AssetPair, amount: u64) -> u64 {
 
 pub async fn handle_swap(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>>,
+    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
     multiera_txs: &[TransactionModel],
     multiera_addresses: &BTreeMap<Vec<u8>, AddressInBlock>,
     multiera_used_inputs_to_outputs_map: &BTreeMap<Vec<u8>, BTreeMap<i64, OutputWithTxData>>,

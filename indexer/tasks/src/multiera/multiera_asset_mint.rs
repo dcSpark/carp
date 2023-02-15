@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use super::utils::common::asset_from_pair;
 use super::{multiera_txs::MultieraTransactionTask, utils::user_asset::AssetName};
 use crate::config::ReadonlyConfig::ReadonlyConfig;
+use crate::dsl::database_task::BlockGlobalInfo;
 use crate::utils::blake2b160;
 use cardano_multiplatform_lib::crypto::ScriptHash;
 use entity::sea_orm::QueryOrder;
@@ -43,7 +44,7 @@ carp_task! {
 
 async fn handle_mints(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>>,
+    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
     multiera_txs: &[TransactionModel],
     readonly: bool,
 ) -> Result<Vec<NativeAssetModel>, DbErr> {

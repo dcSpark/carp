@@ -41,5 +41,5 @@ A) See [pitfalls](./pitfalls)
 
 This project contains two different parts to it:
 
-1. An in [indexer README](./indexer/intro.md) which stores the chain to a Postgres database
+1. An [indexer README](./indexer/intro.md) which stores the chain to a Postgres database
 2. A [webserver README](./webserver/intro.md) which provides a REST API for querying the database (ex: for light wallets)

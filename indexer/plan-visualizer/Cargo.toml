@@ -5,12 +5,15 @@ edition = "2021"
 publish = false
 
 [dependencies]
-anyhow = "1.0.53"
-clap = { version = "3.1", features = ["derive"] }
-tracing-subscriber = "0.3.9"
-tracing = "0.1.31"
+# [local]
 tasks = { path = "../tasks" }
+
+# [plan-visualizer]
+anyhow = { version = "1.0.69" }
+clap = { version = "3.1", features = ["derive"] }
 dot = { git = "https://github.com/dcSpark/dot-rust", branch = "subgraph" }
-strum = "0.24"
-strum_macros = "0.24"
+strum = { version = "0.24" }
+strum_macros = { version = "0.24" }
 toml = { version = "0.5", features = ["preserve_order"] }
+tracing = { version = "0.1.37" }
+tracing-subscriber = { version = "0.3.16" }

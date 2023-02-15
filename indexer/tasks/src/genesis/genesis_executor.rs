@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
-use crate::dsl::database_task::BlockInfo;
 use crate::dsl::database_task::TaskRegistryEntry;
+use crate::dsl::database_task::{BlockGlobalInfo, BlockInfo};
 use crate::execution_plan::ExecutionPlan;
 use crate::utils::find_task_registry_entry;
 use crate::utils::TaskPerfAggregator;
@@ -12,7 +12,7 @@ use tokio::runtime::Handle;
 
 pub async fn process_genesis_block(
     txn: &DatabaseTransaction,
-    block: BlockInfo<'_, GenesisData>,
+    block: BlockInfo<'_, GenesisData, BlockGlobalInfo>,
     exec_plan: &ExecutionPlan,
     perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
 ) -> Result<(), DbErr> {

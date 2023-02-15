@@ -3,6 +3,7 @@ use pallas::ledger::primitives::byron::{self, TxIn};
 
 use super::byron_outputs::ByronOutputTask;
 use crate::config::EmptyConfig::EmptyConfig;
+use crate::dsl::database_task::BlockGlobalInfo;
 
 carp_task! {
   name ByronInputTask;
@@ -28,7 +29,7 @@ carp_task! {
 
 async fn handle_inputs(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>>,
+    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
     byron_txs: &[TransactionModel],
 ) -> Result<Vec<TransactionInputModel>, DbErr> {
     let flattened_inputs: Vec<(Vec<pallas::ledger::traverse::OutputRef>, i64)> = block

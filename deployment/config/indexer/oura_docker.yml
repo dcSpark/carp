@@ -1,0 +1,17 @@
+source:
+  type: oura
+  socket: "/app/node-ipc/node.socket" # or url
+  bearer: Unix # or Tcp
+
+sink:
+  type: cardano
+  db:
+    type: postgres
+    host: postgres # name of postgres container
+    port: 5432 # internal postgres port
+    user: carp
+    password: "1234"
+    db: carp_mainnet
+  network: mainnet # preview / preprod / testnet
+
+start_block:

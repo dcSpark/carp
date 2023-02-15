@@ -21,7 +21,7 @@ pub async fn process_genesis(
     exec_plan: Arc<ExecutionPlan>,
 ) -> anyhow::Result<()> {
     // https://github.com/txpipe/oura/blob/67b01e8739ed2927ced270e08daea74b03bcc7f7/src/sources/common.rs#L91
-    let genesis_path = match network {
+    let genesis_path = match dbg!(network) {
         "mainnet" => GENESIS_MAINNET,
         "testnet" => GENESIS_TESTNET,
         "preview" => GENESIS_PREVIEW,

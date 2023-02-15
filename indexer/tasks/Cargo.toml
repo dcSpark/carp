@@ -7,25 +7,28 @@ edition = "2021"
 name = "tasks"
 
 [dependencies]
-shred = { git = "https://github.com/dcSpark/shred", branch = "builder-getters" }
-nameof = "1.2.2"
-inventory = "0.2.3"
-cardano-multiplatform-lib = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "metadata-and-addr" }
+# [local]
 entity = { path = "../entity" }
-tokio = { version = "1.16.1", features = ["full"] }
-pallas = "0.17.0"
-toml = { version = "0.5", features = ["preserve_order"] }
-hex = "0.4.3"
-cryptoxide = "0.4.2"
-futures = "0.3"
-paste = "1.0"
-cfg-if = "0.1"
+
+# [tasks]
+anyhow = { version = "1.0.69" }
+cardano-multiplatform-lib = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "metadata-and-addr" }
+cfg-if = { version = "0.1.10" }
+cryptoxide = { version = "0.4.2" }
+hex = { version = "0.4.3" }
+inventory = { version = "0.2.3" }
 markdown-gen = { git = "https://github.com/dcSpark/markdown-gen-rs", branch = "hbina-add-ability-to-write-raw-str" }
-urlencoding = "2.1.0"
-serde = { version = "1.0", features = ["derive"] }
-tracing-subscriber = "0.3.9"
-tracing = "0.1.31"
+nameof = { version = "1.2.2" }
+pallas = { version = "0.17.0" }
+paste = { version = "1.0.11" }
 sea-orm = { git = "https://github.com/dcSpark/sea-orm", branch = "insert-many-returning", features = [ "macros" ], default-features = false }
+serde = { version = "1.0.152", features = ["derive"] }
+shred = { git = "https://github.com/dcSpark/shred", branch = "builder-getters" }
+tokio = { version = "1.16.1", features = ["full"] }
+toml = { version = "0.5", features = ["preserve_order"] }
+urlencoding = { version = "2.1.2" }
+tracing-subscriber = { version = "0.3.16" }
+tracing = { version = "0.1.37" }
 
 [features]
 default = ["build_rust_task"]

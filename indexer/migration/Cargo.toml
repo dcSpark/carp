@@ -9,7 +9,10 @@ name = "migration"
 path = "src/lib.rs"
 
 [dependencies]
+# [local]
 entity = { path = "../entity" }
+
+# [migration]
 sea-schema = { git = "https://github.com/dcSpark/sea-schema", branch = "bump-sea-x", default-features = false, features = [
     "migration",
     "debug-print",

@@ -4,6 +4,7 @@ use pallas::ledger::primitives::{byron, Fragment};
 
 use super::byron_block::ByronBlockTask;
 use crate::config::ReadonlyConfig::ReadonlyConfig;
+use crate::dsl::database_task::BlockGlobalInfo;
 
 carp_task! {
   name ByronTransactionTask;
@@ -29,7 +30,7 @@ carp_task! {
 
 async fn handle_tx(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>>,
+    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
     database_block: &BlockModel,
     readonly: bool,
 ) -> Result<Vec<TransactionModel>, DbErr> {

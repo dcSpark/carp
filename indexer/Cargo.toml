@@ -8,22 +8,29 @@ license = "MIT"
 strip = true
 
 [dependencies]
-anyhow = "1.0.53"
-serde = "1.0.136"
-tokio = { version = "1.16.1", features = ["full"] }
+# [core]
+dcspark-core = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "399d5b92cc5aed531d72b7c533b59093df627ae9" }
+dcspark-blockchain-source = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "399d5b92cc5aed531d72b7c533b59093df627ae9" }
+multiverse = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "399d5b92cc5aed531d72b7c533b59093df627ae9" }
+
+# [local]
 entity = { path = "entity" }
 migration = { path = "migration" }
 tasks = { path = "tasks" }
-hex = "0.4.3"
-tracing-subscriber = "0.3.9"
-tracing = "0.1.31"
-dotenv = "0.15.0"
-serde_json = "1.0.79"
-base64 = "0.13.0"
-bs58 = "0.4.0"
-oura = { git = "https://github.com/txpipe/oura.git", rev = "05e4d987670dea29a2d34ead3d57245ed7bcb205" }
-clap = { version = "3.1", features = ["derive"] }
+
+# [indexer]
+anyhow = { version = "1.0.69" }
+async-trait = { version = "0.1.64" }
+base64 = { version = "0.21.0" }
 cardano-multiplatform-lib = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "metadata-and-addr" }
-num-integer = "0.1.45"
-pallas = "0.17.0"
-cryptoxide = "0.4.2"
+clap = { version = "3.1", features = ["derive"] }
+ctrlc = {version = "3.2.4", features = ["termination"] }
+hex = { version = "0.4.3" }
+oura = { version = "1.8.0" }
+pallas = {version = "0.17.0" }
+serde = { version = "1.0.152", features = ["derive", "rc"] }
+serde_json = { version = "1.0.92" }
+serde_yaml = { version = "0.9.17" }
+tokio = { version = "1.25.0", features = ["full"] }
+tracing = { version = "0.1.37" }
+tracing-subscriber = { version = "0.3.16" }

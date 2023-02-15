@@ -23,7 +23,7 @@ Note: these ranges are inclusive. Ex: `epoch 200` means you rollback TO era 200,
 
 # Non-destructive migrations
 
-Given that resyncing Carp takes a while, you may want to migrate your database in a non-destructive way. Here are the steps you'll need to follow to do this:
+Given that resync of Carp takes a while, you may want to migrate your database in a non-destructive way. Here are the steps you'll need to follow to do this:
 
 1. If you're making a change to the database schema, create a new database migration in the `indexer/migration` project. You can run migrations with the commands below:
 
@@ -33,4 +33,6 @@ Reminder: you can add the `-v` parameter to see the SQL queries run by these com
 - `cargo migrate down`
 - `cargo migrate help`
 
-2. Create a new execution plan using `readonly = true` versions of tasks. Tasks that support this option will read existing data from storage instead of writing to the database so you can chain multiple readonly tasks to build up towards that new task you are adding that will write the data you need to the database.
+Keep in mind that for successful migration you need to run `set -a; . ./.env; set +a` from root folder of repo to set appropriate env variables (migration relies on them, on `DATABASE_URL` in particular).
+
+2. Create a new execution plan using `readonly = true` versions of tasks. Tasks that support this option will read existing data from storage instead of writing to the database, so you can chain multiple readonly tasks to build up towards that new task you are adding that will write the data you need to the database.
