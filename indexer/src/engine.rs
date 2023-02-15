@@ -6,6 +6,7 @@ use dcspark_blockchain_source::{GetNextFrom, PullFrom, Source};
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering::SeqCst;
 use std::sync::Arc;
+use std::time::Duration;
 
 pub struct FetchEngine<
     FromType: PullFrom + Clone,
@@ -49,6 +50,7 @@ impl<
             let event = if let Some(event) = event {
                 event
             } else {
+                tokio::time::sleep(Duration::from_millis(200)).await;
                 continue;
             };
             perf_aggregator.block_fetch += event_fetch_start.elapsed();

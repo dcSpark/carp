@@ -1,5 +1,3 @@
-extern crate core;
-
 use crate::sink::Sink;
 use crate::sinks::CardanoSink;
 use crate::sources::{CardanoSource, OuraSource};
@@ -90,7 +88,7 @@ async fn main() -> anyhow::Result<()> {
         .with_target("sqlx", tracing::Level::WARN)
         .with_target("oura", tracing::Level::WARN)
         .with_target("sled", tracing::Level::INFO)
-        .with_target("carp", tracing::Level::TRACE)
+        .with_target("carp", tracing::Level::INFO)
         .with_target("cardano-net", tracing::Level::INFO)
         .with_target("cardano-sdk", tracing::Level::INFO)
         .with_target("dcspark-blockchain-source", tracing::Level::INFO)

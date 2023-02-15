@@ -19,10 +19,7 @@ impl PerfAggregator {
     }
 
     pub fn reset(&mut self) {
-        self.block_parse = Duration::new(0, 0);
-        self.block_fetch = Duration::new(0, 0);
-        self.rollback = Duration::new(0, 0);
-        self.overhead = Duration::new(0, 0);
+        *self = Self::new();
     }
 
     pub fn set_overhead(&mut self, total_duration: &Duration, tasks: &Duration) {
