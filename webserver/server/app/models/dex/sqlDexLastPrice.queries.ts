@@ -19,9 +19,17 @@ export interface ISqlDexLastPriceResult {
   amount2: string;
   asset_name1: Buffer | null;
   asset_name2: Buffer | null;
+  asset1_id: string | null;
+  asset2_id: string | null;
+  block_hash: Buffer;
   dex: string;
+  epoch: number;
+  height: number;
+  id: string;
   policy_id1: Buffer | null;
   policy_id2: Buffer | null;
+  slot: number;
+  tx_id: string;
 }
 
 /** 'SqlDexLastPrice' query type */
@@ -30,57 +38,74 @@ export interface ISqlDexLastPriceQuery {
   result: ISqlDexLastPriceResult;
 }
 
-const sqlDexLastPriceIR: any = {"usedParamSet":{"policy_id1":true,"asset_name1":true,"policy_id2":true,"asset_name2":true,"operation1":true,"operation2":true},"params":[{"name":"policy_id1","required":false,"transform":{"type":"scalar"},"locs":[{"a":370,"b":380}]},{"name":"asset_name1","required":false,"transform":{"type":"scalar"},"locs":[{"a":400,"b":411}]},{"name":"policy_id2","required":false,"transform":{"type":"scalar"},"locs":[{"a":431,"b":441}]},{"name":"asset_name2","required":false,"transform":{"type":"scalar"},"locs":[{"a":461,"b":472}]},{"name":"operation1","required":false,"transform":{"type":"scalar"},"locs":[{"a":1248,"b":1258}]},{"name":"operation2","required":false,"transform":{"type":"scalar"},"locs":[{"a":1615,"b":1625}]}],"statement":"WITH \"AssetPairs\" AS (\n  SELECT policy_id1, asset_name1, policy_id2, asset_name2\n  FROM\n    unnest(\n                                                                                                                                                                                                                                                                      \n      (:policy_id1)::bytea[],\n      (:asset_name1)::bytea[],\n      (:policy_id2)::bytea[],\n      (:asset_name2)::bytea[]\n    ) x(policy_id1, asset_name1, policy_id2, asset_name2)\n)\nSELECT\n  DISTINCT ON(\"Dex\".dex)\n\n  \"Asset1\".policy_id AS \"policy_id1?\",\n  \"Asset1\".asset_name AS \"asset_name1?\",\n  \"Asset2\".policy_id AS \"policy_id2?\",\n  \"Asset2\".asset_name AS \"asset_name2?\",\n  \"Dex\".amount1,\n  \"Dex\".amount2,\n  \"Dex\".dex\nFROM \"Dex\"\nLEFT JOIN \"NativeAsset\" as \"Asset1\" ON \"Asset1\".id = \"Dex\".asset1_id\nLEFT JOIN \"NativeAsset\" as \"Asset2\" ON \"Asset2\".id = \"Dex\".asset2_id\nWHERE\n  (\n    (\n      COALESCE(\"Asset1\".policy_id, ''::bytea),\n      COALESCE(\"Asset1\".asset_name, ''::bytea),\n      COALESCE(\"Asset2\".policy_id, ''::bytea),\n      COALESCE(\"Asset2\".asset_name, ''::bytea)\n    ) IN (SELECT policy_id1, asset_name1, policy_id2, asset_name2 FROM \"AssetPairs\")\n    AND \"Dex\".operation = :operation1\n  )\n  -- Add swap for another direction\n  OR\n  (\n    (\n      COALESCE(\"Asset2\".policy_id, ''::bytea),\n      COALESCE(\"Asset2\".asset_name, ''::bytea),\n      COALESCE(\"Asset1\".policy_id, ''::bytea),\n      COALESCE(\"Asset1\".asset_name, ''::bytea)\n    ) IN (SELECT policy_id1, asset_name1, policy_id2, asset_name2 FROM \"AssetPairs\")\n    AND \"Dex\".operation = :operation2\n  )\nORDER BY \"Dex\".dex, \"Dex\".tx_id DESC, \"Dex\".id DESC"};
+const sqlDexLastPriceIR: any = {"usedParamSet":{"policy_id1":true,"asset_name1":true,"policy_id2":true,"asset_name2":true,"operation1":true,"operation2":true},"params":[{"name":"policy_id1","required":false,"transform":{"type":"scalar"},"locs":[{"a":408,"b":418}]},{"name":"asset_name1","required":false,"transform":{"type":"scalar"},"locs":[{"a":442,"b":453}]},{"name":"policy_id2","required":false,"transform":{"type":"scalar"},"locs":[{"a":477,"b":487}]},{"name":"asset_name2","required":false,"transform":{"type":"scalar"},"locs":[{"a":511,"b":522}]},{"name":"operation1","required":false,"transform":{"type":"scalar"},"locs":[{"a":1708,"b":1718}]},{"name":"operation2","required":false,"transform":{"type":"scalar"},"locs":[{"a":2031,"b":2041}]}],"statement":"WITH\n  \"AssetPairs\" AS (\n      SELECT policy_id1, asset_name1, policy_id2, asset_name2\n      FROM\n        unnest(\n                                                                                                                                                                                                                                                                                          \n          (:policy_id1)::bytea[],\n          (:asset_name1)::bytea[],\n          (:policy_id2)::bytea[],\n          (:asset_name2)::bytea[]\n        ) x(policy_id1, asset_name1, policy_id2, asset_name2)\n  ),\n  \"AssetIdPairs\" AS (\n        SELECT \"AssetPairs\".*, \"Asset1\".id as \"asset1_id\", \"Asset2\".id as \"asset2_id\"\n        FROM \"AssetPairs\"\n        LEFT JOIN \"NativeAsset\" as \"Asset1\" ON \"Asset1\".policy_id = \"AssetPairs\".policy_id1 AND \"Asset1\".asset_name = \"AssetPairs\".asset_name1\n        LEFT JOIN \"NativeAsset\" as \"Asset2\" ON \"Asset2\".policy_id = \"AssetPairs\".policy_id2 AND \"Asset2\".asset_name = \"AssetPairs\".asset_name2\n  ),\n  \"DexWithAssets\" AS (\n        SELECT\n        \"Asset1\".policy_id1 AS \"policy_id1?\",\n        \"Asset1\".asset_name1 AS \"asset_name1?\",\n        \"Asset2\".policy_id2 AS \"policy_id2?\",\n        \"Asset2\".asset_name2 AS \"asset_name2?\",\n        \"Dex\".asset1_id,\n        \"Dex\".asset2_id,\n        \"Dex\".amount1,\n        \"Dex\".amount2,\n        \"Dex\".dex,\n        \"Dex\".id,\n        \"Dex\".tx_id\n        FROM \"Dex\"\n        INNER JOIN \"AssetIdPairs\" as \"Asset1\"\n        ON\n              COALESCE(\"Dex\".asset1_id, -1) = COALESCE(\"Asset1\".asset1_id, -1) \n              AND\n              COALESCE(\"Dex\".asset2_id, -1) = COALESCE(\"Asset1\".asset2_id, -1)\n              AND\n              \"Dex\".operation = :operation1\n        -- Add swap for another direction\n        INNER JOIN \"AssetIdPairs\" as \"Asset2\"\n        ON\n              COALESCE(\"Dex\".asset2_id, -1) = COALESCE(\"Asset2\".asset2_id, -1)\n              AND\n              COALESCE(\"Dex\".asset1_id, -1) = COALESCE(\"Asset2\".asset1_id, -1)\n              AND \"Dex\".operation = :operation2\n  )\nSELECT\n      a.*,\n      \"Block\".hash as \"block_hash\",\n      \"Block\".height,\n      \"Block\".epoch,\n      \"Block\".slot\nFROM \"DexWithAssets\" a\nINNER JOIN (\n      SELECT\n      \"DexWithAssets\".dex, \"DexWithAssets\".asset1_id, \"DexWithAssets\".asset2_id,\n      MAX(\"DexWithAssets\".id) as \"id\"\n      FROM \"DexWithAssets\"\n      GROUP BY \"DexWithAssets\".dex, \"DexWithAssets\".asset1_id, \"DexWithAssets\".asset2_id\n) b ON a.id = b.id\nLEFT JOIN \"Transaction\" ON \"Transaction\".id = a.tx_id\nLEFT JOIN \"Block\" ON \"Block\".id = \"Transaction\".block_id"};
 
 /**
  * Query generated from SQL:
  * ```
- * WITH "AssetPairs" AS (
- *   SELECT policy_id1, asset_name1, policy_id2, asset_name2
- *   FROM
- *     unnest(
- *                                                                                                                                                                                                                                                                       
- *       (:policy_id1)::bytea[],
- *       (:asset_name1)::bytea[],
- *       (:policy_id2)::bytea[],
- *       (:asset_name2)::bytea[]
- *     ) x(policy_id1, asset_name1, policy_id2, asset_name2)
- * )
+ * WITH
+ *   "AssetPairs" AS (
+ *       SELECT policy_id1, asset_name1, policy_id2, asset_name2
+ *       FROM
+ *         unnest(
+ *                                                                                                                                                                                                                                                                                           
+ *           (:policy_id1)::bytea[],
+ *           (:asset_name1)::bytea[],
+ *           (:policy_id2)::bytea[],
+ *           (:asset_name2)::bytea[]
+ *         ) x(policy_id1, asset_name1, policy_id2, asset_name2)
+ *   ),
+ *   "AssetIdPairs" AS (
+ *         SELECT "AssetPairs".*, "Asset1".id as "asset1_id", "Asset2".id as "asset2_id"
+ *         FROM "AssetPairs"
+ *         LEFT JOIN "NativeAsset" as "Asset1" ON "Asset1".policy_id = "AssetPairs".policy_id1 AND "Asset1".asset_name = "AssetPairs".asset_name1
+ *         LEFT JOIN "NativeAsset" as "Asset2" ON "Asset2".policy_id = "AssetPairs".policy_id2 AND "Asset2".asset_name = "AssetPairs".asset_name2
+ *   ),
+ *   "DexWithAssets" AS (
+ *         SELECT
+ *         "Asset1".policy_id1 AS "policy_id1?",
+ *         "Asset1".asset_name1 AS "asset_name1?",
+ *         "Asset2".policy_id2 AS "policy_id2?",
+ *         "Asset2".asset_name2 AS "asset_name2?",
+ *         "Dex".asset1_id,
+ *         "Dex".asset2_id,
+ *         "Dex".amount1,
+ *         "Dex".amount2,
+ *         "Dex".dex,
+ *         "Dex".id,
+ *         "Dex".tx_id
+ *         FROM "Dex"
+ *         INNER JOIN "AssetIdPairs" as "Asset1"
+ *         ON
+ *               COALESCE("Dex".asset1_id, -1) = COALESCE("Asset1".asset1_id, -1) 
+ *               AND
+ *               COALESCE("Dex".asset2_id, -1) = COALESCE("Asset1".asset2_id, -1)
+ *               AND
+ *               "Dex".operation = :operation1
+ *         -- Add swap for another direction
+ *         INNER JOIN "AssetIdPairs" as "Asset2"
+ *         ON
+ *               COALESCE("Dex".asset2_id, -1) = COALESCE("Asset2".asset2_id, -1)
+ *               AND
+ *               COALESCE("Dex".asset1_id, -1) = COALESCE("Asset2".asset1_id, -1)
+ *               AND "Dex".operation = :operation2
+ *   )
  * SELECT
- *   DISTINCT ON("Dex".dex)
- * 
- *   "Asset1".policy_id AS "policy_id1?",
- *   "Asset1".asset_name AS "asset_name1?",
- *   "Asset2".policy_id AS "policy_id2?",
- *   "Asset2".asset_name AS "asset_name2?",
- *   "Dex".amount1,
- *   "Dex".amount2,
- *   "Dex".dex
- * FROM "Dex"
- * LEFT JOIN "NativeAsset" as "Asset1" ON "Asset1".id = "Dex".asset1_id
- * LEFT JOIN "NativeAsset" as "Asset2" ON "Asset2".id = "Dex".asset2_id
- * WHERE
- *   (
- *     (
- *       COALESCE("Asset1".policy_id, ''::bytea),
- *       COALESCE("Asset1".asset_name, ''::bytea),
- *       COALESCE("Asset2".policy_id, ''::bytea),
- *       COALESCE("Asset2".asset_name, ''::bytea)
- *     ) IN (SELECT policy_id1, asset_name1, policy_id2, asset_name2 FROM "AssetPairs")
- *     AND "Dex".operation = :operation1
- *   )
- *   -- Add swap for another direction
- *   OR
- *   (
- *     (
- *       COALESCE("Asset2".policy_id, ''::bytea),
- *       COALESCE("Asset2".asset_name, ''::bytea),
- *       COALESCE("Asset1".policy_id, ''::bytea),
- *       COALESCE("Asset1".asset_name, ''::bytea)
- *     ) IN (SELECT policy_id1, asset_name1, policy_id2, asset_name2 FROM "AssetPairs")
- *     AND "Dex".operation = :operation2
- *   )
- * ORDER BY "Dex".dex, "Dex".tx_id DESC, "Dex".id DESC
+ *       a.*,
+ *       "Block".hash as "block_hash",
+ *       "Block".height,
+ *       "Block".epoch,
+ *       "Block".slot
+ * FROM "DexWithAssets" a
+ * INNER JOIN (
+ *       SELECT
+ *       "DexWithAssets".dex, "DexWithAssets".asset1_id, "DexWithAssets".asset2_id,
+ *       MAX("DexWithAssets".id) as "id"
+ *       FROM "DexWithAssets"
+ *       GROUP BY "DexWithAssets".dex, "DexWithAssets".asset1_id, "DexWithAssets".asset2_id
+ * ) b ON a.id = b.id
+ * LEFT JOIN "Transaction" ON "Transaction".id = a.tx_id
+ * LEFT JOIN "Block" ON "Block".id = "Transaction".block_id
  * ```
  */
 export const sqlDexLastPrice = new PreparedQuery<ISqlDexLastPriceParams,ISqlDexLastPriceResult>(sqlDexLastPriceIR);
