@@ -33,20 +33,14 @@ pub struct Cli {
 
     /// path to config file
     #[clap(long, value_parser)]
-    config_path: PathBuf,
+    config_path: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
 pub enum DbConfig {
-    Postgres {
-        host: String,
-        port: u64,
-        user: String,
-        password: String,
-        db: String,
-    },
+    Postgres { database_url: String },
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -114,19 +108,31 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("Execution plan {}", plan);
     let exec_plan = Arc::new(ExecutionPlan::load_from_file(&plan)?);
 
-    tracing::info!("Config file {:?}", config_path);
-    let file = File::open(&config_path).with_context(|| {
-        format!(
-            "Cannot open config file {path}",
-            path = config_path.display()
-        )
-    })?;
-    let config: Config = serde_yaml::from_reader(file).with_context(|| {
-        format!(
-            "Cannot parse config file {path}",
-            path = config_path.display()
-        )
-    })?;
+    let config = if let Some(config_path) = config_path {
+        tracing::info!("Config file {:?}", config_path);
+        let file = File::open(&config_path).with_context(|| {
+            format!(
+                "Cannot open config file {path}",
+                path = config_path.display()
+            )
+        })?;
+        let config: Config = serde_yaml::from_reader(file).with_context(|| {
+            format!(
+                "Cannot parse config file {path}",
+                path = config_path.display()
+            )
+        })?;
+        config
+    } else {
+        dotenv::dotenv().ok();
+
+        let carp_config = std::env::var("CARP_CONFIG")
+            .expect("env CARP_CONFIG not found and --config-path not specified");
+        let config: Config = serde_json::from_str(&carp_config)
+            .with_context(|| format!("Cannot parse config string {carp_config}"))?;
+
+        config
+    };
 
     let (network, mut sink) = match config.sink {
         SinkConfig::Cardano { ref network, .. } => (

@@ -8,7 +8,9 @@ To run carp you need to configure carp itself, set up / configure cardano-node (
 
 ## Configuration & concepts
 
-Carp itself uses special file for configuration, the examples are stored [there](https://github.com/dcSpark/carp/blob/main/indexer/configs/). Let's dive into configuration a little further:
+Carp itself uses special file for configuration, the examples are stored [there](https://github.com/dcSpark/carp/blob/main/indexer/configs/). Besides, carp's config can be set up through `CARP_CONFIG` env variable in json format. Let's dive into configuration a little further:
+
+File format:
 ```yaml
 source:
   type: oura
@@ -19,14 +21,15 @@ sink:
   type: cardano
   db:
     type: postgres
-    host: localhost
-    port: 5432
-    user: carp
-    password: "1234"
-    db: carp_mainnet
+    database_url: postgresql://carp:1234@localhost:5432/carp_mainnet
   network: mainnet # preview / preprod / testnet
 
 start_block:
+```
+
+Json format:
+```json
+{"source":{"type":"oura","socket":"relays-new.cardano-mainnet.iohk.io:3001","bearer":"Tcp"},"sink":{"type":"cardano","db":{"type": "postgres","database_url":"postgresql://carp:1234@localhost:5432/carp_mainnet"},"network":"mainnet"},"start_block":null}
 ```
 
 As you might see there are several key sections: source and sink. For sink there's only one option at the moment: `cardano` sink. For source there are two options with different configurations: `oura` and `cardano_net`.

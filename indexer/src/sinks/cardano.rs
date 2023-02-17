@@ -42,15 +42,8 @@ impl CardanoSink {
             _ => todo!("Invalid sink config provided"),
         };
         match db_config {
-            DbConfig::Postgres {
-                host,
-                port,
-                user,
-                password,
-                db,
-            } => {
-                let url = format!("postgresql://{user}:{password}@{host}:{port}/{db}");
-                let conn = Database::connect(&url).await?;
+            DbConfig::Postgres { database_url } => {
+                let conn = Database::connect(&database_url).await?;
 
                 Ok(Self {
                     db: conn,

@@ -43,6 +43,7 @@ NETWORK=mainnet
 
 # can be cardano_node_docker.yml or oura_docker.yml or 
 # any custom filename located in deployment/config/indexer folder 
+# alternative to CARP_CONFIG env variable
 CONFIG_FILE=cardano_node_docker.yml
 
 CARP_VERSION=2.2.1
@@ -65,7 +66,7 @@ DATABASE_URL=postgresql://${PGUSER}:${PGPASSWORD}@${POSTGRES_HOST}:${POSTGRES_PO
 PGURI=$DATABASE_URL
 ```
 
-Please set `NETWORK`, `CONFIG_FILE` and postgres variables carefully. `CONFIG_FILE` should be located in `deployment/config/indexer` folder.
+Please set `NETWORK`, `CONFIG_FILE` and postgres variables carefully. `CONFIG_FILE` should be located in `deployment/config/indexer` folder. You can use `CARP_CONFIG` env variable instead of `CONFIG_FILE` if you want to use just env variables for configuration.
 
 You can also add non-mandatory variables that are useful for backuper:
 
@@ -83,7 +84,7 @@ AWS_SECRET_ACCESS_KEY=<Secret for given account>
 
 ## Carp configuration
 
-We mentioned config files above, they should be stored in `deployment/config/indexer` folder, and you should set `CONFIG_FILE` env variable with the config name.
+We mentioned config files above, they should be stored in `deployment/config/indexer` folder, and you should set `CONFIG_FILE` env variable with the config name. Alternatively you can set `CARP_CONFIG` env variable and not use the configuration file
 
 The difference from non-docker configuration is in the networking mainly.
 

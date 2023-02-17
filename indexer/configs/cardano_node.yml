@@ -12,11 +12,7 @@ sink:
   type: cardano
   db:
     type: postgres
-    host: localhost
-    port: 5432
-    user: carp
-    password: "1234"
-    db: carp_mainnet
+    database_url: postgresql://carp:1234@localhost:5432/carp_mainnet
   network: mainnet # preview / preprod / testnet
 
 start_block:
