@@ -133,12 +133,6 @@ impl dcspark_blockchain_source::Source for OuraSource {
 #[async_trait::async_trait]
 impl StoppableService for OuraSource {
     async fn stop(self) -> anyhow::Result<()> {
-        for handle in self.handles {
-            if let Err(err) = handle.join() {
-                tracing::error!("Error during oura shutdown: {:?}", err);
-            }
-        }
-
         Ok(())
     }
 }
