@@ -521,6 +521,7 @@ dependencies = [
  "ctrlc",
  "dcspark-blockchain-source",
  "dcspark-core",
+ "dotenv",
  "entity",
  "hex",
  "migration",

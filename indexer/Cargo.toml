@@ -24,10 +24,11 @@ async-trait = { version = "0.1.64" }
 base64 = { version = "0.21.0" }
 cardano-multiplatform-lib = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "metadata-and-addr" }
 clap = { version = "3.1", features = ["derive"] }
-ctrlc = {version = "3.2.4", features = ["termination"] }
+ctrlc = { version = "3.2.4", features = ["termination"] }
+dotenv = { version = "0.15.0" }
 hex = { version = "0.4.3" }
 oura = { version = "1.8.0" }
-pallas = {version = "0.17.0" }
+pallas = { version = "0.17.0" }
 serde = { version = "1.0.152", features = ["derive", "rc"] }
 serde_json = { version = "1.0.92" }
 serde_yaml = { version = "0.9.17" }
