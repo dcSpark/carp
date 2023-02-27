@@ -10,7 +10,7 @@ use std::time::Duration;
 
 pub struct FetchEngine<
     FromType: PullFrom + Clone,
-    EventType,
+    EventType: std::fmt::Debug,
     SourceType: Source<From = FromType, Event = EventType> + StoppableService + Send,
     SinkType: Sink<From = FromType, Event = EventType> + StoppableService + Send,
 > {
@@ -21,7 +21,7 @@ pub struct FetchEngine<
 
 impl<
         FromType: PullFrom + Clone,
-        EventType: GetNextFrom<From = FromType>,
+        EventType: std::fmt::Debug + GetNextFrom<From = FromType>,
         SourceType: Source<From = FromType, Event = EventType> + StoppableService + Send,
         SinkType: Sink<From = FromType, Event = EventType> + StoppableService + Send,
     > FetchEngine<FromType, EventType, SourceType, SinkType>
@@ -54,7 +54,6 @@ impl<
                 continue;
             };
             perf_aggregator.block_fetch += event_fetch_start.elapsed();
-
             let new_from = event.next_from().unwrap_or(pull_from);
             self.sink.process(event, &mut perf_aggregator).await?;
             pull_from = new_from;
@@ -67,7 +66,7 @@ impl<
 #[async_trait]
 impl<
         FromType: PullFrom + Clone,
-        EventType: GetNextFrom<From = FromType>,
+        EventType: std::fmt::Debug + GetNextFrom<From = FromType>,
         SourceType: Source<From = FromType, Event = EventType> + StoppableService + Send,
         SinkType: Sink<From = FromType, Event = EventType> + StoppableService + Send,
     > StoppableService for FetchEngine<FromType, EventType, SourceType, SinkType>

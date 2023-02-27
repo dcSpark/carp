@@ -2,6 +2,7 @@ use dcspark_blockchain_source::cardano::Point;
 use dcspark_blockchain_source::{EventObject, GetNextFrom};
 use dcspark_core::{BlockId, SlotNumber};
 
+#[derive(Debug)]
 pub enum CardanoEventType {
     RollBack {
         block_slot: u64,
