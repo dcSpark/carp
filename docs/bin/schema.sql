@@ -82,7 +82,8 @@ CREATE TABLE public."Block" (
     hash bytea NOT NULL,
     height integer NOT NULL,
     epoch integer NOT NULL,
-    slot integer NOT NULL
+    slot integer NOT NULL,
+    payload bytea NOT NULL
 );
 
 
