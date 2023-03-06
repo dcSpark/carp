@@ -13,7 +13,7 @@ pub struct BlockGlobalInfo {
 }
 
 pub type BlockInfo<'a, BlockType, BlockExtraType> = (
-    &'a str, // cbor. Empty for genesis
+    &'a str, // hex-encoded cbor. Empty for genesis
     &'a BlockType,
     &'a BlockExtraType,
 );
