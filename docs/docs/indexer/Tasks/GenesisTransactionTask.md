@@ -7,7 +7,9 @@ Parses Genesis transactions \(avvm & non\-avvm balances from genesis\)
 
 ```rust
 #[derive(Debug, Clone, Copy, serde::Deserialize, serde::Serialize)]
-pub struct EmptyConfig {}
+pub struct PayloadConfig {
+    pub include_payload: bool,
+}
 
 ```
 </details>

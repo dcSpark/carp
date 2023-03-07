@@ -1,11 +1,11 @@
-use crate::config::EmptyConfig::EmptyConfig;
+use crate::config::PayloadConfig::PayloadConfig;
 use crate::dsl::task_macro::*;
 use entity::{block::EraValue, sea_orm::Set};
 use hex::ToHex;
 
 carp_task! {
   name GenesisBlockTask;
-  configuration EmptyConfig;
+  configuration PayloadConfig;
   doc "Adds the block to the database";
   era genesis;
   dependencies [];
@@ -17,6 +17,7 @@ carp_task! {
   execute |previous_data, task| handle_block(
       task.db_tx,
       task.block,
+      task.config.include_payload
   );
   merge_result |previous_data, result| {
     *previous_data.genesis_block = Some(result);
@@ -26,9 +27,15 @@ carp_task! {
 async fn handle_block(
     db_tx: &DatabaseTransaction,
     block: BlockInfo<'_, GenesisData, BlockGlobalInfo>,
+    include_payload: bool,
 ) -> Result<BlockModel, DbErr> {
     let genesis_hash = block.1.genesis_prev.to_bytes();
 
+    let block_payload = if include_payload {
+        hex::decode(block.0).unwrap()
+    } else {
+        vec![]
+    };
     let block = BlockActiveModel {
         era: Set(EraValue::Byron.into()),
         hash: Set(genesis_hash),
@@ -37,6 +44,7 @@ async fn handle_block(
         height: Set(0),
         epoch: Set(0),
         slot: Set(0),
+        payload: Set(block_payload),
         ..Default::default()
     };
 

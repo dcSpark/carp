@@ -3,12 +3,12 @@ use entity::sea_orm::Set;
 use pallas::ledger::primitives::{byron, Fragment};
 
 use super::byron_block::ByronBlockTask;
-use crate::config::ReadonlyConfig::ReadonlyConfig;
+use crate::config::PayloadAndReadonlyConfig::PayloadAndReadonlyConfig;
 use crate::dsl::database_task::BlockGlobalInfo;
 
 carp_task! {
   name ByronTransactionTask;
-  configuration ReadonlyConfig;
+  configuration PayloadAndReadonlyConfig;
   doc "Adds the transactions in the block to the database";
   era byron;
   dependencies [ByronBlockTask];
@@ -21,7 +21,8 @@ carp_task! {
       task.db_tx,
       task.block,
       &previous_data.byron_block.as_ref().unwrap(),
-      task.config.readonly
+      task.config.readonly,
+      task.config.include_payload
   );
   merge_result |previous_data, result| {
     *previous_data.byron_txs = result;
@@ -33,6 +34,7 @@ async fn handle_tx(
     block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
     database_block: &BlockModel,
     readonly: bool,
+    include_payload: bool,
 ) -> Result<Vec<TransactionModel>, DbErr> {
     if block.1.is_empty() {
         return Ok(vec![]);
@@ -51,7 +53,7 @@ async fn handle_tx(
 
     let transaction_inserts =
         Transaction::insert_many(block.1.txs().iter().enumerate().map(|(idx, tx)| {
-            let tx_payload = tx.encode();
+            let tx_payload = if include_payload { tx.encode() } else { vec![] };
 
             TransactionActiveModel {
                 hash: Set(tx.hash().to_vec()),

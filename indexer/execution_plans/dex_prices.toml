@@ -9,14 +9,18 @@
 # Some tasks may allow extra parameters that you can specify in this file
 
 [GenesisBlockTask]
+include_payload=false
 
 [GenesisTransactionTask]
+include_payload=false
 
 [ByronBlockTask]
 readonly=false
+include_payload=false
 
 [ByronTransactionTask]
 readonly=false
+include_payload=false
 
 [ByronAddressTask]
 
@@ -26,8 +30,10 @@ readonly=false
 
 [MultieraBlockTask]
 readonly=false
+include_payload=false
 
 [MultieraTransactionTask]
+include_payload=false
 readonly=false
 
 [MultieraAddressTask]

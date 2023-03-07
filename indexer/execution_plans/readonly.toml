@@ -1,12 +1,16 @@
 [GenesisBlockTask]
+include_payload=false
 
 [GenesisTransactionTask]
+include_payload=false
 
 [ByronBlockTask]
 readonly=false
+include_payload=false
 
 [ByronTransactionTask]
 readonly=false
+include_payload=false
 
 [ByronAddressTask]
 
@@ -16,9 +20,11 @@ readonly=false
 
 [MultieraBlockTask]
 readonly=true
+include_payload=false
 
 [MultieraTransactionTask]
 readonly=true
+include_payload=false
 
 [MultieraMetadataTask]
 readonly=false

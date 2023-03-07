@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
 use super::multiera_block::MultieraBlockTask;
-use crate::config::ReadonlyConfig::ReadonlyConfig;
+use crate::config::PayloadAndReadonlyConfig::PayloadAndReadonlyConfig;
 use crate::dsl::database_task::BlockGlobalInfo;
 use crate::dsl::task_macro::*;
 use crate::era_common::transactions_from_hashes;
@@ -12,7 +12,7 @@ use pallas::ledger::traverse::MultiEraBlock;
 
 carp_task! {
   name MultieraTransactionTask;
-  configuration ReadonlyConfig;
+  configuration PayloadAndReadonlyConfig;
   doc "Adds the transactions in the block to the database";
   era multiera;
   dependencies [MultieraBlockTask];
@@ -25,7 +25,8 @@ carp_task! {
       task.db_tx,
       task.block,
       &previous_data.multiera_block.as_ref().unwrap(),
-      task.config.readonly
+      task.config.readonly,
+      task.config.include_payload
   );
   merge_result |previous_data, result| {
     *previous_data.multiera_txs = result;
@@ -37,6 +38,7 @@ async fn handle_tx(
     block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
     database_block: &BlockModel,
     readonly: bool,
+    include_payload: bool,
 ) -> Result<Vec<TransactionModel>, DbErr> {
     if readonly {
         let txs = transactions_from_hashes(
@@ -58,13 +60,16 @@ async fn handle_tx(
         .txs()
         .iter()
         .enumerate()
-        .map(|(idx, tx)| TransactionActiveModel {
-            hash: Set(tx.hash().to_vec()),
-            block_id: Set(database_block.id),
-            tx_index: Set(idx as i32),
-            payload: Set(tx.encode()),
-            is_valid: Set(tx.is_valid()),
-            ..Default::default()
+        .map(|(idx, tx)| {
+            let tx_payload = if include_payload { tx.encode() } else { vec![] };
+            TransactionActiveModel {
+                hash: Set(tx.hash().to_vec()),
+                block_id: Set(database_block.id),
+                tx_index: Set(idx as i32),
+                payload: Set(tx_payload),
+                is_valid: Set(tx.is_valid()),
+                ..Default::default()
+            }
         })
         .collect();
 

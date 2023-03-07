@@ -7,7 +7,9 @@ Adds the block to the database
 
 ```rust
 #[derive(Debug, Clone, Copy, serde::Deserialize, serde::Serialize)]
-pub struct EmptyConfig {}
+pub struct PayloadConfig {
+    pub include_payload: bool,
+}
 
 ```
 </details>

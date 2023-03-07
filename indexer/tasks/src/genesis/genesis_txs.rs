@@ -1,6 +1,6 @@
 extern crate shred;
 
-use crate::config::EmptyConfig::EmptyConfig;
+use crate::config::PayloadConfig::PayloadConfig;
 use cardano_multiplatform_lib::{
     byron::ByronAddress,
     genesis::byron::{config::GenesisData, parse::redeem_pubkey_to_txid},
@@ -21,7 +21,7 @@ use super::genesis_block::GenesisBlockTask;
 
 carp_task! {
   name GenesisTransactionTask;
-  configuration EmptyConfig;
+  configuration PayloadConfig;
   doc "Parses Genesis transactions (avvm & non-avvm balances from genesis)";
   era genesis;
   dependencies [GenesisBlockTask];
@@ -33,7 +33,8 @@ carp_task! {
   execute |previous_data, task| handle_txs(
       task.db_tx,
       task.block,
-      &previous_data.genesis_block.as_ref().unwrap()
+      &previous_data.genesis_block.as_ref().unwrap(),
+      task.config.include_payload
   );
   merge_result |previous_data, result| {
     *previous_data.genesis_txs = result.0;
@@ -46,6 +47,7 @@ async fn handle_txs(
     db_tx: &DatabaseTransaction,
     block: BlockInfo<'_, GenesisData, BlockGlobalInfo>,
     database_block: &BlockModel,
+    include_payload: bool,
 ) -> Result<
     (
         Vec<TransactionModel>,
@@ -65,6 +67,11 @@ async fn handle_txs(
 
     for (pub_key, amount) in block.1.avvm_distr.iter() {
         let (tx_hash, byron_addr) = redeem_pubkey_to_txid(pub_key, Some(block.1.protocol_magic));
+        let payload = if include_payload {
+            byron_addr.to_bytes()
+        } else {
+            vec![]
+        };
 
         // note: strictly speaking, genesis txs are unordered so there is no defined index
         let tx_index = transactions.len() as i32;
@@ -72,7 +79,7 @@ async fn handle_txs(
             block_id: Set(database_block.id),
             hash: Set(tx_hash.to_bytes().to_vec()),
             is_valid: Set(true),
-            payload: Set(byron_addr.to_bytes()),
+            payload: Set(payload),
             tx_index: Set(tx_index),
             ..Default::default()
         });
@@ -93,6 +100,11 @@ async fn handle_txs(
     // note: empty on mainnet
     for (byron_addr, amount) in block.1.non_avvm_balances.iter() {
         let tx_hash = blake2b256(&byron_addr.to_bytes());
+        let payload = if include_payload {
+            byron_addr.to_bytes()
+        } else {
+            vec![]
+        };
 
         // println!("{}", amount.to_str());
         // println!("{}", byron_addr.to_base58());
@@ -104,7 +116,7 @@ async fn handle_txs(
             block_id: Set(database_block.id),
             hash: Set(tx_hash.to_vec()),
             is_valid: Set(true),
-            payload: Set(byron_addr.to_bytes()),
+            payload: Set(payload),
             tx_index: Set(tx_index),
             ..Default::default()
         });
