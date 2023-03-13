@@ -10,6 +10,7 @@ use oura::sources::BearerKind;
 use serde::Deserialize;
 use std::borrow::Cow;
 use std::fs::File;
+use std::process::{abort, exit};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tasks::execution_plan::ExecutionPlan;
@@ -95,9 +96,15 @@ async fn main() -> anyhow::Result<()> {
     // End logging setup block
 
     let running = Arc::new(AtomicBool::new(true));
+    let processing_finished = Arc::new(AtomicBool::new(false));
+
     let r = running.clone();
+    let p = processing_finished.clone();
     ctrlc::set_handler(move || {
         r.store(false, Ordering::SeqCst);
+        while !p.load(Ordering::SeqCst) {
+        }
+        exit(0);
     })
     .expect("Error setting terminate handler");
 
@@ -157,7 +164,7 @@ async fn main() -> anyhow::Result<()> {
                 .cloned()
                 .ok_or_else(|| anyhow!("Starting points list is empty"))?;
 
-            main_loop(source, sink, start_from, running).await
+            main_loop(source, sink, start_from, running, processing_finished).await
         }
         SourceConfig::CardanoNet { relay } => {
             let base_config = match network.as_ref() {
@@ -186,7 +193,7 @@ async fn main() -> anyhow::Result<()> {
 
             let source = CardanoSource::new(network_config).await?;
 
-            main_loop(source, sink, start_from, running).await
+            main_loop(source, sink, start_from, running, processing_finished).await
         }
     };
 
@@ -198,6 +205,7 @@ async fn main_loop<S>(
     sink: CardanoSink,
     start_from: <S as Source>::From,
     running: Arc<AtomicBool>,
+    processing_finished: Arc<AtomicBool>,
 ) where
     S: Source<From = <CardanoSink as Sink>::From, Event = <CardanoSink as Sink>::Event>
         + StoppableService
@@ -217,4 +225,5 @@ async fn main_loop<S>(
     } else {
         tracing::info!("Engine is stopped successfully");
     }
+    processing_finished.store(true, Ordering::SeqCst);
 }
