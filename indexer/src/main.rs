@@ -10,7 +10,7 @@ use oura::sources::BearerKind;
 use serde::Deserialize;
 use std::borrow::Cow;
 use std::fs::File;
-use std::process::{abort, exit};
+use std::process::exit;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tasks::execution_plan::ExecutionPlan;
@@ -102,8 +102,7 @@ async fn main() -> anyhow::Result<()> {
     let p = processing_finished.clone();
     ctrlc::set_handler(move || {
         r.store(false, Ordering::SeqCst);
-        while !p.load(Ordering::SeqCst) {
-        }
+        while !p.load(Ordering::SeqCst) {}
         exit(0);
     })
     .expect("Error setting terminate handler");

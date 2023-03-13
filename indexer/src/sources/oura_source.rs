@@ -17,7 +17,7 @@ use oura::{
 };
 
 pub struct OuraSource {
-    handles: Vec<JoinHandle<()>>,
+    _handles: Vec<JoinHandle<()>>,
     input: StageReceiver,
 
     // cardano-node always triggers a rollback event when you connect to it
@@ -71,7 +71,7 @@ impl OuraSource {
                 let (handles, input) = oura_bootstrap(bearer, intersect, &network, socket)?;
 
                 Ok(OuraSource {
-                    handles,
+                    _handles: handles,
                     input,
                     expected_rollback: rollback,
                 })
