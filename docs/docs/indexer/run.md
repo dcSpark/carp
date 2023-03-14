@@ -127,7 +127,7 @@ Note: steps assume mainnet
 3. `sudo -u postgres createuser carp`
 4. `sudo -u postgres psql -c "\password carp"`
 5. For postgres version 15+ there's a breaking change regarding the permissions, so you will need to run extra command:
-   1. `sudo -u postgres psql -c 'GRANT ALL ON ALL TABLES IN SCHEMA public TO carp;'`
+   1. `sudo -u postgres psql -t -d carp_mainnet -c 'GRANT ALL ON SCHEMA public TO carp;'`
 6. Add your database name, username and password to `secrets/.pgpass`
 7. `chmod 600 secrets/.pgpass`
 8. Modify the env variables in `.env` if needed:
