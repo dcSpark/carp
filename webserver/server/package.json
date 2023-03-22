@@ -39,10 +39,12 @@
     "pg-tx": "^1.0.1",
     "swagger-ui-express": "4.5.0",
     "tsd": "0.24.1",
-    "tsoa": "4.1.2"
+    "tsoa": "4.1.2",
+    "cors": "2.8.5"
   },
   "devDependencies": {
     "@types/body-parser": "1.19.2",
+    "@types/cors": "2.8.13",
     "@types/eslint": "8.4.6",
     "@types/eslint-plugin-prettier": "3.1.0",
     "@types/express": "4.17.14",
