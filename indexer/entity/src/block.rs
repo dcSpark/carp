@@ -12,7 +12,7 @@ pub struct Model {
     pub height: i32,
     pub epoch: i32,
     pub slot: i32,
-    pub payload: Vec<u8>,
+    pub payload: Option<Vec<u8>>,
 }
 
 #[derive(Copy, Clone, Debug, DeriveRelation, EnumIter)]

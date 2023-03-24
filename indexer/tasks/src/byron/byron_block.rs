@@ -49,7 +49,7 @@ async fn handle_block(
         height: Set(block.1.number() as i32),
         epoch: Set(block.1.header().as_byron().unwrap().consensus_data.0.epoch as i32),
         slot: Set(block.1.slot() as i32),
-        payload: Set(block_payload),
+        payload: Set(Some(block_payload)),
         ..Default::default()
     };
 
