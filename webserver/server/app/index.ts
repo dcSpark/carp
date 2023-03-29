@@ -8,8 +8,11 @@ import SwaggerSingleton from './models/SwaggerSingleton';
 import { ValidateError } from 'tsoa';
 import { StatusCodes } from 'http-status-codes';
 import { Errors, genErrorMessage } from '../../shared/errors';
+import cors from 'cors';
 
 export const app = express();
+
+app.use(cors());
 
 app.use(
   bodyParser.urlencoded({
