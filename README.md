@@ -4,7 +4,7 @@
 
 Welcome to Carp, a Cardano Postgres Indexer. This project is designed to sync data from the Cardano blockchain and store it into a Postgres database. The backend is written in Rust using Oura and CML, while the server and client are written in TypeScript.
 
-##Core Pillars
+## Core Pillars
 The core pillars of Carp are:
 
 **Speed**: Queries should be fast so they can be used inside production applications like wallets without the user feeling the application is not responsive.
