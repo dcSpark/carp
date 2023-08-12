@@ -1,0 +1,13 @@
+source:
+  type: oura
+  socket: "/app/node-ipc/node.socket" # or url
+  bearer: Unix # or Tcp
+
+sink:
+  type: cardano
+  db:
+    type: postgres
+    database_url: postgresql://carp:carp@172.20.0.3:5432/carp_preprod
+  network: preprod
+
+start_block:
