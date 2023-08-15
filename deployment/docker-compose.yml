@@ -47,7 +47,7 @@ services:
         max-size: "200k"
         max-file: "10"
     ports:
-      - "3001:3001"
+      - "${CARDANO_NODE_PORT:-3001}:3001"
     networks:
       carp_network:
         ipv4_address: 172.20.0.4
@@ -97,7 +97,7 @@ services:
       context: ../webserver/
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "${CARP_WEB_PORT:-3000}:3000"
     environment:
       - DATABASE_URL=${DATABASE_URL}
     networks:
