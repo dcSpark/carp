@@ -35,7 +35,7 @@ services:
 
   cardano-node:
     restart: unless-stopped
-    image: inputoutput/cardano-node:1.34.1
+    image: inputoutput/cardano-node:8.1.2
     environment:
       - NETWORK=${NETWORK:-mainnet}
     volumes:

@@ -22,7 +22,6 @@ pub struct CardanoSource {
         WrappedCardanoSource,
         RollbackOrEvent<CardanoSourceEvent, Point>,
     >,
-    configuration: NetworkConfiguration,
 }
 
 #[async_trait]
@@ -63,11 +62,7 @@ impl Source for CardanoSource {
                         tracing::debug!(id = %block_event.id, "block event received");
                         Ok(Some(CardanoEventType::Block {
                             cbor_hex: hex::encode(block_event.raw_block),
-                            epoch: block_event.epoch.or_else(|| {
-                                self.configuration
-                                    .shelley_era_config
-                                    .absolute_slot_to_epoch(block_event.slot_number.into())
-                            }),
+                            epoch: Some(block_event.epoch),
                             epoch_slot: Some(block_event.slot_number.into()),
                             block_number: block_event.block_number.into(),
                             block_hash: block_event.id.to_string(),
@@ -100,9 +95,6 @@ impl CardanoSource {
                     .context("failed to create temporary multiverse")
                     .map(|multiverse| ForkHandlingSource::new(multiverse, 10, cardano_source))
             })
-            .map(|wrapped_source| Self {
-                configuration,
-                wrapped_source,
-            })
+            .map(|wrapped_source| Self { wrapped_source })
     }
 }
