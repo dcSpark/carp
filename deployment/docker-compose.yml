@@ -8,7 +8,7 @@ networks:
 services:
   postgres:
     restart: unless-stopped
-    image: postgres:13.6 # 14.2, 13.6, 12.10, 11.15 # replace with correct major version on existing installations, no alpine
+    image: postgres:${POSTGRES_VERSION:-13.6} # 14.2, 13.6, 12.10, 11.15 # replace with correct major version on existing installations, no alpine
     shm_size: 8gb
     environment:
       - POSTGRES_LOGGING=true
@@ -28,14 +28,14 @@ services:
         max-size: "200k"
         max-file: "10"
     ports:
-      - "5432:5432"
+      - "${POSTGRES_EXPOSED_PORT:-5432}:5432"
     networks:
       carp_network:
         ipv4_address: 172.20.0.3
 
   cardano-node:
     restart: unless-stopped
-    image: inputoutput/cardano-node:8.1.2
+    image: inputoutput/cardano-node:${CARDANO_NODE_VERSION:-8.1.2}
     environment:
       - NETWORK=${NETWORK:-mainnet}
     volumes:
@@ -47,7 +47,7 @@ services:
         max-size: "200k"
         max-file: "10"
     ports:
-      - "3001:3001"
+      - "${CARDANO_NODE_EXPOSED_PORT:-3001}:3001"
     networks:
       carp_network:
         ipv4_address: 172.20.0.4
@@ -97,7 +97,7 @@ services:
       context: ../webserver/
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "${CARP_WEB_EXPOSED_PORT:-3000}:3000"
     environment:
       - DATABASE_URL=${DATABASE_URL}
     networks:
