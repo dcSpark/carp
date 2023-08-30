@@ -64,13 +64,20 @@ async fn handle_datum(
                 .or_insert_with(|| datum.encode_fragment().unwrap());
         }
         for output in tx_body.outputs().iter() {
-            match output.datum().as_ref() {
-                Some(DatumOption::Hash(hash)) => {
+            let datum_option = match output.datum() {
+                Some(datum) => DatumOption::from(datum.clone()),
+                None => {
+                    continue;
+                }
+            };
+
+            match datum_option {
+                DatumOption::Hash(hash) => {
                     hash_to_tx
-                        .entry(*hash)
+                        .entry(hash)
                         .or_insert_with(|| cardano_transaction.id);
                 }
-                Some(DatumOption::Data(datum)) => {
+                DatumOption::Data(datum) => {
                     let hash = datum.compute_hash();
                     hash_to_tx
                         .entry(hash)
@@ -79,7 +86,6 @@ async fn handle_datum(
                         .entry(hash)
                         .or_insert_with(|| datum.0.encode_fragment().unwrap());
                 }
-                None => {}
             };
         }
     }

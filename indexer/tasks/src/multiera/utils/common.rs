@@ -47,13 +47,18 @@ pub fn get_plutus_datum_for_output(
     output: &MultiEraOutput,
     plutus_data: &[&KeepRaw<alonzo::PlutusData>],
 ) -> Option<alonzo::PlutusData> {
-    match output.datum() {
-        Some(DatumOption::Data(datum)) => Some(datum.0),
-        Some(DatumOption::Hash(hash)) => plutus_data
+    let datum_option = match output.datum() {
+        Some(datum) => DatumOption::from(datum),
+        None => {
+            return None;
+        }
+    };
+    match datum_option {
+        DatumOption::Data(datum) => Some(datum.0),
+        DatumOption::Hash(hash) => plutus_data
             .iter()
             .find(|datum| Hasher::<256>::hash_cbor(datum) == hash)
             .map(|&d| d.clone().unwrap()),
-        None => None,
     }
 }
 

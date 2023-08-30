@@ -19,7 +19,7 @@ hex = { version = "0.4.3" }
 inventory = { version = "0.2.3" }
 markdown-gen = { git = "https://github.com/dcSpark/markdown-gen-rs", branch = "hbina-add-ability-to-write-raw-str" }
 nameof = { version = "1.2.2" }
-pallas = { version = "0.17.0" }
+pallas = { version = "0.18.2" }
 paste = { version = "1.0.11" }
 sea-orm = { git = "https://github.com/dcSpark/sea-orm", branch = "insert-many-returning", features = [ "macros" ], default-features = false }
 serde = { version = "1.0.152", features = ["derive"] }
