@@ -31,6 +31,9 @@ ignore = [
     # time is deprecated but still used
     # by `chrono`
     "RUSTSEC-2020-0071",
+
+    # as of August 2023 there's not patched version & we only use this lib in indexer
+    "RUSTSEC-2023-0052",
 ]
 
 # This section is considered when running `cargo deny check licenses`
