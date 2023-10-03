@@ -63,3 +63,5 @@ readonly=false
 readonly=false
 
 [MultieraCip25EntryTask]
+
+[MultieraAddressDelegationTask]

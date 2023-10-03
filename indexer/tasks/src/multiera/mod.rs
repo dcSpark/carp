@@ -1,6 +1,7 @@
 pub mod dex;
 pub mod multiera_address;
 pub mod multiera_address_credential_relations;
+pub mod multiera_address_delegation;
 pub mod multiera_asset_mint;
 pub mod multiera_block;
 pub mod multiera_cip25entry;
