@@ -19,6 +19,10 @@ import type {
   TransactionOutputRequest,
   TransactionOutputResponse,
 } from "./models/TransactionOutput";
+import type {
+  DelegationForAddressRequest,
+  DelegationForAddressResponse,
+} from "./models/DelegationForAddress";
 
 export enum Routes {
   transactionHistory = "transaction/history",
@@ -29,7 +33,8 @@ export enum Routes {
   metadataNft = "metadata/nft",
   dexMeanPrice = "dex/mean-price",
   dexSwap = "dex/swap",
-  dexLastPrice = "dex/last-price"
+  dexLastPrice = "dex/last-price",
+  delegationForAddress = "delegation/address",
 }
 
 export type EndpointTypes = {
@@ -77,5 +82,10 @@ export type EndpointTypes = {
     name: typeof Routes.dexLastPrice;
     input: DexLastPriceRequest;
     response: DexLastPriceResponse;
+  };
+  [Routes.delegationForAddress]: {
+    name: typeof Routes.delegationForAddress;
+    input: DelegationForAddressRequest;
+    response: DelegationForAddressResponse;
   };
 };
