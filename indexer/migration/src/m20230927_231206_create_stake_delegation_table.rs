@@ -54,16 +54,6 @@ impl MigrationTrait for Migration {
                     .to_owned(),
             )
             .await
-
-        // manager
-        //     .create_index(
-        //         Index::create()
-        //             .table(Entity)
-        //             .name("index-address_credential-credential")
-        //             .col(Column::CredentialId)
-        //             .to_owned(),
-        //     )
-        //     .await
     }
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
