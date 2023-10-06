@@ -77,7 +77,6 @@ async fn handle(
                         .save(db_tx)
                         .await?;
                     }
-                    Certificate::StakeRegistration(credential) => {}
                     Certificate::StakeDeregistration(credential) => {
                         let credential = credential.encode_fragment().unwrap();
 
@@ -95,15 +94,7 @@ async fn handle(
                         .save(db_tx)
                         .await?;
                     }
-                    Certificate::PoolRegistration {
-                        operator,
-                        pool_owners,
-                        reward_account,
-                        ..
-                    } => {}
-                    Certificate::PoolRetirement(key_hash, _) => {}
-                    Certificate::GenesisKeyDelegation(_, _, _) => {}
-                    Certificate::MoveInstantaneousRewardsCert(mir) => {}
+                    _ => {}
                 };
             };
         }
