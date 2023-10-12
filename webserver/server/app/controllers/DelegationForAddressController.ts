@@ -8,7 +8,7 @@ import { Errors } from '../../../shared/errors';
 import type { EndpointTypes } from '../../../shared/routes';
 import { Routes } from '../../../shared/routes';
 import { getAddressTypes } from '../models/utils';
-import { delegationForAddress } from '../services/Delegation';
+import { delegationForAddress } from '../services/DelegationForAddress';
 import { DelegationForAddressResponse } from '../../../shared/models/DelegationForAddress';
 
 const route = Routes.delegationForAddress;

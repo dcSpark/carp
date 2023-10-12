@@ -23,6 +23,10 @@ import type {
   DelegationForAddressRequest,
   DelegationForAddressResponse,
 } from "./models/DelegationForAddress";
+import type {
+  DelegationForPoolRequest,
+  DelegationForPoolResponse,
+} from "./models/DelegationForPool";
 
 export enum Routes {
   transactionHistory = "transaction/history",
@@ -35,6 +39,7 @@ export enum Routes {
   dexSwap = "dex/swap",
   dexLastPrice = "dex/last-price",
   delegationForAddress = "delegation/address",
+  delegationForPool = "delegation/pool",
 }
 
 export type EndpointTypes = {
@@ -87,5 +92,10 @@ export type EndpointTypes = {
     name: typeof Routes.delegationForAddress;
     input: DelegationForAddressRequest;
     response: DelegationForAddressResponse;
+  };
+  [Routes.delegationForPool]: {
+    name: typeof Routes.delegationForPool;
+    input: DelegationForPoolRequest;
+    response: DelegationForPoolResponse;
   };
 };

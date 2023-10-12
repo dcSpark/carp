@@ -1,25 +1,25 @@
 /** Types generated for queries found in "app/models/delegation/delegationForAddress.sql" */
 import { PreparedQuery } from '@pgtyped/query';
 
-/** 'SqlStakeDelegation' parameters type */
-export interface ISqlStakeDelegationParams {
+/** 'SqlStakeDelegationForAddress' parameters type */
+export interface ISqlStakeDelegationForAddressParams {
   credential: Buffer;
   slot: number;
 }
 
-/** 'SqlStakeDelegation' return type */
-export interface ISqlStakeDelegationResult {
+/** 'SqlStakeDelegationForAddress' return type */
+export interface ISqlStakeDelegationForAddressResult {
   pool: string | null;
   tx_id: string | null;
 }
 
-/** 'SqlStakeDelegation' query type */
-export interface ISqlStakeDelegationQuery {
-  params: ISqlStakeDelegationParams;
-  result: ISqlStakeDelegationResult;
+/** 'SqlStakeDelegationForAddress' query type */
+export interface ISqlStakeDelegationForAddressQuery {
+  params: ISqlStakeDelegationForAddressParams;
+  result: ISqlStakeDelegationForAddressResult;
 }
 
-const sqlStakeDelegationIR: any = {"usedParamSet":{"credential":true,"slot":true},"params":[{"name":"credential","required":true,"transform":{"type":"scalar"},"locs":[{"a":371,"b":382}]},{"name":"slot","required":true,"transform":{"type":"scalar"},"locs":[{"a":405,"b":410}]}],"statement":"SELECT encode(pool_credential, 'hex') as pool, encode(\"Transaction\".hash, 'hex') as tx_id\nFROM \"StakeDelegationCredentialRelation\"\nJOIN \"StakeCredential\" ON stake_credential = \"StakeCredential\".id\nJOIN \"Transaction\" ON \"Transaction\".id = \"StakeDelegationCredentialRelation\".tx_id\nJOIN \"Block\" ON \"Transaction\".block_id = \"Block\".id\nWHERE \n\t\"StakeCredential\".credential = :credential! AND\n\t\"Block\".slot <= :slot!\nORDER BY (\"Block\".height, \"Transaction\".tx_index) DESC\nLIMIT 1"};
+const sqlStakeDelegationForAddressIR: any = {"usedParamSet":{"credential":true,"slot":true},"params":[{"name":"credential","required":true,"transform":{"type":"scalar"},"locs":[{"a":371,"b":382}]},{"name":"slot","required":true,"transform":{"type":"scalar"},"locs":[{"a":405,"b":410}]}],"statement":"SELECT encode(pool_credential, 'hex') as pool, encode(\"Transaction\".hash, 'hex') as tx_id\nFROM \"StakeDelegationCredentialRelation\"\nJOIN \"StakeCredential\" ON stake_credential = \"StakeCredential\".id\nJOIN \"Transaction\" ON \"Transaction\".id = \"StakeDelegationCredentialRelation\".tx_id\nJOIN \"Block\" ON \"Transaction\".block_id = \"Block\".id\nWHERE \n\t\"StakeCredential\".credential = :credential! AND\n\t\"Block\".slot <= :slot!\nORDER BY (\"Block\".height, \"Transaction\".tx_index) DESC\nLIMIT 1"};
 
 /**
  * Query generated from SQL:
@@ -36,6 +36,6 @@ const sqlStakeDelegationIR: any = {"usedParamSet":{"credential":true,"slot":true
  * LIMIT 1
  * ```
  */
-export const sqlStakeDelegation = new PreparedQuery<ISqlStakeDelegationParams,ISqlStakeDelegationResult>(sqlStakeDelegationIR);
+export const sqlStakeDelegationForAddress = new PreparedQuery<ISqlStakeDelegationForAddressParams,ISqlStakeDelegationForAddressResult>(sqlStakeDelegationForAddressIR);
 
 

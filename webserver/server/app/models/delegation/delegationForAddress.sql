@@ -1,4 +1,4 @@
-/* @name sqlStakeDelegation */
+/* @name sqlStakeDelegationForAddress */
 SELECT encode(pool_credential, 'hex') as pool, encode("Transaction".hash, 'hex') as tx_id
 FROM "StakeDelegationCredentialRelation"
 JOIN "StakeCredential" ON stake_credential = "StakeCredential".id
