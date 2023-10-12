@@ -31,6 +31,7 @@ impl MigrationTrait for Migration {
                     )
                     .col(ColumnDef::new(Column::TxId).big_integer().not_null())
                     .col(ColumnDef::new(Column::PoolCredential).binary())
+                    .col(ColumnDef::new(Column::PreviousPool).binary())
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk-stake_delegation-credential_id")

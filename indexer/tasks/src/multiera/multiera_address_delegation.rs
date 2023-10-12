@@ -59,43 +59,49 @@ async fn handle(
             {
                 let tx_id = cardano_transaction.id;
                 let cert = &cert;
-                match cert.as_alonzo().unwrap() {
-                    Certificate::StakeDelegation(credential, pool) => {
-                        let credential = credential.encode_fragment().unwrap();
-
-                        let stake_credential_id = multiera_stake_credential
-                            .get(&credential.to_vec())
-                            .unwrap()
-                            .id;
-
-                        entity::stake_delegation::ActiveModel {
-                            stake_credential: Set(stake_credential_id),
-                            pool_credential: Set(Some(pool.to_vec())),
-                            tx_id: Set(tx_id),
-                            ..Default::default()
-                        }
-                        .save(db_tx)
-                        .await?;
-                    }
-                    Certificate::StakeDeregistration(credential) => {
-                        let credential = credential.encode_fragment().unwrap();
-
-                        let stake_credential_id = multiera_stake_credential
-                            .get(&credential.to_vec())
-                            .unwrap()
-                            .id;
-
-                        entity::stake_delegation::ActiveModel {
-                            stake_credential: Set(stake_credential_id),
-                            pool_credential: Set(None),
-                            tx_id: Set(tx_id),
-                            ..Default::default()
-                        }
-                        .save(db_tx)
-                        .await?;
-                    }
-                    _ => {}
+                let (credential, pool) = match cert.as_alonzo().unwrap() {
+                    Certificate::StakeDelegation(credential, pool) => (credential, Some(pool)),
+                    Certificate::StakeDeregistration(credential) => (credential, None),
+                    _ => continue,
                 };
+
+                let credential = credential.encode_fragment().unwrap();
+
+                let stake_credential_id = multiera_stake_credential
+                    .get(&credential.to_vec())
+                    .unwrap()
+                    .id;
+
+                let previous_entry = entity::stake_delegation::Entity::find()
+                    .filter(
+                        entity::stake_delegation::Column::StakeCredential.eq(stake_credential_id),
+                    )
+                    .order_by_desc(entity::stake_delegation::Column::Id)
+                    .one(db_tx)
+                    .await?;
+
+                let pool = pool.map(|pool| pool.to_vec());
+
+                if let Some((previous, pool)) = previous_entry
+                    .as_ref()
+                    .and_then(|entry| entry.pool_credential.as_ref())
+                    .zip(pool.as_ref())
+                {
+                    // re-delegating shouldn't have any effect.
+                    if previous == pool {
+                        continue;
+                    }
+                }
+
+                entity::stake_delegation::ActiveModel {
+                    stake_credential: Set(stake_credential_id),
+                    pool_credential: Set(pool.map(|pool| pool.to_vec())),
+                    tx_id: Set(tx_id),
+                    previous_pool: Set(previous_entry.and_then(|entity| entity.pool_credential)),
+                    ..Default::default()
+                }
+                .save(db_tx)
+                .await?;
             };
         }
     }

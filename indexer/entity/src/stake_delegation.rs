@@ -10,6 +10,7 @@ pub struct Model {
     // pool registrations are not tracked in StakeCredentials,
     pub pool_credential: Option<Vec<u8>>,
     pub tx_id: i64,
+    pub previous_pool: Option<Vec<u8>>,
 }
 
 #[derive(Copy, Clone, Debug, DeriveRelation, EnumIter)]
