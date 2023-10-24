@@ -323,33 +323,43 @@
                 ],
                 "type": "object"
             },
+            "PoolHex": {
+                "type": "string",
+                "example": "8200581c8baf48931c5187cd59fde553f4e7da2e1a2aa9202ec6e67815cb3f8a",
+                "pattern": "[0-9a-fA-F]{56}"
+            },
             "DelegationForPoolResponse": {
                 "items": {
                     "properties": {
+                        "slot": {
+                            "type": "number",
+                            "format": "double"
+                        },
                         "txId": {
                             "type": "string",
                             "nullable": true
                         },
-                        "isDelegation": {
-                            "type": "boolean"
+                        "pool": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/components/schemas/PoolHex"
+                                }
+                            ],
+                            "nullable": true
                         },
                         "credential": {
                             "$ref": "#/components/schemas/Address"
                         }
                     },
                     "required": [
+                        "slot",
                         "txId",
-                        "isDelegation",
+                        "pool",
                         "credential"
                     ],
                     "type": "object"
                 },
                 "type": "array"
-            },
-            "PoolHex": {
-                "type": "string",
-                "example": "8200581c8baf48931c5187cd59fde553f4e7da2e1a2aa9202ec6e67815cb3f8a",
-                "pattern": "[0-9a-fA-F]{56}"
             },
             "Pool": {
                 "$ref": "#/components/schemas/PoolHex"

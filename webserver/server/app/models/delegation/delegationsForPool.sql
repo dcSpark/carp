@@ -5,7 +5,8 @@
 SELECT 
 	encode(credential, 'hex') as credential,
 	encode("Transaction".hash, 'hex') as tx_id,
-	COALESCE("StakeDelegationCredentialRelation".pool_credential IN :pools!, false) as is_delegation
+	"Block".slot,
+	CASE WHEN "StakeDelegationCredentialRelation".pool_credential IN :pools! THEN encode("StakeDelegationCredentialRelation".pool_credential, 'hex') ELSE NULL END AS pool
 FROM "StakeDelegationCredentialRelation"
 JOIN "StakeCredential" ON stake_credential = "StakeCredential".id
 JOIN "Transaction" ON "Transaction".id = "StakeDelegationCredentialRelation".tx_id

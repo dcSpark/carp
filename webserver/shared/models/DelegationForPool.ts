@@ -1,5 +1,5 @@
 import { Address } from "./Address";
-import { Pool } from "./Pool";
+import { Pool, PoolHex } from "./Pool";
 
 export type DelegationForPoolRequest = {
   pools: Pool[];
@@ -8,6 +8,7 @@ export type DelegationForPoolRequest = {
 
 export type DelegationForPoolResponse = {
     credential: Address;
-    isDelegation: boolean,
+    pool: PoolHex | null,
     txId: string | null;
+    slot: number;
 }[];

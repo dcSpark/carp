@@ -3,11 +3,8 @@ import { StatusCodes } from 'http-status-codes';
 import tx from 'pg-tx';
 import pool from '../services/PgPoolSingleton';
 import type { ErrorShape } from '../../../shared/errors';
-import { genErrorMessage } from '../../../shared/errors';
-import { Errors } from '../../../shared/errors';
 import type { EndpointTypes } from '../../../shared/routes';
 import { Routes } from '../../../shared/routes';
-import { getAddressTypes } from '../models/utils';
 import { delegationsForPool } from '../services/DelegationForPool';
 import { DelegationForPoolResponse } from '../../../shared/models/DelegationForPool';
 
@@ -37,8 +34,9 @@ export class DelegationForPoolController extends Controller {
 
             return data.map(data => ({
                 credential: data.credential as string,
-                isDelegation: data.is_delegation as boolean,
+                pool: data.pool,
                 txId: data.tx_id as string,
+                slot: data.slot,
             }));
         });
 
