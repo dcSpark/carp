@@ -23,3 +23,4 @@ pub mod multiera_wingriders_v1_mean_price;
 pub mod multiera_wingriders_v1_swap;
 pub mod relation_map;
 pub mod utils;
+pub mod multiera_projected_nft;

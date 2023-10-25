@@ -17,3 +17,4 @@ pub mod plutus_data;
 pub mod plutus_data_hash;
 pub mod stake_delegation;
 pub mod transaction_metadata;
+pub mod projected_nft;
