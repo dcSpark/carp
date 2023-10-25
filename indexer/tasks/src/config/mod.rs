@@ -6,3 +6,5 @@ pub mod PayloadAndReadonlyConfig;
 pub mod PayloadConfig;
 #[allow(non_snake_case)]
 pub mod ReadonlyConfig;
+#[allow(non_snake_case)]
+pub mod AddressConfig;

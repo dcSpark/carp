@@ -9,9 +9,9 @@ strip = true
 
 [dependencies]
 # [core]
-dcspark-core = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "837b0135462ff7a1018942dca7198ad9c808a84c" }
-dcspark-blockchain-source = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "837b0135462ff7a1018942dca7198ad9c808a84c" }
-multiverse = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "837b0135462ff7a1018942dca7198ad9c808a84c" }
+dcspark-core = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "572af17e3e22101dee64e0999049a571aea26e0f" }
+dcspark-blockchain-source = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "572af17e3e22101dee64e0999049a571aea26e0f" }
+multiverse = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "572af17e3e22101dee64e0999049a571aea26e0f" }
 
 # [local]
 entity = { path = "entity" }
@@ -23,6 +23,7 @@ anyhow = { version = "1.0.69" }
 async-trait = { version = "0.1.64" }
 base64 = { version = "0.21.0" }
 cardano-multiplatform-lib = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "metadata-and-addr" }
+projected-nft-sdk = { git = "https://github.com/dcSpark/projected-nft-whirlpool.git", rev = "8dc510c53fb86cb5c9eae746a05bb64c9b9f7f4b" }
 clap = { version = "3.1", features = ["derive"] }
 ctrlc = { version = "3.2.4", features = ["termination"] }
 dotenv = { version = "0.15.0" }
