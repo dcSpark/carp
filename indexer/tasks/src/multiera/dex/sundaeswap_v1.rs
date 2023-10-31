@@ -28,7 +28,7 @@ impl Dex for SundaeSwapV1 {
         // Note: there should be at most one pool output
         if let Some((output, datum)) =
             filter_outputs_and_datums_by_hash(&tx.outputs(), &[POOL_SCRIPT_HASH], &tx.plutus_data())
-                .get(0)
+                .first()
         {
             let datum = datum.to_json();
 
@@ -68,7 +68,7 @@ impl Dex for SundaeSwapV1 {
         // Note: there should be at most one pool output
         if let Some((main_output, main_datum)) =
             filter_outputs_and_datums_by_hash(&tx.outputs(), &[POOL_SCRIPT_HASH], &tx.plutus_data())
-                .get(0)
+                .first()
         {
             let main_datum = main_datum.to_json();
             let mut free_utxos: Vec<MultiEraOutput> = tx.outputs();

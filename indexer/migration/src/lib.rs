@@ -17,6 +17,7 @@ mod m20220528_000012_create_plutus_data_table;
 mod m20220808_000013_create_transaction_reference_input_table;
 mod m20221031_000014_create_dex_table;
 mod m20230223_000015_modify_block_table;
+mod m20231025_000016_projected_nft;
 mod m20230927_231206_create_stake_delegation_table;
 
 pub struct Migrator;
@@ -42,6 +43,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20220808_000013_create_transaction_reference_input_table::Migration),
             Box::new(m20221031_000014_create_dex_table::Migration),
             Box::new(m20230223_000015_modify_block_table::Migration),
+            Box::new(m20231025_000016_projected_nft::Migration),
             Box::new(m20230927_231206_create_stake_delegation_table::Migration),
         ]
     }

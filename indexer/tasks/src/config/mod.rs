@@ -1,4 +1,6 @@
 #[allow(non_snake_case)]
+pub mod AddressConfig;
+#[allow(non_snake_case)]
 pub mod EmptyConfig;
 #[allow(non_snake_case)]
 pub mod PayloadAndReadonlyConfig;
@@ -6,5 +8,3 @@ pub mod PayloadAndReadonlyConfig;
 pub mod PayloadConfig;
 #[allow(non_snake_case)]
 pub mod ReadonlyConfig;
-#[allow(non_snake_case)]
-pub mod AddressConfig;

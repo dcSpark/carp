@@ -33,7 +33,7 @@ impl Dex for MinSwapV1 {
             &[POOL_SCRIPT_HASH1, POOL_SCRIPT_HASH2],
             &tx.plutus_data(),
         )
-        .get(0)
+        .first()
         {
             let datum = datum.to_json();
 
@@ -76,7 +76,7 @@ impl Dex for MinSwapV1 {
             &[POOL_SCRIPT_HASH1, POOL_SCRIPT_HASH2],
             &tx.plutus_data(),
         )
-        .get(0)
+        .first()
         {
             let main_datum = main_datum.to_json();
             let mut free_utxos: Vec<MultiEraOutput> = tx.outputs();

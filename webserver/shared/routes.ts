@@ -27,6 +27,10 @@ import type {
   DelegationForPoolRequest,
   DelegationForPoolResponse,
 } from "./models/DelegationForPool";
+import type {
+  ProjectedNftRangeRequest,
+  ProjectedNftRangeResponse,
+} from "./models/ProjectedNftRange";
 
 export enum Routes {
   transactionHistory = "transaction/history",
@@ -38,6 +42,7 @@ export enum Routes {
   dexMeanPrice = "dex/mean-price",
   dexSwap = "dex/swap",
   dexLastPrice = "dex/last-price",
+  projectedNftEventsRange = "projected-nft/range",
   delegationForAddress = "delegation/address",
   delegationForPool = "delegation/pool",
 }
@@ -87,6 +92,11 @@ export type EndpointTypes = {
     name: typeof Routes.dexLastPrice;
     input: DexLastPriceRequest;
     response: DexLastPriceResponse;
+  };
+  [Routes.projectedNftEventsRange]: {
+    name: typeof Routes.projectedNftEventsRange;
+    input: ProjectedNftRangeRequest;
+    response: ProjectedNftRangeResponse;
   };
   [Routes.delegationForAddress]: {
     name: typeof Routes.delegationForAddress;

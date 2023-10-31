@@ -30,7 +30,7 @@ impl Dex for WingRidersV1 {
         // Note: there should be at most one pool output
         if let Some((output, datum)) =
             filter_outputs_and_datums_by_hash(&tx.outputs(), &[POOL_SCRIPT_HASH], &tx.plutus_data())
-                .get(0)
+                .first()
         {
             let datum = datum.to_json();
 
@@ -81,12 +81,12 @@ impl Dex for WingRidersV1 {
         // Note: there should be at most one pool output
         if let Some((pool_output, _)) =
             filter_outputs_and_datums_by_hash(&tx.outputs(), &[POOL_SCRIPT_HASH], &tx.plutus_data())
-                .get(0)
+                .first()
         {
             let redeemers = tx.redeemers().ok_or("No redeemers")?;
 
             // Get pool input from redemeers
-            let pool_input_redeemer = redeemers.get(0).ok_or("No redeemers")?;
+            let pool_input_redeemer = redeemers.first().ok_or("No redeemers")?;
             let pool_input = pool_input_redeemer.data.to_json()["fields"][0]["int"]
                 .as_i64()
                 .ok_or("Failed to parse pool input index")?;
