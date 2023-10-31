@@ -37,6 +37,11 @@ pub use super::plutus_data_hash::{
     Entity as PlutusDataHash, Model as PlutusDataHashModel, PrimaryKey as PlutusDataHashPrimaryKey,
     Relation as PlutusDataHashRelation,
 };
+pub use super::projected_nft::{
+    ActiveModel as ProjectedNftActiveModel, Column as ProjectedNftColumn, Entity as ProjectedNft,
+    Model as ProjectedNftModel, PrimaryKey as ProjectedNftPrimaryKey,
+    Relation as ProjectedNftRelation,
+};
 pub use super::stake_credential::{
     ActiveModel as StakeCredentialActiveModel, Column as StakeCredentialColumn,
     Entity as StakeCredential, Model as StakeCredentialModel,

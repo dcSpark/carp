@@ -13,6 +13,7 @@ export interface ISqlBlockLatestResult {
   hash: Buffer;
   height: number;
   id: number;
+  payload: Buffer | null;
   slot: number;
 }
 

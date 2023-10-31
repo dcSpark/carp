@@ -13,6 +13,9 @@ entity = { path = "../entity" }
 # [tasks]
 anyhow = { version = "1.0.69" }
 cardano-multiplatform-lib = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "metadata-and-addr" }
+cml-chain  = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "acca172633d0570a7432058aa5b0717ad2f0c6d7" }
+cml-core  = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "acca172633d0570a7432058aa5b0717ad2f0c6d7" }
+projected-nft-sdk = { git = "https://github.com/dcSpark/projected-nft-whirlpool.git", rev = "a350ccfcbdef22b73c93561c6816bd42b13f00ff" }
 cfg-if = { version = "0.1.10" }
 cryptoxide = { version = "0.4.2" }
 hex = { version = "0.4.3" }

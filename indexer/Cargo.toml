@@ -23,7 +23,6 @@ anyhow = { version = "1.0.69" }
 async-trait = { version = "0.1.64" }
 base64 = { version = "0.21.0" }
 cardano-multiplatform-lib = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "metadata-and-addr" }
-projected-nft-sdk = { git = "https://github.com/dcSpark/projected-nft-whirlpool.git", rev = "8dc510c53fb86cb5c9eae746a05bb64c9b9f7f4b" }
 clap = { version = "3.1", features = ["derive"] }
 ctrlc = { version = "3.2.4", features = ["termination"] }
 dotenv = { version = "0.15.0" }

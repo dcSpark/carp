@@ -268,7 +268,7 @@ cfg_if::cfg_if! {
                             block,
                             handle,
                             perf_aggregator,
-                            config: *config
+                            config: config.clone(),
                         }
                     }
 
