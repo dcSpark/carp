@@ -20,6 +20,7 @@ use crate::dsl::task_macro::*;
 use super::multiera_stake_credentials::MultieraStakeCredentialTask;
 
 use crate::config::AddressConfig::PayloadAndReadonlyConfig;
+use crate::multiera::dex::common::filter_outputs_and_datums_by_address;
 use crate::multiera::multiera_txs::MultieraTransactionTask;
 use crate::multiera::multiera_used_inputs::MultieraUsedInputTask;
 use crate::multiera::multiera_used_outputs::MultieraOutputTask;
@@ -210,9 +211,11 @@ async fn handle_projected_nft(
             }
         }
 
-        ProjectedNft::insert_many(queued_projected_nft_records)
-            .exec(db_tx)
-            .await?;
+        if !queued_projected_nft_records.is_empty() {
+            ProjectedNft::insert_many(queued_projected_nft_records)
+                .exec(db_tx)
+                .await?;
+        }
     }
 
     Ok(())
