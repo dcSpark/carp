@@ -7,9 +7,9 @@ import { genErrorMessage } from '../../../shared/errors';
 import { Errors } from '../../../shared/errors';
 import type { EndpointTypes } from '../../../shared/routes';
 import { Routes } from '../../../shared/routes';
-import { getAddressTypes } from '../models/utils';
 import { delegationForAddress } from '../services/DelegationForAddress';
 import { DelegationForAddressResponse } from '../../../shared/models/DelegationForAddress';
+import { Address } from '@dcspark/cardano-multiplatform-lib-nodejs';
 
 const route = Routes.delegationForAddress;
 
@@ -26,23 +26,39 @@ export class DelegationForAddressController extends Controller {
             ErrorShape
         >
     ): Promise<EndpointTypes[typeof route]['response']> {
-        const addressTypes = getAddressTypes([requestBody.address]);
+        const address = Address.from_bech32(requestBody.address);
+        const rewardAddr = address.as_reward();
+        const stakingCred = address.staking_cred();
 
-        if (addressTypes.invalid.length > 0) {
+        let credential: Buffer;
+
+        if(rewardAddr) {
+            credential = Buffer.from(rewardAddr.payment_cred().to_bytes());
+            rewardAddr.free();
+        }
+        else if(stakingCred) {
+            credential = Buffer.from(stakingCred.to_bytes());
+            stakingCred.free();
+        }
+        else {
+            address.free();
+
             // eslint-disable-next-line @typescript-eslint/no-unsafe-return
             return errorResponse(
                 StatusCodes.UNPROCESSABLE_ENTITY,
                 genErrorMessage(Errors.IncorrectAddressFormat, {
-                    addresses: addressTypes.invalid,
+                    addresses: [requestBody.address],
                 })
             );
         }
+
+        address.free();
 
         const response = await tx<
             DelegationForAddressResponse
         >(pool, async dbTx => {
             const data = await delegationForAddress({
-                address: addressTypes.credentialHex.map(addr => Buffer.from(addr, 'hex'))[0],
+                address: credential,
                 until: requestBody.until,
                 dbTx
             });
