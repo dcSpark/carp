@@ -6,7 +6,7 @@ pub struct Migration;
 
 impl MigrationName for Migration {
     fn name(&self) -> &str {
-        "m20230927_231206_create_stake_delegation_table"
+        "m20230927_000016_create_stake_delegation_table"
     }
 }
 
@@ -52,6 +52,16 @@ impl MigrationTrait for Migration {
                             .name("stake_delegation_credential-pk")
                             .col(Column::Id),
                     )
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .table(Entity)
+                    .name("index-stake_delegation_credential-stake_credential")
+                    .col(Column::StakeCredential)
                     .to_owned(),
             )
             .await
