@@ -8,7 +8,7 @@ pub use crate::{
     era_common::AddressInBlock,
     utils::TaskPerfAggregator,
 };
-pub use cardano_multiplatform_lib::genesis::byron::config::GenesisData;
+pub use cml_chain::genesis::byron::config::GenesisData;
 pub use pallas::ledger::traverse::MultiEraBlock;
 pub use paste::paste;
 pub use shred::{DispatcherBuilder, Read, ResourceId, System, SystemData, World, Write};

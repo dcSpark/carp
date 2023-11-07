@@ -3,7 +3,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use cardano_multiplatform_lib::crypto::ScriptHash;
+use cml_chain::crypto::ScriptHash;
 use pallas::ledger::primitives::{alonzo::Metadatum, Fragment};
 
 use super::user_asset::{AssetName, Cip25ParseError, Payload, PolicyId};

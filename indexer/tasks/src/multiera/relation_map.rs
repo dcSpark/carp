@@ -1,4 +1,6 @@
 use crate::types::TxCredentialRelationValue;
+use cml_chain::certs::Credential;
+use cml_core::serialization::ToBytes;
 use pallas::crypto::hash::Hash;
 use std::collections::BTreeMap;
 
@@ -11,21 +13,12 @@ impl RelationMap {
         Hash::<32>::from(bytes)
     }
 
-    pub fn keyhash_to_pallas(
-        keyhash: &cardano_multiplatform_lib::crypto::Ed25519KeyHash,
-    ) -> Hash<32> {
-        RelationMap::bytes_to_pallas(
-            &cardano_multiplatform_lib::address::StakeCredential::from_keyhash(keyhash).to_bytes(),
-        )
+    pub fn keyhash_to_pallas(keyhash: cml_chain::crypto::Ed25519KeyHash) -> Hash<32> {
+        RelationMap::bytes_to_pallas(Credential::new_pub_key(keyhash).to_raw_bytes())
     }
 
-    pub fn scripthash_to_pallas(
-        script_hash: &cardano_multiplatform_lib::crypto::ScriptHash,
-    ) -> Hash<32> {
-        RelationMap::bytes_to_pallas(
-            &cardano_multiplatform_lib::address::StakeCredential::from_scripthash(script_hash)
-                .to_bytes(),
-        )
+    pub fn scripthash_to_pallas(script_hash: cml_chain::crypto::ScriptHash) -> Hash<32> {
+        RelationMap::bytes_to_pallas(Credential::new_script(script_hash).to_raw_bytes())
     }
 
     pub fn for_transaction(&mut self, tx_id: i64) -> &mut BTreeMap<Hash<32>, i32> {

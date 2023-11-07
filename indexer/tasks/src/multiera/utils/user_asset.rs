@@ -1,4 +1,4 @@
-use cardano_multiplatform_lib::crypto::ScriptHash;
+use cml_chain::crypto::ScriptHash;
 
 pub type AssetName = Vec<u8>;
 pub type PolicyId = Vec<u8>;

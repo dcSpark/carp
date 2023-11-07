@@ -5,7 +5,7 @@ use super::{multiera_txs::MultieraTransactionTask, utils::user_asset::AssetName}
 use crate::config::ReadonlyConfig::ReadonlyConfig;
 use crate::dsl::database_task::BlockGlobalInfo;
 use crate::utils::blake2b160;
-use cardano_multiplatform_lib::crypto::ScriptHash;
+use cml_chain::crypto::ScriptHash;
 use entity::sea_orm::QueryOrder;
 use entity::{
     prelude::*,

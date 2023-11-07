@@ -21,7 +21,9 @@ tasks = { path = "tasks" }
 # [indexer]
 anyhow = { version = "1.0.69" }
 async-trait = { version = "0.1.64" }
-cardano-multiplatform-lib = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "metadata-and-addr" }
+cml-core = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "e231f1eab743b3cb7c5464cd8ed9ffda29631b97" }
+cml-chain = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "e231f1eab743b3cb7c5464cd8ed9ffda29631b97" }
+cml-crypto = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "e231f1eab743b3cb7c5464cd8ed9ffda29631b97" }
 clap = { version = "3.1", features = ["derive"] }
 ctrlc = { version = "3.2.4", features = ["termination"] }
 dotenv = { version = "0.15.0" }

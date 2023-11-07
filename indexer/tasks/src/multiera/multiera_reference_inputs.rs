@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use crate::dsl::database_task::BlockGlobalInfo;
 use crate::types::TxCredentialRelationValue;
 use crate::{config::ReadonlyConfig::ReadonlyConfig, era_common::OutputWithTxData};
-use cardano_multiplatform_lib::{
+use cml_chain::{
     address::{BaseAddress, EnterpriseAddress, PointerAddress, RewardAddress},
     byron::ByronAddress,
 };

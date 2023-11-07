@@ -4,10 +4,11 @@ use crate::dsl::database_task::BlockGlobalInfo;
 use crate::era_common::input_from_pointer;
 use crate::types::TxCredentialRelationValue;
 use crate::{config::ReadonlyConfig::ReadonlyConfig, era_common::OutputWithTxData};
-use cardano_multiplatform_lib::{
+use cml_chain::{
     address::{BaseAddress, EnterpriseAddress, PointerAddress, RewardAddress},
     byron::ByronAddress,
 };
+use cml_core::serialization::{FromBytes, ToBytes};
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction},
@@ -151,12 +152,12 @@ pub fn add_input_relations(
     }
 
     outputs.iter().for_each(|&output| {
-        match &cardano_multiplatform_lib::TransactionOutput::from_bytes(output.payload.clone()) {
+        match &cml_chain::transaction::TransactionOutput::from_bytes(output.payload.clone()) {
             Ok(payload) => {
                 add_input_cred_relation(
                     vkey_relation_map,
                     output_to_input_tx[&output.id],
-                    &payload.address(),
+                    payload.address(),
                     input_relation,
                     input_stake_relation,
                 );
@@ -171,45 +172,40 @@ pub fn add_input_relations(
 fn add_input_cred_relation(
     vkey_relation_map: &mut RelationMap,
     tx_id: i64,
-    addr: &cardano_multiplatform_lib::address::Address,
+    addr: &cml_chain::address::Address,
     input_relation: TxCredentialRelationValue,
     input_stake_relation: TxCredentialRelationValue,
 ) {
     if let Some(base_addr) = BaseAddress::from_address(addr) {
         // Payment Key
         {
-            vkey_relation_map.add_relation(
-                tx_id,
-                &base_addr.payment_cred().to_bytes(),
-                input_relation,
-            );
+            vkey_relation_map.add_relation(tx_id, base_addr.payment.to_raw_bytes(), input_relation);
         }
 
         // Stake Key
         {
             vkey_relation_map.add_relation(
                 tx_id,
-                &base_addr.stake_cred().to_bytes(),
+                base_addr.stake.to_raw_bytes(),
                 input_stake_relation,
             );
         }
     } else if let Some(reward_addr) = RewardAddress::from_address(addr) {
-        vkey_relation_map.add_relation(
-            tx_id,
-            &reward_addr.payment_cred().to_bytes(),
-            input_relation,
-        );
+        vkey_relation_map.add_relation(tx_id, reward_addr.payment.to_raw_bytes(), input_relation);
     } else if ByronAddress::from_address(addr).is_some() {
         // Byron address has no credentials
     } else if let Some(enterprise_addr) = EnterpriseAddress::from_address(addr) {
         vkey_relation_map.add_relation(
             tx_id,
-            &enterprise_addr.payment_cred().to_bytes(),
+            enterprise_addr.payment.to_raw_bytes(),
             input_relation,
         );
     } else if let Some(ptr_addr) = PointerAddress::from_address(addr) {
-        vkey_relation_map.add_relation(tx_id, &ptr_addr.payment_cred().to_bytes(), input_relation);
+        vkey_relation_map.add_relation(tx_id, ptr_addr.payment.to_raw_bytes(), input_relation);
     } else {
-        panic!("Unexpected address type {}", hex::encode(addr.to_bytes()));
+        panic!(
+            "Unexpected address type {}",
+            hex::encode(addr.to_raw_bytes())
+        );
     }
 }

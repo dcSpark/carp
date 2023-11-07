@@ -10,7 +10,9 @@ entity = { path = "../entity" }
 
 # [reparse]
 anyhow = { version = "1.0.69" }
-cardano-multiplatform-lib = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "metadata-and-addr" }
+cml-core = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "e231f1eab743b3cb7c5464cd8ed9ffda29631b97" }
+cml-chain = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "e231f1eab743b3cb7c5464cd8ed9ffda29631b97" }
+cml-crypto = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "e231f1eab743b3cb7c5464cd8ed9ffda29631b97" }
 dotenv = { version = "0.15.0" }
 futures = { version = "0.3.21" }
 hex = { version = "0.4.0" }

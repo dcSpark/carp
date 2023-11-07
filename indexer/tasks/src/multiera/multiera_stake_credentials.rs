@@ -1,6 +1,9 @@
+use cml_chain::transaction::utils::RequiredSignersSet;
+use cml_chain::transaction::TransactionWitnessSet;
+use cml_core::serialization::FromBytes;
 use std::collections::{BTreeMap, BTreeSet};
+use std::hash::Hash;
 
-use cardano_multiplatform_lib::RequiredSignersSet;
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, Condition, DatabaseTransaction, Set},
@@ -63,7 +66,7 @@ async fn handle_stake_credentials(
         queue_witness(
             vkey_relation_map,
             cardano_transaction.id,
-            &cardano_multiplatform_lib::TransactionWitnessSet::from_bytes(to_witness_cbor(tx_body))
+            TransactionWitnessSet::from_bytes(to_witness_cbor(tx_body))
                 .map_err(|e| {
                     panic!(
                         "{:?} {:?} {:?}",
@@ -159,24 +162,22 @@ async fn insert_stake_credentials(
 fn queue_witness(
     vkey_relation_map: &mut RelationMap,
     tx_id: i64,
-    witness_set: &cardano_multiplatform_lib::TransactionWitnessSet,
+    witness_set: TransactionWitnessSet,
 ) {
-    if let Some(vkeys) = witness_set.vkeys() {
-        for i in 0..vkeys.len() {
-            let vkey = vkeys.get(i);
+    if let Some(vkeys) = witness_set.vkeywitnesses {
+        for vkey in vkeys {
             vkey_relation_map.add_relation(
                 tx_id,
-                RelationMap::keyhash_to_pallas(&vkey.vkey().public_key().hash()).as_slice(),
+                RelationMap::keyhash_to_pallas(vkey.vkey.hash()).as_slice(),
                 TxCredentialRelationValue::Witness,
             );
         }
     }
-    if let Some(scripts) = witness_set.native_scripts() {
-        for i in 0..scripts.len() {
-            let script = scripts.get(i);
+    if let Some(scripts) = witness_set.native_scripts {
+        for script in scripts {
             vkey_relation_map.add_relation(
                 tx_id,
-                RelationMap::scripthash_to_pallas(&script.hash()).as_slice(),
+                RelationMap::scripthash_to_pallas(script.hash()).as_slice(),
                 TxCredentialRelationValue::Witness,
             );
 
@@ -184,29 +185,27 @@ fn queue_witness(
             for vkey_in_script in vkeys_in_script {
                 vkey_relation_map.add_relation(
                     tx_id,
-                    RelationMap::keyhash_to_pallas(&vkey_in_script).as_slice(),
+                    RelationMap::keyhash_to_pallas(vkey_in_script).as_slice(),
                     TxCredentialRelationValue::InNativeScript,
                 );
             }
         }
     }
 
-    if let Some(scripts) = &witness_set.plutus_v1_scripts() {
-        for i in 0..scripts.len() {
-            let script = scripts.get(i);
+    if let Some(scripts) = &witness_set.plutus_v1_scripts {
+        for script in scripts {
             vkey_relation_map.add_relation(
                 tx_id,
-                RelationMap::scripthash_to_pallas(&script.hash()).as_slice(),
+                RelationMap::scripthash_to_pallas(script.hash()).as_slice(),
                 TxCredentialRelationValue::Witness,
             );
         }
     }
-    if let Some(scripts) = &witness_set.plutus_v2_scripts() {
-        for i in 0..scripts.len() {
-            let script = scripts.get(i);
+    if let Some(scripts) = &witness_set.plutus_v2_scripts {
+        for script in scripts {
             vkey_relation_map.add_relation(
                 tx_id,
-                RelationMap::scripthash_to_pallas(&script.hash()).as_slice(),
+                RelationMap::scripthash_to_pallas(script.hash()).as_slice(),
                 TxCredentialRelationValue::Witness,
             );
         }

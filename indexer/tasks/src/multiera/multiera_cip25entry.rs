@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::config::EmptyConfig::EmptyConfig;
-use cardano_multiplatform_lib::crypto::ScriptHash;
+use cml_chain::crypto::ScriptHash;
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, Condition, DatabaseTransaction, Set},

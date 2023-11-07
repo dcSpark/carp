@@ -1,9 +1,12 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use cardano_multiplatform_lib::{
+use cml_chain::certs::Credential;
+use cml_chain::{
     address::{BaseAddress, EnterpriseAddress, PointerAddress, RewardAddress},
     byron::ByronAddress,
 };
+use cml_core::serialization::{FromBytes, Serialize, ToBytes};
+use cml_crypto::RawBytesEncoding;
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction},
@@ -104,8 +107,7 @@ async fn handle_addresses(
 
         for withdrawal in tx_body.withdrawals().collect::<Vec<(&[u8], u64)>>() {
             let reward_addr = RewardAddress::from_address(
-                &cardano_multiplatform_lib::address::Address::from_bytes(withdrawal.0.into())
-                    .unwrap(),
+                &cml_chain::address::Address::from_bytes(withdrawal.0.into()).unwrap(),
             )
             .unwrap();
             queue_address_credential(
@@ -113,8 +115,8 @@ async fn handle_addresses(
                 &mut queued_address_credential,
                 &mut queued_address,
                 cardano_transaction.id,
-                &reward_addr.to_address().to_bytes(),
-                &reward_addr.payment_cred(),
+                &reward_addr.clone().to_address().to_raw_bytes(),
+                reward_addr.payment,
                 TxCredentialRelationValue::Withdrawal,
                 AddressCredentialRelationValue::PaymentKey,
             );
@@ -150,8 +152,7 @@ fn queue_certificate(
             vkey_relation_map.add_relation(
                 tx_id,
                 RelationMap::keyhash_to_pallas(
-                    &cardano_multiplatform_lib::crypto::Ed25519KeyHash::from_bytes(pool.to_vec())
-                        .unwrap(),
+                    cml_chain::crypto::Ed25519KeyHash::from_raw_bytes(pool.as_slice()).unwrap(),
                 )
                 .as_slice(),
                 TxCredentialRelationValue::DelegationTarget,
@@ -193,8 +194,7 @@ fn queue_certificate(
             );
 
             let reward_addr = RewardAddress::from_address(
-                &cardano_multiplatform_lib::address::Address::from_bytes(reward_account.to_vec())
-                    .unwrap(),
+                &cml_chain::address::Address::from_bytes(reward_account.to_vec()).unwrap(),
             )
             .unwrap();
 
@@ -203,8 +203,8 @@ fn queue_certificate(
                 queued_address_credential,
                 queued_address,
                 tx_id,
-                &reward_addr.to_address().to_bytes(),
-                &reward_addr.payment_cred(),
+                &reward_addr.clone().to_address().to_raw_bytes(),
+                reward_addr.payment,
                 TxCredentialRelationValue::PoolReward,
                 AddressCredentialRelationValue::PaymentKey,
             );
@@ -266,7 +266,7 @@ fn queue_output(
     output_relation: TxCredentialRelationValue,
     output_stake_relation: TxCredentialRelationValue,
 ) {
-    use cardano_multiplatform_lib::address::Address;
+    use cml_chain::address::Address;
 
     let pallas_address = output
         .address()
@@ -286,8 +286,8 @@ fn queue_output(
                 queued_address_credential,
                 queued_address,
                 tx_id,
-                &addr.to_bytes(),
-                &base_addr.payment_cred(),
+                &addr.to_raw_bytes(),
+                base_addr.payment,
                 output_relation,
                 address_relation,
             );
@@ -300,8 +300,8 @@ fn queue_output(
                 queued_address_credential,
                 queued_address,
                 tx_id,
-                &addr.to_bytes(),
-                &base_addr.stake_cred(),
+                &addr.to_raw_bytes(),
+                base_addr.stake,
                 output_stake_relation,
                 AddressCredentialRelationValue::StakeKey,
             );
@@ -312,14 +312,14 @@ fn queue_output(
             queued_address_credential,
             queued_address,
             tx_id,
-            &addr.to_bytes(),
-            &reward_addr.payment_cred(),
+            &addr.to_raw_bytes(),
+            reward_addr.payment,
             output_relation,
             address_relation,
         );
     } else if ByronAddress::from_address(&addr).is_some() {
         queued_address
-            .entry(addr.to_bytes())
+            .entry(addr.to_raw_bytes())
             .and_modify(|old_id| {
                 if tx_id < *old_id {
                     *old_id = tx_id
@@ -332,8 +332,8 @@ fn queue_output(
             queued_address_credential,
             queued_address,
             tx_id,
-            &addr.to_bytes(),
-            &enterprise_addr.payment_cred(),
+            &addr.to_raw_bytes(),
+            enterprise_addr.payment,
             output_relation,
             address_relation,
         );
@@ -343,13 +343,16 @@ fn queue_output(
             queued_address_credential,
             queued_address,
             tx_id,
-            &addr.to_bytes(),
-            &ptr_addr.payment_cred(),
+            &addr.to_raw_bytes(),
+            ptr_addr.payment,
             output_relation,
             address_relation,
         );
     } else {
-        panic!("Unexpected address type {}", hex::encode(addr.to_bytes()));
+        panic!(
+            "Unexpected address type {}",
+            hex::encode(addr.to_raw_bytes())
+        );
     }
 }
 
@@ -360,7 +363,7 @@ fn queue_address_credential(
     queued_address: &mut BTreeMap<Vec<u8>, i64>,
     tx_id: i64,
     address: &[u8],
-    credential: &cardano_multiplatform_lib::address::StakeCredential,
+    credential: Credential,
     tx_relation: TxCredentialRelationValue,
     address_relation: AddressCredentialRelationValue,
 ) {
@@ -372,10 +375,10 @@ fn queue_address_credential(
             }
         })
         .or_insert(tx_id);
-    vkey_relation_map.add_relation(tx_id, &credential.to_bytes(), tx_relation);
+    vkey_relation_map.add_relation(tx_id, credential.to_raw_bytes(), tx_relation);
     queued_address_credential.insert(QueuedAddressCredentialRelation {
         address: address.to_vec(),
-        stake_credential: credential.to_bytes(),
+        stake_credential: credential.to_raw_bytes().to_vec(),
         address_relation,
     });
 }

@@ -1,5 +1,5 @@
 use crate::utils::TaskPerfAggregator;
-use cardano_multiplatform_lib::genesis::byron::config::GenesisData;
+use cml_chain::genesis::byron::config::GenesisData;
 use entity::{block::EraValue, prelude::*, sea_orm::DatabaseTransaction};
 use pallas::ledger::traverse::MultiEraBlock;
 use shred::DispatcherBuilder;
