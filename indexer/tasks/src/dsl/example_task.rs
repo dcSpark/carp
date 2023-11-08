@@ -42,7 +42,7 @@ carp_task! {
 
 async fn handle_dummy(
     _db_tx: &DatabaseTransaction,
-    _block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
+    _block: BlockInfo<'_, cml_multi_era::MultiEraBlock, BlockGlobalInfo>,
 ) -> Result<(), DbErr> {
     Ok(())
 }

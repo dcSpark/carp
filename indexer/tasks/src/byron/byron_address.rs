@@ -39,7 +39,7 @@ carp_task! {
 
 async fn handle_addresses(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
+    block: BlockInfo<'_, cml_multi_era::MultiEraBlock, BlockGlobalInfo>,
     byron_txs: &[TransactionModel],
 ) -> Result<BTreeMap<Vec<u8>, AddressInBlock>, DbErr> {
     match &block.1 {

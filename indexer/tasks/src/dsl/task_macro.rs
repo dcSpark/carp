@@ -9,7 +9,6 @@ pub use crate::{
     utils::TaskPerfAggregator,
 };
 pub use cml_chain::genesis::byron::config::GenesisData;
-pub use pallas::ledger::traverse::MultiEraBlock;
 pub use paste::paste;
 pub use shred::{DispatcherBuilder, Read, ResourceId, System, SystemData, World, Write};
 pub use std::sync::{Arc, Mutex};
@@ -19,10 +18,10 @@ macro_rules! era_to_block {
         GenesisData
     };
     (byron) => {
-        MultiEraBlock<'a>
+        cml_multi_era::MultiEraBlock
     };
     (multiera) => {
-        MultiEraBlock<'a>
+        cml_multi_era::MultiEraBlock
     };
 }
 

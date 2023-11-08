@@ -562,6 +562,7 @@ dependencies = [
  "cml-chain",
  "cml-core",
  "cml-crypto",
+ "cml-multi-era",
  "ctrlc",
  "dcspark-blockchain-source",
  "dcspark-core",
@@ -776,6 +777,25 @@ dependencies = [
  "serde_json",
  "sha2 0.9.9",
  "thiserror",
+]
+
+[[package]]
+name = "cml-multi-era"
+version = "0.1.0"
+source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=e231f1eab743b3cb7c5464cd8ed9ffda29631b97#e231f1eab743b3cb7c5464cd8ed9ffda29631b97"
+dependencies = [
+ "bech32 0.7.3",
+ "cbor_event",
+ "cml-chain",
+ "cml-core",
+ "cml-crypto",
+ "derivative",
+ "hex",
+ "linked-hash-map",
+ "schemars",
+ "serde",
+ "serde_json",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -3547,6 +3567,7 @@ dependencies = [
  "cml-chain",
  "cml-core",
  "cml-crypto",
+ "cml-multi-era",
  "cryptoxide",
  "entity",
  "hex",

@@ -38,7 +38,7 @@ type QueuedInputs = Vec<(Vec<OutputRef>, i64)>;
 
 async fn handle_unused_input(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
+    block: BlockInfo<'_, cml_multi_era::MultiEraBlock, BlockGlobalInfo>,
     multiera_txs: &[TransactionModel],
     vkey_relation_map: &mut RelationMap,
 ) -> Result<(), DbErr> {

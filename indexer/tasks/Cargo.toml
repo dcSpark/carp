@@ -15,6 +15,7 @@ anyhow = { version = "1.0.69" }
 cml-core = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "e231f1eab743b3cb7c5464cd8ed9ffda29631b97" }
 cml-chain = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "e231f1eab743b3cb7c5464cd8ed9ffda29631b97" }
 cml-crypto = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "e231f1eab743b3cb7c5464cd8ed9ffda29631b97" }
+cml-multi-era = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "e231f1eab743b3cb7c5464cd8ed9ffda29631b97" }
 projected-nft-sdk = { git = "https://github.com/dcSpark/projected-nft-whirlpool.git", rev = "a350ccfcbdef22b73c93561c6816bd42b13f00ff" }
 cfg-if = { version = "0.1.10" }
 cryptoxide = { version = "0.4.2" }

@@ -46,7 +46,7 @@ merge_result |previous_data, _result| {
 
 async fn handle_datum(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
+    block: BlockInfo<'_, cml_multi_era::MultiEraBlock, BlockGlobalInfo>,
     multiera_txs: &[TransactionModel],
     readonly: bool,
 ) -> Result<(), DbErr> {

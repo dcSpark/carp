@@ -8,7 +8,6 @@ use entity::{
         QueryOrder, QuerySelect, Set,
     },
 };
-use pallas::ledger::traverse::Era;
 use std::collections::BTreeMap;
 
 static ADDRESS_TRUNCATE: usize = 500; // 1000 in hex
@@ -120,7 +119,7 @@ pub async fn insert_addresses(
 pub struct OutputWithTxData {
     pub model: TransactionOutputModel,
     pub tx_hash: Vec<u8>,
-    pub era: Era,
+    pub era: EraValue,
 }
 
 pub async fn get_outputs_for_inputs(

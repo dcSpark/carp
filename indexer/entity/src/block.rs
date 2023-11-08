@@ -1,4 +1,3 @@
-use pallas::ledger::traverse::Era;
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -31,6 +30,7 @@ pub enum EraValue {
     Mary,
     Alonzo,
     Babbage,
+    Conway,
 }
 
 impl From<EraValue> for i32 {
@@ -42,6 +42,7 @@ impl From<EraValue> for i32 {
             EraValue::Mary => 3,
             EraValue::Alonzo => 4,
             EraValue::Babbage => 5,
+            EraValue::Conway => 6,
         }
     }
 }
@@ -57,20 +58,8 @@ impl TryFrom<i32> for EraValue {
             3 => Ok(EraValue::Mary),
             4 => Ok(EraValue::Alonzo),
             5 => Ok(EraValue::Babbage),
+            6 => Ok(EraValue::Conway),
             _ => Err(()),
-        }
-    }
-}
-
-impl From<EraValue> for Era {
-    fn from(item: EraValue) -> Self {
-        match item {
-            EraValue::Byron => Era::Byron,
-            EraValue::Shelley => Era::Shelley,
-            EraValue::Allegra => Era::Allegra,
-            EraValue::Mary => Era::Mary,
-            EraValue::Alonzo => Era::Alonzo,
-            EraValue::Babbage => Era::Babbage,
         }
     }
 }

@@ -1,3 +1,6 @@
+use cml_multi_era::byron::block::ByronBlock;
+use cml_multi_era::byron::transaction::{ByronTx, ByronTxIn};
+use cml_multi_era::MultiEraBlock;
 use crate::dsl::task_macro::*;
 use pallas::ledger::primitives::byron::{self, TxIn};
 
@@ -29,9 +32,48 @@ carp_task! {
 
 async fn handle_inputs(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
+    block: BlockInfo<'_, MultiEraBlock, BlockGlobalInfo>,
     byron_txs: &[TransactionModel],
 ) -> Result<Vec<TransactionInputModel>, DbErr> {
+    match block.1 {
+        MultiEraBlock::Byron(ByronBlock::Main(block)) => {
+            block
+                .body
+                .tx_payload
+                .iter()
+                .map(|tx| {
+                    tx
+                        .byron_tx
+                        .inputs
+                        .iter()
+                        .map(|input| {
+                            match input {
+                                ByronTxIn::ByronTxInRegular(regular) => {
+                                    (regular.index_1.byron_tx_id, regular.index_1.u32)
+                                }
+                                ByronTxIn::ByronTxInGenesis(genesis) => {
+                                    genesis.
+                                }
+                            }
+                        })
+                })
+        }
+        MultiEraBlock::Shelley(block) => {
+            block.transaction_bodies
+                .iter()
+                .flat_map(|tx| tx.inputs
+                    .iter()
+                    .map(|input|
+                        (input.transaction_id, input.index)
+                    )
+                )
+        }
+        MultiEraBlock::Allegra(_) => {}
+        MultiEraBlock::Mary(_) => {}
+        MultiEraBlock::Alonzo(_) => {}
+        MultiEraBlock::Babbage(_) => {}
+        MultiEraBlock::Conway(_) => {}
+    }
     let flattened_inputs: Vec<(Vec<pallas::ledger::traverse::OutputRef>, i64)> = block
         .1
         .txs()

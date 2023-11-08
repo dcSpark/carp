@@ -7,13 +7,12 @@ use crate::utils::find_task_registry_entry;
 use crate::utils::TaskPerfAggregator;
 use entity::sea_orm::{prelude::*, DatabaseTransaction};
 use pallas::ledger::primitives::byron::{self};
-use pallas::ledger::traverse::MultiEraBlock;
 use shred::{DispatcherBuilder, World};
 use tokio::runtime::Handle;
 
 pub async fn process_byron_block(
     txn: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
+    block: BlockInfo<'_, cml_multi_era::MultiEraBlock, BlockGlobalInfo>,
     exec_plan: &ExecutionPlan,
     perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
 ) -> Result<(), DbErr> {

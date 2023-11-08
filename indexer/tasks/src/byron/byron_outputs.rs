@@ -37,7 +37,7 @@ carp_task! {
 
 async fn handle_outputs(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
+    block: BlockInfo<'_, cml_multi_era::MultiEraBlock, BlockGlobalInfo>,
     byron_txs: &[TransactionModel],
     byron_addresses: &BTreeMap<Vec<u8>, AddressInBlock>,
 ) -> Result<Vec<TransactionOutputModel>, DbErr> {
