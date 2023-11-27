@@ -31,8 +31,8 @@ carp_task! {
   configuration PayloadAndReadonlyConfig;
   doc "Parses projected NFT contract data";
   era multiera;
-  dependencies [MultieraOutputTask];
-  read [multiera_txs, multiera_outputs];
+  dependencies [MultieraUsedInputTask, MultieraOutputTask];
+  read [multiera_txs, multiera_outputs, multiera_used_inputs_to_outputs_map];
   write [];
   should_add_task |block, _properties| {
     !block.1.is_empty()
@@ -42,6 +42,7 @@ carp_task! {
       task.block,
       &previous_data.multiera_txs,
       &previous_data.multiera_outputs,
+      &previous_data.multiera_used_inputs_to_outputs_map,
       task.config.address.clone(),
   );
   merge_result |previous_data, _result| {
@@ -87,7 +88,7 @@ impl TryFrom<i32> for ProjectedNftOperation {
     }
 }
 
-#[derive(FromQueryResult)]
+#[derive(FromQueryResult, Debug, Clone)]
 pub(crate) struct ProjectedNftInputsQueryOutputResult {
     id: i64,
     tx_id: i64,
@@ -103,6 +104,7 @@ async fn handle_projected_nft(
     block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
     multiera_txs: &[TransactionModel],
     multiera_outputs: &[TransactionOutputModel],
+    multiera_used_inputs_to_outputs_map: &BTreeMap<Vec<u8>, BTreeMap<i64, OutputWithTxData>>,
     address: String,
 ) -> Result<(), DbErr> {
     let config_address = hex::decode(address).map_err(|err| {
@@ -123,7 +125,8 @@ async fn handle_projected_nft(
         Some(pk) => pk,
     };
 
-    let used_projected_nfts = get_projected_nft_inputs(db_tx, &block).await?;
+    let used_projected_nfts =
+        get_projected_nft_inputs(db_tx, multiera_used_inputs_to_outputs_map).await?;
 
     let mut queued_projected_nft_records = vec![];
 
@@ -136,19 +139,24 @@ async fn handle_projected_nft(
             outputs_map.insert(output_model.output_index, output_model.clone());
         }
 
-        for projected_nft in used_projected_nfts.iter().filter(|projected_nft| {
-            projected_nft.operation == i32::from(ProjectedNftOperation::Unlocking)
-                && projected_nft.tx_id == cardano_transaction.id
-        }) {
-            queued_projected_nft_records.push(entity::projected_nft::ActiveModel {
-                utxo_id: Set(None),
-                tx_id: Set(cardano_transaction.id),
-                asset: Set(projected_nft.asset.clone()),
-                amount: Set(projected_nft.amount),
-                operation: Set(ProjectedNftOperation::Claim.into()),
-                plutus_datum: Set(vec![]),
-                ..Default::default()
-            })
+        for input in tx_body.inputs().iter() {
+            if let Some(entry) = used_projected_nfts.get(&input.hash().to_vec()) {
+                if let Some(projected_nft) = entry.get(&(input.index() as i64)) {
+                    if projected_nft.operation != i32::from(ProjectedNftOperation::Unlocking) {
+                        continue;
+                    }
+
+                    queued_projected_nft_records.push(entity::projected_nft::ActiveModel {
+                        utxo_id: Set(None),
+                        tx_id: Set(cardano_transaction.id),
+                        asset: Set(projected_nft.asset.clone()),
+                        amount: Set(projected_nft.amount),
+                        operation: Set(ProjectedNftOperation::Claim.into()),
+                        plutus_datum: Set(vec![]),
+                        ..Default::default()
+                    })
+                }
+            }
         }
 
         for (output_index, output) in tx_body.outputs().iter().enumerate() {
@@ -207,27 +215,24 @@ async fn handle_projected_nft(
 
 async fn get_projected_nft_inputs(
     db_tx: &DatabaseTransaction,
-    block: &BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
-) -> Result<Vec<ProjectedNftInputsQueryOutputResult>, DbErr> {
-    let inputs_condition = block
-        .1
-        .txs()
+    multiera_used_inputs_to_outputs_map: &BTreeMap<Vec<u8>, BTreeMap<i64, OutputWithTxData>>,
+) -> Result<BTreeMap<Vec<u8>, BTreeMap<i64, ProjectedNftInputsQueryOutputResult>>, DbErr> {
+    let inputs_condition = multiera_used_inputs_to_outputs_map
         .iter()
-        .flat_map(|tx| {
-            tx.inputs()
-                .iter()
-                .map(|input| (input.hash().to_vec(), input.index()))
-                .collect::<Vec<(Vec<u8>, u64)>>()
+        .flat_map(|(_input_tx_id, map)| {
+            map.iter().map(|(_output_index, data)| {
+                (data.model.tx_id, data.model.output_index, data.model.id) // input and utxo id
+            })
         })
-        .fold(Condition::any(), |cond, new_input| {
+        .fold(Condition::any(), |cond, (tx_id, _output_index, utxo_id)| {
             cond.add(
                 Condition::all()
-                    .add(TransactionOutputColumn::OutputIndex.eq(new_input.1))
-                    .add(TransactionColumn::Hash.eq(new_input.0)),
+                    .add(ProjectedNftColumn::UtxoId.eq(utxo_id))
+                    .add(ProjectedNftColumn::TxId.eq(tx_id)),
             )
         });
 
-    ProjectedNft::find()
+    let projected_nfts = ProjectedNft::find()
         .select_only()
         .column(TransactionOutputColumn::Id)
         .column(TransactionOutputColumn::TxId)
@@ -244,7 +249,18 @@ async fn get_projected_nft_inputs(
         .filter(inputs_condition)
         .into_model::<ProjectedNftInputsQueryOutputResult>()
         .all(db_tx)
-        .await
+        .await?;
+
+    let mut result: BTreeMap<Vec<u8>, BTreeMap<i64, ProjectedNftInputsQueryOutputResult>> =
+        BTreeMap::new();
+    for nft in projected_nfts {
+        result
+            .entry(nft.tx_hash.clone())
+            .or_default()
+            .entry(nft.output_index as i64)
+            .or_insert(nft);
+    }
+    Ok(result)
 }
 
 fn extract_operation_and_datum(output: &MultiEraOutput) -> (ProjectedNftOperation, Vec<u8>) {

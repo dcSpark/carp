@@ -15,7 +15,7 @@ SELECT
     encode("ProjectedNFT".plutus_datum, 'hex') as plutus_datum,
     "Block".slot
 FROM "ProjectedNFT"
-         JOIN "TransactionOutput" ON "TransactionOutput".id = "ProjectedNFT".utxo_id
+         LEFT JOIN "TransactionOutput" ON "TransactionOutput".id = "ProjectedNFT".utxo_id
          JOIN "Transaction" ON "Transaction".id = "ProjectedNFT".tx_id
          JOIN "Block" ON "Transaction".block_id = "Block".id
 WHERE

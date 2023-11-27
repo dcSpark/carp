@@ -24,7 +24,7 @@ export interface ISqlProjectedNftRangeQuery {
   result: ISqlProjectedNftRangeResult;
 }
 
-const sqlProjectedNftRangeIR: any = {"usedParamSet":{"min_slot":true,"max_slot":true},"params":[{"name":"min_slot","required":true,"transform":{"type":"scalar"},"locs":[{"a":751,"b":760}]},{"name":"max_slot","required":true,"transform":{"type":"scalar"},"locs":[{"a":786,"b":795}]}],"statement":"SELECT\n    CASE\n        WHEN \"ProjectedNFT\".operation = 0 THEN 'Lock'\n        WHEN \"ProjectedNFT\".operation = 1 THEN 'Unlocking'\n        WHEN \"ProjectedNFT\".operation = 2 THEN 'Claim'\n        ELSE 'Invalid'\n        END AS status,\n    \"ProjectedNFT\".asset as asset,\n    \"ProjectedNFT\".amount as amount,\n    encode(\"Transaction\".hash, 'hex') as tx_id,\n    \"TransactionOutput\".output_index as output_index,\n    encode(\"ProjectedNFT\".plutus_datum, 'hex') as plutus_datum,\n    \"Block\".slot\nFROM \"ProjectedNFT\"\n         JOIN \"TransactionOutput\" ON \"TransactionOutput\".id = \"ProjectedNFT\".utxo_id\n         JOIN \"Transaction\" ON \"Transaction\".id = \"ProjectedNFT\".tx_id\n         JOIN \"Block\" ON \"Transaction\".block_id = \"Block\".id\nWHERE\n        \"Block\".slot > :min_slot!\n    AND \"Block\".slot <= :max_slot!\nORDER BY (\"Block\".height, \"Transaction\".tx_index, \"TransactionOutput\".output_index) ASC"};
+const sqlProjectedNftRangeIR: any = {"usedParamSet":{"min_slot":true,"max_slot":true},"params":[{"name":"min_slot","required":true,"transform":{"type":"scalar"},"locs":[{"a":756,"b":765}]},{"name":"max_slot","required":true,"transform":{"type":"scalar"},"locs":[{"a":791,"b":800}]}],"statement":"SELECT\n    CASE\n        WHEN \"ProjectedNFT\".operation = 0 THEN 'Lock'\n        WHEN \"ProjectedNFT\".operation = 1 THEN 'Unlocking'\n        WHEN \"ProjectedNFT\".operation = 2 THEN 'Claim'\n        ELSE 'Invalid'\n        END AS status,\n    \"ProjectedNFT\".asset as asset,\n    \"ProjectedNFT\".amount as amount,\n    encode(\"Transaction\".hash, 'hex') as tx_id,\n    \"TransactionOutput\".output_index as output_index,\n    encode(\"ProjectedNFT\".plutus_datum, 'hex') as plutus_datum,\n    \"Block\".slot\nFROM \"ProjectedNFT\"\n         LEFT JOIN \"TransactionOutput\" ON \"TransactionOutput\".id = \"ProjectedNFT\".utxo_id\n         JOIN \"Transaction\" ON \"Transaction\".id = \"ProjectedNFT\".tx_id\n         JOIN \"Block\" ON \"Transaction\".block_id = \"Block\".id\nWHERE\n        \"Block\".slot > :min_slot!\n    AND \"Block\".slot <= :max_slot!\nORDER BY (\"Block\".height, \"Transaction\".tx_index, \"TransactionOutput\".output_index) ASC"};
 
 /**
  * Query generated from SQL:
@@ -43,7 +43,7 @@ const sqlProjectedNftRangeIR: any = {"usedParamSet":{"min_slot":true,"max_slot":
  *     encode("ProjectedNFT".plutus_datum, 'hex') as plutus_datum,
  *     "Block".slot
  * FROM "ProjectedNFT"
- *          JOIN "TransactionOutput" ON "TransactionOutput".id = "ProjectedNFT".utxo_id
+ *          LEFT JOIN "TransactionOutput" ON "TransactionOutput".id = "ProjectedNFT".utxo_id
  *          JOIN "Transaction" ON "Transaction".id = "ProjectedNFT".tx_id
  *          JOIN "Block" ON "Transaction".block_id = "Block".id
  * WHERE
