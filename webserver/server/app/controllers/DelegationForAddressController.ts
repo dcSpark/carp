@@ -8,7 +8,7 @@ import { Errors } from '../../../shared/errors';
 import type { EndpointTypes } from '../../../shared/routes';
 import { Routes } from '../../../shared/routes';
 import { delegationForAddress } from '../services/DelegationForAddress';
-import { DelegationForAddressResponse } from '../../../shared/models/DelegationForAddress';
+import type { DelegationForAddressResponse } from '../../../shared/models/DelegationForAddress';
 import { Address } from '@dcspark/cardano-multiplatform-lib-nodejs';
 
 const route = Routes.delegationForAddress;

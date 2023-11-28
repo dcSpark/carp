@@ -1,5 +1,6 @@
 import type { PoolClient } from 'pg';
-import { ISqlStakeDelegationForAddressResult, sqlStakeDelegationForAddress } from '../models/delegation/delegationForAddress.queries';
+import type { ISqlStakeDelegationForAddressResult} from '../models/delegation/delegationForAddress.queries';
+import { sqlStakeDelegationForAddress } from '../models/delegation/delegationForAddress.queries';
 
 export async function delegationForAddress(request: {
     address: Buffer,

@@ -6,7 +6,7 @@ import { genErrorMessage, type ErrorShape, Errors } from '../../../shared/errors
 import type { EndpointTypes } from '../../../shared/routes';
 import { Routes } from '../../../shared/routes';
 import { delegationsForPool } from '../services/DelegationForPool';
-import { DelegationForPoolResponse } from '../../../shared/models/DelegationForPool';
+import type { DelegationForPoolResponse } from '../../../shared/models/DelegationForPool';
 import { POOL_DELEGATION_LIMIT } from '../../../shared/constants';
 
 const route = Routes.delegationForPool;

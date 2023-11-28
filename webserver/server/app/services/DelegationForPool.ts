@@ -1,6 +1,6 @@
 import type { PoolClient } from 'pg';
-import { ISqlStakeDelegationByPoolResult, sqlStakeDelegationByPool } from '../models/delegation/delegationsForPool.queries';
-
+import type { ISqlStakeDelegationByPoolResult} from '../models/delegation/delegationsForPool.queries';
+import { sqlStakeDelegationByPool } from '../models/delegation/delegationsForPool.queries';
 
 export async function delegationsForPool(request: {
     range: { minSlot: number, maxSlot: number },
