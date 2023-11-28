@@ -12,6 +12,8 @@ export enum ErrorCodes {
   AssetLimitExceeded = 8,
   CredentialLimitExceeded = 9,
   AssetPairLimitExceeded = 10,
+  PoolsLimitExceeded = 11,
+  SlotRangeLimitExceeded = 12,
 }
 
 export type ErrorShape = {
@@ -83,6 +85,18 @@ export const Errors = {
   AssetPairLimitExceeded: {
     code: ErrorCodes.AssetPairLimitExceeded,
     prefix: "Exceeded request asset pair limit.",
+    detailsGen: (details: { limit: number; found: number }) =>
+      `Limit of ${details.limit}, found ${details.found}`,
+  },
+  PoolsLimitExceeded: {
+    code: ErrorCodes.PoolsLimitExceeded,
+    prefix: "Exceeded request pools limit.",
+    detailsGen: (details: { limit: number; found: number }) =>
+      `Limit of ${details.limit}, found ${details.found}`,
+  },
+  SlotRangeLimitExceeded: {
+    code: ErrorCodes.SlotRangeLimitExceeded,
+    prefix: "Exceeded request slot range limit.",
     detailsGen: (details: { limit: number; found: number }) =>
       `Limit of ${details.limit}, found ${details.found}`,
   },
