@@ -96,7 +96,7 @@ pub(crate) struct ProjectedNftInputsQueryOutputResult {
     pub output_index: i32,
     pub tx_hash: Vec<u8>,
     pub operation: i32,
-    pub address: Vec<u8>,
+    pub owner_address: Vec<u8>,
     pub asset: String,
     pub amount: i64,
 }
@@ -155,7 +155,7 @@ async fn handle_projected_nft(
                         amount: Set(projected_nft.amount),
                         operation: Set(ProjectedNftOperation::Claim.into()),
                         plutus_datum: Set(vec![]),
-                        owner_address: Set(projected_nft.address.clone()),
+                        owner_address: Set(projected_nft.owner_address.clone()),
                         previous_utxo_tx_hash: Set(projected_nft.tx_hash.clone()),
                         previous_utxo_tx_output_index: Set(Some(projected_nft.output_index as i64)),
                         ..Default::default()
