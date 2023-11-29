@@ -24,12 +24,19 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .auto_increment(),
                     )
-                    .col(ColumnDef::new(Column::UtxoId).big_integer())
+                    .col(ColumnDef::new(Column::OwnerAddress).binary().not_null())
+                    .col(
+                        ColumnDef::new(Column::PreviousUtxoTxHash)
+                            .binary()
+                            .not_null(),
+                    )
+                    .col(ColumnDef::new(Column::PreviousUtxoTxOutputIndex).big_integer())
+                    .col(ColumnDef::new(Column::HololockerUtxoId).big_integer())
                     .col(ColumnDef::new(Column::TxId).big_integer().not_null())
                     .col(ColumnDef::new(Column::Asset).text().not_null())
                     .col(ColumnDef::new(Column::Amount).big_integer().not_null())
-                    .col(ColumnDef::new(Column::Operation).integer())
-                    .col(ColumnDef::new(Column::PlutusDatum).binary())
+                    .col(ColumnDef::new(Column::Operation).integer().not_null())
+                    .col(ColumnDef::new(Column::PlutusDatum).binary().not_null())
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk-projected_nft-tx_id")
@@ -43,7 +50,7 @@ impl MigrationTrait for Migration {
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk-projected_nft-utxo_id")
-                            .from(Entity, Column::UtxoId)
+                            .from(Entity, Column::HololockerUtxoId)
                             .to(
                                 entity::prelude::TransactionOutput,
                                 entity::prelude::TransactionOutputColumn::Id,

@@ -7,7 +7,6 @@ import type { EndpointTypes } from '../../../shared/routes';
 import { Routes } from '../../../shared/routes';
 import { projectedNftRange } from '../services/ProjectedNftRange';
 import type {ProjectedNftRangeResponse} from '../../../shared/models/ProjectedNftRange';
-import {Amount, UtxoPointer} from "../../../shared/models/common";
 
 const route = Routes.projectedNftEventsRange;
 
@@ -33,13 +32,15 @@ export class ProjectedNftRangeController extends Controller {
             });
 
             return data.map(data => ({
-                txId: data.tx_id as string,
-                outputIndex: data.output_index,
-                slot: data.slot,
+                ownerAddress: data.owner_address,
+                previousTxHash: data.previous_tx_hash,
+                previousTxOutputIndex: data.previous_tx_output_index != null ? parseInt(data.previous_tx_output_index) : null,
+                actionTxId: data.action_tx_id,
                 asset: data.asset,
-                amount: data.amount,
+                amount: parseInt(data.amount),
                 status: data.status,
                 plutusDatum: data.plutus_datum,
+                actionSlot: data.action_slot,
             }));
         });
 

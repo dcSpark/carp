@@ -6,8 +6,12 @@ use serde::{Deserialize, Serialize};
 pub struct Model {
     #[sea_orm(primary_key, column_type = "BigInteger")]
     pub id: i64,
+    pub owner_address: Vec<u8>,
+    pub previous_utxo_tx_hash: Vec<u8>,
     #[sea_orm(column_type = "BigInteger", nullable)]
-    pub utxo_id: Option<i64>,
+    pub previous_utxo_tx_output_index: Option<i64>,
+    #[sea_orm(column_type = "BigInteger", nullable)]
+    pub hololocker_utxo_id: Option<i64>,
     #[sea_orm(column_type = "BigInteger")]
     pub tx_id: i64,
     pub asset: String,
@@ -21,7 +25,7 @@ pub struct Model {
 pub enum Relation {
     #[sea_orm(
         belongs_to = "super::transaction_output::Entity",
-        from = "Column::UtxoId",
+        from = "Column::HololockerUtxoId",
         to = "super::transaction_output::Column::Id"
     )]
     TransactionOutput,

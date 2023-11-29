@@ -1,9 +1,10 @@
 use cardano_multiplatform_lib::error::DeserializeError;
 use cml_core::serialization::FromBytes;
+use cml_crypto::RawBytesEncoding;
 use pallas::ledger::primitives::babbage::DatumOption;
 use pallas::ledger::primitives::Fragment;
 use pallas::ledger::traverse::{Asset, MultiEraOutput};
-use projected_nft_sdk::{State, Status};
+use projected_nft_sdk::{Owner, State, Status};
 use sea_orm::{FromQueryResult, JoinType, QuerySelect, QueryTrait};
 use std::collections::{BTreeSet, HashMap};
 
@@ -49,7 +50,7 @@ carp_task! {
   };
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub enum ProjectedNftOperation {
     Lock,
     Unlocking,
@@ -90,11 +91,12 @@ impl TryFrom<i32> for ProjectedNftOperation {
 
 #[derive(FromQueryResult, Debug, Clone)]
 pub(crate) struct ProjectedNftInputsQueryOutputResult {
-    id: i64,
-    tx_id: i64,
-    output_index: i32,
-    tx_hash: Vec<u8>,
-    operation: i32,
+    pub id: i64,
+    pub tx_id: i64,
+    pub output_index: i32,
+    pub tx_hash: Vec<u8>,
+    pub operation: i32,
+    pub address: Vec<u8>,
     pub asset: String,
     pub amount: i64,
 }
@@ -147,12 +149,15 @@ async fn handle_projected_nft(
                     }
 
                     queued_projected_nft_records.push(entity::projected_nft::ActiveModel {
-                        utxo_id: Set(None),
+                        hololocker_utxo_id: Set(None),
                         tx_id: Set(cardano_transaction.id),
                         asset: Set(projected_nft.asset.clone()),
                         amount: Set(projected_nft.amount),
                         operation: Set(ProjectedNftOperation::Claim.into()),
                         plutus_datum: Set(vec![]),
+                        owner_address: Set(projected_nft.address.clone()),
+                        previous_utxo_tx_hash: Set(projected_nft.tx_hash.clone()),
+                        previous_utxo_tx_output_index: Set(Some(projected_nft.output_index as i64)),
                         ..Default::default()
                     })
                 }
@@ -185,19 +190,24 @@ async fn handle_projected_nft(
                 Some(output) => output.clone(),
             };
 
-            let (operation, plutus_data) = extract_operation_and_datum(output);
+            let projected_nft_data = extract_operation_and_datum(output);
 
             for asset in output.non_ada_assets() {
                 queued_projected_nft_records.push(entity::projected_nft::ActiveModel {
-                    utxo_id: Set(Some(output_model.id)),
+                    owner_address: Set(projected_nft_data.address.clone()),
+                    previous_utxo_tx_output_index: Set(
+                        projected_nft_data.previous_utxo_tx_output_index
+                    ),
+                    previous_utxo_tx_hash: Set(projected_nft_data.previous_utxo_tx_hash.clone()),
+                    hololocker_utxo_id: Set(Some(output_model.id)),
                     tx_id: Set(cardano_transaction.id),
                     asset: Set(asset.subject()),
                     amount: Set(match asset {
                         Asset::Ada(value) => value as i64,
                         Asset::NativeAsset(_, _, value) => value as i64,
                     }),
-                    operation: Set(operation.into()),
-                    plutus_datum: Set(plutus_data.clone()),
+                    operation: Set(projected_nft_data.operation.into()),
+                    plutus_datum: Set(projected_nft_data.plutus_data.clone()),
                     ..Default::default()
                 });
             }
@@ -227,7 +237,7 @@ async fn get_projected_nft_inputs(
         .fold(Condition::any(), |cond, (tx_id, _output_index, utxo_id)| {
             cond.add(
                 Condition::all()
-                    .add(ProjectedNftColumn::UtxoId.eq(utxo_id))
+                    .add(ProjectedNftColumn::HololockerUtxoId.eq(utxo_id))
                     .add(ProjectedNftColumn::TxId.eq(tx_id)),
             )
         });
@@ -240,6 +250,7 @@ async fn get_projected_nft_inputs(
         .column(ProjectedNftColumn::Operation)
         .column(ProjectedNftColumn::Asset)
         .column(ProjectedNftColumn::Amount)
+        .column(ProjectedNftColumn::OwnerAddress)
         .column_as(TransactionColumn::Hash, "tx_hash")
         .join(
             JoinType::InnerJoin,
@@ -263,33 +274,91 @@ async fn get_projected_nft_inputs(
     Ok(result)
 }
 
-fn extract_operation_and_datum(output: &MultiEraOutput) -> (ProjectedNftOperation, Vec<u8>) {
+#[derive(Debug, Clone)]
+struct ProjectedNftData {
+    pub previous_utxo_tx_hash: Vec<u8>,
+    pub previous_utxo_tx_output_index: Option<i64>,
+    pub address: Vec<u8>,
+    pub plutus_data: Vec<u8>,
+    pub operation: ProjectedNftOperation,
+}
+
+fn extract_operation_and_datum(output: &MultiEraOutput) -> ProjectedNftData {
     let datum_option = match output.datum() {
         Some(datum) => DatumOption::from(datum.clone()),
         None => {
-            return (ProjectedNftOperation::NoDatum, vec![]);
+            return ProjectedNftData {
+                previous_utxo_tx_hash: vec![],
+                previous_utxo_tx_output_index: None,
+                address: vec![],
+                plutus_data: vec![],
+                operation: ProjectedNftOperation::NoDatum,
+            };
         }
     };
 
     let datum = match datum_option {
         DatumOption::Hash(hash) => {
-            return (ProjectedNftOperation::NotInlineDatum, hash.to_vec());
+            return ProjectedNftData {
+                previous_utxo_tx_hash: vec![],
+                previous_utxo_tx_output_index: None,
+                address: vec![],
+                plutus_data: hash.to_vec(),
+                operation: ProjectedNftOperation::NotInlineDatum,
+            };
         }
         DatumOption::Data(datum) => datum.0.encode_fragment().unwrap(),
     };
 
     let parsed = match cml_chain::plutus::PlutusData::from_bytes(datum.clone()) {
         Ok(parsed) => parsed,
-        Err(_) => return (ProjectedNftOperation::ParseError, datum),
+        Err(_) => {
+            return ProjectedNftData {
+                previous_utxo_tx_hash: vec![],
+                previous_utxo_tx_output_index: None,
+                address: vec![],
+                plutus_data: datum,
+                operation: ProjectedNftOperation::ParseError,
+            }
+        }
     };
 
     let parsed = match projected_nft_sdk::State::try_from(parsed) {
         Ok(parsed) => parsed,
-        Err(_) => return (ProjectedNftOperation::ParseError, datum),
+        Err(_) => {
+            return ProjectedNftData {
+                previous_utxo_tx_hash: vec![],
+                previous_utxo_tx_output_index: None,
+                address: vec![],
+                plutus_data: datum,
+                operation: ProjectedNftOperation::ParseError,
+            }
+        }
+    };
+
+    let owner_address = match parsed.owner {
+        Owner::PKH(pkh) => pkh.to_raw_bytes().to_vec(),
+        Owner::NFT(_, _) => vec![],
+        Owner::Receipt(_) => vec![],
     };
 
     match parsed.status {
-        Status::Locked => (ProjectedNftOperation::Lock, datum),
-        Status::Unlocking { .. } => (ProjectedNftOperation::Unlocking, datum),
+        Status::Locked => ProjectedNftData {
+            previous_utxo_tx_hash: vec![],
+            previous_utxo_tx_output_index: None,
+            address: owner_address,
+            plutus_data: datum,
+            operation: ProjectedNftOperation::Lock,
+        },
+        Status::Unlocking {
+            out_ref,
+            for_how_long: _,
+        } => ProjectedNftData {
+            previous_utxo_tx_hash: out_ref.tx_id.to_raw_bytes().to_vec(),
+            previous_utxo_tx_output_index: Some(out_ref.index as i64),
+            address: owner_address,
+            plutus_data: datum,
+            operation: ProjectedNftOperation::Unlocking,
+        },
     }
 }

@@ -1,15 +1,19 @@
-import {Amount, UtxoPointer} from "./common";
-
 export type ProjectedNftRangeRequest = {
     range: { minSlot: number, maxSlot: number }
 };
 
 export type ProjectedNftRangeResponse = {
-    txId: string | null,
-    outputIndex: number,
-    slot: number,
+    actionSlot: number,
+
+    ownerAddress: string | null,
+
+    actionTxId: string | null,
+
+    previousTxHash: string | null,
+    previousTxOutputIndex: number | null,
+
     asset: string,
-    amount: string,
+    amount: number,
     status: string | null,
     plutusDatum: string | null,
 }[];

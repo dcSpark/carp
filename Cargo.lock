@@ -3719,6 +3719,7 @@ dependencies = [
  "cfg-if 0.1.10",
  "cml-chain",
  "cml-core",
+ "cml-crypto",
  "cryptoxide",
  "entity",
  "hex",
