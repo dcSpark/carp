@@ -36,6 +36,7 @@ export class ProjectedNftRangeController extends Controller {
                 previousTxHash: data.previous_tx_hash,
                 previousTxOutputIndex: data.previous_tx_output_index != null ? parseInt(data.previous_tx_output_index) : null,
                 actionTxId: data.action_tx_id,
+                actionOutputIndex: data.action_output_index,
                 asset: data.asset,
                 amount: parseInt(data.amount),
                 status: data.status,

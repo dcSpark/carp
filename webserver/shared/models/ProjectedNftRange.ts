@@ -8,6 +8,7 @@ export type ProjectedNftRangeResponse = {
     ownerAddress: string | null,
 
     actionTxId: string | null,
+    actionOutputIndex: number | null,
 
     previousTxHash: string | null,
     previousTxOutputIndex: number | null,

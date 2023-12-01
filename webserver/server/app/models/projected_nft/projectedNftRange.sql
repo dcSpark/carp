@@ -7,6 +7,7 @@ SELECT
     encode("ProjectedNFT".previous_utxo_tx_hash, 'hex') as previous_tx_hash,
     "ProjectedNFT".previous_utxo_tx_output_index as previous_tx_output_index,
 
+    "TransactionOutput".output_index as action_output_index,
     encode("Transaction".hash, 'hex') as action_tx_id,
 
     "ProjectedNFT".asset as asset,
