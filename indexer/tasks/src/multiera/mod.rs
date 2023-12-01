@@ -10,6 +10,7 @@ pub mod multiera_executor;
 pub mod multiera_metadata;
 pub mod multiera_minswap_v1_mean_price;
 pub mod multiera_minswap_v1_swap;
+pub mod multiera_projected_nft;
 pub mod multiera_reference_inputs;
 pub mod multiera_stake_credentials;
 pub mod multiera_sundaeswap_v1_mean_price;

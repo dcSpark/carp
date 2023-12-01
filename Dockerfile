@@ -1,4 +1,4 @@
-FROM rust:1.67 AS x-builder
+FROM rust:1.73 AS x-builder
 
 WORKDIR /indexer
 

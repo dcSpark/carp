@@ -15,5 +15,6 @@ pub mod dex_swap;
 pub mod native_asset;
 pub mod plutus_data;
 pub mod plutus_data_hash;
+pub mod projected_nft;
 pub mod stake_delegation;
 pub mod transaction_metadata;
