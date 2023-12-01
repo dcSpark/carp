@@ -1,5 +1,21 @@
 export type ProjectedNftRangeRequest = {
-    range: { minSlot: number, maxSlot: number }
+    /**
+     * Projected NFT events in this slot range will be returned
+     */
+    range: {
+        /**
+         * Minimal slot from which the events should be returned (not inclusive)
+         *
+         * @example 46154769
+         */
+        minSlot: number,
+        /**
+         * Maximal slot from which the events should be returned (inclusive)
+         *
+         * @example 46154860
+         */
+        maxSlot: number
+    }
 };
 
 export type ProjectedNftRangeResponse = {
