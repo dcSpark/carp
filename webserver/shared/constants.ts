@@ -26,3 +26,8 @@ export const DEX_PRICE_LIMIT = {
   REQUEST_ASSET_PAIRS: 100,
   RESPONSE: 1000,
 };
+
+export const POOL_DELEGATION_LIMIT = {
+  POOLS: 50,
+  SLOT_RANGE: 200,
+};

@@ -282,6 +282,120 @@
                     }
                 ]
             },
+            "DelegationForAddressResponse": {
+                "properties": {
+                    "txId": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "pool": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "txId",
+                    "pool"
+                ],
+                "type": "object"
+            },
+            "DelegationForAddressRequest": {
+                "properties": {
+                    "until": {
+                        "properties": {
+                            "absoluteSlot": {
+                                "type": "number",
+                                "format": "double"
+                            }
+                        },
+                        "required": [
+                            "absoluteSlot"
+                        ],
+                        "type": "object"
+                    },
+                    "address": {
+                        "$ref": "#/components/schemas/Address"
+                    }
+                },
+                "required": [
+                    "until",
+                    "address"
+                ],
+                "type": "object"
+            },
+            "PoolHex": {
+                "type": "string",
+                "example": "8200581c8baf48931c5187cd59fde553f4e7da2e1a2aa9202ec6e67815cb3f8a",
+                "pattern": "[0-9a-fA-F]{56}"
+            },
+            "DelegationForPoolResponse": {
+                "items": {
+                    "properties": {
+                        "slot": {
+                            "type": "number",
+                            "format": "double"
+                        },
+                        "txId": {
+                            "type": "string",
+                            "nullable": true
+                        },
+                        "pool": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/components/schemas/PoolHex"
+                                }
+                            ],
+                            "nullable": true
+                        },
+                        "credential": {
+                            "$ref": "#/components/schemas/Address"
+                        }
+                    },
+                    "required": [
+                        "slot",
+                        "txId",
+                        "pool",
+                        "credential"
+                    ],
+                    "type": "object"
+                },
+                "type": "array"
+            },
+            "Pool": {
+                "$ref": "#/components/schemas/PoolHex"
+            },
+            "DelegationForPoolRequest": {
+                "properties": {
+                    "range": {
+                        "properties": {
+                            "maxSlot": {
+                                "type": "number",
+                                "format": "double"
+                            },
+                            "minSlot": {
+                                "type": "number",
+                                "format": "double"
+                            }
+                        },
+                        "required": [
+                            "maxSlot",
+                            "minSlot"
+                        ],
+                        "type": "object"
+                    },
+                    "pools": {
+                        "items": {
+                            "$ref": "#/components/schemas/Pool"
+                        },
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "range",
+                    "pools"
+                ],
+                "type": "object"
+            },
             "PolicyId": {
                 "type": "string",
                 "example": "b863bc7369f46136ac1048adb2fa7dae3af944c3bbb2be2f216a8d4f",
@@ -1002,6 +1116,124 @@
                         "application/json": {
                             "schema": {
                                 "$ref": "#/components/schemas/CredentialAddressRequest"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/delegation/address": {
+            "post": {
+                "operationId": "DelegationForAddress",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DelegationForAddressResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [],
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DelegationForAddressRequest"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/delegation/pool": {
+            "post": {
+                "operationId": "DelegationForPool",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DelegationForPoolResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [],
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DelegationForPoolRequest"
                             }
                         }
                     }

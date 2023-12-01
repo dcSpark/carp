@@ -19,6 +19,14 @@ import type {
   TransactionOutputRequest,
   TransactionOutputResponse,
 } from "./models/TransactionOutput";
+import type {
+  DelegationForAddressRequest,
+  DelegationForAddressResponse,
+} from "./models/DelegationForAddress";
+import type {
+  DelegationForPoolRequest,
+  DelegationForPoolResponse,
+} from "./models/DelegationForPool";
 
 export enum Routes {
   transactionHistory = "transaction/history",
@@ -29,7 +37,9 @@ export enum Routes {
   metadataNft = "metadata/nft",
   dexMeanPrice = "dex/mean-price",
   dexSwap = "dex/swap",
-  dexLastPrice = "dex/last-price"
+  dexLastPrice = "dex/last-price",
+  delegationForAddress = "delegation/address",
+  delegationForPool = "delegation/pool",
 }
 
 export type EndpointTypes = {
@@ -77,5 +87,15 @@ export type EndpointTypes = {
     name: typeof Routes.dexLastPrice;
     input: DexLastPriceRequest;
     response: DexLastPriceResponse;
+  };
+  [Routes.delegationForAddress]: {
+    name: typeof Routes.delegationForAddress;
+    input: DelegationForAddressRequest;
+    response: DelegationForAddressResponse;
+  };
+  [Routes.delegationForPool]: {
+    name: typeof Routes.delegationForPool;
+    input: DelegationForPoolRequest;
+    response: DelegationForPoolResponse;
   };
 };
