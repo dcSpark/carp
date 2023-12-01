@@ -10,6 +10,7 @@ fi
 
 pip install --user pipenv
 
+# if this fails, try running `pipenv --rm && pipenv --clear` from the bin directory
 pipenv install
 
 pipenv shell "python ./sql_graphviz.py ./schema.sql | dot -Tsvg > ./sql-graph.svg && exit"

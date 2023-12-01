@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 14.3 (Ubuntu 14.3-1.pgdg20.04+1)
--- Dumped by pg_dump version 14.3 (Ubuntu 14.3-1.pgdg20.04+1)
+-- Dumped from database version 14.9 (Ubuntu 14.9-0ubuntu0.22.04.1)
+-- Dumped by pg_dump version 14.9 (Ubuntu 14.9-0ubuntu0.22.04.1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -83,7 +83,7 @@ CREATE TABLE public."Block" (
     height integer NOT NULL,
     epoch integer NOT NULL,
     slot integer NOT NULL,
-    payload bytea NOT NULL
+    payload bytea
 );
 
 
@@ -267,6 +267,44 @@ ALTER SEQUENCE public."PlutusData_id_seq" OWNED BY public."PlutusData".id;
 
 
 --
+-- Name: ProjectedNFT; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public."ProjectedNFT" (
+    id bigint NOT NULL,
+    owner_address bytea NOT NULL,
+    previous_utxo_tx_hash bytea NOT NULL,
+    previous_utxo_tx_output_index bigint,
+    hololocker_utxo_id bigint,
+    tx_id bigint NOT NULL,
+    asset text NOT NULL,
+    amount bigint NOT NULL,
+    operation integer NOT NULL,
+    plutus_datum bytea NOT NULL,
+    for_how_long bigint
+);
+
+
+--
+-- Name: ProjectedNFT_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public."ProjectedNFT_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: ProjectedNFT_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public."ProjectedNFT_id_seq" OWNED BY public."ProjectedNFT".id;
+
+
+--
 -- Name: StakeCredential; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -294,6 +332,38 @@ CREATE SEQUENCE public."StakeCredential_id_seq"
 --
 
 ALTER SEQUENCE public."StakeCredential_id_seq" OWNED BY public."StakeCredential".id;
+
+
+--
+-- Name: StakeDelegationCredentialRelation; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public."StakeDelegationCredentialRelation" (
+    id bigint NOT NULL,
+    stake_credential bigint NOT NULL,
+    tx_id bigint NOT NULL,
+    pool_credential bytea,
+    previous_pool bytea
+);
+
+
+--
+-- Name: StakeDelegationCredentialRelation_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public."StakeDelegationCredentialRelation_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: StakeDelegationCredentialRelation_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public."StakeDelegationCredentialRelation_id_seq" OWNED BY public."StakeDelegationCredentialRelation".id;
 
 
 --
@@ -527,10 +597,24 @@ ALTER TABLE ONLY public."PlutusDataHash" ALTER COLUMN id SET DEFAULT nextval('pu
 
 
 --
+-- Name: ProjectedNFT id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."ProjectedNFT" ALTER COLUMN id SET DEFAULT nextval('public."ProjectedNFT_id_seq"'::regclass);
+
+
+--
 -- Name: StakeCredential id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."StakeCredential" ALTER COLUMN id SET DEFAULT nextval('public."StakeCredential_id_seq"'::regclass);
+
+
+--
+-- Name: StakeDelegationCredentialRelation id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."StakeDelegationCredentialRelation" ALTER COLUMN id SET DEFAULT nextval('public."StakeDelegationCredentialRelation_id_seq"'::regclass);
 
 
 --
@@ -721,11 +805,27 @@ ALTER TABLE ONLY public."AssetMint"
 
 
 --
+-- Name: ProjectedNFT projected_nft-pk; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."ProjectedNFT"
+    ADD CONSTRAINT "projected_nft-pk" PRIMARY KEY (id);
+
+
+--
 -- Name: seaql_migrations seaql_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.seaql_migrations
     ADD CONSTRAINT seaql_migrations_pkey PRIMARY KEY (version);
+
+
+--
+-- Name: StakeDelegationCredentialRelation stake_delegation_credential-pk; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."StakeDelegationCredentialRelation"
+    ADD CONSTRAINT "stake_delegation_credential-pk" PRIMARY KEY (id);
 
 
 --
@@ -846,6 +946,13 @@ CREATE INDEX "index-plutus_data_hash-transaction" ON public."PlutusDataHash" USI
 --
 
 CREATE INDEX "index-stake_credential-transaction" ON public."StakeCredential" USING btree (first_tx);
+
+
+--
+-- Name: index-stake_delegation_credential-stake_credential; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "index-stake_delegation_credential-stake_credential" ON public."StakeDelegationCredentialRelation" USING btree (stake_credential);
 
 
 --
@@ -1039,11 +1146,43 @@ ALTER TABLE ONLY public."PlutusDataHash"
 
 
 --
+-- Name: ProjectedNFT fk-projected_nft-tx_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."ProjectedNFT"
+    ADD CONSTRAINT "fk-projected_nft-tx_id" FOREIGN KEY (tx_id) REFERENCES public."Transaction"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: ProjectedNFT fk-projected_nft-utxo_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."ProjectedNFT"
+    ADD CONSTRAINT "fk-projected_nft-utxo_id" FOREIGN KEY (hololocker_utxo_id) REFERENCES public."TransactionOutput"(id) ON DELETE CASCADE;
+
+
+--
 -- Name: StakeCredential fk-stake_credential-tx_id; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."StakeCredential"
     ADD CONSTRAINT "fk-stake_credential-tx_id" FOREIGN KEY (first_tx) REFERENCES public."Transaction"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: StakeDelegationCredentialRelation fk-stake_delegation-credential_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."StakeDelegationCredentialRelation"
+    ADD CONSTRAINT "fk-stake_delegation-credential_id" FOREIGN KEY (stake_credential) REFERENCES public."StakeCredential"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: StakeDelegationCredentialRelation fk-stake_delegation-tx_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."StakeDelegationCredentialRelation"
+    ADD CONSTRAINT "fk-stake_delegation-tx_id" FOREIGN KEY (tx_id) REFERENCES public."Transaction"(id) ON DELETE CASCADE;
 
 
 --
