@@ -50,11 +50,12 @@ carp_task! {
   };
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Default)]
 pub enum ProjectedNftOperation {
     Lock,
     Unlocking,
     Claim,
+    #[default]
     ParseError,
     NoDatum,
     NotInlineDatum,
@@ -276,7 +277,7 @@ async fn get_projected_nft_inputs(
     Ok(result)
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 struct ProjectedNftData {
     pub previous_utxo_tx_hash: Vec<u8>,
     pub previous_utxo_tx_output_index: Option<i64>,
@@ -291,12 +292,8 @@ fn extract_operation_and_datum(output: &MultiEraOutput) -> ProjectedNftData {
         Some(datum) => DatumOption::from(datum.clone()),
         None => {
             return ProjectedNftData {
-                previous_utxo_tx_hash: vec![],
-                previous_utxo_tx_output_index: None,
-                address: vec![],
-                plutus_data: vec![],
                 operation: ProjectedNftOperation::NoDatum,
-                for_how_long: None,
+                ..Default::default()
             };
         }
     };
@@ -304,12 +301,10 @@ fn extract_operation_and_datum(output: &MultiEraOutput) -> ProjectedNftData {
     let datum = match datum_option {
         DatumOption::Hash(hash) => {
             return ProjectedNftData {
-                previous_utxo_tx_hash: vec![],
-                previous_utxo_tx_output_index: None,
-                address: vec![],
                 plutus_data: hash.to_vec(),
+                // the contract expects inline datums only
                 operation: ProjectedNftOperation::NotInlineDatum,
-                for_how_long: None,
+                ..Default::default()
             };
         }
         DatumOption::Data(datum) => datum.0.encode_fragment().unwrap(),
@@ -319,12 +314,9 @@ fn extract_operation_and_datum(output: &MultiEraOutput) -> ProjectedNftData {
         Ok(parsed) => parsed,
         Err(_) => {
             return ProjectedNftData {
-                previous_utxo_tx_hash: vec![],
-                previous_utxo_tx_output_index: None,
-                address: vec![],
                 plutus_data: datum,
                 operation: ProjectedNftOperation::ParseError,
-                for_how_long: None,
+                ..Default::default()
             }
         }
     };
@@ -333,12 +325,9 @@ fn extract_operation_and_datum(output: &MultiEraOutput) -> ProjectedNftData {
         Ok(parsed) => parsed,
         Err(_) => {
             return ProjectedNftData {
-                previous_utxo_tx_hash: vec![],
-                previous_utxo_tx_output_index: None,
-                address: vec![],
                 plutus_data: datum,
                 operation: ProjectedNftOperation::ParseError,
-                for_how_long: None,
+                ..Default::default()
             }
         }
     };
@@ -351,12 +340,10 @@ fn extract_operation_and_datum(output: &MultiEraOutput) -> ProjectedNftData {
 
     match parsed.status {
         Status::Locked => ProjectedNftData {
-            previous_utxo_tx_hash: vec![],
-            previous_utxo_tx_output_index: None,
             address: owner_address,
             plutus_data: datum,
             operation: ProjectedNftOperation::Lock,
-            for_how_long: None,
+            ..Default::default()
         },
         Status::Unlocking {
             out_ref,
