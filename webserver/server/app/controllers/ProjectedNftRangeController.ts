@@ -42,6 +42,7 @@ export class ProjectedNftRangeController extends Controller {
                 status: data.status,
                 plutusDatum: data.plutus_datum,
                 actionSlot: data.action_slot,
+                forHowLong: data.for_how_long != null ? parseInt(data.for_how_long) : null,
             }));
         });
 

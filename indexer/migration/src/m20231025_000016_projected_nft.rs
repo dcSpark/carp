@@ -37,6 +37,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Column::Amount).big_integer().not_null())
                     .col(ColumnDef::new(Column::Operation).integer().not_null())
                     .col(ColumnDef::new(Column::PlutusDatum).binary().not_null())
+                    .col(ColumnDef::new(Column::ForHowLong).big_integer())
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk-projected_nft-tx_id")

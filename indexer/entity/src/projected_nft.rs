@@ -18,6 +18,7 @@ pub struct Model {
     #[sea_orm(column_type = "BigInteger")]
     pub amount: i64,
     pub operation: i32, // lock / unlock / claim
+    pub for_how_long: Option<i64>,
     pub plutus_datum: Vec<u8>,
 }
 

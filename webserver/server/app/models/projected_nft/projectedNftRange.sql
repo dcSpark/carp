@@ -7,7 +7,11 @@ SELECT
     encode("ProjectedNFT".previous_utxo_tx_hash, 'hex') as previous_tx_hash,
     "ProjectedNFT".previous_utxo_tx_output_index as previous_tx_output_index,
 
-    "TransactionOutput".output_index as action_output_index,
+    CASE
+        WHEN "TransactionOutput".output_index = NULL THEN NULL
+        ELSE "TransactionOutput".output_index
+        END AS action_output_index,
+
     encode("Transaction".hash, 'hex') as action_tx_id,
 
     "ProjectedNFT".asset as asset,
@@ -21,6 +25,7 @@ SELECT
         END AS status,
 
     encode("ProjectedNFT".plutus_datum, 'hex') as plutus_datum,
+    "ProjectedNFT".for_how_long as for_how_long,
 
     "Block".slot as action_slot
 FROM "ProjectedNFT"

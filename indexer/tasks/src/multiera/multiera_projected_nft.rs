@@ -158,6 +158,7 @@ async fn handle_projected_nft(
                         owner_address: Set(projected_nft.owner_address.clone()),
                         previous_utxo_tx_hash: Set(projected_nft.tx_hash.clone()),
                         previous_utxo_tx_output_index: Set(Some(projected_nft.output_index as i64)),
+                        for_how_long: Set(None),
                         ..Default::default()
                     })
                 }
@@ -208,6 +209,7 @@ async fn handle_projected_nft(
                     }),
                     operation: Set(projected_nft_data.operation.into()),
                     plutus_datum: Set(projected_nft_data.plutus_data.clone()),
+                    for_how_long: Set(projected_nft_data.for_how_long),
                     ..Default::default()
                 });
             }
@@ -281,6 +283,7 @@ struct ProjectedNftData {
     pub address: Vec<u8>,
     pub plutus_data: Vec<u8>,
     pub operation: ProjectedNftOperation,
+    pub for_how_long: Option<i64>,
 }
 
 fn extract_operation_and_datum(output: &MultiEraOutput) -> ProjectedNftData {
@@ -293,6 +296,7 @@ fn extract_operation_and_datum(output: &MultiEraOutput) -> ProjectedNftData {
                 address: vec![],
                 plutus_data: vec![],
                 operation: ProjectedNftOperation::NoDatum,
+                for_how_long: None,
             };
         }
     };
@@ -305,6 +309,7 @@ fn extract_operation_and_datum(output: &MultiEraOutput) -> ProjectedNftData {
                 address: vec![],
                 plutus_data: hash.to_vec(),
                 operation: ProjectedNftOperation::NotInlineDatum,
+                for_how_long: None,
             };
         }
         DatumOption::Data(datum) => datum.0.encode_fragment().unwrap(),
@@ -319,6 +324,7 @@ fn extract_operation_and_datum(output: &MultiEraOutput) -> ProjectedNftData {
                 address: vec![],
                 plutus_data: datum,
                 operation: ProjectedNftOperation::ParseError,
+                for_how_long: None,
             }
         }
     };
@@ -332,6 +338,7 @@ fn extract_operation_and_datum(output: &MultiEraOutput) -> ProjectedNftData {
                 address: vec![],
                 plutus_data: datum,
                 operation: ProjectedNftOperation::ParseError,
+                for_how_long: None,
             }
         }
     };
@@ -349,16 +356,18 @@ fn extract_operation_and_datum(output: &MultiEraOutput) -> ProjectedNftData {
             address: owner_address,
             plutus_data: datum,
             operation: ProjectedNftOperation::Lock,
+            for_how_long: None,
         },
         Status::Unlocking {
             out_ref,
-            for_how_long: _,
+            for_how_long,
         } => ProjectedNftData {
             previous_utxo_tx_hash: out_ref.tx_id.to_raw_bytes().to_vec(),
             previous_utxo_tx_output_index: Some(out_ref.index as i64),
             address: owner_address,
             plutus_data: datum,
             operation: ProjectedNftOperation::Unlocking,
+            for_how_long: Some(for_how_long as i64),
         },
     }
 }

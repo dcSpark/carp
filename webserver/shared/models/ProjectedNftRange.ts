@@ -17,4 +17,5 @@ export type ProjectedNftRangeResponse = {
     amount: number,
     status: string | null,
     plutusDatum: string | null,
+    forHowLong: number | null,
 }[];
