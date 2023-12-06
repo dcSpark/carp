@@ -1,11 +1,7 @@
 use anyhow::anyhow;
-use cardano_multiplatform_lib::error::DeserializeError;
-use cml_core::serialization::FromBytes;
+use cml_chain::transaction::TransactionBody;
+use cml_core::serialization::{FromBytes, Serialize};
 use cml_crypto::RawBytesEncoding;
-use pallas::ledger::primitives::alonzo::{Redeemer, RedeemerTag};
-use pallas::ledger::primitives::babbage::DatumOption;
-use pallas::ledger::primitives::Fragment;
-use pallas::ledger::traverse::{Asset, MultiEraOutput, MultiEraTx};
 use projected_nft_sdk::{Owner, Redeem, State, Status};
 use sea_orm::{FromQueryResult, JoinType, QuerySelect, QueryTrait};
 use std::collections::{BTreeSet, HashMap, HashSet};
@@ -122,17 +118,21 @@ async fn handle_projected_nft(
 
     let mut queued_projected_nft_records = vec![];
 
-    for (tx_body, cardano_transaction) in block.1.txs().iter().zip(multiera_txs) {
+    for (parsed_tx, cardano_transaction) in block.1.txs().iter().zip(multiera_txs) {
+        let parsed_tx = cml_chain::transaction::Transaction::from_bytes(parsed_tx.encode())
+            .map_err(|err| DbErr::Custom(format!("Can't parse tx body: {err}")))?;
+
         // redeemers are needed to identify whil of the projected nfts are partial withdrawals
-        let redeemers = tx_body
-            .redeemers()
+        let redeemers = parsed_tx
+            .witness_set
+            .redeemers
             .map(get_projected_nft_redeemers)
             .unwrap_or(Ok(BTreeMap::new()))?;
 
         // partial withdrawals inputs -- inputs which have partial withdraw = true in the redeemer
         // this function also adds claims to the events list
         let mut partial_withdrawals_inputs = handle_claims_and_partial_withdraws(
-            tx_body,
+            &parsed_tx.body,
             cardano_transaction,
             &redeemers,
             &used_projected_nfts,
@@ -145,18 +145,10 @@ async fn handle_projected_nft(
         // outputs that are related to projected nfts: might be locks / unlocks
         let mut projected_nft_outputs = Vec::<ProjectedNftData>::new();
 
-        for (output_index, output) in tx_body.outputs().iter().enumerate() {
-            let output_address = output
-                .address()
-                .map_err(|err| DbErr::Custom(format!("invalid pallas address: {}", err)))?
-                .to_vec();
-
-            let output_address =
-                cardano_multiplatform_lib::address::Address::from_bytes(output_address)
-                    .map_err(|err| DbErr::Custom(format!("cml can't parse address: {}", err)))?;
-            let output_payment_cred = match output_address.payment_cred() {
+        for (output_index, output) in parsed_tx.body.outputs.iter().enumerate() {
+            let output_payment_cred = match output.address().payment_cred() {
                 None => continue,
-                Some(pk) => pk,
+                Some(pk) => pk.clone(),
             };
 
             if output_payment_cred != projected_nft_contract_payment_cred {
@@ -183,6 +175,35 @@ async fn handle_projected_nft(
             handle_partial_withdraw(&projected_nft_data, &mut partial_withdrawals_inputs)?;
 
             projected_nft_outputs.push(projected_nft_data);
+        }
+
+        for projected_nft_output in projected_nft_outputs.iter() {
+            for (asset_name, asset_value) in projected_nft_output.non_ada_assets.iter() {
+                tracing::info!(
+                    "projected nft output: op: {:?}, partial: {}\nasset: {:?}\nvalue: {:?}\nprev tx: {:?}@{:?}",
+                    projected_nft_output.operation,
+                    projected_nft_output.partial_withdrawn_from_input.is_some(),
+                    asset_name,
+                    asset_value,
+                    hex::encode(projected_nft_output.previous_utxo_tx_hash.clone()),
+                    projected_nft_output.previous_utxo_tx_output_index,
+                );
+            }
+        }
+
+        for (tx, withdrawal) in partial_withdrawals_inputs.iter() {
+            for (index, withdrawal) in withdrawal.iter() {
+                for withdrawal in withdrawal.iter() {
+                    tracing::info!(
+                        "projected nft withdrawal: tx: {:?}@{:?}, op: {:?}\nasset: {:?}\nvalue: {:?}\n",
+                        hex::encode(tx),
+                        index,
+                        withdrawal.operation,
+                        withdrawal.asset,
+                        withdrawal.amount,
+                    );
+                }
+            }
         }
 
         find_lock_outputs_for_corresponding_partial_withdrawals(
@@ -338,9 +359,7 @@ fn handle_partial_withdraw(
     Ok(())
 }
 
-fn get_payment_cred(
-    address: String,
-) -> Result<cardano_multiplatform_lib::address::StakeCredential, DbErr> {
+fn get_payment_cred(address: String) -> Result<cml_chain::certs::StakeCredential, DbErr> {
     let config_address = hex::decode(address).map_err(|err| {
         DbErr::Custom(format!(
             "can't decode projected nft config address hex: {:?}",
@@ -348,13 +367,13 @@ fn get_payment_cred(
         ))
     })?;
 
-    let config_address = cardano_multiplatform_lib::address::Address::from_bytes(config_address)
+    let config_address = cml_chain::address::Address::from_bytes(config_address)
         .map_err(|err| DbErr::Custom(format!("cml can't parse config address: {:?}", err)))?;
     match config_address.payment_cred() {
         None => Err(DbErr::Custom(
             "provided projected nft config address contains no payment cred".to_string(),
         )),
-        Some(pk) => Ok(pk),
+        Some(pk) => Ok(pk.clone()),
     }
 }
 
@@ -412,7 +431,7 @@ async fn get_projected_nft_inputs(
 }
 
 fn handle_claims_and_partial_withdraws(
-    tx_body: &MultiEraTx,
+    tx_body: &TransactionBody,
     cardano_transaction: &TransactionModel,
     redeemers: &BTreeMap<i64, Redeem>,
     used_projected_nfts: &BTreeMap<
@@ -423,14 +442,20 @@ fn handle_claims_and_partial_withdraws(
 ) -> BTreeMap<Vec<u8>, BTreeMap<i64, Vec<ProjectedNftInputsQueryOutputResult>>> {
     let mut partially_withdrawn = BTreeMap::new();
 
-    for (input_index, input) in tx_body.inputs().iter().enumerate() {
-        let entry = if let Some(entry) = used_projected_nfts.get(&input.hash().to_vec()) {
+    for (input_index, input) in tx_body.inputs.iter().enumerate() {
+        let input_tx_id = input.transaction_id.to_raw_bytes().to_vec();
+        tracing::info!(
+            "input #{input_index}: {}@{}",
+            hex::encode(&input_tx_id),
+            input.index
+        );
+        let entry = if let Some(entry) = used_projected_nfts.get(&input_tx_id) {
             entry
         } else {
             continue;
         };
 
-        let projected_nfts = if let Some(projected_nfts) = entry.get(&(input.index() as i64)) {
+        let projected_nfts = if let Some(projected_nfts) = entry.get(&(input.index as i64)) {
             projected_nfts
         } else {
             continue;
@@ -475,7 +500,7 @@ fn handle_claims_and_partial_withdraws(
 
         if !current_input_partial_withrawal.is_empty() {
             *partially_withdrawn
-                .entry(input.hash().to_vec())
+                .entry(input_tx_id)
                 .or_insert(BTreeMap::new())
                 .entry(input_index as i64)
                 .or_default() = current_input_partial_withrawal;
@@ -515,7 +540,7 @@ struct ProjectedNftData {
 }
 
 fn extract_operation_and_datum(
-    output: &MultiEraOutput,
+    output: &cml_chain::transaction::TransactionOutput,
     output_model: entity::transaction_output::Model,
     partial_withdrawals: &BTreeMap<
         Vec<u8>,
@@ -523,7 +548,7 @@ fn extract_operation_and_datum(
     >,
 ) -> ProjectedNftData {
     let datum_option = match output.datum() {
-        Some(datum) => DatumOption::from(datum.clone()),
+        Some(datum) => datum,
         None => {
             return ProjectedNftData {
                 operation: ProjectedNftOperation::NoDatum,
@@ -533,33 +558,22 @@ fn extract_operation_and_datum(
     };
 
     let datum = match datum_option {
-        DatumOption::Hash(hash) => {
+        cml_chain::transaction::DatumOption::Hash { datum_hash, .. } => {
             return ProjectedNftData {
-                plutus_data: hash.to_vec(),
+                plutus_data: datum_hash.to_raw_bytes().to_vec(),
                 // the contract expects inline datums only
                 operation: ProjectedNftOperation::NotInlineDatum,
                 ..Default::default()
             };
         }
-        DatumOption::Data(datum) => datum.0.encode_fragment().unwrap(),
+        cml_chain::transaction::DatumOption::Datum { datum, .. } => datum,
     };
 
-    let parsed = match cml_chain::plutus::PlutusData::from_bytes(datum.clone()) {
+    let parsed = match projected_nft_sdk::State::try_from(datum.clone()) {
         Ok(parsed) => parsed,
         Err(_) => {
             return ProjectedNftData {
-                plutus_data: datum,
-                operation: ProjectedNftOperation::ParseError,
-                ..Default::default()
-            }
-        }
-    };
-
-    let parsed = match projected_nft_sdk::State::try_from(parsed) {
-        Ok(parsed) => parsed,
-        Err(_) => {
-            return ProjectedNftData {
-                plutus_data: datum,
+                plutus_data: datum.to_cbor_bytes(),
                 operation: ProjectedNftOperation::ParseError,
                 ..Default::default()
             }
@@ -573,22 +587,27 @@ fn extract_operation_and_datum(
     };
 
     let non_ada_assets = output
-        .non_ada_assets()
+        .amount()
+        .multiasset
         .iter()
-        .map(|asset| {
-            (
-                asset.subject(),
-                match asset {
-                    Asset::Ada(value) => *value as i64,
-                    Asset::NativeAsset(_, _, value) => *value as i64,
-                },
-            )
+        .flat_map(|(policy_id, asset_names)| {
+            asset_names.iter().map(|(asset_name, coin)| {
+                (
+                    format!(
+                        "{}.{}",
+                        policy_id.to_hex(),
+                        hex::encode(asset_name.to_cbor_bytes())
+                    ),
+                    *coin as i64,
+                )
+            })
         })
         .collect::<Vec<(String, i64)>>();
+
     match parsed.status {
         Status::Locked => ProjectedNftData {
             address: owner_address,
-            plutus_data: datum,
+            plutus_data: datum.to_cbor_bytes(),
             operation: ProjectedNftOperation::Lock,
             hololocker_utxo_id: output_model.id,
             non_ada_assets,
@@ -612,7 +631,7 @@ fn extract_operation_and_datum(
                 previous_utxo_tx_hash: out_ref.tx_id.to_raw_bytes().to_vec(),
                 previous_utxo_tx_output_index: Some(out_ref.index as i64),
                 address: owner_address,
-                plutus_data: datum,
+                plutus_data: datum.to_cbor_bytes(),
                 operation: ProjectedNftOperation::Unlocking,
                 for_how_long: Some(for_how_long as i64),
                 hololocker_utxo_id: output_model.id,
@@ -623,19 +642,17 @@ fn extract_operation_and_datum(
     }
 }
 
-fn get_projected_nft_redeemers(redeemers: &[Redeemer]) -> Result<BTreeMap<i64, Redeem>, DbErr> {
+fn get_projected_nft_redeemers(
+    redeemers: Vec<cml_chain::plutus::Redeemer>,
+) -> Result<BTreeMap<i64, Redeem>, DbErr> {
     let mut result = BTreeMap::new();
 
     for redeemer in redeemers {
-        if redeemer.tag != RedeemerTag::Spend {
+        if redeemer.tag != cml_chain::plutus::RedeemerTag::Spend {
             continue;
         }
 
-        let plutus_data = redeemer.data.encode_fragment().unwrap();
-        let plutus_data = cml_chain::plutus::PlutusData::from_bytes(plutus_data)
-            .map_err(|err| DbErr::Custom(format!("Can't parse plutus data: {err}")))?;
-
-        match Redeem::try_from(plutus_data) {
+        match Redeem::try_from(redeemer.data.clone()) {
             Ok(redeem) => {
                 result.insert(redeemer.index as i64, redeem);
             }
