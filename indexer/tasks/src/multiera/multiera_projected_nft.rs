@@ -8,7 +8,8 @@ use pallas::ledger::primitives::Fragment;
 use pallas::ledger::traverse::{Asset, MultiEraOutput, MultiEraTx};
 use projected_nft_sdk::{Owner, Redeem, State, Status};
 use sea_orm::{FromQueryResult, JoinType, QuerySelect, QueryTrait};
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{BTreeSet, HashMap, HashSet};
+use std::fmt::format;
 
 use crate::config::ReadonlyConfig::ReadonlyConfig;
 use crate::types::AddressCredentialRelationValue;
@@ -102,6 +103,7 @@ pub(crate) struct ProjectedNftInputsQueryOutputResult {
     pub owner_address: Vec<u8>,
     pub asset: String,
     pub amount: i64,
+    pub plutus_datum: Vec<u8>,
 }
 
 async fn handle_projected_nft(
@@ -126,7 +128,7 @@ async fn handle_projected_nft(
             .map(get_projected_nft_redeemers)
             .unwrap_or(Ok(BTreeMap::new()))?;
 
-        let _partial_withdrawals = handle_claims_and_partial_withdraws(
+        let mut partial_withdrawals = handle_claims_and_partial_withdraws(
             tx_body,
             cardano_transaction,
             &redeemers,
@@ -136,7 +138,7 @@ async fn handle_projected_nft(
 
         let outputs_map = get_output_index_to_outputs_map(cardano_transaction, multiera_outputs);
 
-        let mut scheduled_projected_nft_outputs = vec![];
+        let mut projected_nft_outputs = Vec::<ProjectedNftData>::new();
 
         for (output_index, output) in tx_body.outputs().iter().enumerate() {
             let address = output
@@ -158,31 +160,139 @@ async fn handle_projected_nft(
                 )))?
                 .clone();
 
-            let projected_nft_data = extract_operation_and_datum(output);
+            let projected_nft_data =
+                extract_operation_and_datum(output, output_model, &partial_withdrawals);
+            //
+            // let entities = output.non_ada_assets().iter().map(|asset| entity::projected_nft::ActiveModel {
+            //     owner_address: Set(projected_nft_data.address.clone()),
+            //     previous_utxo_tx_output_index: Set(
+            //         projected_nft_data.previous_utxo_tx_output_index
+            //     ),
+            //     previous_utxo_tx_hash: Set(projected_nft_data.previous_utxo_tx_hash.clone()),
+            //     hololocker_utxo_id: Set(Some(output_model.id)),
+            //     tx_id: Set(cardano_transaction.id),
+            //     asset: Set(asset.subject()),
+            //     amount: Set(match asset {
+            //         Asset::Ada(value) => value as i64,
+            //         Asset::NativeAsset(_, _, value) => value as i64,
+            //     }),
+            //     operation: Set(projected_nft_data.operation.into()),
+            //     plutus_datum: Set(projected_nft_data.plutus_data.clone()),
+            //     for_how_long: Set(projected_nft_data.for_how_long),
+            //     ..Default::default()
+            // }).collect::<Vec<entity::projected_nft::ActiveModel>>();
 
-            for asset in output.non_ada_assets() {
-                scheduled_projected_nft_outputs.push(entity::projected_nft::ActiveModel {
-                    owner_address: Set(projected_nft_data.address.clone()),
-                    previous_utxo_tx_output_index: Set(
-                        projected_nft_data.previous_utxo_tx_output_index
-                    ),
-                    previous_utxo_tx_hash: Set(projected_nft_data.previous_utxo_tx_hash.clone()),
-                    hololocker_utxo_id: Set(Some(output_model.id)),
+            if let Some((hash, index)) = &projected_nft_data.partial_withdrawn_from {
+                // get associated projected nft input
+                let partial_withdrawal_input = partial_withdrawals
+                    .get_mut(&hash.clone())
+                    .ok_or(DbErr::Custom(format!(
+                        "projected nft input hash {} should always exist",
+                        hex::encode(hash.clone())
+                    )))?
+                    .get_mut(index)
+                    .ok_or(DbErr::Custom(format!(
+                        "projected nft input with hash {} and index {} should always exist",
+                        hex::encode(hash.clone()),
+                        index
+                    )))?;
+
+                // make a balance map
+                let mut asset_to_value =
+                    HashMap::<String, ProjectedNftInputsQueryOutputResult>::new();
+                for entry in partial_withdrawal_input.iter() {
+                    asset_to_value.insert(entry.asset.clone(), entry.clone());
+                }
+
+                // subtract all the assets
+                for (asset_name, asset_value) in projected_nft_data.non_ada_assets.iter() {
+                    asset_to_value
+                        .get_mut(&asset_name.clone())
+                        .ok_or(DbErr::Custom(format!(
+                            "Expected to see asset {asset_name} in projected nft {}@{index}",
+                            hex::encode(hash.clone())
+                        )))?
+                        .amount -= asset_value;
+                }
+
+                *partial_withdrawal_input = asset_to_value
+                    .values()
+                    .filter(|nft| nft.amount > 0)
+                    .cloned()
+                    .collect::<Vec<ProjectedNftInputsQueryOutputResult>>();
+
+                projected_nft_outputs.push(projected_nft_data);
+            } else {
+                projected_nft_outputs.push(projected_nft_data);
+            }
+        }
+
+        for nft_data in projected_nft_outputs.iter_mut() {
+            if nft_data.partial_withdrawn_from.is_some() {
+                continue;
+            }
+            let mut nft_data_assets = nft_data.non_ada_assets.clone();
+            nft_data_assets.sort_by_key(|(name, _)| name.clone());
+            let mut should_remove: Option<(Vec<u8>, i64)> = None;
+
+            for (hash, withdrawal) in partial_withdrawals.iter() {
+                for (index, withdrawal) in withdrawal.iter() {
+                    let withdrawal_pnft = withdrawal.first().ok_or(DbErr::Custom(format!(
+                        "Expected to see an asset in utxo {}@{index}",
+                        hex::encode(hash.clone())
+                    )))?;
+                    if withdrawal_pnft.plutus_datum != nft_data.plutus_data
+                        || withdrawal_pnft.owner_address != nft_data.address
+                    {
+                        continue;
+                    }
+                    let mut withdrawal_assets = withdrawal
+                        .iter()
+                        .map(|w| (w.asset.clone(), w.amount))
+                        .collect::<Vec<_>>();
+                    withdrawal_assets.sort_by_key(|(name, _)| name.clone());
+                    if withdrawal_assets == nft_data_assets {
+                        should_remove = Some((hash.clone(), *index));
+                        nft_data.previous_utxo_tx_hash = hash.clone();
+                        nft_data.previous_utxo_tx_output_index = Some(*index);
+                        break;
+                    }
+                }
+            }
+            if let Some((hash, index)) = should_remove {
+                partial_withdrawals
+                    .get_mut(&hash)
+                    .ok_or(DbErr::Custom(format!(
+                        "hash {} should be in partial withdrawals"
+                    , hex::encode(hash.clone()))))?
+                    .remove(&index);
+                if partial_withdrawals.get_mut(&hash).unwrap().is_empty() {
+                    partial_withdrawals.remove(&hash);
+                }
+            }
+        }
+
+        if !partial_withdrawals.is_empty() {
+            return Err(DbErr::Custom(format!("Partial withdrawals must be empty at the end of projected nft processing, while contains: {}", partial_withdrawals.keys().map(hex::encode).fold(String::new(), |acc, key| format!("{acc},{key}")))));
+        }
+
+        for nft_data in projected_nft_outputs.into_iter() {
+            for (asset_name, asset_value) in nft_data.non_ada_assets.into_iter() {
+                queued_projected_nft_records.push(entity::projected_nft::ActiveModel {
+                    owner_address: Set(nft_data.address.clone()),
+                    previous_utxo_tx_output_index: Set(nft_data.previous_utxo_tx_output_index),
+                    previous_utxo_tx_hash: Set(nft_data.previous_utxo_tx_hash.clone()),
+                    hololocker_utxo_id: Set(Some(nft_data.hololocker_utxo_id)),
                     tx_id: Set(cardano_transaction.id),
-                    asset: Set(asset.subject()),
-                    amount: Set(match asset {
-                        Asset::Ada(value) => value as i64,
-                        Asset::NativeAsset(_, _, value) => value as i64,
-                    }),
-                    operation: Set(projected_nft_data.operation.into()),
-                    plutus_datum: Set(projected_nft_data.plutus_data.clone()),
-                    for_how_long: Set(projected_nft_data.for_how_long),
+                    asset: Set(asset_name),
+                    amount: Set(asset_value),
+                    operation: Set(nft_data.operation.into()),
+                    plutus_datum: Set(nft_data.plutus_data.clone()),
+                    for_how_long: Set(nft_data.for_how_long),
                     ..Default::default()
                 });
             }
         }
-
-        queued_projected_nft_records.append(&mut scheduled_projected_nft_outputs);
     }
 
     if !queued_projected_nft_records.is_empty() {
@@ -242,6 +352,7 @@ async fn get_projected_nft_inputs(
         .column(ProjectedNftColumn::Asset)
         .column(ProjectedNftColumn::Amount)
         .column(ProjectedNftColumn::OwnerAddress)
+        .column(ProjectedNftColumn::PlutusDatum)
         .column_as(TransactionColumn::Hash, "tx_hash")
         .join(
             JoinType::InnerJoin,
@@ -275,8 +386,8 @@ fn handle_claims_and_partial_withdraws(
         BTreeMap<i64, Vec<ProjectedNftInputsQueryOutputResult>>,
     >,
     queued_projected_nft_records: &mut Vec<ProjectedNftActiveModel>,
-) -> Vec<ProjectedNftInputsQueryOutputResult> {
-    let mut partially_withdrawn = Vec::new();
+) -> BTreeMap<Vec<u8>, BTreeMap<i64, Vec<ProjectedNftInputsQueryOutputResult>>> {
+    let mut partially_withdrawn = BTreeMap::new();
 
     for (input_index, input) in tx_body.inputs().iter().enumerate() {
         let entry = if let Some(entry) = used_projected_nfts.get(&input.hash().to_vec()) {
@@ -290,6 +401,8 @@ fn handle_claims_and_partial_withdraws(
         } else {
             continue;
         };
+
+        let mut current_input_partial_withrawal = Vec::new();
 
         for projected_nft in projected_nfts {
             if projected_nft.operation == i32::from(ProjectedNftOperation::Unlocking) {
@@ -321,9 +434,17 @@ fn handle_claims_and_partial_withdraws(
                 };
 
                 if redeemer.partial_withdraw {
-                    partially_withdrawn.push(projected_nft.clone());
+                    current_input_partial_withrawal.push(projected_nft.clone());
                 }
             }
+        }
+
+        if !current_input_partial_withrawal.is_empty() {
+            *partially_withdrawn
+                .entry(input.hash().to_vec())
+                .or_insert(BTreeMap::new())
+                .entry(input_index as i64)
+                .or_default() = current_input_partial_withrawal;
         }
     }
 
@@ -353,9 +474,19 @@ struct ProjectedNftData {
     pub plutus_data: Vec<u8>,
     pub operation: ProjectedNftOperation,
     pub for_how_long: Option<i64>,
+    pub partial_withdrawn_from: Option<(Vec<u8>, i64)>,
+    pub non_ada_assets: Vec<(String, i64)>,
+    pub hololocker_utxo_id: i64,
 }
 
-fn extract_operation_and_datum(output: &MultiEraOutput) -> ProjectedNftData {
+fn extract_operation_and_datum(
+    output: &MultiEraOutput,
+    output_model: entity::transaction_output::Model,
+    partial_withdrawals: &BTreeMap<
+        Vec<u8>,
+        BTreeMap<i64, Vec<ProjectedNftInputsQueryOutputResult>>,
+    >,
+) -> ProjectedNftData {
     let datum_option = match output.datum() {
         Some(datum) => DatumOption::from(datum.clone()),
         None => {
@@ -406,24 +537,54 @@ fn extract_operation_and_datum(output: &MultiEraOutput) -> ProjectedNftData {
         Owner::Receipt(_) => vec![],
     };
 
+    let non_ada_assets = output
+        .non_ada_assets()
+        .iter()
+        .map(|asset| {
+            (
+                asset.subject(),
+                match asset {
+                    Asset::Ada(value) => *value as i64,
+                    Asset::NativeAsset(_, _, value) => *value as i64,
+                },
+            )
+        })
+        .collect::<Vec<(String, i64)>>();
     match parsed.status {
         Status::Locked => ProjectedNftData {
             address: owner_address,
             plutus_data: datum,
             operation: ProjectedNftOperation::Lock,
+            hololocker_utxo_id: output_model.id,
+            non_ada_assets,
             ..Default::default()
         },
         Status::Unlocking {
             out_ref,
             for_how_long,
-        } => ProjectedNftData {
-            previous_utxo_tx_hash: out_ref.tx_id.to_raw_bytes().to_vec(),
-            previous_utxo_tx_output_index: Some(out_ref.index as i64),
-            address: owner_address,
-            plutus_data: datum,
-            operation: ProjectedNftOperation::Unlocking,
-            for_how_long: Some(for_how_long as i64),
-        },
+        } => {
+            let partial_withdrawn_from = partial_withdrawals
+                .get(out_ref.tx_id.to_raw_bytes())
+                .and_then(|inner| {
+                    if inner.contains_key(&(out_ref.index as i64)) {
+                        Some((out_ref.tx_id.to_raw_bytes().to_vec(), out_ref.index as i64))
+                    } else {
+                        None
+                    }
+                });
+
+            ProjectedNftData {
+                previous_utxo_tx_hash: out_ref.tx_id.to_raw_bytes().to_vec(),
+                previous_utxo_tx_output_index: Some(out_ref.index as i64),
+                address: owner_address,
+                plutus_data: datum,
+                operation: ProjectedNftOperation::Unlocking,
+                for_how_long: Some(for_how_long as i64),
+                hololocker_utxo_id: output_model.id,
+                partial_withdrawn_from,
+                non_ada_assets,
+            }
+        }
     }
 }
 
