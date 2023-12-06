@@ -24,7 +24,7 @@ use crate::dsl::task_macro::*;
 
 use super::multiera_stake_credentials::MultieraStakeCredentialTask;
 
-use crate::config::AddressConfig::PayloadAndReadonlyConfig;
+use crate::config::AddressConfig::AddressConfig;
 use crate::multiera::dex::common::filter_outputs_and_datums_by_address;
 use crate::multiera::multiera_txs::MultieraTransactionTask;
 use crate::multiera::multiera_used_inputs::MultieraUsedInputTask;
@@ -32,7 +32,7 @@ use crate::multiera::multiera_used_outputs::MultieraOutputTask;
 
 carp_task! {
   name MultiEraProjectedNftTask;
-  configuration PayloadAndReadonlyConfig;
+  configuration AddressConfig;
   doc "Parses projected NFT contract data";
   era multiera;
   dependencies [MultieraUsedInputTask, MultieraOutputTask];
@@ -149,9 +149,15 @@ async fn handle_projected_nft(
             let output_address = output
                 .address()
                 .map_err(|err| DbErr::Custom(format!("invalid pallas address: {}", err)))?
-                .to_hex();
+                .to_vec();
 
-            let output_payment_cred = get_payment_cred(output_address)?;
+            let output_address =
+                cardano_multiplatform_lib::address::Address::from_bytes(output_address)
+                    .map_err(|err| DbErr::Custom(format!("cml can't parse address: {}", err)))?;
+            let output_payment_cred = match output_address.payment_cred() {
+                None => continue,
+                Some(pk) => pk,
+            };
 
             if output_payment_cred != projected_nft_contract_payment_cred {
                 // the output doesn't relate to projected nft contract -> we don't care about it
