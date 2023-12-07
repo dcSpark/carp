@@ -8,6 +8,7 @@ use pallas::ledger::primitives::Fragment;
 use pallas::ledger::traverse::{Asset, MultiEraOutput, MultiEraTx};
 use projected_nft_sdk::{Owner, Redeem, State, Status};
 use sea_orm::{FromQueryResult, JoinType, QuerySelect, QueryTrait};
+use std::cmp::Ordering;
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::fmt::format;
 
@@ -423,7 +424,14 @@ fn handle_claims_and_partial_withdraws(
 ) -> BTreeMap<Vec<u8>, BTreeMap<i64, Vec<ProjectedNftInputsQueryOutputResult>>> {
     let mut partially_withdrawn = BTreeMap::new();
 
-    for (input_index, input) in tx_body.inputs().iter().enumerate() {
+    let mut sorted_inputs = tx_body.inputs();
+    sorted_inputs.sort_by(|left, right| match left.hash().cmp(right.hash()) {
+        Ordering::Less => Ordering::Less,
+        Ordering::Equal => left.index().cmp(&right.index()),
+        Ordering::Greater => Ordering::Greater,
+    });
+
+    for (input_index, input) in sorted_inputs.iter().enumerate() {
         let entry = if let Some(entry) = used_projected_nfts.get(&input.hash().to_vec()) {
             entry
         } else {
