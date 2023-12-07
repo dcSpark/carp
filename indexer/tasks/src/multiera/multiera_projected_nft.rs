@@ -512,7 +512,7 @@ fn handle_claims_and_partial_withdraws(
             *partially_withdrawn
                 .entry(input.hash().to_vec())
                 .or_insert(BTreeMap::new())
-                .entry(input_index as i64)
+                .entry(input.index() as i64)
                 .or_default() = current_input_partial_withrawal;
         }
     }
