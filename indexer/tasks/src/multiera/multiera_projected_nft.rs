@@ -129,7 +129,7 @@ async fn handle_projected_nft(
             .redeemers()
             .map(get_projected_nft_redeemers)
             .unwrap_or(Ok(BTreeMap::new()))?;
-        tracing::info!("Redeemers: {:?}", redeemers.iter().collect::<Vec<_>>());
+
         // partial withdrawals inputs -- inputs which have partial withdraw = true in the redeemer
         // this function also adds claims to the events list
         let mut partial_withdrawals_inputs = handle_claims_and_partial_withdraws(
@@ -185,34 +185,7 @@ async fn handle_projected_nft(
 
             projected_nft_outputs.push(projected_nft_data);
         }
-        for projected_nft_output in projected_nft_outputs.iter() {
-            for (asset_name, asset_value) in projected_nft_output.non_ada_assets.iter() {
-                tracing::info!(
-                    "projected nft output: op: {:?}, partial: {}\nasset: {:?}\nvalue: {:?}\nprev tx: {:?}@{:?}",
-                    projected_nft_output.operation,
-                    projected_nft_output.partial_withdrawn_from_input.is_some(),
-                    asset_name,
-                    asset_value,
-                    hex::encode(projected_nft_output.previous_utxo_tx_hash.clone()),
-                    projected_nft_output.previous_utxo_tx_output_index,
-                );
-            }
-        }
 
-        for (tx, withdrawal) in partial_withdrawals_inputs.iter() {
-            for (index, withdrawal) in withdrawal.iter() {
-                for withdrawal in withdrawal.iter() {
-                    tracing::info!(
-                        "projected nft withdrawal: tx: {:?}@{:?}, op: {:?}\nasset: {:?}\nvalue: {:?}\n",
-                        hex::encode(tx),
-                        index,
-                        withdrawal.operation,
-                        withdrawal.asset,
-                        withdrawal.amount,
-                    );
-                }
-            }
-        }
         find_lock_outputs_for_corresponding_partial_withdrawals(
             &mut projected_nft_outputs,
             &mut partial_withdrawals_inputs,
@@ -634,25 +607,6 @@ fn extract_operation_and_datum(
             for_how_long,
         } => {
             let out_ref_tx_id = out_ref.tx_id.to_raw_bytes().to_vec();
-            tracing::info!(
-                "Unlocking tx: {}@{}",
-                hex::encode(out_ref_tx_id.clone()),
-                out_ref.index
-            );
-            for (tx, withdrawal) in partial_withdrawals.iter() {
-                for (index, withdrawal) in withdrawal.iter() {
-                    for withdrawal in withdrawal.iter() {
-                        tracing::info!(
-                        "current projected nft withdrawal: tx: {:?}@{:?}, op: {:?}\nasset: {:?}\nvalue: {:?}\n",
-                        hex::encode(tx),
-                        index,
-                        withdrawal.operation,
-                        withdrawal.asset,
-                        withdrawal.amount,
-                    );
-                    }
-                }
-            }
             let partial_withdrawn_from =
                 partial_withdrawals.get(&out_ref_tx_id).and_then(|inner| {
                     if inner.contains_key(&(out_ref.index as i64)) {
