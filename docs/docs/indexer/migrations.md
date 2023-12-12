@@ -36,3 +36,4 @@ Reminder: you can add the `-v` parameter to see the SQL queries run by these com
 Keep in mind that for successful migration you need to run `set -a; . ./.env; set +a` from root folder of repo to set appropriate env variables (migration relies on them, on `DATABASE_URL` in particular).
 
 2. Create a new execution plan using `readonly = true` versions of tasks. Tasks that support this option will read existing data from storage instead of writing to the database, so you can chain multiple readonly tasks to build up towards that new task you are adding that will write the data you need to the database.
+3. Set the `start_block` parameter in your configuration file to the block you want to start synchronizing from (see [here](./run.md))
