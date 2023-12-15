@@ -77,7 +77,7 @@ export type ProjectedNftRangeResponse = {
      *
      * @example 1
      */
-    amount: number,
+    amount: bigint,
     /**
      * Projected NFT status: Lock / Unlocking / Claim / Invalid
      *
@@ -97,5 +97,5 @@ export type ProjectedNftRangeResponse = {
      *
      * @example 1701266986000
      */
-    forHowLong: number | null,
+    forHowLong: bigint | null,
 }[];

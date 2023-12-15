@@ -124,7 +124,7 @@ async fn handle_projected_nft(
     let mut queued_projected_nft_records = vec![];
 
     for (tx_body, cardano_transaction) in block.1.txs().iter().zip(multiera_txs) {
-        // redeemers are needed to identify whil of the projected nfts are partial withdrawals
+        // redeemers are needed to identify which of the projected nfts are partial withdrawals
         let redeemers = tx_body
             .redeemers()
             .map(get_projected_nft_redeemers)
