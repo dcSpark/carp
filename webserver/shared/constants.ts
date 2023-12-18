@@ -29,5 +29,9 @@ export const DEX_PRICE_LIMIT = {
 
 export const POOL_DELEGATION_LIMIT = {
   POOLS: 50,
-  SLOT_RANGE: 200,
+  SLOT_RANGE: 20000,
+};
+
+export const PROJECTED_NFT_LIMIT = {
+  SLOT_RANGE: 100000,
 };

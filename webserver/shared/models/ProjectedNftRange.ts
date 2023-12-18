@@ -15,7 +15,8 @@ export type ProjectedNftRangeRequest = {
          * @example 46154860
          */
         maxSlot: number
-    }
+    },
+    address: string | null
 };
 
 export type ProjectedNftRangeResponse = {
