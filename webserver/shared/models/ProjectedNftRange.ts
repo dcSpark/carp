@@ -75,9 +75,9 @@ export type ProjectedNftRangeResponse = {
     /**
      * Number of assets of `asset` type used in this Projected NFT event.
      *
-     * @example 1
+     * @example "1"
      */
-    amount: number,
+    amount: string,
     /**
      * Projected NFT status: Lock / Unlocking / Claim / Invalid
      *
@@ -95,7 +95,7 @@ export type ProjectedNftRangeResponse = {
      * UNIX timestamp till which the funds can't be claimed in the Unlocking state.
      * If the status is not Unlocking this is always null.
      *
-     * @example 1701266986000
+     * @example "1701266986000"
      */
-    forHowLong: number | null,
+    forHowLong: string | null,
 }[];
