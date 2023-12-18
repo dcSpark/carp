@@ -38,11 +38,11 @@ export class ProjectedNftRangeController extends Controller {
                 actionTxId: data.action_tx_id,
                 actionOutputIndex: data.action_output_index,
                 asset: data.asset,
-                amount: BigInt(data.amount),
+                amount: data.amount,
                 status: data.status,
                 plutusDatum: data.plutus_datum,
                 actionSlot: data.action_slot,
-                forHowLong: data.for_how_long != null ? BigInt(data.for_how_long) : null,
+                forHowLong: data.for_how_long,
             }));
         });
 
