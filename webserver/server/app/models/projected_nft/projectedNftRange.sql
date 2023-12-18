@@ -14,7 +14,8 @@ SELECT
 
     encode("Transaction".hash, 'hex') as action_tx_id,
 
-    "ProjectedNFT".asset as asset,
+    "ProjectedNFT".policy_id as policy_id,
+    "ProjectedNFT".asset_name as asset_name,
     "ProjectedNFT".amount as amount,
 
     CASE

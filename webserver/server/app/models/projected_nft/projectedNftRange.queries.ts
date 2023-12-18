@@ -13,10 +13,11 @@ export interface ISqlProjectedNftRangeResult {
   action_slot: number;
   action_tx_id: string | null;
   amount: string;
-  asset: string;
+  asset_name: string;
   for_how_long: string | null;
   owner_address: string | null;
   plutus_datum: string | null;
+  policy_id: string;
   previous_tx_hash: string | null;
   previous_tx_output_index: string | null;
   status: string | null;
@@ -28,7 +29,7 @@ export interface ISqlProjectedNftRangeQuery {
   result: ISqlProjectedNftRangeResult;
 }
 
-const sqlProjectedNftRangeIR: any = {"usedParamSet":{"min_slot":true,"max_slot":true},"params":[{"name":"min_slot","required":true,"transform":{"type":"scalar"},"locs":[{"a":1166,"b":1175}]},{"name":"max_slot","required":true,"transform":{"type":"scalar"},"locs":[{"a":1201,"b":1210}]}],"statement":"SELECT\n    encode(\"ProjectedNFT\".owner_address, 'hex') as owner_address,\n\n    encode(\"ProjectedNFT\".previous_utxo_tx_hash, 'hex') as previous_tx_hash,\n    \"ProjectedNFT\".previous_utxo_tx_output_index as previous_tx_output_index,\n\n    CASE\n        WHEN \"TransactionOutput\".output_index = NULL THEN NULL\n        ELSE \"TransactionOutput\".output_index\n        END AS action_output_index,\n\n    encode(\"Transaction\".hash, 'hex') as action_tx_id,\n\n    \"ProjectedNFT\".asset as asset,\n    \"ProjectedNFT\".amount as amount,\n\n    CASE\n        WHEN \"ProjectedNFT\".operation = 0 THEN 'Lock'\n        WHEN \"ProjectedNFT\".operation = 1 THEN 'Unlocking'\n        WHEN \"ProjectedNFT\".operation = 2 THEN 'Claim'\n        ELSE 'Invalid'\n        END AS status,\n\n    encode(\"ProjectedNFT\".plutus_datum, 'hex') as plutus_datum,\n    \"ProjectedNFT\".for_how_long as for_how_long,\n\n    \"Block\".slot as action_slot\nFROM \"ProjectedNFT\"\n         LEFT JOIN \"TransactionOutput\" ON \"TransactionOutput\".id = \"ProjectedNFT\".hololocker_utxo_id\n         JOIN \"Transaction\" ON \"Transaction\".id = \"ProjectedNFT\".tx_id\n         JOIN \"Block\" ON \"Transaction\".block_id = \"Block\".id\nWHERE\n        \"Block\".slot > :min_slot!\n    AND \"Block\".slot <= :max_slot!\nORDER BY (\"Block\".height, \"Transaction\".tx_index) ASC"};
+const sqlProjectedNftRangeIR: any = {"usedParamSet":{"min_slot":true,"max_slot":true},"params":[{"name":"min_slot","required":true,"transform":{"type":"scalar"},"locs":[{"a":1219,"b":1228}]},{"name":"max_slot","required":true,"transform":{"type":"scalar"},"locs":[{"a":1254,"b":1263}]}],"statement":"SELECT\n    encode(\"ProjectedNFT\".owner_address, 'hex') as owner_address,\n\n    encode(\"ProjectedNFT\".previous_utxo_tx_hash, 'hex') as previous_tx_hash,\n    \"ProjectedNFT\".previous_utxo_tx_output_index as previous_tx_output_index,\n\n    CASE\n        WHEN \"TransactionOutput\".output_index = NULL THEN NULL\n        ELSE \"TransactionOutput\".output_index\n        END AS action_output_index,\n\n    encode(\"Transaction\".hash, 'hex') as action_tx_id,\n\n    \"ProjectedNFT\".policy_id as policy_id,\n    \"ProjectedNFT\".asset_name as asset_name,\n    \"ProjectedNFT\".amount as amount,\n\n    CASE\n        WHEN \"ProjectedNFT\".operation = 0 THEN 'Lock'\n        WHEN \"ProjectedNFT\".operation = 1 THEN 'Unlocking'\n        WHEN \"ProjectedNFT\".operation = 2 THEN 'Claim'\n        ELSE 'Invalid'\n        END AS status,\n\n    encode(\"ProjectedNFT\".plutus_datum, 'hex') as plutus_datum,\n    \"ProjectedNFT\".for_how_long as for_how_long,\n\n    \"Block\".slot as action_slot\nFROM \"ProjectedNFT\"\n         LEFT JOIN \"TransactionOutput\" ON \"TransactionOutput\".id = \"ProjectedNFT\".hololocker_utxo_id\n         JOIN \"Transaction\" ON \"Transaction\".id = \"ProjectedNFT\".tx_id\n         JOIN \"Block\" ON \"Transaction\".block_id = \"Block\".id\nWHERE\n        \"Block\".slot > :min_slot!\n    AND \"Block\".slot <= :max_slot!\nORDER BY (\"Block\".height, \"Transaction\".tx_index) ASC"};
 
 /**
  * Query generated from SQL:
@@ -46,7 +47,8 @@ const sqlProjectedNftRangeIR: any = {"usedParamSet":{"min_slot":true,"max_slot":
  * 
  *     encode("Transaction".hash, 'hex') as action_tx_id,
  * 
- *     "ProjectedNFT".asset as asset,
+ *     "ProjectedNFT".policy_id as policy_id,
+ *     "ProjectedNFT".asset_name as asset_name,
  *     "ProjectedNFT".amount as amount,
  * 
  *     CASE
