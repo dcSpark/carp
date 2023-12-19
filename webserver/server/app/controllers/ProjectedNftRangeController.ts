@@ -37,7 +37,7 @@ export class ProjectedNftRangeController extends Controller {
             );
         }
 
-        if (requestBody.address !== null) {
+        if (requestBody.address !== undefined) {
             return await this.handle_by_address_query(requestBody.address, requestBody);
         } else {
             return await this.handle_general_query(requestBody);
