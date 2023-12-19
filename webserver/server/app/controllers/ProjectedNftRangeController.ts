@@ -26,20 +26,32 @@ export class ProjectedNftRangeController extends Controller {
         >
     ): Promise<EndpointTypes[typeof route]['response']> {
         const slotRangeSize = requestBody.range.maxSlot - requestBody.range.minSlot;
-        if (slotRangeSize > PROJECTED_NFT_LIMIT.SLOT_RANGE) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-            return errorResponse(
-                StatusCodes.BAD_REQUEST,
-                genErrorMessage(Errors.SlotRangeLimitExceeded, {
-                    limit: PROJECTED_NFT_LIMIT.SLOT_RANGE,
-                    found: slotRangeSize,
-                })
-            );
-        }
 
         if (requestBody.address !== undefined) {
+            if (slotRangeSize > PROJECTED_NFT_LIMIT.SINGLE_USER_SLOT_RANGE) {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+                return errorResponse(
+                    StatusCodes.BAD_REQUEST,
+                    genErrorMessage(Errors.SlotRangeLimitExceeded, {
+                        limit: PROJECTED_NFT_LIMIT.SINGLE_USER_SLOT_RANGE,
+                        found: slotRangeSize,
+                    })
+                );
+            }
+
             return await this.handle_by_address_query(requestBody.address, requestBody);
         } else {
+            if (slotRangeSize > PROJECTED_NFT_LIMIT.SLOT_RANGE) {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+                return errorResponse(
+                    StatusCodes.BAD_REQUEST,
+                    genErrorMessage(Errors.SlotRangeLimitExceeded, {
+                        limit: PROJECTED_NFT_LIMIT.SLOT_RANGE,
+                        found: slotRangeSize,
+                    })
+                );
+            }
+
             return await this.handle_general_query(requestBody);
         }
     }
