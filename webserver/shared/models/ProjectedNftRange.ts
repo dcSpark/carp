@@ -65,14 +65,6 @@ export type ProjectedNftRangeResponse = {
      * @example 1
      */
     previousTxOutputIndex: number | null,
-
-    /**
-     * Asset that relates to Projected NFT event. Consists of 2 parts: PolicyId and AssetName
-     *
-     * @pattern [0-9a-fA-F]+.[0-9a-fA-F]+
-     * @example "96f7dc9749ede0140f042516f4b723d7261610d6b12ccb19f3475278.415045"
-     */
-    asset: string,
     /**
      * Asset policy id that relates to Projected NFT event
      *
