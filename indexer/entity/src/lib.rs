@@ -10,6 +10,7 @@ pub mod transaction_reference_input;
 pub mod tx_credential;
 pub use sea_orm;
 pub mod asset_mint;
+pub mod asset_utxos;
 pub mod cip25_entry;
 pub mod dex_swap;
 pub mod native_asset;

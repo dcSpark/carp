@@ -65,3 +65,5 @@ readonly=false
 [MultieraCip25EntryTask]
 
 [MultieraAddressDelegationTask]
+
+[MultieraAssetUtxos]
