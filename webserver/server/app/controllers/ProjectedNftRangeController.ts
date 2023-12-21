@@ -7,8 +7,6 @@ import type { EndpointTypes } from '../../../shared/routes';
 import { Routes } from '../../../shared/routes';
 import { projectedNftRange, projectedNftRangeByAddress } from '../services/ProjectedNftRange';
 import type {ProjectedNftRangeResponse} from '../../../shared/models/ProjectedNftRange';
-import {PROJECTED_NFT_LIMIT} from "../../../shared/constants";
-import {Errors, genErrorMessage} from "../../../shared/errors";
 
 const route = Routes.projectedNftEventsRange;
 
@@ -28,30 +26,8 @@ export class ProjectedNftRangeController extends Controller {
         const slotRangeSize = requestBody.range.maxSlot - requestBody.range.minSlot;
 
         if (requestBody.address !== undefined) {
-            if (slotRangeSize > PROJECTED_NFT_LIMIT.SINGLE_USER_SLOT_RANGE) {
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-                return errorResponse(
-                    StatusCodes.BAD_REQUEST,
-                    genErrorMessage(Errors.SlotRangeLimitExceeded, {
-                        limit: PROJECTED_NFT_LIMIT.SINGLE_USER_SLOT_RANGE,
-                        found: slotRangeSize,
-                    })
-                );
-            }
-
             return await this.handle_by_address_query(requestBody.address, requestBody);
         } else {
-            if (slotRangeSize > PROJECTED_NFT_LIMIT.SLOT_RANGE) {
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-                return errorResponse(
-                    StatusCodes.BAD_REQUEST,
-                    genErrorMessage(Errors.SlotRangeLimitExceeded, {
-                        limit: PROJECTED_NFT_LIMIT.SLOT_RANGE,
-                        found: slotRangeSize,
-                    })
-                );
-            }
-
             return await this.handle_general_query(requestBody);
         }
     }

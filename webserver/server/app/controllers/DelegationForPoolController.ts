@@ -35,18 +35,6 @@ export class DelegationForPoolController extends Controller {
       );
     }
 
-    const slotRangeSize = requestBody.range.maxSlot - requestBody.range.minSlot;
-    if (slotRangeSize > POOL_DELEGATION_LIMIT.SLOT_RANGE) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-      return errorResponse(
-        StatusCodes.BAD_REQUEST,
-        genErrorMessage(Errors.SlotRangeLimitExceeded, {
-          limit: POOL_DELEGATION_LIMIT.SLOT_RANGE,
-          found: slotRangeSize,
-        })
-      );
-    }
-
     const response = await tx<DelegationForPoolResponse>(pool, async dbTx => {
       const data = await delegationsForPool({
         pools: requestBody.pools.map(poolId => Buffer.from(poolId, 'hex')),
