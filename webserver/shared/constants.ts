@@ -29,5 +29,9 @@ export const DEX_PRICE_LIMIT = {
 
 export const POOL_DELEGATION_LIMIT = {
   POOLS: 50,
-  SLOT_RANGE: 200,
+  SLOT_RANGE: 10000,
+};
+
+export const ASSET_UTXOS_LIMIT = {
+  ASSETS: 50,
 };

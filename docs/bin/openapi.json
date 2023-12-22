@@ -146,6 +146,88 @@
                 ],
                 "type": "object"
             },
+            "AssetUtxosResponse": {
+                "items": {
+                    "properties": {
+                        "txId": {
+                            "type": "string"
+                        },
+                        "slot": {
+                            "type": "number",
+                            "format": "double"
+                        },
+                        "paymentCred": {
+                            "type": "string"
+                        },
+                        "utxo": {
+                            "properties": {
+                                "index": {
+                                    "type": "number",
+                                    "format": "double"
+                                },
+                                "tx": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "index",
+                                "tx"
+                            ],
+                            "type": "object"
+                        },
+                        "amount": {
+                            "type": "number",
+                            "format": "double",
+                            "description": "If the utxo is created, this has the amount. It's undefined if the utxo\nis spent.",
+                            "example": 1031423725351
+                        }
+                    },
+                    "required": [
+                        "txId",
+                        "slot",
+                        "paymentCred",
+                        "utxo"
+                    ],
+                    "type": "object"
+                },
+                "type": "array"
+            },
+            "Cip14Fingerprint": {
+                "type": "string",
+                "example": "asset1c43p68zwjezc7f6w4w9qkhkwv9ppwz0f7c3amw"
+            },
+            "AssetUtxosRequest": {
+                "properties": {
+                    "assets": {
+                        "items": {
+                            "$ref": "#/components/schemas/Cip14Fingerprint"
+                        },
+                        "type": "array"
+                    },
+                    "range": {
+                        "properties": {
+                            "maxSlot": {
+                                "type": "number",
+                                "format": "double"
+                            },
+                            "minSlot": {
+                                "type": "number",
+                                "format": "double"
+                            }
+                        },
+                        "required": [
+                            "maxSlot",
+                            "minSlot"
+                        ],
+                        "type": "object"
+                    }
+                },
+                "required": [
+                    "assets",
+                    "range"
+                ],
+                "type": "object"
+            },
             "BlockSubset": {
                 "properties": {
                     "slot": {
@@ -1140,6 +1222,65 @@
                         "application/json": {
                             "schema": {
                                 "$ref": "#/components/schemas/AddressUsedRequest"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/asset/utxos": {
+            "post": {
+                "operationId": "AssetUtxos",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AssetUtxosResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [],
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AssetUtxosRequest"
                             }
                         }
                     }

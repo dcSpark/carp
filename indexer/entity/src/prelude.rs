@@ -11,6 +11,10 @@ pub use super::asset_mint::{
     ActiveModel as AssetMintActiveModel, Column as AssetMintColumn, Entity as AssetMint,
     Model as AssetMintModel, PrimaryKey as AssetMintPrimaryKey, Relation as AssetMintRelation,
 };
+pub use super::asset_utxos::{
+    ActiveModel as AssetUtxoActiveModel, Column as AssetUtxoCredentialColumn, Entity as AssetUtxo,
+    Model as AssetUtxoModel, PrimaryKey as AssetUtxoPrimaryKey, Relation as AssetUtxoRelation,
+};
 pub use super::block::{
     ActiveModel as BlockActiveModel, Column as BlockColumn, Entity as Block, Model as BlockModel,
     PrimaryKey as BlockPrimaryKey, Relation as BlockRelation,

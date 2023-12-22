@@ -19,6 +19,7 @@ mod m20221031_000014_create_dex_table;
 mod m20230223_000015_modify_block_table;
 mod m20230927_000016_create_stake_delegation_table;
 mod m20231025_000017_projected_nft;
+mod m20231220_000018_asset_utxo_table;
 
 pub struct Migrator;
 
@@ -45,6 +46,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20230223_000015_modify_block_table::Migration),
             Box::new(m20230927_000016_create_stake_delegation_table::Migration),
             Box::new(m20231025_000017_projected_nft::Migration),
+            Box::new(m20231220_000018_asset_utxo_table::Migration),
         ]
     }
 }

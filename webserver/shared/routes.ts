@@ -31,6 +31,7 @@ import type {
   ProjectedNftRangeRequest,
   ProjectedNftRangeResponse,
 } from "./models/ProjectedNftRange";
+import { AssetUtxosRequest, AssetUtxosResponse } from "./models/AssetUtxos";
 
 export enum Routes {
   transactionHistory = "transaction/history",
@@ -45,6 +46,7 @@ export enum Routes {
   delegationForAddress = "delegation/address",
   delegationForPool = "delegation/pool",
   projectedNftEventsRange = "projected-nft/range",
+  assetUtxos = "asset/utxos",
 }
 
 export type EndpointTypes = {
@@ -107,5 +109,10 @@ export type EndpointTypes = {
     name: typeof Routes.projectedNftEventsRange;
     input: ProjectedNftRangeRequest;
     response: ProjectedNftRangeResponse;
+  };
+  [Routes.assetUtxos]: {
+    name: typeof Routes.assetUtxos;
+    input: AssetUtxosRequest;
+    response: AssetUtxosResponse;
   };
 };
