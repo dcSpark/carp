@@ -14,9 +14,9 @@ export type AssetUtxosResponse = {
      * If the utxo is created, this has the amount. It's undefined if the utxo
      * is spent. 
      *
-     * @example 1031423725351 
+     * @example '1031423725351'
      */
-    amount: number | undefined,
+    amount: string | undefined,
     utxo: {
       tx: string,
       index: number,

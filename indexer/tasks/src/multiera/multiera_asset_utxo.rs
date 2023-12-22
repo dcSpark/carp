@@ -80,8 +80,17 @@ async fn handle(
             let utxo = if let Some(utxo) = utxo {
                 utxo
             } else {
-                // this can happen if the tx was not valid, in which case the
-                // input is not spent.
+                // We iterate over the combination of <inputs, collateral> in
+                // the tx body:
+                //
+                // If tx succeeded, inputs are consumed and we skip collateral.
+                //
+                // If tx failed, we skip inputs and consume collateral
+                //
+                // We don't need to have that piece of logic here, because the
+                // MultieraUsedInputTask takes care of discriminating by not
+                // inserting the unused ones in the map, so we can just skip
+                // the input.
                 continue;
             };
 
@@ -95,6 +104,9 @@ async fn handle(
                     }
                 };
 
+                // 0 values were allowed in the serialization of multiassets
+                // before conway. We need to filter these here, because the
+                // asset may not actually be in the assets table.
                 if value == 0 {
                     continue;
                 }
@@ -148,6 +160,9 @@ async fn handle(
                     }
                 };
 
+                // 0 values were allowed in the serialization of multiassets
+                // before conway. We need to filter these here, because the
+                // asset may not actually be in the assets table.
                 if value == 0 {
                     continue;
                 }

@@ -66,7 +66,7 @@ export class AssetUtxosController extends Controller {
             tx: data.output_tx_hash as string,
           },
           paymentCred: Buffer.from(addressBytes as Uint8Array).toString('hex'),
-          amount: data.amount ? Number(data.amount) : undefined,
+          amount: data.amount ? data.amount : undefined,
           slot: data.slot,
           cip14Fingerprint: bech32.encode('asset', bech32.toWords(data.cip14_fingerprint)),
         };
