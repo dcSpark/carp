@@ -14,7 +14,8 @@ pub struct Model {
     pub hololocker_utxo_id: Option<i64>,
     #[sea_orm(column_type = "BigInteger")]
     pub tx_id: i64,
-    pub asset: String,
+    pub policy_id: String,
+    pub asset_name: String,
     #[sea_orm(column_type = "BigInteger")]
     pub amount: i64,
     pub operation: i32, // lock / unlock / claim

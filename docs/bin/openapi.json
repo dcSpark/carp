@@ -839,15 +839,23 @@
                 ],
                 "type": "object"
             },
+            "ProjectedNftStatus": {
+                "enum": [
+                    "Lock",
+                    "Unlocking",
+                    "Claim",
+                    "Invalid"
+                ],
+                "type": "string"
+            },
             "ProjectedNftRangeResponse": {
                 "items": {
                     "properties": {
                         "forHowLong": {
-                            "type": "number",
-                            "format": "double",
+                            "type": "string",
                             "nullable": true,
                             "description": "UNIX timestamp till which the funds can't be claimed in the Unlocking state.\nIf the status is not Unlocking this is always null.",
-                            "example": 1701266986000
+                            "example": "1701266986000"
                         },
                         "plutusDatum": {
                             "type": "string",
@@ -857,22 +865,31 @@
                             "pattern": "[0-9a-fA-F]+"
                         },
                         "status": {
-                            "type": "string",
+                            "allOf": [
+                                {
+                                    "$ref": "#/components/schemas/ProjectedNftStatus"
+                                }
+                            ],
                             "nullable": true,
                             "description": "Projected NFT status: Lock / Unlocking / Claim / Invalid",
                             "example": "Lock"
                         },
                         "amount": {
-                            "type": "number",
-                            "format": "double",
-                            "description": "Number of assets of `asset` type used in this Projected NFT event.",
-                            "example": 1
-                        },
-                        "asset": {
                             "type": "string",
-                            "description": "Asset that relates to Projected NFT event. Consists of 2 parts: PolicyId and AssetName",
-                            "example": "96f7dc9749ede0140f042516f4b723d7261610d6b12ccb19f3475278.415045",
-                            "pattern": "[0-9a-fA-F]+.[0-9a-fA-F]+"
+                            "description": "Number of assets of `asset` type used in this Projected NFT event.",
+                            "example": "1"
+                        },
+                        "assetName": {
+                            "type": "string",
+                            "description": "Asset name that relates to Projected NFT event",
+                            "example": "415045",
+                            "pattern": "([0-9a-fA-F]{2}){0,32}"
+                        },
+                        "policyId": {
+                            "type": "string",
+                            "description": "Asset policy id that relates to Projected NFT event",
+                            "example": "96f7dc9749ede0140f042516f4b723d7261610d6b12ccb19f3475278",
+                            "pattern": "[0-9a-fA-F]{56}"
                         },
                         "previousTxOutputIndex": {
                             "type": "number",
@@ -921,7 +938,8 @@
                         "plutusDatum",
                         "status",
                         "amount",
-                        "asset",
+                        "assetName",
+                        "policyId",
                         "previousTxOutputIndex",
                         "previousTxHash",
                         "actionOutputIndex",
@@ -935,6 +953,9 @@
             },
             "ProjectedNftRangeRequest": {
                 "properties": {
+                    "address": {
+                        "type": "string"
+                    },
                     "range": {
                         "properties": {
                             "maxSlot": {

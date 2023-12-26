@@ -15,7 +15,15 @@ export type ProjectedNftRangeRequest = {
          * @example 46154860
          */
         maxSlot: number
-    }
+    },
+    address: string | undefined
+};
+
+export enum ProjectedNftStatus {
+    Lock = 'Lock',
+    Unlocking = 'Unlocking',
+    Claim = 'Claim',
+    Invalid = 'Invalid'
 };
 
 export type ProjectedNftRangeResponse = {
@@ -64,14 +72,20 @@ export type ProjectedNftRangeResponse = {
      * @example 1
      */
     previousTxOutputIndex: number | null,
-
     /**
-     * Asset that relates to Projected NFT event. Consists of 2 parts: PolicyId and AssetName
+     * Asset policy id that relates to Projected NFT event
      *
-     * @pattern [0-9a-fA-F]+.[0-9a-fA-F]+
-     * @example "96f7dc9749ede0140f042516f4b723d7261610d6b12ccb19f3475278.415045"
+     * @pattern [0-9a-fA-F]{56}
+     * @example "96f7dc9749ede0140f042516f4b723d7261610d6b12ccb19f3475278"
      */
-    asset: string,
+    policyId: string,
+    /**
+     * Asset name that relates to Projected NFT event
+     *
+     * @pattern ([0-9a-fA-F]{2}){0,32}
+     * @example "415045"
+     */
+    assetName: string,
     /**
      * Number of assets of `asset` type used in this Projected NFT event.
      *
@@ -83,7 +97,7 @@ export type ProjectedNftRangeResponse = {
      *
      * @example "Lock"
      */
-    status: string | null,
+    status: ProjectedNftStatus | null,
     /**
      * Projected NFT datum: serialized state of the Projected NFT
      *

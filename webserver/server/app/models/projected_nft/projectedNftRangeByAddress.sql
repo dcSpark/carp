@@ -1,5 +1,5 @@
 /*
-@name sqlProjectedNftRange
+@name sqlProjectedNftRangeByAddress
 */
 SELECT
     encode("ProjectedNFT".owner_address, 'hex') as owner_address,
@@ -34,6 +34,7 @@ FROM "ProjectedNFT"
          JOIN "Transaction" ON "Transaction".id = "ProjectedNFT".tx_id
          JOIN "Block" ON "Transaction".block_id = "Block".id
 WHERE
-        "Block".slot > :min_slot!
+        encode("ProjectedNFT".owner_address, 'hex') = :owner_address!
+    AND "Block".slot > :min_slot!
     AND "Block".slot <= :max_slot!
 ORDER BY ("Block".height, "Transaction".tx_index) ASC;

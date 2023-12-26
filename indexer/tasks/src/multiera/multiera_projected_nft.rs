@@ -1,4 +1,3 @@
-use anyhow::anyhow;
 use cardano_multiplatform_lib::error::DeserializeError;
 use cml_core::serialization::FromBytes;
 use cml_crypto::RawBytesEncoding;
@@ -102,9 +101,16 @@ pub(crate) struct ProjectedNftInputsQueryOutputResult {
     pub tx_hash: Vec<u8>,
     pub operation: i32,
     pub owner_address: Vec<u8>,
-    pub asset: String,
+    pub policy_id: String,
+    pub asset_name: String,
     pub amount: i64,
     pub plutus_datum: Vec<u8>,
+}
+
+impl ProjectedNftInputsQueryOutputResult {
+    pub fn subject(&self) -> String {
+        format!("{}.{}", self.policy_id, self.asset_name)
+    }
 }
 
 async fn handle_projected_nft(
@@ -196,15 +202,16 @@ async fn handle_projected_nft(
         }
 
         for output_data in projected_nft_outputs.into_iter() {
-            for (asset_name, asset_value) in output_data.non_ada_assets.into_iter() {
+            for asset in output_data.non_ada_assets.into_iter() {
                 queued_projected_nft_records.push(entity::projected_nft::ActiveModel {
                     owner_address: Set(output_data.address.clone()),
                     previous_utxo_tx_output_index: Set(output_data.previous_utxo_tx_output_index),
                     previous_utxo_tx_hash: Set(output_data.previous_utxo_tx_hash.clone()),
                     hololocker_utxo_id: Set(Some(output_data.hololocker_utxo_id)),
                     tx_id: Set(cardano_transaction.id),
-                    asset: Set(asset_name),
-                    amount: Set(asset_value),
+                    policy_id: Set(asset.policy_id),
+                    asset_name: Set(asset.asset_name),
+                    amount: Set(asset.amount),
                     operation: Set(output_data.operation.into()),
                     plutus_datum: Set(output_data.plutus_data.clone()),
                     for_how_long: Set(output_data.for_how_long),
@@ -236,7 +243,7 @@ fn find_lock_outputs_for_corresponding_partial_withdrawals(
         }
 
         let mut nft_data_assets = output_data.non_ada_assets.clone();
-        nft_data_assets.sort_by_key(|(name, _)| name.clone());
+        nft_data_assets.sort_by_key(|asset| asset.subject());
 
         let mut withdrawal_input_to_remove: Option<(Vec<u8>, i64)> = None;
 
@@ -254,9 +261,13 @@ fn find_lock_outputs_for_corresponding_partial_withdrawals(
 
                 let mut withdrawal_assets = withdrawal
                     .iter()
-                    .map(|w| (w.asset.clone(), w.amount))
+                    .map(|w| AssetData {
+                        policy_id: w.policy_id.clone(),
+                        asset_name: w.asset_name.clone(),
+                        amount: w.amount,
+                    })
                     .collect::<Vec<_>>();
-                withdrawal_assets.sort_by_key(|(name, _)| name.clone());
+                withdrawal_assets.sort_by_key(|asset| asset.subject());
 
                 if withdrawal_assets == nft_data_assets {
                     withdrawal_input_to_remove = Some((input_hash.clone(), *input_index));
@@ -316,18 +327,19 @@ fn handle_partial_withdraw(
     // make a balance map
     let mut input_asset_to_value = HashMap::<String, ProjectedNftInputsQueryOutputResult>::new();
     for entry in partial_withdrawal_input.iter() {
-        input_asset_to_value.insert(entry.asset.clone(), entry.clone());
+        input_asset_to_value.insert(entry.subject(), entry.clone());
     }
 
     // subtract all the assets
-    for (output_asset_name, output_asset_value) in output_projected_nft_data.non_ada_assets.iter() {
+    for output_asset_data in output_projected_nft_data.non_ada_assets.iter() {
+        let output_asset_subject = output_asset_data.subject();
         input_asset_to_value
-            .get_mut(&output_asset_name.clone())
+            .get_mut(&output_asset_subject)
             .ok_or(DbErr::Custom(format!(
-                "Expected to see asset {output_asset_name} in projected nft {}@{withdrawn_from_input_index}",
+                "Expected to see asset {output_asset_subject} in projected nft {}@{withdrawn_from_input_index}",
                 hex::encode(withdrawn_from_input_hash.clone())
             )))?
-            .amount -= output_asset_value;
+            .amount -= output_asset_data.amount;
     }
 
     *partial_withdrawal_input = input_asset_to_value
@@ -384,7 +396,8 @@ async fn get_projected_nft_inputs(
         .column(TransactionOutputColumn::TxId)
         .column(TransactionOutputColumn::OutputIndex)
         .column(ProjectedNftColumn::Operation)
-        .column(ProjectedNftColumn::Asset)
+        .column(ProjectedNftColumn::PolicyId)
+        .column(ProjectedNftColumn::AssetName)
         .column(ProjectedNftColumn::Amount)
         .column(ProjectedNftColumn::OwnerAddress)
         .column(ProjectedNftColumn::PlutusDatum)
@@ -451,7 +464,8 @@ fn handle_claims_and_partial_withdraws(
                 queued_projected_nft_records.push(entity::projected_nft::ActiveModel {
                     hololocker_utxo_id: Set(None),
                     tx_id: Set(cardano_transaction.id),
-                    asset: Set(projected_nft.asset.clone()),
+                    policy_id: Set(projected_nft.policy_id.clone()),
+                    asset_name: Set(projected_nft.asset_name.clone()),
                     amount: Set(projected_nft.amount),
                     operation: Set(ProjectedNftOperation::Claim.into()),
                     plutus_datum: Set(vec![]),
@@ -508,6 +522,47 @@ fn get_output_index_to_outputs_map(
     outputs_map
 }
 
+#[derive(Debug, Clone, Default, Eq, PartialEq)]
+pub struct AssetData {
+    pub policy_id: String,
+    pub asset_name: String,
+    pub amount: i64,
+}
+
+impl AssetData {
+    pub fn subject(&self) -> String {
+        format!("{}.{}", self.policy_id, self.asset_name)
+    }
+
+    pub fn from_subject(subject: String, amount: i64) -> Result<AssetData, DbErr> {
+        let mut split = subject.split('.');
+        let policy_id = if let Some(policy_id_hex) = split.next() {
+            policy_id_hex.to_string()
+        } else {
+            return Err(DbErr::Custom(
+                "No policy id found in asset subject".to_string(),
+            ));
+        };
+        let asset_name = if let Some(asset_name) = split.next() {
+            asset_name.to_string()
+        } else {
+            return Err(DbErr::Custom(
+                "No asset name found in asset subject".to_string(),
+            ));
+        };
+        if let Some(next) = split.next() {
+            return Err(DbErr::Custom(format!(
+                "Extra information is found in asset: {next}"
+            )));
+        }
+        Ok(AssetData {
+            policy_id,
+            asset_name,
+            amount,
+        })
+    }
+}
+
 #[derive(Debug, Clone, Default)]
 struct ProjectedNftData {
     pub previous_utxo_tx_hash: Vec<u8>,
@@ -518,7 +573,7 @@ struct ProjectedNftData {
     pub for_how_long: Option<i64>,
     // this field is set only on unlocking outputs that were created through partial withdraw
     pub partial_withdrawn_from_input: Option<(Vec<u8>, i64)>,
-    pub non_ada_assets: Vec<(String, i64)>,
+    pub non_ada_assets: Vec<AssetData>,
     pub hololocker_utxo_id: i64,
 }
 
@@ -583,16 +638,19 @@ fn extract_operation_and_datum(
     let non_ada_assets = output
         .non_ada_assets()
         .iter()
-        .map(|asset| {
-            (
-                asset.subject(),
-                match asset {
-                    Asset::Ada(value) => *value as i64,
-                    Asset::NativeAsset(_, _, value) => *value as i64,
-                },
-            )
+        .map(|asset| match asset {
+            Asset::Ada(value) => AssetData {
+                policy_id: "".to_string(),
+                asset_name: "".to_string(),
+                amount: *value as i64,
+            },
+            Asset::NativeAsset(policy_id, asset_name, value) => AssetData {
+                policy_id: hex::encode(policy_id),
+                asset_name: hex::encode(asset_name.clone()),
+                amount: *value as i64,
+            },
         })
-        .collect::<Vec<(String, i64)>>();
+        .collect::<Vec<AssetData>>();
     match parsed.status {
         Status::Locked => ProjectedNftData {
             address: owner_address,
