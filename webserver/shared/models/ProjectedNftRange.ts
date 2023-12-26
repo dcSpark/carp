@@ -19,6 +19,13 @@ export type ProjectedNftRangeRequest = {
     address: string | undefined
 };
 
+export enum ProjectedNftStatus {
+    Lock = 'Lock',
+    Unlocking = 'Unlocking',
+    Claim = 'Claim',
+    Invalid = 'Invalid'
+};
+
 export type ProjectedNftRangeResponse = {
     /**
      * Slot at which the transaction happened
@@ -68,14 +75,14 @@ export type ProjectedNftRangeResponse = {
     /**
      * Asset policy id that relates to Projected NFT event
      *
-     * @pattern [0-9a-fA-F]+.[0-9a-fA-F]+
+     * @pattern [0-9a-fA-F]{56}
      * @example "96f7dc9749ede0140f042516f4b723d7261610d6b12ccb19f3475278"
      */
     policyId: string,
     /**
      * Asset name that relates to Projected NFT event
      *
-     * @pattern [0-9a-fA-F]+.[0-9a-fA-F]+
+     * @pattern ([0-9a-fA-F]{2}){0,32}
      * @example "415045"
      */
     assetName: string,
@@ -90,7 +97,7 @@ export type ProjectedNftRangeResponse = {
      *
      * @example "Lock"
      */
-    status: string | null,
+    status: ProjectedNftStatus | null,
     /**
      * Projected NFT datum: serialized state of the Projected NFT
      *

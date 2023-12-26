@@ -6,7 +6,7 @@ import type { ErrorShape } from '../../../shared/errors';
 import type { EndpointTypes } from '../../../shared/routes';
 import { Routes } from '../../../shared/routes';
 import { projectedNftRange, projectedNftRangeByAddress } from '../services/ProjectedNftRange';
-import type {ProjectedNftRangeResponse} from '../../../shared/models/ProjectedNftRange';
+import type {ProjectedNftRangeResponse, ProjectedNftStatus} from '../../../shared/models/ProjectedNftRange';
 import {PROJECTED_NFT_LIMIT} from "../../../shared/constants";
 import {Errors, genErrorMessage} from "../../../shared/errors";
 
@@ -76,7 +76,7 @@ export class ProjectedNftRangeController extends Controller {
                 policyId: data.policy_id,
                 assetName: data.asset_name,
                 amount: data.amount,
-                status: data.status,
+                status: data.status as ProjectedNftStatus | null,
                 plutusDatum: data.plutus_datum,
                 actionSlot: data.action_slot,
                 forHowLong: data.for_how_long,
@@ -108,7 +108,7 @@ export class ProjectedNftRangeController extends Controller {
                 policyId: data.policy_id,
                 assetName: data.asset_name,
                 amount: data.amount,
-                status: data.status,
+                status: data.status as ProjectedNftStatus | null,
                 plutusDatum: data.plutus_datum,
                 actionSlot: data.action_slot,
                 forHowLong: data.for_how_long,

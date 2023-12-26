@@ -6,13 +6,13 @@ Parses projected NFT contract data
     <summary>Configuration</summary>
 
 ```rust
-use super::PayloadConfig::PayloadConfig;
-use super::ReadonlyConfig::ReadonlyConfig;
+use pallas::ledger::addresses::Address;
+use pallas::ledger::primitives::alonzo::PlutusScript;
+use pallas::ledger::primitives::babbage::PlutusV2Script;
 
-#[derive(Debug, Clone, Copy, serde::Deserialize, serde::Serialize)]
-pub struct PayloadAndReadonlyConfig {
-    pub include_payload: bool,
-    pub readonly: bool,
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+pub struct AddressConfig {
+    pub address: String,
 }
 
 ```
