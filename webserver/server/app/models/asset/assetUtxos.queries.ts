@@ -25,7 +25,7 @@ export interface IAssetUtxosQuery {
   result: IAssetUtxosResult;
 }
 
-const assetUtxosIR: any = {"usedParamSet":{"fingerprints":true,"min_slot":true,"max_slot":true},"params":[{"name":"fingerprints","required":true,"transform":{"type":"array_spread"},"locs":[{"a":677,"b":690}]},{"name":"min_slot","required":true,"transform":{"type":"scalar"},"locs":[{"a":712,"b":721}]},{"name":"max_slot","required":true,"transform":{"type":"scalar"},"locs":[{"a":744,"b":753}]}],"statement":"SELECT ENCODE(TXO.HASH,\n        'hex') OUTPUT_TX_HASH,\n    \"TransactionOutput\".OUTPUT_INDEX,\n\t\"NativeAsset\".CIP14_FINGERPRINT,\n\t\"AssetUtxo\".AMOUNT,\n\t\"Block\".SLOT,\n\tENCODE(\"Transaction\".HASH,\n        'hex') TX_HASH,\n\t\"Address\".PAYLOAD ADDRESS_RAW\nFROM \"AssetUtxo\"\nJOIN \"Transaction\" ON \"AssetUtxo\".TX_ID = \"Transaction\".ID\nJOIN \"TransactionOutput\" ON \"AssetUtxo\".UTXO_ID = \"TransactionOutput\".ID\nJOIN \"Transaction\" TXO ON \"TransactionOutput\".TX_ID = TXO.ID\nJOIN \"Address\" ON \"Address\".id = \"TransactionOutput\".address_id\nJOIN \"NativeAsset\" ON \"AssetUtxo\".ASSET_ID = \"NativeAsset\".ID\nJOIN \"Block\" ON \"Transaction\".BLOCK_ID = \"Block\".ID\nWHERE \n\t\"NativeAsset\".CIP14_FINGERPRINT IN :fingerprints! AND\n\t\"Block\".SLOT > :min_slot! AND\n\t\"Block\".SLOT <= :max_slot!\nORDER BY \"Transaction\".ID ASC"};
+const assetUtxosIR: any = {"usedParamSet":{"fingerprints":true,"min_slot":true,"max_slot":true},"params":[{"name":"fingerprints","required":true,"transform":{"type":"array_spread"},"locs":[{"a":677,"b":690}]},{"name":"min_slot","required":true,"transform":{"type":"scalar"},"locs":[{"a":712,"b":721}]},{"name":"max_slot","required":true,"transform":{"type":"scalar"},"locs":[{"a":744,"b":753}]}],"statement":"SELECT ENCODE(TXO.HASH,\n        'hex') OUTPUT_TX_HASH,\n    \"TransactionOutput\".OUTPUT_INDEX,\n\t\"NativeAsset\".CIP14_FINGERPRINT,\n\t\"AssetUtxo\".AMOUNT,\n\t\"Block\".SLOT,\n\tENCODE(\"Transaction\".HASH,\n        'hex') TX_HASH,\n\t\"Address\".PAYLOAD ADDRESS_RAW\nFROM \"AssetUtxo\"\nJOIN \"Transaction\" ON \"AssetUtxo\".TX_ID = \"Transaction\".ID\nJOIN \"TransactionOutput\" ON \"AssetUtxo\".UTXO_ID = \"TransactionOutput\".ID\nJOIN \"Transaction\" TXO ON \"TransactionOutput\".TX_ID = TXO.ID\nJOIN \"Address\" ON \"Address\".id = \"TransactionOutput\".address_id\nJOIN \"NativeAsset\" ON \"AssetUtxo\".ASSET_ID = \"NativeAsset\".ID\nJOIN \"Block\" ON \"Transaction\".BLOCK_ID = \"Block\".ID\nWHERE \n\t\"NativeAsset\".CIP14_FINGERPRINT IN :fingerprints! AND\n\t\"Block\".SLOT > :min_slot! AND\n\t\"Block\".SLOT <= :max_slot!\nORDER BY \"Transaction\".ID, \"AssetUtxo\".ID ASC"};
 
 /**
  * Query generated from SQL:
@@ -50,7 +50,7 @@ const assetUtxosIR: any = {"usedParamSet":{"fingerprints":true,"min_slot":true,"
  * 	"NativeAsset".CIP14_FINGERPRINT IN :fingerprints! AND
  * 	"Block".SLOT > :min_slot! AND
  * 	"Block".SLOT <= :max_slot!
- * ORDER BY "Transaction".ID ASC
+ * ORDER BY "Transaction".ID, "AssetUtxo".ID ASC
  * ```
  */
 export const assetUtxos = new PreparedQuery<IAssetUtxosParams,IAssetUtxosResult>(assetUtxosIR);

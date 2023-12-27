@@ -6,7 +6,11 @@ import type { ErrorShape } from '../../../shared/errors';
 import type { EndpointTypes } from '../../../shared/routes';
 import { Routes } from '../../../shared/routes';
 import { projectedNftRange, projectedNftRangeByAddress } from '../services/ProjectedNftRange';
-import type {ProjectedNftRangeResponse, ProjectedNftStatus} from '../../../shared/models/ProjectedNftRange';
+import type {
+    ProjectedNftRangeResponse,
+    ProjectedNftRangeSingleResponse,
+    ProjectedNftStatus
+} from '../../../shared/models/ProjectedNftRange';
 import {PROJECTED_NFT_LIMIT} from "../../../shared/constants";
 import {Errors, genErrorMessage} from "../../../shared/errors";
 
@@ -25,45 +29,42 @@ export class ProjectedNftRangeController extends Controller {
             ErrorShape
         >
     ): Promise<EndpointTypes[typeof route]['response']> {
-        const slotRangeSize = requestBody.range.maxSlot - requestBody.range.minSlot;
+        const after = requestBody.after != undefined ? requestBody.after : 0;
+        const until = requestBody.untilSlot != undefined ? requestBody.untilSlot : Number.MAX_VALUE;
+        const limit = requestBody.limit != undefined ? requestBody.limit : PROJECTED_NFT_LIMIT.MAX_LIMIT;
+
+        if (limit > PROJECTED_NFT_LIMIT.MAX_LIMIT) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+            return errorResponse(
+                StatusCodes.BAD_REQUEST,
+                genErrorMessage(Errors.SlotRangeLimitExceeded, {
+                    limit: PROJECTED_NFT_LIMIT.MAX_LIMIT,
+                    found: limit,
+                })
+            );
+        }
+
+        let params = {
+            afterSlot: after,
+            untilSlot: until,
+            limit: limit
+        };
 
         if (requestBody.address !== undefined) {
-            if (slotRangeSize > PROJECTED_NFT_LIMIT.SINGLE_USER_SLOT_RANGE) {
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-                return errorResponse(
-                    StatusCodes.BAD_REQUEST,
-                    genErrorMessage(Errors.SlotRangeLimitExceeded, {
-                        limit: PROJECTED_NFT_LIMIT.SINGLE_USER_SLOT_RANGE,
-                        found: slotRangeSize,
-                    })
-                );
-            }
-
-            return await this.handle_by_address_query(requestBody.address, requestBody);
+            return await this.handle_by_address_query(requestBody.address, params);
         } else {
-            if (slotRangeSize > PROJECTED_NFT_LIMIT.SLOT_RANGE) {
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-                return errorResponse(
-                    StatusCodes.BAD_REQUEST,
-                    genErrorMessage(Errors.SlotRangeLimitExceeded, {
-                        limit: PROJECTED_NFT_LIMIT.SLOT_RANGE,
-                        found: slotRangeSize,
-                    })
-                );
-            }
-
-            return await this.handle_general_query(requestBody);
+            return await this.handle_general_query(params);
         }
     }
 
     async handle_general_query(
-        requestBody: EndpointTypes[typeof route]['input'],
+        params: { afterSlot: number, untilSlot: number, limit: number },
     ): Promise<EndpointTypes[typeof route]['response']> {
-        const response = await tx<
-            ProjectedNftRangeResponse
+        const result = await tx<
+            ProjectedNftRangeSingleResponse[]
         >(pool, async dbTx => {
             const data = await projectedNftRange({
-                range: requestBody.range,
+                params: params,
                 dbTx
             });
 
@@ -83,19 +84,28 @@ export class ProjectedNftRangeController extends Controller {
             }));
         });
 
-        return response;
+        let after = undefined;
+
+        if (result.length >= params.limit) {
+            after = result[result.length - 1].actionSlot;
+        }
+
+        return {
+            result: result,
+            after: after,
+        };
     }
 
     async handle_by_address_query(
         address: string,
-        requestBody: EndpointTypes[typeof route]['input'],
+        params: { afterSlot: number, untilSlot: number, limit: number },
     ): Promise<EndpointTypes[typeof route]['response']> {
-        const response = await tx<
-            ProjectedNftRangeResponse
+        const result = await tx<
+            ProjectedNftRangeSingleResponse[]
         >(pool, async dbTx => {
             const data = await projectedNftRangeByAddress({
                 address: address,
-                range: requestBody.range,
+                params: params,
                 dbTx
             });
 
@@ -115,6 +125,15 @@ export class ProjectedNftRangeController extends Controller {
             }));
         });
 
-        return response;
+        let after = undefined;
+
+        if (result.length >= params.limit) {
+            after = result[result.length - 1].actionSlot;
+        }
+
+        return {
+            result: result,
+            after: after,
+        };
     }
 }

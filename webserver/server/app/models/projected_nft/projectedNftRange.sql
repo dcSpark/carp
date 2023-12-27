@@ -36,4 +36,14 @@ FROM "ProjectedNFT"
 WHERE
         "Block".slot > :min_slot!
     AND "Block".slot <= :max_slot!
+    AND "Block".height <= (
+        SELECT MAX("Heights".height) FROM
+        (SELECT "ProjectedNFT".id as id, "Block".height as height FROM "ProjectedNFT"
+            JOIN "Transaction" ON "Transaction".id = "ProjectedNFT".tx_id
+            JOIN "Block" ON "Transaction".block_id = "Block".id
+        WHERE
+            "Block".slot > :min_slot!
+            AND "Block".slot <= :max_slot!
+        LIMIT :limit!) AS "Heights"
+    )
 ORDER BY ("Block".height, "Transaction".tx_index) ASC;

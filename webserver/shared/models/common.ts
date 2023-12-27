@@ -74,6 +74,24 @@ export type UntilBlockPagination = {
 };
 export type Pagination = AfterBlockPagination & UntilBlockPagination;
 
+export type AfterSlotPagination = {
+  /**
+   * Minimal slot from which the events should be returned (not inclusive)
+   *
+   * @example 46154769
+   */
+  after: number | undefined,
+}
+export type UntilSlotPagination = {
+  /**
+   * Maximal slot from which the events should be returned (inclusive)
+   *
+   * @example 46154860
+   */
+  untilSlot: number | undefined,
+}
+export type SlotPagination = AfterSlotPagination & UntilSlotPagination;
+
 export type UtxoPointer = {
   /**
    * @pattern [0-9a-fA-F]{64}

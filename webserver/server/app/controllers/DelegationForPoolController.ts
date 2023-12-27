@@ -6,8 +6,11 @@ import { genErrorMessage, type ErrorShape, Errors } from '../../../shared/errors
 import type { EndpointTypes } from '../../../shared/routes';
 import { Routes } from '../../../shared/routes';
 import { delegationsForPool } from '../services/DelegationForPool';
-import type { DelegationForPoolResponse } from '../../../shared/models/DelegationForPool';
-import { POOL_DELEGATION_LIMIT } from '../../../shared/constants';
+import type {
+  DelegationForPoolResponse,
+  DelegationForPoolSingleResponse
+} from '../../../shared/models/DelegationForPool';
+import {POOL_DELEGATION_LIMIT } from '../../../shared/constants';
 
 const route = Routes.delegationForPool;
 
@@ -35,22 +38,31 @@ export class DelegationForPoolController extends Controller {
       );
     }
 
-    const slotRangeSize = requestBody.range.maxSlot - requestBody.range.minSlot;
-    if (slotRangeSize > POOL_DELEGATION_LIMIT.SLOT_RANGE) {
+    const after = requestBody.after != undefined ? requestBody.after : 0;
+    const until = requestBody.untilSlot != undefined ? requestBody.untilSlot : Number.MAX_VALUE;
+    const limit = requestBody.limit != undefined ? requestBody.limit : POOL_DELEGATION_LIMIT.MAX_LIMIT;
+
+    if (limit > POOL_DELEGATION_LIMIT.MAX_LIMIT) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return errorResponse(
-        StatusCodes.BAD_REQUEST,
-        genErrorMessage(Errors.SlotRangeLimitExceeded, {
-          limit: POOL_DELEGATION_LIMIT.SLOT_RANGE,
-          found: slotRangeSize,
-        })
+          StatusCodes.BAD_REQUEST,
+          genErrorMessage(Errors.SlotRangeLimitExceeded, {
+            limit: POOL_DELEGATION_LIMIT.MAX_LIMIT,
+            found: limit,
+          })
       );
     }
 
-    const response = await tx<DelegationForPoolResponse>(pool, async dbTx => {
+    let params = {
+      afterSlot: after,
+      untilSlot: until,
+      limit: limit
+    };
+
+    const result = await tx<DelegationForPoolSingleResponse[]>(pool, async dbTx => {
       const data = await delegationsForPool({
         pools: requestBody.pools.map(poolId => Buffer.from(poolId, 'hex')),
-        range: requestBody.range,
+        params: params,
         dbTx,
       });
 
@@ -62,6 +74,15 @@ export class DelegationForPoolController extends Controller {
       }));
     });
 
-    return response;
+    let newAfter = undefined;
+
+    if (result.length >= params.limit) {
+      newAfter = result[result.length - 1].slot;
+    }
+
+    return {
+      result: result,
+      after: newAfter,
+    };
   }
 }

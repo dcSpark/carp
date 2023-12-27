@@ -28,13 +28,12 @@ export const DEX_PRICE_LIMIT = {
 };
 
 export const PROJECTED_NFT_LIMIT = {
-  SLOT_RANGE: 100000,
-  SINGLE_USER_SLOT_RANGE: 10000000000,
+  MAX_LIMIT: 100,
 };
 
 export const POOL_DELEGATION_LIMIT = {
   POOLS: 50,
-  SLOT_RANGE: 10000,
+  MAX_LIMIT: 500,
 };
 
 export const ASSET_UTXOS_LIMIT = {

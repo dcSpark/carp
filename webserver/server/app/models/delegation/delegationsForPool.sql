@@ -2,7 +2,7 @@
 @name sqlStakeDelegationByPool
 @param pools -> (...)
 */
-SELECT 
+SELECT
 	encode(credential, 'hex') as credential,
 	encode("Transaction".hash, 'hex') as tx_id,
 	"Block".slot,
@@ -18,4 +18,19 @@ WHERE
 	) AND
 	"Block".slot > :min_slot! AND
 	"Block".slot <= :max_slot!
+    AND "Block".height <= (
+        SELECT MAX("Heights".height) FROM
+        (SELECT "Block".height as height FROM "StakeDelegationCredentialRelation"
+            JOIN "StakeCredential" ON stake_credential = "StakeCredential".id
+            JOIN "Transaction" ON "Transaction".id = "StakeDelegationCredentialRelation".tx_id
+            JOIN "Block" ON "Transaction".block_id = "Block".id
+        WHERE
+            (
+                "StakeDelegationCredentialRelation".pool_credential IN :pools! OR
+                "StakeDelegationCredentialRelation".previous_pool IN :pools!
+            ) AND
+            "Block".slot > :min_slot!
+            AND "Block".slot <= :max_slot!
+        LIMIT :limit!) AS "Heights"
+    )
 ORDER BY ("Block".height, "Transaction".tx_index) ASC;

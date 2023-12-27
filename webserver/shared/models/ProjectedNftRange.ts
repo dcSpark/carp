@@ -1,23 +1,9 @@
+import type {SlotPagination } from "./common";
+
 export type ProjectedNftRangeRequest = {
-    /**
-     * Projected NFT events in this slot range will be returned
-     */
-    range: {
-        /**
-         * Minimal slot from which the events should be returned (not inclusive)
-         *
-         * @example 46154769
-         */
-        minSlot: number,
-        /**
-         * Maximal slot from which the events should be returned (inclusive)
-         *
-         * @example 46154860
-         */
-        maxSlot: number
-    },
-    address: string | undefined
-};
+    address: string | undefined,
+    limit: number | undefined
+} & SlotPagination;
 
 export enum ProjectedNftStatus {
     Lock = 'Lock',
@@ -26,7 +12,7 @@ export enum ProjectedNftStatus {
     Invalid = 'Invalid'
 };
 
-export type ProjectedNftRangeResponse = {
+export type ProjectedNftRangeSingleResponse = {
     /**
      * Slot at which the transaction happened
      *
@@ -112,4 +98,9 @@ export type ProjectedNftRangeResponse = {
      * @example "1701266986000"
      */
     forHowLong: string | null,
-}[];
+};
+
+export type ProjectedNftRangeResponse = {
+    result: ProjectedNftRangeSingleResponse[],
+    after: number | undefined,
+}

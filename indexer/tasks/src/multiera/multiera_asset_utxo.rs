@@ -1,5 +1,5 @@
 use super::multiera_stake_credentials::MultieraStakeCredentialTask;
-use crate::config::AddressConfig::PayloadAndReadonlyConfig;
+use crate::config::AddressConfig::AddressConfig;
 use crate::config::EmptyConfig::EmptyConfig;
 use crate::config::ReadonlyConfig::ReadonlyConfig;
 use crate::dsl::task_macro::*;

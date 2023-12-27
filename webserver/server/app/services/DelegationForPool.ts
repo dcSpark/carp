@@ -3,13 +3,14 @@ import type { ISqlStakeDelegationByPoolResult} from '../models/delegation/delega
 import { sqlStakeDelegationByPool } from '../models/delegation/delegationsForPool.queries';
 
 export async function delegationsForPool(request: {
-    range: { minSlot: number, maxSlot: number },
+    params: { afterSlot: number, untilSlot: number, limit: number },
     pools: Buffer[],
     dbTx: PoolClient,
 }): Promise<ISqlStakeDelegationByPoolResult[]> {
     return (await sqlStakeDelegationByPool.run({
-        min_slot: request.range.minSlot,
-        max_slot: request.range.maxSlot,
+        min_slot: request.params.afterSlot,
+        max_slot: request.params.untilSlot,
+        limit: request.params.limit.toString(),
         pools: request.pools
     }, request.dbTx));
 }
