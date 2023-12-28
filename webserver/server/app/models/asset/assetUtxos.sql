@@ -1,11 +1,14 @@
 /* 
 @name AssetUtxos 
 @param fingerprints -> (...)
+@param policyIds -> (...)
 */
 SELECT ENCODE(TXO.HASH,
         'hex') OUTPUT_TX_HASH,
     "TransactionOutput".OUTPUT_INDEX,
 	"NativeAsset".CIP14_FINGERPRINT,
+	"NativeAsset".POLICY_ID,
+	"NativeAsset".ASSET_NAME,
 	"AssetUtxo".AMOUNT,
 	"Block".SLOT,
 	ENCODE("Transaction".HASH,
@@ -19,7 +22,9 @@ JOIN "Address" ON "Address".id = "TransactionOutput".address_id
 JOIN "NativeAsset" ON "AssetUtxo".ASSET_ID = "NativeAsset".ID
 JOIN "Block" ON "Transaction".BLOCK_ID = "Block".ID
 WHERE 
-	"NativeAsset".CIP14_FINGERPRINT IN :fingerprints! AND
+	("NativeAsset".CIP14_FINGERPRINT IN :fingerprints
+		OR "NativeAsset".POLICY_ID IN :policyIds
+	) AND
 	"Block".SLOT > :min_slot! AND
 	"Block".SLOT <= :max_slot!
 ORDER BY "Transaction".ID, "AssetUtxo".ID ASC;

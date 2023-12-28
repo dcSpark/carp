@@ -5,7 +5,8 @@ export type Cip14Fingerprint = string;
 
 export type AssetUtxosRequest = {
   range: { minSlot: number; maxSlot: number },
-  assets: Cip14Fingerprint[]
+  fingerprints?: Cip14Fingerprint[],
+  policyIds?: string[]
 };
 
 export type AssetUtxosResponse = {
@@ -22,6 +23,8 @@ export type AssetUtxosResponse = {
       index: number,
     },
     cip14Fingerprint: string,
+    policyId: string,
+    assetName: string,
     paymentCred: string,
     slot: number
     txId: string,
