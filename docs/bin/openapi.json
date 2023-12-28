@@ -146,6 +146,11 @@
                 ],
                 "type": "object"
             },
+            "AssetName": {
+                "type": "string",
+                "example": "42657272794e617679",
+                "pattern": "[0-9a-fA-F]{0,64}"
+            },
             "AssetUtxosResponse": {
                 "items": {
                     "properties": {
@@ -157,6 +162,15 @@
                             "format": "double"
                         },
                         "paymentCred": {
+                            "type": "string"
+                        },
+                        "assetName": {
+                            "$ref": "#/components/schemas/AssetName"
+                        },
+                        "policyId": {
+                            "type": "string"
+                        },
+                        "cip14Fingerprint": {
                             "type": "string"
                         },
                         "utxo": {
@@ -176,16 +190,17 @@
                             "type": "object"
                         },
                         "amount": {
-                            "type": "number",
-                            "format": "double",
-                            "description": "If the utxo is created, this has the amount. It's undefined if the utxo\nis spent.",
-                            "example": 1031423725351
+                            "type": "string",
+                            "description": "If the utxo is created, this has the amount. It's undefined if the utxo\nis spent."
                         }
                     },
                     "required": [
                         "txId",
                         "slot",
                         "paymentCred",
+                        "assetName",
+                        "policyId",
+                        "cip14Fingerprint",
                         "utxo"
                     ],
                     "type": "object"
@@ -196,9 +211,20 @@
                 "type": "string",
                 "example": "asset1c43p68zwjezc7f6w4w9qkhkwv9ppwz0f7c3amw"
             },
+            "PolicyId": {
+                "type": "string",
+                "example": "b863bc7369f46136ac1048adb2fa7dae3af944c3bbb2be2f216a8d4f",
+                "pattern": "[0-9a-fA-F]{56}"
+            },
             "AssetUtxosRequest": {
                 "properties": {
-                    "assets": {
+                    "policyIds": {
+                        "items": {
+                            "$ref": "#/components/schemas/PolicyId"
+                        },
+                        "type": "array"
+                    },
+                    "fingerprints": {
                         "items": {
                             "$ref": "#/components/schemas/Cip14Fingerprint"
                         },
@@ -223,7 +249,6 @@
                     }
                 },
                 "required": [
-                    "assets",
                     "range"
                 ],
                 "type": "object"
@@ -477,16 +502,6 @@
                     "pools"
                 ],
                 "type": "object"
-            },
-            "PolicyId": {
-                "type": "string",
-                "example": "b863bc7369f46136ac1048adb2fa7dae3af944c3bbb2be2f216a8d4f",
-                "pattern": "[0-9a-fA-F]{56}"
-            },
-            "AssetName": {
-                "type": "string",
-                "example": "42657272794e617679",
-                "pattern": "[0-9a-fA-F]{0,64}"
             },
             "Asset": {
                 "properties": {

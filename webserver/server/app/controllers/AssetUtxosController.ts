@@ -27,13 +27,15 @@ export class AssetUtxosController extends Controller {
       ErrorShape
     >
   ): Promise<EndpointTypes[typeof route]['response']> {
-    if (requestBody.assets.length > ASSET_UTXOS_LIMIT.ASSETS) {
+    const assetsLength =
+      (requestBody.fingerprints?.length || 0) + (requestBody.policyIds?.length || 0);
+    if (assetsLength > ASSET_UTXOS_LIMIT.ASSETS) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return errorResponse(
         StatusCodes.BAD_REQUEST,
         genErrorMessage(Errors.AssetLimitExceeded, {
           limit: ASSET_UTXOS_LIMIT.ASSETS,
-          found: requestBody.assets.length,
+          found: assetsLength,
         })
       );
     }
@@ -41,12 +43,13 @@ export class AssetUtxosController extends Controller {
     const response = await tx<AssetUtxosResponse>(pool, async dbTx => {
       const data = await getAssetUtxos({
         range: requestBody.range,
-        assets: requestBody.assets.map(asset => {
+        fingerprints: requestBody.fingerprints?.map(asset => {
           const decoded = bech32.decode(asset);
           const payload = bech32.fromWords(decoded.words);
 
           return Buffer.from(payload);
         }),
+        policyIds: requestBody.policyIds?.map(policyId => Buffer.from(policyId, 'hex')),
         dbTx,
       });
 
@@ -69,6 +72,8 @@ export class AssetUtxosController extends Controller {
           amount: data.amount ? data.amount : undefined,
           slot: data.slot,
           cip14Fingerprint: bech32.encode('asset', bech32.toWords(data.cip14_fingerprint)),
+          policyId: Buffer.from(data.policy_id).toString('hex'),
+          assetName: Buffer.from(data.asset_name).toString('hex'),
         };
       });
     });
