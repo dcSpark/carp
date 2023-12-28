@@ -1,6 +1,6 @@
 use super::multiera_stake_credentials::MultieraStakeCredentialTask;
-use crate::config::AddressConfig::PayloadAndReadonlyConfig;
 use crate::config::EmptyConfig::EmptyConfig;
+use crate::config::PayloadAndReadonlyConfig;
 use crate::config::ReadonlyConfig::ReadonlyConfig;
 use crate::dsl::task_macro::*;
 use crate::multiera::dex::common::filter_outputs_and_datums_by_address;
