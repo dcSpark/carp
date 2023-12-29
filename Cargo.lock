@@ -588,7 +588,7 @@ dependencies = [
 
 [[package]]
 name = "carp"
-version = "2.3.1"
+version = "2.4.0"
 dependencies = [
  "anyhow",
  "async-trait",
