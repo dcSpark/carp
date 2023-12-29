@@ -2,7 +2,7 @@
 @name sqlProjectedNftRangeByAddress
 */
 SELECT
-    encode("ProjectedNFT".owner_address, 'hex') as owner_address,
+    encode("ProjectedNFT".owner_address, 'hex') as "owner_address!",
 
     encode("ProjectedNFT".previous_utxo_tx_hash, 'hex') as previous_tx_hash,
     "ProjectedNFT".previous_utxo_tx_output_index as previous_tx_output_index,
@@ -12,7 +12,7 @@ SELECT
         ELSE "TransactionOutput".output_index
         END AS action_output_index,
 
-    encode("Transaction".hash, 'hex') as action_tx_id,
+    encode("Transaction".hash, 'hex') as "action_tx_id!",
 
     "ProjectedNFT".policy_id as policy_id,
     "ProjectedNFT".asset_name as asset_name,
@@ -23,9 +23,9 @@ SELECT
         WHEN "ProjectedNFT".operation = 1 THEN 'Unlocking'
         WHEN "ProjectedNFT".operation = 2 THEN 'Claim'
         ELSE 'Invalid'
-        END AS status,
+        END AS "status!",
 
-    encode("ProjectedNFT".plutus_datum, 'hex') as plutus_datum,
+    encode("ProjectedNFT".plutus_datum, 'hex') as "plutus_datum!",
     "ProjectedNFT".for_how_long as for_how_long,
 
     "Block".slot as action_slot

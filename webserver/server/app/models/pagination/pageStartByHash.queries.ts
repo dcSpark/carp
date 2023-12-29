@@ -1,10 +1,10 @@
 /** Types generated for queries found in "app/models/pagination/pageStartByHash.sql" */
-import { PreparedQuery } from '@pgtyped/query';
+import { PreparedQuery } from '@pgtyped/runtime';
 
 /** 'PageStartByHash' parameters type */
 export interface IPageStartByHashParams {
-  after_block: Buffer | null | void;
-  after_tx: Buffer | null | void;
+  after_block?: Buffer | null | void;
+  after_tx?: Buffer | null | void;
 }
 
 /** 'PageStartByHash' return type */

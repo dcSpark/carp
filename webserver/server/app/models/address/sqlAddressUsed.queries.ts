@@ -1,13 +1,15 @@
 /** Types generated for queries found in "app/models/address/sqlAddressUsed.sql" */
-import { PreparedQuery } from '@pgtyped/query';
+import { PreparedQuery } from '@pgtyped/runtime';
 
 export type BufferArray = (Buffer)[];
 
+export type NumberOrString = number | string;
+
 /** 'SqlAddressUsed' parameters type */
 export interface ISqlAddressUsedParams {
-  addresses: BufferArray | null | void;
-  after_tx_id: string | null | void;
-  until_tx_id: string | null | void;
+  addresses?: BufferArray | null | void;
+  after_tx_id?: NumberOrString | null | void;
+  until_tx_id?: NumberOrString | null | void;
 }
 
 /** 'SqlAddressUsed' return type */

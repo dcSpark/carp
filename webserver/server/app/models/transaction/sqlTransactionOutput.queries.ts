@@ -1,5 +1,5 @@
 /** Types generated for queries found in "app/models/transaction/sqlTransactionOutput.sql" */
-import { PreparedQuery } from '@pgtyped/query';
+import { PreparedQuery } from '@pgtyped/runtime';
 
 export type BufferArray = (Buffer)[];
 
@@ -7,8 +7,8 @@ export type numberArray = (number)[];
 
 /** 'SqlTransactionOutput' parameters type */
 export interface ISqlTransactionOutputParams {
-  output_index: numberArray | null | void;
-  tx_hash: BufferArray | null | void;
+  output_index?: numberArray | null | void;
+  tx_hash?: BufferArray | null | void;
 }
 
 /** 'SqlTransactionOutput' return type */

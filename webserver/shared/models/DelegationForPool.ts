@@ -9,6 +9,6 @@ export type DelegationForPoolRequest = {
 export type DelegationForPoolResponse = {
     credential: Address;
     pool: PoolHex | null,
-    txId: string | null;
+    txId: string;
     slot: number;
 }[];

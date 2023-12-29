@@ -1,9 +1,11 @@
 /** Types generated for queries found in "app/models/block/sqlBlockLatest.sql" */
-import { PreparedQuery } from '@pgtyped/query';
+import { PreparedQuery } from '@pgtyped/runtime';
+
+export type NumberOrString = number | string;
 
 /** 'SqlBlockLatest' parameters type */
 export interface ISqlBlockLatestParams {
-  offset: string | null | void;
+  offset?: NumberOrString | null | void;
 }
 
 /** 'SqlBlockLatest' return type */

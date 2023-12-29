@@ -27,8 +27,8 @@
   "dependencies": {
     "@dcspark/cardano-multiplatform-lib-nodejs": "3.0.1",
     "@dcspark/cip5-js": "^1.0.0",
-    "@pgtyped/cli": "1.0.2",
-    "@pgtyped/query": "1.0.1",
+    "@pgtyped/cli": "2.3.0",
+    "@pgtyped/runtime": "2.3.0",
     "assert-never": "^1.2.1",
     "bech32": "2.0.0",
     "body-parser": "1.20.0",

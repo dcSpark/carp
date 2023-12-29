@@ -1,9 +1,9 @@
 /** Types generated for queries found in "app/models/pagination/sqlTransactionBeforeBlock.sql" */
-import { PreparedQuery } from '@pgtyped/query';
+import { PreparedQuery } from '@pgtyped/runtime';
 
 /** 'SqlTransactionBeforeBlock' parameters type */
 export interface ISqlTransactionBeforeBlockParams {
-  until_block: Buffer | null | void;
+  until_block?: Buffer | null | void;
 }
 
 /** 'SqlTransactionBeforeBlock' return type */

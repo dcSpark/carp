@@ -1,16 +1,18 @@
 /** Types generated for queries found in "app/models/dex/sqlDexLastPrice.sql" */
-import { PreparedQuery } from '@pgtyped/query';
+import { PreparedQuery } from '@pgtyped/runtime';
 
 export type BufferArray = (Buffer)[];
 
+export type NumberOrString = number | string;
+
 /** 'SqlDexLastPrice' parameters type */
 export interface ISqlDexLastPriceParams {
-  asset_name1: BufferArray | null | void;
-  asset_name2: BufferArray | null | void;
-  operation1: string | null | void;
-  operation2: string | null | void;
-  policy_id1: BufferArray | null | void;
-  policy_id2: BufferArray | null | void;
+  asset_name1?: BufferArray | null | void;
+  asset_name2?: BufferArray | null | void;
+  operation1?: NumberOrString | null | void;
+  operation2?: NumberOrString | null | void;
+  policy_id1?: BufferArray | null | void;
+  policy_id2?: BufferArray | null | void;
 }
 
 /** 'SqlDexLastPrice' return type */

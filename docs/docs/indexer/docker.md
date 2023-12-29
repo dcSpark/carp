@@ -62,8 +62,6 @@ PGPASSFILE="$(realpath secrets/.pgpass)"
 # as this command will gracefully fallback to PGPASSFILE if no password is specified
 # However, some dev tools like pgtyped & zapatos don't support .pgpass files
 DATABASE_URL=postgresql://${PGUSER}:${PGPASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
-# Needed for PgTyped
-PGURI=$DATABASE_URL
 ```
 
 Please set `NETWORK`, `CONFIG_FILE` and postgres variables carefully. `CONFIG_FILE` should be located in `deployment/config/indexer` folder. You can use `CARP_CONFIG` env variable instead of `CONFIG_FILE` if you want to use just env variables for configuration.
