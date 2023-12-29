@@ -73,6 +73,38 @@ CREATE TABLE public."AssetMint" (
 
 
 --
+-- Name: AssetUtxo; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public."AssetUtxo" (
+    id bigint NOT NULL,
+    asset_id bigint NOT NULL,
+    utxo_id bigint NOT NULL,
+    tx_id bigint NOT NULL,
+    amount bigint
+);
+
+
+--
+-- Name: AssetUtxo_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public."AssetUtxo_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: AssetUtxo_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public."AssetUtxo_id_seq" OWNED BY public."AssetUtxo".id;
+
+
+--
 -- Name: Block; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -277,7 +309,8 @@ CREATE TABLE public."ProjectedNFT" (
     previous_utxo_tx_output_index bigint,
     hololocker_utxo_id bigint,
     tx_id bigint NOT NULL,
-    asset text NOT NULL,
+    asset_name text NOT NULL,
+    policy_id text NOT NULL,
     amount bigint NOT NULL,
     operation integer NOT NULL,
     plutus_datum bytea NOT NULL,
@@ -555,6 +588,13 @@ ALTER TABLE ONLY public."Address" ALTER COLUMN id SET DEFAULT nextval('public."A
 
 
 --
+-- Name: AssetUtxo id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."AssetUtxo" ALTER COLUMN id SET DEFAULT nextval('public."AssetUtxo_id_seq"'::regclass);
+
+
+--
 -- Name: Block id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -805,6 +845,14 @@ ALTER TABLE ONLY public."AssetMint"
 
 
 --
+-- Name: AssetUtxo asset_utxo-pk; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."AssetUtxo"
+    ADD CONSTRAINT "asset_utxo-pk" PRIMARY KEY (id);
+
+
+--
 -- Name: ProjectedNFT projected_nft-pk; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -855,6 +903,13 @@ CREATE INDEX "index-address_credential-credential" ON public."AddressCredentialR
 --
 
 CREATE INDEX "index-asset_mint-native_asset" ON public."AssetMint" USING btree (asset_id);
+
+
+--
+-- Name: index-asset_utxo-transaction; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "index-asset_utxo-transaction" ON public."AssetUtxo" USING btree (tx_id);
 
 
 --
@@ -1063,6 +1118,30 @@ ALTER TABLE ONLY public."AssetMint"
 
 ALTER TABLE ONLY public."AssetMint"
     ADD CONSTRAINT "fk-asset_mint-transaction_id" FOREIGN KEY (tx_id) REFERENCES public."Transaction"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: AssetUtxo fk-asset_utxo-asset_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."AssetUtxo"
+    ADD CONSTRAINT "fk-asset_utxo-asset_id" FOREIGN KEY (asset_id) REFERENCES public."NativeAsset"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: AssetUtxo fk-asset_utxo-tx_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."AssetUtxo"
+    ADD CONSTRAINT "fk-asset_utxo-tx_id" FOREIGN KEY (tx_id) REFERENCES public."Transaction"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: AssetUtxo fk-asset_utxo-utxo_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."AssetUtxo"
+    ADD CONSTRAINT "fk-asset_utxo-utxo_id" FOREIGN KEY (utxo_id) REFERENCES public."TransactionOutput"(id) ON DELETE CASCADE;
 
 
 --
