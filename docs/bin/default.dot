@@ -38,6 +38,7 @@ N17;
 N18;
 N19;
 N20;
+N21;
 
 }
 
@@ -62,6 +63,7 @@ N20;
     N18[label="MultieraAssetMintTask"][shape="box"];
     N19[label="MultieraCip25EntryTask"][shape="box"];
     N20[label="MultieraAddressDelegationTask"][shape="box"];
+    N21[label="MultieraAssetUtxos"][shape="box"];
     N0 -> N1[label=""];
     N2 -> N3[label=""];
     N3 -> N4[label=""];
@@ -84,4 +86,6 @@ N20;
     N9 -> N19[label=""];
     N18 -> N19[label=""];
     N15 -> N20[label=""];
+    N13 -> N21[label=""];
+    N11 -> N21[label=""];
 }
