@@ -1,14 +1,16 @@
 /** Types generated for queries found in "app/models/transaction/sqlHistoryForAddresses.sql" */
-import { PreparedQuery } from '@pgtyped/query';
+import { PreparedQuery } from '@pgtyped/runtime';
 
 export type BufferArray = (Buffer)[];
 
+export type NumberOrString = number | string;
+
 /** 'SqlHistoryForAddresses' parameters type */
 export interface ISqlHistoryForAddressesParams {
-  addresses: BufferArray | null | void;
-  after_tx_id: string | null | void;
-  limit: string | null | void;
-  until_tx_id: string | null | void;
+  addresses?: BufferArray | null | void;
+  after_tx_id?: NumberOrString | null | void;
+  limit?: NumberOrString | null | void;
+  until_tx_id?: NumberOrString | null | void;
 }
 
 /** 'SqlHistoryForAddresses' return type */

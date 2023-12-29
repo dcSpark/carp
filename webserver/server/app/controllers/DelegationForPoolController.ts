@@ -55,9 +55,9 @@ export class DelegationForPoolController extends Controller {
       });
 
       return data.map(data => ({
-        credential: data.credential as string,
+        credential: data.credential,
         pool: data.pool,
-        txId: data.tx_id as string,
+        txId: data.tx_id,
         slot: data.slot,
       }));
     });

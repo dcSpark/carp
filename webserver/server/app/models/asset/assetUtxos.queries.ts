@@ -1,5 +1,5 @@
 /** Types generated for queries found in "app/models/asset/assetUtxos.sql" */
-import { PreparedQuery } from '@pgtyped/query';
+import { PreparedQuery } from '@pgtyped/runtime';
 
 /** 'AssetUtxos' parameters type */
 export interface IAssetUtxosParams {

@@ -48,7 +48,7 @@ export type ProjectedNftRangeResponse = {
      * @pattern [0-9a-fA-F]{64}
      * @example "28eb069e3e8c13831d431e3b2e35f58525493ab2d77fde83184993e4aa7a0eda"
      */
-    actionTxId: string | null,
+    actionTxId: string,
 
     /**
      * Output index of related Projected NFT event. Null if it is claim event (No new UTxO is created).
@@ -97,14 +97,14 @@ export type ProjectedNftRangeResponse = {
      *
      * @example "Lock"
      */
-    status: ProjectedNftStatus | null,
+    status: ProjectedNftStatus,
     /**
      * Projected NFT datum: serialized state of the Projected NFT
      *
      * @pattern [0-9a-fA-F]+
      * @example "d8799fd8799f581c9040f057461d9adc09108fe5cb630077cf75c6e981d3ed91f6fb18f6ffd87980ff"
      */
-    plutusDatum: string | null,
+    plutusDatum: string,
     /**
      * UNIX timestamp till which the funds can't be claimed in the Unlocking state.
      * If the status is not Unlocking this is always null.

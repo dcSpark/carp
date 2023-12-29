@@ -1,15 +1,17 @@
 /** Types generated for queries found in "app/models/transaction/sqlHistoryForCredentials.sql" */
-import { PreparedQuery } from '@pgtyped/query';
+import { PreparedQuery } from '@pgtyped/runtime';
 
 export type BufferArray = (Buffer)[];
 
+export type NumberOrString = number | string;
+
 /** 'SqlHistoryForCredentials' parameters type */
 export interface ISqlHistoryForCredentialsParams {
-  after_tx_id: string | null | void;
-  credentials: BufferArray | null | void;
-  limit: string | null | void;
-  relation: number | null | void;
-  until_tx_id: string | null | void;
+  after_tx_id?: NumberOrString | null | void;
+  credentials?: BufferArray | null | void;
+  limit?: NumberOrString | null | void;
+  relation?: number | null | void;
+  until_tx_id?: NumberOrString | null | void;
 }
 
 /** 'SqlHistoryForCredentials' return type */

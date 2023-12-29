@@ -1,12 +1,12 @@
 /** Types generated for queries found in "app/models/metadata/sqlMetadataNft.sql" */
-import { PreparedQuery } from '@pgtyped/query';
+import { PreparedQuery } from '@pgtyped/runtime';
 
 export type BufferArray = (Buffer)[];
 
 /** 'SqlMetadataNft' parameters type */
 export interface ISqlMetadataNftParams {
-  asset_name: BufferArray | null | void;
-  policy_id: BufferArray | null | void;
+  asset_name?: BufferArray | null | void;
+  policy_id?: BufferArray | null | void;
 }
 
 /** 'SqlMetadataNft' return type */

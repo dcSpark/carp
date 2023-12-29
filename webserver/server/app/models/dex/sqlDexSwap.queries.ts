@@ -1,20 +1,22 @@
 /** Types generated for queries found in "app/models/dex/sqlDexSwap.sql" */
-import { PreparedQuery } from '@pgtyped/query';
+import { PreparedQuery } from '@pgtyped/runtime';
 
 export type BufferArray = (Buffer)[];
 
-export type stringArray = (string)[];
+export type NumberOrString = number | string;
+
+export type NumberOrStringArray = (NumberOrString)[];
 
 /** 'SqlDexSwap' parameters type */
 export interface ISqlDexSwapParams {
-  after_tx_id: string | null | void;
-  asset_name1: BufferArray | null | void;
-  asset_name2: BufferArray | null | void;
-  dexes: stringArray | null | void;
-  limit: string | null | void;
-  policy_id1: BufferArray | null | void;
-  policy_id2: BufferArray | null | void;
-  until_tx_id: string | null | void;
+  after_tx_id?: NumberOrString | null | void;
+  asset_name1?: BufferArray | null | void;
+  asset_name2?: BufferArray | null | void;
+  dexes?: NumberOrStringArray | null | void;
+  limit?: NumberOrString | null | void;
+  policy_id1?: BufferArray | null | void;
+  policy_id2?: BufferArray | null | void;
+  until_tx_id?: NumberOrString | null | void;
 }
 
 /** 'SqlDexSwap' return type */

@@ -1,9 +1,9 @@
 /** Types generated for queries found in "app/models/pagination/sqlBlockByHash.sql" */
-import { PreparedQuery } from '@pgtyped/query';
+import { PreparedQuery } from '@pgtyped/runtime';
 
 /** 'SqlBlockByHash' parameters type */
 export interface ISqlBlockByHashParams {
-  until_block: Buffer | null | void;
+  until_block?: Buffer | null | void;
 }
 
 /** 'SqlBlockByHash' return type */

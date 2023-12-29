@@ -1,15 +1,17 @@
 /** Types generated for queries found in "app/models/credentials/sqlCredentialAddresses.sql" */
-import { PreparedQuery } from '@pgtyped/query';
+import { PreparedQuery } from '@pgtyped/runtime';
 
 export type BufferArray = (Buffer)[];
 
+export type NumberOrString = number | string;
+
 /** 'SqlCredentialAddresses' parameters type */
 export interface ISqlCredentialAddressesParams {
-  after_address: Buffer | null | void;
-  credentials: BufferArray | null | void;
-  double_limit: string | null | void;
-  limit: string | null | void;
-  until_tx_id: string | null | void;
+  after_address?: Buffer | null | void;
+  credentials?: BufferArray | null | void;
+  double_limit?: NumberOrString | null | void;
+  limit?: NumberOrString | null | void;
+  until_tx_id?: NumberOrString | null | void;
 }
 
 /** 'SqlCredentialAddresses' return type */

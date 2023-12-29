@@ -169,8 +169,6 @@ PGPASSFILE="$(realpath secrets/.pgpass)"
 # as this command will gracefully fallback to PGPASSFILE if no password is specified
 # However, some dev tools like pgtyped & zapatos don't support .pgpass files
 DATABASE_URL=postgresql://${PGUSER}:${PGPASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
-# Needed for PgTyped
-PGURI=$DATABASE_URL
 ```
 
 Variables related to postgres are described above in `Setting up the database` section.

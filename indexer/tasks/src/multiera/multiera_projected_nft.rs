@@ -88,7 +88,7 @@ impl TryFrom<i32> for ProjectedNftOperation {
             3 => Ok(ProjectedNftOperation::ParseError),
             4 => Ok(ProjectedNftOperation::NoDatum),
             5 => Ok(ProjectedNftOperation::NotInlineDatum),
-            _ => Err("can't parse projeced nft operation".to_string()),
+            _ => Err("can't parse projected nft operation".to_string()),
         }
     }
 }
@@ -565,7 +565,7 @@ impl AssetData {
 
 #[derive(Debug, Clone, Default)]
 struct ProjectedNftData {
-    pub previous_utxo_tx_hash: Vec<u8>,
+    pub previous_utxo_tx_hash: Vec<u8>, // warning: this isn't nullable, but can be an empty vector to represent null
     pub previous_utxo_tx_output_index: Option<i64>,
     pub address: Vec<u8>,
     pub plutus_data: Vec<u8>,

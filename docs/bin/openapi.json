@@ -443,8 +443,7 @@
                             "format": "double"
                         },
                         "txId": {
-                            "type": "string",
-                            "nullable": true
+                            "type": "string"
                         },
                         "pool": {
                             "allOf": [
@@ -874,18 +873,12 @@
                         },
                         "plutusDatum": {
                             "type": "string",
-                            "nullable": true,
                             "description": "Projected NFT datum: serialized state of the Projected NFT",
                             "example": "d8799fd8799f581c9040f057461d9adc09108fe5cb630077cf75c6e981d3ed91f6fb18f6ffd87980ff",
                             "pattern": "[0-9a-fA-F]+"
                         },
                         "status": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/components/schemas/ProjectedNftStatus"
-                                }
-                            ],
-                            "nullable": true,
+                            "$ref": "#/components/schemas/ProjectedNftStatus",
                             "description": "Projected NFT status: Lock / Unlocking / Claim / Invalid",
                             "example": "Lock"
                         },
@@ -929,7 +922,6 @@
                         },
                         "actionTxId": {
                             "type": "string",
-                            "nullable": true,
                             "description": "Transaction id of related Projected NFT event",
                             "example": "28eb069e3e8c13831d431e3b2e35f58525493ab2d77fde83184993e4aa7a0eda",
                             "pattern": "[0-9a-fA-F]{64}"
