@@ -14,6 +14,9 @@ const route = Routes.projectedNftEventsRange;
 
 @Route('projected-nft/range')
 export class ProjectedNftRangeController extends Controller {
+    /**
+     * Query any [projected NFT](https://github.com/dcSpark/projected-nft-whirlpool). 
+     */
     @SuccessResponse(`${StatusCodes.OK}`)
     @Post()
     public async projectedNftRange(

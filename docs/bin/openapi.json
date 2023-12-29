@@ -1808,6 +1808,7 @@
                         }
                     }
                 },
+                "description": "Query any [projected NFT](https://github.com/dcSpark/projected-nft-whirlpool).",
                 "security": [],
                 "parameters": [],
                 "requestBody": {
