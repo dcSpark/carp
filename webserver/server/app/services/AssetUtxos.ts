@@ -3,18 +3,18 @@ import type { IAssetUtxosResult } from '../models/asset/assetUtxos.queries';
 import { assetUtxos } from '../models/asset/assetUtxos.queries';
 
 export async function getAssetUtxos(request: {
-  range: {
-    minSlot: number;
-    maxSlot: number;
-  };
+  after: number;
+  until: number;
   fingerprints?: Buffer[];
   policyIds?: Buffer[];
+  limit: number;
   dbTx: PoolClient;
 }): Promise<IAssetUtxosResult[]> {
   return await assetUtxos.run(
     {
-      max_slot: request.range.maxSlot,
-      min_slot: request.range.minSlot,
+      after_tx_id: request.after,
+      until_tx_id: request.until,
+      limit: request.limit,
       // pgtyped doesn't seem to have a way to have an optional array parameter,
       // and an empty spread expansion fails with postgres.  Since none of these
       // fields is nullable, an array with null should be equivalent to an empty

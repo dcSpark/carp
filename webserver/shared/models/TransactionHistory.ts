@@ -1,3 +1,4 @@
+import { SlotLimits } from "../../server/app/services/PaginationService";
 import type { Address } from "./Address";
 import type { BlockSubset } from "./BlockLatest";
 import type { Pagination, RelationFilter } from "./common";
