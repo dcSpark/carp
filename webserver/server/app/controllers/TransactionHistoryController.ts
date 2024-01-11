@@ -15,6 +15,7 @@ import { Routes } from '../../../shared/routes';
 import sortBy from 'lodash/sortBy';
 import { getAddressTypes } from '../models/utils';
 import { RelationFilterType } from '../../../shared/models/common';
+import { slotBoundsPagination } from '../models/pagination/slotBoundsPagination.queries';
 
 const route = Routes.transactionHistory;
 
@@ -62,7 +63,7 @@ export class TransactionHistoryController extends Controller {
     const cardanoTxs = await tx<
       ErrorShape | [TransactionHistoryResponse, TransactionHistoryResponse]
     >(pool, async dbTx => {
-      const [until, pageStart] = await Promise.all([
+      const [until, pageStart, slotBounds] = await Promise.all([
         resolveUntilTransaction({
           block_hash: Buffer.from(requestBody.untilBlock, 'hex'),
           dbTx,
@@ -74,6 +75,12 @@ export class TransactionHistoryController extends Controller {
               after_tx: Buffer.from(requestBody.after.tx, 'hex'),
               dbTx,
             }),
+        !requestBody.slotLimits
+          ? Promise.resolve(undefined)
+          : slotBoundsPagination.run(
+              { low: requestBody.slotLimits.from, high: requestBody.slotLimits.to },
+              dbTx
+            ),
       ]);
       if (until == null) {
         return genErrorMessage(Errors.BlockHashNotFound, {
@@ -87,8 +94,32 @@ export class TransactionHistoryController extends Controller {
         });
       }
 
+      let pageStartWithSlot = pageStart;
+
+      if (requestBody.slotLimits) {
+        const bounds = slotBounds ? slotBounds[0] : { min_tx_id: -1, max_tx_id: -2 };
+
+        const minTxId = Number(bounds.min_tx_id);
+
+        if (!pageStartWithSlot) {
+          pageStartWithSlot = {
+            block_id: -1,
+            tx_id: minTxId,
+          };
+        } else {
+          if (minTxId > pageStartWithSlot.tx_id) {
+            pageStartWithSlot.tx_id = minTxId;
+          }
+        }
+
+        const maxTxId = Number(bounds.max_tx_id);
+        if (maxTxId < until.tx_id) {
+          until.tx_id = maxTxId;
+        }
+      }
+
       const commonRequest = {
-        after: pageStart,
+        after: pageStartWithSlot,
         limit: requestBody.limit ?? ADDRESS_LIMIT.RESPONSE,
         until,
         dbTx,

@@ -47,9 +47,15 @@ SELECT "Transaction".id,
         "Block".epoch,
         "Block".slot,
         "Block".era,
-        "Block".height
+        "Block".height,
+        "TransactionMetadata".payload AS metadata,
+        json_agg(DISTINCT "Address".PAYLOAD) input_addresses
 FROM "Transaction"
 INNER JOIN "Block" ON "Transaction".block_id = "Block".id
+INNER JOIN "TransactionInput" ON "TransactionInput".tx_id = "Transaction".id
+INNER JOIN "Address" ON "Address".id = "TransactionInput".address_id
+LEFT JOIN "TransactionMetadata" ON "Transaction".id = "TransactionMetadata".tx_id
 WHERE "Transaction".id IN (SELECT * FROM inputs UNION ALL SELECT * from ref_inputs UNION ALL SELECT * from outputs)
+GROUP BY "Transaction".id, "Block".id, "TransactionMetadata".id
 ORDER BY "Transaction".id ASC
 LIMIT (:limit);

@@ -3,6 +3,8 @@ import { PreparedQuery } from '@pgtyped/runtime';
 
 export type BufferArray = (Buffer)[];
 
+export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
+
 export type NumberOrString = number | string;
 
 /** 'SqlHistoryForAddresses' parameters type */
@@ -21,7 +23,9 @@ export interface ISqlHistoryForAddressesResult {
   hash: Buffer;
   height: number;
   id: string;
+  input_addresses: Json | null;
   is_valid: boolean;
+  metadata: Buffer;
   payload: Buffer;
   slot: number;
   tx_index: number;
@@ -33,7 +37,7 @@ export interface ISqlHistoryForAddressesQuery {
   result: ISqlHistoryForAddressesResult;
 }
 
-const sqlHistoryForAddressesIR: any = {"usedParamSet":{"addresses":true,"until_tx_id":true,"after_tx_id":true,"limit":true},"params":[{"name":"addresses","required":false,"transform":{"type":"scalar"},"locs":[{"a":91,"b":100}]},{"name":"until_tx_id","required":false,"transform":{"type":"scalar"},"locs":[{"a":373,"b":384},{"a":788,"b":799},{"a":1250,"b":1261}]},{"name":"after_tx_id","required":false,"transform":{"type":"scalar"},"locs":[{"a":440,"b":451},{"a":854,"b":865},{"a":1325,"b":1336}]},{"name":"limit","required":false,"transform":{"type":"scalar"},"locs":[{"a":516,"b":521},{"a":929,"b":934},{"a":1409,"b":1414},{"a":1924,"b":1929}]}],"statement":"WITH\n  address_row AS (\n    SELECT *\n    FROM \"Address\"\n    WHERE \"Address\".payload = ANY (:addresses)\n  ),\n  outputs AS (\n        SELECT DISTINCT ON (\"TransactionOutput\".tx_id) \"TransactionOutput\".tx_id\n        FROM \"TransactionOutput\"\n        INNER JOIN address_row ON \"TransactionOutput\".address_id = address_row.id\n        WHERE\n          \"TransactionOutput\".tx_id <= (:until_tx_id)\n          AND\n          \"TransactionOutput\".tx_id > (:after_tx_id)\n        ORDER BY \"TransactionOutput\".tx_id ASC\n        LIMIT (:limit)\n  ),\n  inputs AS (\n        SELECT DISTINCT ON (\"TransactionInput\".tx_id) \"TransactionInput\".tx_id\n        FROM \"TransactionInput\"\n        INNER JOIN address_row ON \"TransactionInput\".address_id = address_row.id\n        WHERE\n          \"TransactionInput\".tx_id <= (:until_tx_id)\n          AND\n          \"TransactionInput\".tx_id > (:after_tx_id)\n        ORDER BY \"TransactionInput\".tx_id ASC\n        LIMIT (:limit)\n  ),\n  ref_inputs AS (\n        SELECT DISTINCT ON (\"TransactionReferenceInput\".tx_id) \"TransactionReferenceInput\".tx_id\n        FROM \"TransactionReferenceInput\"\n        INNER JOIN address_row ON \"TransactionReferenceInput\".address_id = address_row.id\n        WHERE\n          \"TransactionReferenceInput\".tx_id <= (:until_tx_id)\n          AND\n          \"TransactionReferenceInput\".tx_id > (:after_tx_id)\n        ORDER BY \"TransactionReferenceInput\".tx_id ASC\n        LIMIT (:limit)\n  )\nSELECT \"Transaction\".id,\n        \"Transaction\".payload,\n        \"Transaction\".hash,\n        \"Transaction\".tx_index,\n        \"Transaction\".is_valid,\n        \"Block\".hash AS block_hash,\n        \"Block\".epoch,\n        \"Block\".slot,\n        \"Block\".era,\n        \"Block\".height\nFROM \"Transaction\"\nINNER JOIN \"Block\" ON \"Transaction\".block_id = \"Block\".id\nWHERE \"Transaction\".id IN (SELECT * FROM inputs UNION ALL SELECT * from ref_inputs UNION ALL SELECT * from outputs)\nORDER BY \"Transaction\".id ASC\nLIMIT (:limit)"};
+const sqlHistoryForAddressesIR: any = {"usedParamSet":{"addresses":true,"until_tx_id":true,"after_tx_id":true,"limit":true},"params":[{"name":"addresses","required":false,"transform":{"type":"scalar"},"locs":[{"a":91,"b":100}]},{"name":"until_tx_id","required":false,"transform":{"type":"scalar"},"locs":[{"a":373,"b":384},{"a":788,"b":799},{"a":1250,"b":1261}]},{"name":"after_tx_id","required":false,"transform":{"type":"scalar"},"locs":[{"a":440,"b":451},{"a":854,"b":865},{"a":1325,"b":1336}]},{"name":"limit","required":false,"transform":{"type":"scalar"},"locs":[{"a":516,"b":521},{"a":929,"b":934},{"a":1409,"b":1414},{"a":2329,"b":2334}]}],"statement":"WITH\n  address_row AS (\n    SELECT *\n    FROM \"Address\"\n    WHERE \"Address\".payload = ANY (:addresses)\n  ),\n  outputs AS (\n        SELECT DISTINCT ON (\"TransactionOutput\".tx_id) \"TransactionOutput\".tx_id\n        FROM \"TransactionOutput\"\n        INNER JOIN address_row ON \"TransactionOutput\".address_id = address_row.id\n        WHERE\n          \"TransactionOutput\".tx_id <= (:until_tx_id)\n          AND\n          \"TransactionOutput\".tx_id > (:after_tx_id)\n        ORDER BY \"TransactionOutput\".tx_id ASC\n        LIMIT (:limit)\n  ),\n  inputs AS (\n        SELECT DISTINCT ON (\"TransactionInput\".tx_id) \"TransactionInput\".tx_id\n        FROM \"TransactionInput\"\n        INNER JOIN address_row ON \"TransactionInput\".address_id = address_row.id\n        WHERE\n          \"TransactionInput\".tx_id <= (:until_tx_id)\n          AND\n          \"TransactionInput\".tx_id > (:after_tx_id)\n        ORDER BY \"TransactionInput\".tx_id ASC\n        LIMIT (:limit)\n  ),\n  ref_inputs AS (\n        SELECT DISTINCT ON (\"TransactionReferenceInput\".tx_id) \"TransactionReferenceInput\".tx_id\n        FROM \"TransactionReferenceInput\"\n        INNER JOIN address_row ON \"TransactionReferenceInput\".address_id = address_row.id\n        WHERE\n          \"TransactionReferenceInput\".tx_id <= (:until_tx_id)\n          AND\n          \"TransactionReferenceInput\".tx_id > (:after_tx_id)\n        ORDER BY \"TransactionReferenceInput\".tx_id ASC\n        LIMIT (:limit)\n  )\nSELECT \"Transaction\".id,\n        \"Transaction\".payload,\n        \"Transaction\".hash,\n        \"Transaction\".tx_index,\n        \"Transaction\".is_valid,\n        \"Block\".hash AS block_hash,\n        \"Block\".epoch,\n        \"Block\".slot,\n        \"Block\".era,\n        \"Block\".height,\n        \"TransactionMetadata\".payload AS metadata,\n        json_agg(DISTINCT \"Address\".PAYLOAD) input_addresses\nFROM \"Transaction\"\nINNER JOIN \"Block\" ON \"Transaction\".block_id = \"Block\".id\nINNER JOIN \"TransactionInput\" ON \"TransactionInput\".tx_id = \"Transaction\".id\nINNER JOIN \"Address\" ON \"Address\".id = \"TransactionInput\".address_id\nLEFT JOIN \"TransactionMetadata\" ON \"Transaction\".id = \"TransactionMetadata\".tx_id\nWHERE \"Transaction\".id IN (SELECT * FROM inputs UNION ALL SELECT * from ref_inputs UNION ALL SELECT * from outputs)\nGROUP BY \"Transaction\".id, \"Block\".id, \"TransactionMetadata\".id\nORDER BY \"Transaction\".id ASC\nLIMIT (:limit)"};
 
 /**
  * Query generated from SQL:
@@ -86,10 +90,16 @@ const sqlHistoryForAddressesIR: any = {"usedParamSet":{"addresses":true,"until_t
  *         "Block".epoch,
  *         "Block".slot,
  *         "Block".era,
- *         "Block".height
+ *         "Block".height,
+ *         "TransactionMetadata".payload AS metadata,
+ *         json_agg(DISTINCT "Address".PAYLOAD) input_addresses
  * FROM "Transaction"
  * INNER JOIN "Block" ON "Transaction".block_id = "Block".id
+ * INNER JOIN "TransactionInput" ON "TransactionInput".tx_id = "Transaction".id
+ * INNER JOIN "Address" ON "Address".id = "TransactionInput".address_id
+ * LEFT JOIN "TransactionMetadata" ON "Transaction".id = "TransactionMetadata".tx_id
  * WHERE "Transaction".id IN (SELECT * FROM inputs UNION ALL SELECT * from ref_inputs UNION ALL SELECT * from outputs)
+ * GROUP BY "Transaction".id, "Block".id, "TransactionMetadata".id
  * ORDER BY "Transaction".id ASC
  * LIMIT (:limit)
  * ```
