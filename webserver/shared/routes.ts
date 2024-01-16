@@ -32,6 +32,10 @@ import type {
   ProjectedNftRangeResponse,
 } from "./models/ProjectedNftRange";
 import { AssetUtxosRequest, AssetUtxosResponse } from "./models/AssetUtxos";
+import type {
+  MintBurnHistoryRequest,
+  MintBurnHistoryResponse,
+} from "./models/MintBurn";
 
 export enum Routes {
   transactionHistory = "transaction/history",
@@ -47,6 +51,7 @@ export enum Routes {
   delegationForPool = "delegation/pool",
   projectedNftEventsRange = "projected-nft/range",
   assetUtxos = "asset/utxos",
+  mintBurnHistory = "asset/mint-burn-history",
 }
 
 export type EndpointTypes = {
@@ -114,5 +119,10 @@ export type EndpointTypes = {
     name: typeof Routes.assetUtxos;
     input: AssetUtxosRequest;
     response: AssetUtxosResponse;
+  };
+  [Routes.mintBurnHistory]: {
+    name: typeof Routes.mintBurnHistory;
+    input: MintBurnHistoryRequest;
+    response: MintBurnHistoryResponse;
   };
 };
