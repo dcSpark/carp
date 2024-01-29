@@ -1,15 +1,16 @@
+use cml_chain::byron::ByronTxOut;
+use cml_core::serialization::{FromBytes, Serialize};
+use cml_crypto::RawBytesEncoding;
+use entity::block::EraValue;
+use pallas::ledger::primitives::{Fragment, ToCanonicalJson};
+use sea_orm::DbErr;
 use std::collections::BTreeMap;
-
-use pallas::ledger::{
-    addresses::Address,
-    primitives::ToCanonicalJson,
-    traverse::{MultiEraOutput, MultiEraTx},
-};
 
 use super::common::{
     build_asset, filter_outputs_and_datums_by_address, filter_outputs_and_datums_by_hash,
     reduce_ada_amount, Dex, DexType, MinSwapV1, QueuedMeanPrice, QueuedSwap,
 };
+use crate::multiera::utils::common::output_from_bytes;
 use crate::{era_common::OutputWithTxData, multiera::utils::common::get_asset_amount};
 use entity::dex_swap::Operation;
 
@@ -24,18 +25,23 @@ impl Dex for MinSwapV1 {
     fn queue_mean_price(
         &self,
         queued_prices: &mut Vec<QueuedMeanPrice>,
-        tx: &MultiEraTx,
+        tx: &cml_multi_era::MultiEraTransactionBody,
+        tx_witness: &cml_chain::transaction::TransactionWitnessSet,
         tx_id: i64,
     ) -> Result<(), String> {
         // Note: there should be at most one pool output
         if let Some((output, datum)) = filter_outputs_and_datums_by_hash(
             &tx.outputs(),
             &[POOL_SCRIPT_HASH1, POOL_SCRIPT_HASH2],
-            &tx.plutus_data(),
+            &tx_witness.plutus_datums.clone().unwrap_or_default(),
         )
         .first()
         {
-            let datum = datum.to_json();
+            let pallas_datum = pallas::ledger::primitives::alonzo::PlutusData::decode_fragment(
+                &datum.to_canonical_cbor_bytes(),
+            )
+            .map_err(|err| format!("can't decode datum: {err}"))?;
+            let datum = pallas_datum.to_json();
 
             let parse_asset_item = |i, j| -> Result<Vec<u8>, &str> {
                 let item = datum["fields"][i]["fields"][j]["bytes"]
@@ -52,7 +58,7 @@ impl Dex for MinSwapV1 {
 
             queued_prices.push(QueuedMeanPrice {
                 tx_id,
-                address: output.address().unwrap().to_vec(),
+                address: output.address().to_raw_bytes().to_vec(),
                 dex_type: DexType::MinSwapV1,
                 asset1,
                 asset2,
@@ -66,7 +72,8 @@ impl Dex for MinSwapV1 {
     fn queue_swap(
         &self,
         queued_swaps: &mut Vec<QueuedSwap>,
-        tx: &MultiEraTx,
+        tx: &cml_multi_era::MultiEraTransactionBody,
+        tx_witness: &cml_chain::transaction::TransactionWitnessSet,
         tx_id: i64,
         multiera_used_inputs_to_outputs_map: &BTreeMap<Vec<u8>, BTreeMap<i64, OutputWithTxData>>,
     ) -> Result<(), String> {
@@ -74,12 +81,17 @@ impl Dex for MinSwapV1 {
         if let Some((main_output, main_datum)) = filter_outputs_and_datums_by_hash(
             &tx.outputs(),
             &[POOL_SCRIPT_HASH1, POOL_SCRIPT_HASH2],
-            &tx.plutus_data(),
+            &tx_witness.plutus_datums.clone().unwrap_or_default(),
         )
         .first()
         {
-            let main_datum = main_datum.to_json();
-            let mut free_utxos: Vec<MultiEraOutput> = tx.outputs();
+            let pallas_datum = pallas::ledger::primitives::alonzo::PlutusData::decode_fragment(
+                &main_datum.to_canonical_cbor_bytes(),
+            )
+            .map_err(|err| format!("can't decode datum: {err}"))?;
+            let main_datum = pallas_datum.to_json();
+
+            let mut free_utxos: Vec<cml_multi_era::utils::MultiEraTransactionOutput> = tx.outputs();
 
             // Extract asset information from plutus data of pool input
             let parse_asset_item = |i, j| -> Result<Vec<u8>, &str> {
@@ -92,21 +104,26 @@ impl Dex for MinSwapV1 {
             let asset1 = build_asset(parse_asset_item(0, 0)?, parse_asset_item(0, 1)?);
             let asset2 = build_asset(parse_asset_item(1, 0)?, parse_asset_item(1, 1)?);
 
-            let inputs: Vec<MultiEraOutput> = tx
+            let inputs: Vec<cml_multi_era::utils::MultiEraTransactionOutput> = tx
                 .inputs()
                 .iter()
                 .map(|i| {
-                    let output = &multiera_used_inputs_to_outputs_map[&i.hash().to_vec()]
-                        [&(i.index() as i64)];
-                    MultiEraOutput::decode(output.era, &output.model.payload).unwrap()
+                    let output = &multiera_used_inputs_to_outputs_map
+                        [&i.hash().unwrap().to_raw_bytes().to_vec()]
+                        [&(i.index().unwrap() as i64)];
+                    output_from_bytes(output).unwrap()
                 })
                 .collect::<Vec<_>>();
             for (input, input_datum) in filter_outputs_and_datums_by_address(
                 &inputs,
                 &[BATCH_ORDER_ADDRESS1, BATCH_ORDER_ADDRESS2],
-                &tx.plutus_data(),
+                &tx_witness.plutus_datums.clone().unwrap_or_default(),
             ) {
-                let input_datum = input_datum.to_json();
+                let pallas_datum = pallas::ledger::primitives::alonzo::PlutusData::decode_fragment(
+                    &input_datum.to_canonical_cbor_bytes(),
+                )
+                .map_err(|err| format!("can't decode datum: {err}"))?;
+                let input_datum = pallas_datum.to_json();
 
                 // identify operation: 0 = swap
                 let operation = input_datum["fields"][3]["constructor"]
@@ -139,13 +156,14 @@ impl Dex for MinSwapV1 {
                         .ok_or("Failed to parse output address item")?
                         .to_string(),
                 ];
-                let output_address = Address::from_hex(&output_address_items.join(""))
-                    .map_err(|_e| "Failed to parse output address")?;
+                let output_address =
+                    cml_chain::address::Address::from_hex(&output_address_items.join(""))
+                        .map_err(|_e| "Failed to parse output address")?;
 
                 // Get coresponding UTxO with result
                 let utxo_pos = free_utxos
                     .iter()
-                    .position(|o| o.address().ok() == Some(output_address.clone()))
+                    .position(|o| o.address() == output_address.clone())
                     .ok_or("Failed to find utxo")?;
                 let utxo = free_utxos[utxo_pos].clone();
                 free_utxos.remove(utxo_pos);
@@ -169,7 +187,7 @@ impl Dex for MinSwapV1 {
                 }
                 queued_swaps.push(QueuedSwap {
                     tx_id,
-                    address: main_output.address().unwrap().to_vec(),
+                    address: main_output.address().to_raw_bytes().to_vec(),
                     dex_type: DexType::MinSwapV1,
                     asset1: asset1.clone(),
                     asset2: asset2.clone(),

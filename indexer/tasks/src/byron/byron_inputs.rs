@@ -1,8 +1,8 @@
+use crate::dsl::task_macro::*;
 use cml_multi_era::byron::block::ByronBlock;
 use cml_multi_era::byron::transaction::{ByronTx, ByronTxIn};
+use cml_multi_era::utils::MultiEraTransactionInput;
 use cml_multi_era::MultiEraBlock;
-use crate::dsl::task_macro::*;
-use pallas::ledger::primitives::byron::{self, TxIn};
 
 use super::byron_outputs::ByronOutputTask;
 use crate::config::EmptyConfig::EmptyConfig;
@@ -35,56 +35,22 @@ async fn handle_inputs(
     block: BlockInfo<'_, MultiEraBlock, BlockGlobalInfo>,
     byron_txs: &[TransactionModel],
 ) -> Result<Vec<TransactionInputModel>, DbErr> {
-    match block.1 {
-        MultiEraBlock::Byron(ByronBlock::Main(block)) => {
-            block
-                .body
-                .tx_payload
+    let txs = match block.1 {
+        MultiEraBlock::Byron(ByronBlock::Main(block)) => block.body.tx_payload.iter().map(|tx| {
+            tx.byron_tx
+                .inputs
                 .iter()
-                .map(|tx| {
-                    tx
-                        .byron_tx
-                        .inputs
-                        .iter()
-                        .map(|input| {
-                            match input {
-                                ByronTxIn::ByronTxInRegular(regular) => {
-                                    (regular.index_1.byron_tx_id, regular.index_1.u32)
-                                }
-                                ByronTxIn::ByronTxInGenesis(genesis) => {
-                                    genesis.
-                                }
-                            }
-                        })
-                })
+                .cloned()
+                .map(MultiEraTransactionInput::Byron)
+        }),
+        _ => {
+            return Ok(vec![]);
         }
-        MultiEraBlock::Shelley(block) => {
-            block.transaction_bodies
-                .iter()
-                .flat_map(|tx| tx.inputs
-                    .iter()
-                    .map(|input|
-                        (input.transaction_id, input.index)
-                    )
-                )
-        }
-        MultiEraBlock::Allegra(_) => {}
-        MultiEraBlock::Mary(_) => {}
-        MultiEraBlock::Alonzo(_) => {}
-        MultiEraBlock::Babbage(_) => {}
-        MultiEraBlock::Conway(_) => {}
-    }
-    let flattened_inputs: Vec<(Vec<pallas::ledger::traverse::OutputRef>, i64)> = block
-        .1
-        .txs()
-        .iter()
-        .zip(byron_txs)
-        .map(|(tx, cardano_tx_in_db)| {
-            let inputs: Vec<pallas::ledger::traverse::OutputRef> =
-                tx.inputs().iter().map(|x| x.output_ref()).collect();
+    };
 
-            (inputs, cardano_tx_in_db.id)
-        })
+    let flattened_inputs: Vec<(Vec<_>, i64)> = txs
+        .zip(byron_txs)
+        .map(|(inputs, cardano_tx_in_db)| (inputs.collect::<Vec<_>>(), cardano_tx_in_db.id))
         .collect();
 
     let outputs_for_inputs =

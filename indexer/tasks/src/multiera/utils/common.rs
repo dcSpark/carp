@@ -1,64 +1,84 @@
+use cml_chain::certs::Credential;
+use cml_chain::transaction::DatumOption;
+use cml_core::serialization::{Deserialize, Serialize, ToBytes};
+use cml_crypto::RawBytesEncoding;
+use cml_multi_era::utils::{MultiEraTransactionInput, MultiEraTransactionOutput};
 use std::collections::BTreeSet;
 
+use crate::era_common::OutputWithTxData;
+use entity::block::EraValue;
 use entity::{
     prelude::*,
     sea_orm::{entity::*, prelude::*, Condition, DatabaseTransaction},
 };
-use pallas::{
-    codec::utils::KeepRaw,
-    crypto::hash::Hasher,
-    ledger::{
-        addresses,
-        primitives::{alonzo, babbage::DatumOption},
-        traverse::{Asset, MultiEraOutput},
-    },
-};
 
 use crate::types::AssetPair;
+use crate::utils::blake2b256;
 
-pub fn get_shelley_payment_hash(
-    address: Result<addresses::Address, addresses::Error>,
-) -> Option<String> {
-    if let Ok(addresses::Address::Shelley(shelley_address)) = address {
-        Some(hex::encode(shelley_address.payment().as_hash()))
-    } else {
-        None
+pub fn get_shelley_payment_hash(address: cml_chain::address::Address) -> Option<String> {
+    let payment = match address {
+        cml_chain::address::Address::Base(address) => address.payment,
+        // idk whether we should parse it here or not
+        cml_chain::address::Address::Ptr(address) => address.payment,
+        cml_chain::address::Address::Enterprise(address) => address.payment,
+        // reward address is a staking address
+        cml_chain::address::Address::Reward(_) => return None,
+        cml_chain::address::Address::Byron(_) => return None,
+    };
+
+    match payment {
+        Credential::PubKey { hash, .. } => Some(hash.to_hex()),
+        Credential::Script { hash, .. } => Some(hash.to_hex()),
     }
 }
 
-pub fn get_asset_amount(output: &MultiEraOutput, pair: &AssetPair) -> u64 {
-    output
-        .assets()
-        .iter()
-        .filter(|asset| match &asset {
-            Asset::Ada(_quantity) => pair.is_none(),
-            Asset::NativeAsset(policy_id, asset_name, _quantity) => {
-                pair == &Some((policy_id.to_vec(), asset_name.to_vec()))
-            }
-        })
-        .map(|asset| match &asset {
-            Asset::Ada(quantity) => quantity,
-            Asset::NativeAsset(_, _, quantity) => quantity,
-        })
-        .sum()
+pub fn get_asset_amount(
+    output: &cml_multi_era::utils::MultiEraTransactionOutput,
+    pair: &AssetPair,
+) -> u64 {
+    match pair {
+        None => output.amount().coin,
+        Some((pair_policy_id, pair_asset_name)) => output
+            .amount()
+            .multiasset
+            .iter()
+            .flat_map(|(policy_id, assets)| {
+                assets
+                    .iter()
+                    .map(|(asset_name, value)| (*policy_id, asset_name, value))
+            })
+            .filter(|(policy_id, asset_name, _value)| {
+                policy_id.to_raw_bytes() == pair_policy_id && asset_name.get() == pair_asset_name
+            })
+            .map(|(_policy_id, _asset_name, value)| value)
+            .sum(),
+    }
 }
 
 pub fn get_plutus_datum_for_output(
-    output: &MultiEraOutput,
-    plutus_data: &[&KeepRaw<alonzo::PlutusData>],
-) -> Option<alonzo::PlutusData> {
+    output: &cml_multi_era::utils::MultiEraTransactionOutput,
+    plutus_data: &[cml_chain::plutus::PlutusData],
+) -> Option<cml_chain::plutus::PlutusData> {
+    let output = match output {
+        MultiEraTransactionOutput::Byron(_) => {
+            return None;
+        }
+        MultiEraTransactionOutput::Shelley(output) => output,
+    };
+
     let datum_option = match output.datum() {
-        Some(datum) => DatumOption::from(datum),
+        Some(datum) => datum,
         None => {
             return None;
         }
     };
+
     match datum_option {
-        DatumOption::Data(datum) => Some(datum.0),
-        DatumOption::Hash(hash) => plutus_data
+        DatumOption::Datum { datum, .. } => Some(datum),
+        DatumOption::Hash { datum_hash, .. } => plutus_data
             .iter()
-            .find(|datum| Hasher::<256>::hash_cbor(datum) == hash)
-            .map(|&d| d.clone().unwrap()),
+            .find(|datum| datum.hash() == datum_hash)
+            .cloned(),
     }
 }
 
@@ -81,4 +101,22 @@ pub async fn asset_from_pair(
         .all(db_tx)
         .await?;
     Ok(assets)
+}
+
+pub fn output_from_bytes(utxo: &OutputWithTxData) -> Result<MultiEraTransactionOutput, DbErr> {
+    let output = match utxo.era {
+        EraValue::Byron => MultiEraTransactionOutput::Byron(
+            cml_chain::byron::ByronTxOut::from_cbor_bytes(&utxo.model.payload).map_err(|err| {
+                DbErr::Custom(format!("can't decode byron output payload: {err}"))
+            })?,
+        ),
+        _ => MultiEraTransactionOutput::Shelley(
+            cml_chain::transaction::TransactionOutput::from_cbor_bytes(&utxo.model.payload)
+                .map_err(|err| {
+                    DbErr::Custom(format!("can't decode shelley output payload: {err}"))
+                })?,
+        ),
+    };
+
+    Ok(output)
 }

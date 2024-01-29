@@ -4,6 +4,7 @@ use crate::sink::Sink;
 use crate::types::{MultiEraBlock, StoppableService};
 use crate::{genesis, DbConfig, SinkConfig};
 use async_trait::async_trait;
+
 use dcspark_blockchain_source::cardano::Point;
 use dcspark_core::{BlockId, SlotNumber};
 use entity::sea_orm::Database;
@@ -18,7 +19,6 @@ use entity::{
 };
 use std::sync::Arc;
 use std::sync::Mutex;
-use cml_core::serialization::FromBytes;
 use tasks::byron::byron_executor::process_byron_block;
 use tasks::dsl::database_task::BlockGlobalInfo;
 use tasks::execution_plan::ExecutionPlan;
@@ -280,10 +280,10 @@ async fn insert_block(
     let block_parse_counter = std::time::Instant::now();
 
     let block_payload = hex::decode(cbor_hex.clone()).unwrap();
-    let multi_block = MultiEraBlock::from_bytes(block_payload).unwrap();
+    let multi_block = MultiEraBlock::from_explicit_network_cbor_bytes(&block_payload).unwrap();
 
     let block_global_info = BlockGlobalInfo {
-        era: to_era_value(multi_block),
+        era: to_era_value(&multi_block),
         epoch,
         epoch_slot,
     };
@@ -291,7 +291,7 @@ async fn insert_block(
     perf_aggregator.block_parse += block_parse_counter.elapsed();
 
     match &multi_block {
-        MultiEraBlock::Byron(byron) => {
+        MultiEraBlock::Byron(_byron) => {
             process_byron_block(
                 txn,
                 (&cbor_hex, &multi_block, &block_global_info),

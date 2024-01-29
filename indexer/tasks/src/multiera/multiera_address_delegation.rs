@@ -2,17 +2,12 @@ use crate::{
     multiera::multiera_stake_credentials::MultieraStakeCredentialTask,
     types::{AddressCredentialRelationValue, TxCredentialRelationValue},
 };
-use cardano_multiplatform_lib::{
-    address::{BaseAddress, EnterpriseAddress, PointerAddress, RewardAddress},
-    byron::ByronAddress,
-};
+use cml_core::serialization::Serialize;
+use cml_crypto::RawBytesEncoding;
+use cml_multi_era::utils::MultiEraCertificate;
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction},
-};
-use pallas::ledger::{
-    primitives::{alonzo::Certificate, Fragment},
-    traverse::{MultiEraBlock, MultiEraCert, MultiEraOutput, MultiEraTx},
 };
 use sea_orm::{Order, QueryOrder, Set};
 use std::collections::{BTreeMap, BTreeSet};
@@ -50,22 +45,30 @@ carp_task! {
 
 async fn handle(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
+    block: BlockInfo<'_, cml_multi_era::MultiEraBlock, BlockGlobalInfo>,
     multiera_txs: &[TransactionModel],
     multiera_stake_credential: &BTreeMap<Vec<u8>, StakeCredentialModel>,
 ) -> Result<(), DbErr> {
-    for (tx_body, cardano_transaction) in block.1.txs().iter().zip(multiera_txs) {
-        for cert in tx_body.certs() {
+    for (tx_body, cardano_transaction) in block.1.transaction_bodies().iter().zip(multiera_txs) {
+        let certs = match tx_body.certs() {
+            None => continue,
+            Some(certs) => certs,
+        };
+        for cert in certs {
             {
                 let tx_id = cardano_transaction.id;
                 let cert = &cert;
-                let (credential, pool) = match cert.as_alonzo().unwrap() {
-                    Certificate::StakeDelegation(credential, pool) => (credential, Some(pool)),
-                    Certificate::StakeDeregistration(credential) => (credential, None),
+                let (credential, pool) = match cert {
+                    MultiEraCertificate::StakeDelegation(delegation) => {
+                        (delegation.stake_credential.clone(), Some(delegation.pool))
+                    }
+                    MultiEraCertificate::StakeDeregistration(deregistration) => {
+                        (deregistration.stake_credential.clone(), None)
+                    }
                     _ => continue,
                 };
 
-                let credential = credential.encode_fragment().unwrap();
+                let credential = credential.to_canonical_cbor_bytes();
 
                 let stake_credential_id = multiera_stake_credential
                     .get(&credential.to_vec())
@@ -80,7 +83,7 @@ async fn handle(
                     .one(db_tx)
                     .await?;
 
-                let pool = pool.map(|pool| pool.to_vec());
+                let pool = pool.map(|pool| pool.to_raw_bytes().to_vec());
 
                 if let Some((previous, pool)) = previous_entry
                     .as_ref()

@@ -9,11 +9,12 @@ use cml_chain::{
     byron::ByronAddress,
 };
 use cml_core::serialization::{FromBytes, ToBytes};
+use cml_crypto::RawBytesEncoding;
+use cml_multi_era::utils::MultiEraTransactionInput;
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction},
 };
-use pallas::ledger::traverse::{MultiEraBlock, MultiEraInput, OutputRef};
 
 use super::{multiera_used_outputs::MultieraOutputTask, relation_map::RelationMap};
 
@@ -45,7 +46,7 @@ carp_task! {
 }
 
 type QueuedInputs = Vec<(
-    Vec<OutputRef>,
+    Vec<MultiEraTransactionInput>,
     i64, // tx_id
 )>;
 
@@ -63,19 +64,21 @@ async fn handle_input(
     DbErr,
 > {
     let mut queued_inputs = QueuedInputs::default();
-    let txs = block.1.txs();
+    let txs = block.1.transaction_bodies();
 
     for (tx_body, cardano_transaction) in txs.iter().zip(multiera_txs) {
         if cardano_transaction.is_valid {
-            let refs = tx_body.inputs().iter().map(|x| x.output_ref()).collect();
+            let refs = tx_body.inputs();
             queued_inputs.push((refs, cardano_transaction.id));
         }
 
         if !cardano_transaction.is_valid {
             let refs = tx_body
-                .collateral()
-                .iter()
-                .map(|x| x.output_ref())
+                .collateral_inputs()
+                .cloned()
+                .unwrap_or_default()
+                .into_iter()
+                .map(MultiEraTransactionInput::Shelley)
                 .collect();
             queued_inputs.push((refs, cardano_transaction.id))
         }
@@ -130,7 +133,7 @@ async fn handle_input(
 
 pub fn add_input_relations(
     vkey_relation_map: &mut RelationMap,
-    inputs: &[(Vec<OutputRef>, i64)],
+    inputs: &[(Vec<MultiEraTransactionInput>, i64)],
     outputs: &[&TransactionOutputModel],
     input_to_output_map: &BTreeMap<Vec<u8>, BTreeMap<i64, OutputWithTxData>>,
     input_relation: TxCredentialRelationValue,
@@ -139,13 +142,17 @@ pub fn add_input_relations(
     let mut output_to_input_tx = BTreeMap::<i64, i64>::default();
     for input_tx_pair in inputs.iter() {
         for input in input_tx_pair.0.iter() {
-            match input_to_output_map.get(&input.hash().to_vec()) {
+            match input_to_output_map.get(&input.hash().unwrap().to_raw_bytes().to_vec()) {
                 Some(entry_for_tx) => {
-                    let output = &entry_for_tx[&(input.index() as i64)];
+                    let output = &entry_for_tx[&(input.index().unwrap() as i64)];
                     output_to_input_tx.insert(output.model.id, input_tx_pair.1);
                 }
                 None => {
-                    panic!("tx: {} index:{}", input.hash(), input.index());
+                    panic!(
+                        "tx: {} index:{}",
+                        input.hash().unwrap().to_hex(),
+                        input.index().unwrap()
+                    );
                 }
             }
         }

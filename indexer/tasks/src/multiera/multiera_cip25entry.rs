@@ -6,11 +6,8 @@ use entity::{
     prelude::*,
     sea_orm::{prelude::*, Condition, DatabaseTransaction, Set},
 };
+use pallas::ledger::primitives::alonzo::Metadatum;
 use pallas::ledger::primitives::Fragment;
-use pallas::{
-    codec::utils::KeyValuePairs,
-    ledger::primitives::alonzo::{self, AuxiliaryData, Metadatum, MetadatumLabel},
-};
 
 use super::{
     multiera_asset_mint::MultieraAssetMintTask,
@@ -30,7 +27,7 @@ carp_task! {
   read [multiera_assets, multiera_metadata];
   write [];
   should_add_task |block, _properties| {
-    block.1.has_aux_data()
+    !block.1.auxiliary_data_set().is_empty()
   };
   execute |previous_data, task| handle_entries(
       task.db_tx,

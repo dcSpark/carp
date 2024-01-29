@@ -7,16 +7,19 @@ edition = "2021"
 name = "tasks"
 
 [dependencies]
+dcspark-core = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "572af17e3e22101dee64e0999049a571aea26e0f" }
+dcspark-blockchain-source = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "572af17e3e22101dee64e0999049a571aea26e0f" }
+
 # [local]
 entity = { path = "../entity" }
 
 # [tasks]
 anyhow = { version = "1.0.69" }
-cml-core = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "e231f1eab743b3cb7c5464cd8ed9ffda29631b97" }
-cml-chain = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "e231f1eab743b3cb7c5464cd8ed9ffda29631b97" }
-cml-crypto = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "e231f1eab743b3cb7c5464cd8ed9ffda29631b97" }
-cml-multi-era = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "e231f1eab743b3cb7c5464cd8ed9ffda29631b97" }
-projected-nft-sdk = { git = "https://github.com/dcSpark/projected-nft-whirlpool.git", rev = "a350ccfcbdef22b73c93561c6816bd42b13f00ff" }
+cml-chain = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "c5740393f10b7a68aa4719fbbef5a49170501ef6" }
+cml-core = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "c5740393f10b7a68aa4719fbbef5a49170501ef6" }
+cml-crypto = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "c5740393f10b7a68aa4719fbbef5a49170501ef6" }
+cml-multi-era = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "c5740393f10b7a68aa4719fbbef5a49170501ef6" }
+cardano-projected-nft = { git = "https://github.com/dcSpark/projected-nft-whirlpool.git", rev = "7ba9a2f7a613f38bbce8f48a7d8575739e9caee0" }
 cfg-if = { version = "0.1.10" }
 cryptoxide = { version = "0.4.2" }
 hex = { version = "0.4.3" }

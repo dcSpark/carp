@@ -1,3 +1,7 @@
+use cml_chain::transaction::DatumOption;
+use cml_core::serialization::Serialize;
+use cml_crypto::{DatumHash, RawBytesEncoding};
+use cml_multi_era::utils::MultiEraTransactionOutput;
 use std::collections::BTreeSet;
 
 use super::multiera_txs::MultieraTransactionTask;
@@ -12,12 +16,6 @@ use entity::{
     prelude::*,
     sea_orm::{prelude::*, Condition, DatabaseTransaction, JoinType, Set},
 };
-use pallas::ledger::primitives::Fragment;
-use pallas::ledger::traverse::ComputeHash;
-use pallas::ledger::{
-    primitives::babbage::{DatumHash, DatumOption},
-    traverse::{MultiEraBlock, OutputRef},
-};
 
 use crate::dsl::task_macro::*;
 
@@ -30,9 +28,16 @@ dependencies [MultieraTransactionTask];
 read [multiera_txs];
 write [];
 should_add_task |block, _properties| {
-  block.1.txs().iter().any(|tx| {
-    !tx.plutus_data().is_empty() || tx.outputs().iter().any(|output| output.datum().is_some())
-  })
+    block.1.transaction_bodies().iter().any(|tx| {
+        tx.outputs().iter().any(|output| match output {
+            MultiEraTransactionOutput::Shelley(output) => output.datum().is_some(),
+            _ => false,
+        })
+    }) || block.1.transaction_witness_sets().iter().any(|tx| {
+        tx.plutus_datums.clone()
+            .map(|datums| !datums.is_empty())
+            .unwrap_or(false)
+    })
 };
 execute |previous_data, task| handle_datum(
     task.db_tx,
@@ -50,41 +55,58 @@ async fn handle_datum(
     multiera_txs: &[TransactionModel],
     readonly: bool,
 ) -> Result<(), DbErr> {
-    let mut hash_to_tx = BTreeMap::<DatumHash, i64>::new();
+    let mut hash_to_tx = BTreeMap::<cml_crypto::DatumHash, i64>::new();
     // recall: tx may contain datum hash only w/ datum only appearing in a later tx
-    let mut hash_to_data = BTreeMap::<DatumHash, Vec<u8>>::new();
-    for (tx_body, cardano_transaction) in block.1.txs().iter().zip(multiera_txs) {
-        for datum in tx_body.plutus_data() {
-            let hash = datum.compute_hash();
+    let mut hash_to_data = BTreeMap::<cml_crypto::DatumHash, Vec<u8>>::new();
+    for ((tx_body, tx_witness_set), cardano_transaction) in block
+        .1
+        .transaction_bodies()
+        .iter()
+        .zip(block.1.transaction_witness_sets().iter())
+        .zip(multiera_txs)
+    {
+        for datum in tx_witness_set
+            .plutus_datums
+            .clone()
+            .unwrap_or_default()
+            .iter()
+        {
+            let hash = datum.hash();
             hash_to_tx
                 .entry(hash)
                 .or_insert_with(|| cardano_transaction.id);
             hash_to_data
                 .entry(hash)
-                .or_insert_with(|| datum.encode_fragment().unwrap());
+                .or_insert_with(|| datum.to_canonical_cbor_bytes());
         }
         for output in tx_body.outputs().iter() {
+            let output = match output {
+                MultiEraTransactionOutput::Byron(_) => {
+                    continue;
+                }
+                MultiEraTransactionOutput::Shelley(shelley) => shelley,
+            };
             let datum_option = match output.datum() {
-                Some(datum) => DatumOption::from(datum.clone()),
+                Some(datum) => datum,
                 None => {
                     continue;
                 }
             };
 
             match datum_option {
-                DatumOption::Hash(hash) => {
+                DatumOption::Hash { datum_hash, .. } => {
                     hash_to_tx
-                        .entry(hash)
+                        .entry(datum_hash)
                         .or_insert_with(|| cardano_transaction.id);
                 }
-                DatumOption::Data(datum) => {
-                    let hash = datum.compute_hash();
+                DatumOption::Datum { datum, .. } => {
+                    let hash = datum.hash();
                     hash_to_tx
                         .entry(hash)
                         .or_insert_with(|| cardano_transaction.id);
                     hash_to_data
                         .entry(hash)
-                        .or_insert_with(|| datum.0.encode_fragment().unwrap());
+                        .or_insert_with(|| datum.to_canonical_cbor_bytes());
                 }
             };
         }
@@ -98,17 +120,16 @@ async fn handle_datum(
     let mut existing_full_datums = BTreeSet::<i64>::new();
     // 1) Get hashes that were already in the DB
     {
-        let mut found_hashes =
-            PlutusDataHash::find()
-                .join(JoinType::LeftJoin, PlutusDataHashRelation::PlutusData.def())
-                .filter(Condition::any().add(
-                    PlutusDataHashColumn::Hash.is_in(hash_to_tx.keys().map(|hash| hash.as_ref())),
-                ))
-                // TODO: would be more efficient to just select the ID field of PlutusData
-                // to avoid having to return large datum objects that we just ignore in the SQL query
-                .select_with(PlutusData)
-                .all(db_tx)
-                .await?;
+        let mut found_hashes = PlutusDataHash::find()
+            .join(JoinType::LeftJoin, PlutusDataHashRelation::PlutusData.def())
+            .filter(Condition::any().add(
+                PlutusDataHashColumn::Hash.is_in(hash_to_tx.keys().map(|hash| hash.to_raw_bytes())),
+            ))
+            // TODO: would be more efficient to just select the ID field of PlutusData
+            // to avoid having to return large datum objects that we just ignore in the SQL query
+            .select_with(PlutusData)
+            .all(db_tx)
+            .await?;
 
         for (datum_hash, datums) in found_hashes.iter() {
             if !datums.is_empty() {
@@ -125,12 +146,12 @@ async fn handle_datum(
     {
         let keys_to_add: Vec<&DatumHash> = hash_to_tx
             .keys()
-            .filter(|key| !hash_to_id.contains_key(key.as_ref()))
+            .filter(|key| !hash_to_id.contains_key(key.to_raw_bytes()))
             .collect();
         let to_add: Vec<PlutusDataHashActiveModel> = keys_to_add
             .iter()
             .map(|key| PlutusDataHashActiveModel {
-                hash: Set(key.to_vec()),
+                hash: Set(key.to_raw_bytes().to_vec()),
                 first_tx: Set(*hash_to_tx.get(key).unwrap()),
                 ..Default::default()
             })
@@ -141,7 +162,9 @@ async fn handle_datum(
                 panic!(
                     "{} in readonly mode, but unknown Plutus datum hashes were found: {:?}",
                     "MultieraDatumTask",
-                    keys_to_add.iter().map(|key| hex::encode(key.as_ref()))
+                    keys_to_add
+                        .iter()
+                        .map(|key| hex::encode(key.to_raw_bytes()))
                 );
             }
             let mut new_entries = PlutusDataHash::insert_many(to_add)
@@ -155,12 +178,12 @@ async fn handle_datum(
     // 3) Add datum
     {
         let to_add = hash_to_data.iter().fold(vec![], |mut acc, next| {
-            let datum_hash_id = hash_to_id.get(next.0.as_ref()).unwrap();
+            let datum_hash_id = hash_to_id.get(next.0.to_raw_bytes()).unwrap();
             match existing_full_datums.get(datum_hash_id) {
                 None => {
                     acc.push(PlutusDataActiveModel {
                         id: Set(*datum_hash_id),
-                        data: Set(next.1.encode_fragment().unwrap()),
+                        data: Set(next.1.clone()),
                     });
                     acc
                 }

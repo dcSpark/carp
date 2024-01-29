@@ -4,13 +4,8 @@ use super::utils::common::{
 use super::{multiera_address::MultieraAddressTask, utils::common::asset_from_pair};
 use crate::config::EmptyConfig::EmptyConfig;
 use crate::multiera::dex::common::{handle_mean_price, DexType};
-use pallas::ledger::primitives::alonzo;
 
 use crate::dsl::task_macro::*;
-use pallas::ledger::{
-    primitives::{alonzo::Certificate, Fragment},
-    traverse::{MultiEraBlock, MultiEraCert, MultiEraOutput, MultiEraTx},
-};
 
 carp_task! {
   name MultieraWingRidersV1MeanPriceTask;
@@ -21,7 +16,7 @@ carp_task! {
   read [multiera_txs, multiera_addresses];
   write [];
   should_add_task |block, _properties| {
-    block.1.txs().iter().any(|tx| tx.outputs().len() > 0)
+    block.1.transaction_bodies().iter().any(|tx| !tx.outputs().is_empty())
   };
   execute |previous_data, task| handle_mean_price(
       task.db_tx,

@@ -1,5 +1,7 @@
 use std::collections::BTreeSet;
 
+use cml_crypto::RawBytesEncoding;
+use cml_multi_era::byron::transaction::ByronTxIn;
 use entity::{
     block::EraValue,
     prelude::*,
@@ -123,7 +125,7 @@ pub struct OutputWithTxData {
 }
 
 pub async fn get_outputs_for_inputs(
-    inputs: &[(Vec<pallas::ledger::traverse::OutputRef>, i64)],
+    inputs: &[(Vec<cml_multi_era::utils::MultiEraTransactionInput>, i64)],
     txn: &DatabaseTransaction,
 ) -> Result<Vec<OutputWithTxData>, DbErr> {
     // avoid querying the DB if there were no inputs
@@ -139,10 +141,18 @@ pub async fn get_outputs_for_inputs(
     // so we know all these pairs are disjoint amongst all transactions
     // https://github.com/dcSpark/carp/issues/46
     for input in inputs.iter().flat_map(|inputs| inputs.0.iter()) {
+        let index = match input.index() {
+            None => return Err(DbErr::Custom("no output index".to_string())),
+            Some(index) => index,
+        };
+        let hash = match input.hash() {
+            None => return Err(DbErr::Custom("no output hash".to_string())),
+            Some(hash) => *hash,
+        };
         output_conditions = output_conditions.add(
             Condition::all()
-                .add(TransactionOutputColumn::OutputIndex.eq(input.index()))
-                .add(TransactionColumn::Hash.eq(input.hash().to_vec())),
+                .add(TransactionOutputColumn::OutputIndex.eq(index))
+                .add(TransactionColumn::Hash.eq(hash.to_raw_bytes().to_vec())),
         );
     }
 
@@ -193,9 +203,7 @@ pub async fn get_outputs_for_inputs(
                 output_index: output.output_index,
             },
             tx_hash: output.tx_hash.clone(),
-            era: <i32 as TryInto<EraValue>>::try_into(output.era)
-                .unwrap()
-                .into(),
+            era: <i32 as TryInto<EraValue>>::try_into(output.era).unwrap(),
         })
         .collect::<Vec<_>>())
 }
@@ -223,7 +231,7 @@ pub fn gen_input_to_output_map(
 }
 
 pub async fn insert_inputs(
-    inputs: &[(Vec<pallas::ledger::traverse::OutputRef>, i64)],
+    inputs: &[(Vec<cml_multi_era::utils::MultiEraTransactionInput>, i64)],
     input_to_output_map: &BTreeMap<Vec<u8>, BTreeMap<i64, OutputWithTxData>>,
     txn: &DatabaseTransaction,
 ) -> Result<Vec<TransactionInputModel>, DbErr> {
@@ -238,11 +246,13 @@ pub async fn insert_inputs(
             .iter()
             .flat_map(|pair| pair.0.iter().enumerate().zip(std::iter::repeat(pair.1)))
             .map(|((idx, input), tx_id)| {
-                let tx_outputs = match input_to_output_map.get(&input.hash().to_vec()) {
+                let input_hash = input.hash().unwrap().to_raw_bytes().to_vec();
+                let input_index = input.index().unwrap() as i64;
+                let tx_outputs = match input_to_output_map.get(&input_hash) {
                     Some(outputs) => outputs,
-                    None => panic!("Failed to find transaction {}", &hex::encode(input.hash())),
+                    None => panic!("Failed to find transaction {}", &hex::encode(input_hash)),
                 };
-                let output = &tx_outputs[&(input.index() as i64)];
+                let output = &tx_outputs[&input_index];
                 TransactionInputActiveModel {
                     utxo_id: Set(output.model.id),
                     address_id: Set(output.model.address_id),

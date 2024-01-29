@@ -1,7 +1,6 @@
-use pallas::ledger::primitives::{
-    byron::{self},
-    Fragment,
-};
+use cml_core::serialization::ToBytes;
+use cml_multi_era::byron::block::ByronBlock;
+use cml_multi_era::MultiEraBlock;
 
 use super::byron_txs::ByronTransactionTask;
 use crate::config::EmptyConfig::EmptyConfig;
@@ -18,14 +17,7 @@ carp_task! {
   write [byron_addresses];
   should_add_task |block, _properties| {
     // recall: txs may have no outputs if they just burn all inputs as fee
-    match block.1 {
-        MultiEraBlock::Byron(main_block) => {
-            main_block
-                .body
-                .tx_payload.iter().any(|payload| payload.transaction.outputs.len() > 0)
-        }
-        _ => false,
-    }
+    block.1.transaction_bodies().iter().any(|tx| !tx.outputs().is_empty())
   };
   execute |previous_data, task| handle_addresses(
       task.db_tx,
@@ -44,11 +36,16 @@ async fn handle_addresses(
 ) -> Result<BTreeMap<Vec<u8>, AddressInBlock>, DbErr> {
     match &block.1 {
         MultiEraBlock::Byron(main_block) => {
-            let tx_outputs: Vec<_> = main_block
-                .body
-                .tx_payload
+            let payload = match main_block {
+                ByronBlock::Main(main) => main.body.tx_payload.clone(),
+                ByronBlock::EpochBoundary(_) => {
+                    return Ok(BTreeMap::<Vec<u8>, AddressInBlock>::default());
+                }
+            };
+
+            let tx_outputs: Vec<_> = payload
                 .iter()
-                .map(|payload| &payload.transaction.outputs)
+                .map(|payload| &payload.byron_tx.outputs)
                 .zip(byron_txs)
                 .collect();
 
@@ -60,7 +57,7 @@ async fn handle_addresses(
             for (address, tx_id) in tx_outputs
                 .iter()
                 .flat_map(|pair| pair.0.iter().zip(std::iter::repeat(pair.1.id)))
-                .map(|(output, tx_id)| (output.address.encode_fragment().unwrap(), tx_id))
+                .map(|(output, tx_id)| (output.address.to_bytes(), tx_id))
             {
                 // we want to keep track of the first tx for each address
                 queued_address.entry(address).or_insert(tx_id);

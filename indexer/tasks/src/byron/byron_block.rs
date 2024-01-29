@@ -1,9 +1,13 @@
 use crate::config::PayloadAndReadonlyConfig::PayloadAndReadonlyConfig;
 use crate::dsl::task_macro::*;
 use crate::era_common::block_from_hash;
+use cml_core::serialization::ToBytes;
+use cml_crypto::{blake2b256, RawBytesEncoding};
+use cml_multi_era::byron::block::ByronBlock;
+use cml_multi_era::MultiEraBlock;
 use entity::{block::EraValue, sea_orm::Set};
 use hex::ToHex;
-use pallas::ledger::primitives::{byron, Fragment};
+use sea_orm::sea_query::all;
 
 carp_task! {
   name ByronBlockTask;
@@ -33,10 +37,21 @@ async fn handle_block(
     readonly: bool,
     include_payload: bool,
 ) -> Result<BlockModel, DbErr> {
-    let hash = block.1.hash().to_vec();
+    let hash = block.1.hash();
+
     if readonly {
         return block_from_hash(db_tx, &hash).await;
     }
+
+    let block_epoch = match block.1 {
+        MultiEraBlock::Byron(byron) => match byron {
+            ByronBlock::EpochBoundary(byron) => byron.header.consensus_data.epoch_id,
+            ByronBlock::Main(byron) => byron.header.consensus_data.byron_slot_id.epoch,
+        },
+        _ => {
+            return Err(DbErr::Custom("Non-byron block in byron task".to_string()));
+        }
+    };
 
     let block_payload = if include_payload {
         hex::decode(block.0).unwrap()
@@ -45,10 +60,10 @@ async fn handle_block(
     };
     let block = BlockActiveModel {
         era: Set(EraValue::Byron.into()),
-        hash: Set(hash),
-        height: Set(block.1.number() as i32),
-        epoch: Set(block.1.header().as_byron().unwrap().consensus_data.0.epoch as i32),
-        slot: Set(block.1.slot() as i32),
+        hash: Set(hash.to_vec()),
+        height: Set(block.1.header().block_number() as i32),
+        epoch: Set(block_epoch as i32),
+        slot: Set(block.1.header().slot() as i32),
         payload: Set(Some(block_payload)),
         ..Default::default()
     };

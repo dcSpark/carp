@@ -7,22 +7,18 @@ use crate::{
 };
 use entity::dex_swap::Operation;
 use entity::sea_orm::{DatabaseTransaction, Set};
-use pallas::{
-    codec::utils::KeepRaw,
-    ledger::{
-        primitives::alonzo,
-        traverse::{MultiEraBlock, MultiEraOutput, MultiEraTx},
-    },
-};
 use std::collections::{BTreeMap, BTreeSet};
 
 /// Returns an output and it's datum only if the output's payment hash is in `payment_hashes`
 /// and the plutus datum is known.
-pub fn filter_outputs_and_datums_by_hash<'b>(
-    outputs: &[MultiEraOutput<'b>],
+pub fn filter_outputs_and_datums_by_hash(
+    outputs: &[cml_multi_era::utils::MultiEraTransactionOutput],
     payment_hashes: &[&str],
-    plutus_data: &[&KeepRaw<alonzo::PlutusData>],
-) -> Vec<(MultiEraOutput<'b>, alonzo::PlutusData)> {
+    plutus_data: &[cml_chain::plutus::PlutusData],
+) -> Vec<(
+    cml_multi_era::utils::MultiEraTransactionOutput,
+    cml_chain::plutus::PlutusData,
+)> {
     let payment_hashes = payment_hashes.iter().map(|&s| Some(s)).collect::<Vec<_>>();
     outputs
         .iter()
@@ -38,16 +34,20 @@ pub fn filter_outputs_and_datums_by_hash<'b>(
 
 /// Returns an output and it's datum only if the output's address is in `addresses`
 /// and the plutus datum is known.
-pub fn filter_outputs_and_datums_by_address<'b>(
-    outputs: &[MultiEraOutput<'b>],
+pub fn filter_outputs_and_datums_by_address(
+    outputs: &[cml_multi_era::utils::MultiEraTransactionOutput],
     addresses: &[&str],
-    plutus_data: &[&KeepRaw<alonzo::PlutusData>],
-) -> Vec<(MultiEraOutput<'b>, alonzo::PlutusData)> {
-    let addresses = addresses.iter().map(|&s| Some(s)).collect::<Vec<_>>();
+    plutus_data: &[cml_chain::plutus::PlutusData],
+) -> Vec<(
+    cml_multi_era::utils::MultiEraTransactionOutput,
+    cml_chain::plutus::PlutusData,
+)> {
+    let addresses = addresses.to_vec();
     outputs
         .iter()
         .filter_map(|o| {
-            if addresses.contains(&o.address().ok().and_then(|a| a.to_bech32().ok()).as_deref()) {
+            let address_string = o.address().to_bech32(None).unwrap_or_default();
+            if addresses.contains(&address_string.as_str()) {
                 get_plutus_datum_for_output(o, plutus_data).map(|datum| (o.clone(), datum))
             } else {
                 None
@@ -82,7 +82,8 @@ pub trait Dex {
     fn queue_mean_price(
         &self,
         queued_prices: &mut Vec<QueuedMeanPrice>,
-        tx: &MultiEraTx,
+        tx: &cml_multi_era::MultiEraTransactionBody,
+        tx_witness: &cml_chain::transaction::TransactionWitnessSet,
         tx_id: i64,
     ) -> Result<(), String>;
 
@@ -90,7 +91,8 @@ pub trait Dex {
     fn queue_swap(
         &self,
         queued_swaps: &mut Vec<QueuedSwap>,
-        tx: &MultiEraTx,
+        tx: &cml_multi_era::MultiEraTransactionBody,
+        tx_witness: &cml_chain::transaction::TransactionWitnessSet,
         tx_id: i64,
         multiera_used_inputs_to_outputs_map: &BTreeMap<Vec<u8>, BTreeMap<i64, OutputWithTxData>>,
     ) -> Result<(), String>;
@@ -109,7 +111,8 @@ impl Dex for Empty {
     fn queue_mean_price(
         &self,
         _queued_prices: &mut Vec<QueuedMeanPrice>,
-        _tx: &MultiEraTx,
+        _tx: &cml_multi_era::MultiEraTransactionBody,
+        _tx_witness: &cml_chain::transaction::TransactionWitnessSet,
         _tx_id: i64,
     ) -> Result<(), String> {
         unimplemented!();
@@ -118,7 +121,8 @@ impl Dex for Empty {
     fn queue_swap(
         &self,
         _queued_swaps: &mut Vec<QueuedSwap>,
-        _tx: &MultiEraTx,
+        _tx: &cml_multi_era::MultiEraTransactionBody,
+        _tx_witness: &cml_chain::transaction::TransactionWitnessSet,
         _tx_id: i64,
         _multiera_used_inputs_to_outputs_map: &BTreeMap<Vec<u8>, BTreeMap<i64, OutputWithTxData>>,
     ) -> Result<(), String> {
@@ -167,11 +171,18 @@ pub async fn handle_mean_price(
     let pool = pool_type;
     let mean_value_trait = pool.as_trait();
     let mut queued_prices = Vec::<QueuedMeanPrice>::default();
-    for (tx_body, cardano_transaction) in block.1.txs().iter().zip(multiera_txs) {
+    for ((tx_body, tx_witness_set), cardano_transaction) in block
+        .1
+        .transaction_bodies()
+        .iter()
+        .zip(block.1.transaction_witness_sets())
+        .zip(multiera_txs)
+    {
         if cardano_transaction.is_valid {
             let result = mean_value_trait.queue_mean_price(
                 &mut queued_prices,
                 tx_body,
+                &tx_witness_set,
                 cardano_transaction.id,
             );
             if result.is_err() {
@@ -269,11 +280,18 @@ pub async fn handle_swap(
     // 1) Parse swaps
     let swap_trait = dex_type.as_trait();
     let mut queued_swaps = Vec::<QueuedSwap>::default();
-    for (tx_body, cardano_transaction) in block.1.txs().iter().zip(multiera_txs) {
+    for ((tx_body, tx_witness_set), cardano_transaction) in block
+        .1
+        .transaction_bodies()
+        .iter()
+        .zip(block.1.transaction_witness_sets())
+        .zip(multiera_txs)
+    {
         if cardano_transaction.is_valid {
             let result = swap_trait.queue_swap(
                 &mut queued_swaps,
                 tx_body,
+                &tx_witness_set,
                 cardano_transaction.id,
                 multiera_used_inputs_to_outputs_map,
             );

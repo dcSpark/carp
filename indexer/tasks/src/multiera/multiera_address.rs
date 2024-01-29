@@ -7,13 +7,13 @@ use cml_chain::{
 };
 use cml_core::serialization::{FromBytes, Serialize, ToBytes};
 use cml_crypto::RawBytesEncoding;
+use cml_multi_era::allegra::MIRAction;
+use cml_multi_era::byron::block::ByronBlock;
+use cml_multi_era::utils::MultiEraCertificate;
+use cml_multi_era::MultiEraBlock;
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction},
-};
-use pallas::ledger::{
-    primitives::{alonzo::Certificate, Fragment},
-    traverse::{MultiEraBlock, MultiEraCert, MultiEraOutput, MultiEraTx},
 };
 use std::ops::Deref;
 
@@ -27,6 +27,7 @@ use crate::config::EmptyConfig::EmptyConfig;
 use crate::dsl::database_task::BlockGlobalInfo;
 
 use crate::dsl::task_macro::*;
+use crate::utils::blake2b256;
 
 carp_task! {
   name MultieraAddressTask;
@@ -68,15 +69,17 @@ async fn handle_addresses(
     let mut queued_address_credential = BTreeSet::<QueuedAddressCredentialRelation>::default();
     let mut queued_address = BTreeMap::<Vec<u8>, i64>::default();
 
-    for (tx_body, cardano_transaction) in block.1.txs().iter().zip(multiera_txs) {
-        for cert in tx_body.certs() {
-            queue_certificate(
-                vkey_relation_map,
-                &mut queued_address_credential,
-                &mut queued_address,
-                cardano_transaction.id,
-                &cert,
-            );
+    for (tx_body, cardano_transaction) in block.1.transaction_bodies().iter().zip(multiera_txs) {
+        if let Some(certs) = tx_body.certs() {
+            for cert in certs {
+                queue_certificate(
+                    vkey_relation_map,
+                    &mut queued_address_credential,
+                    &mut queued_address,
+                    cardano_transaction.id,
+                    &cert,
+                );
+            }
         }
 
         for output in tx_body.outputs() {
@@ -105,18 +108,14 @@ async fn handle_addresses(
             );
         }
 
-        for withdrawal in tx_body.withdrawals().collect::<Vec<(&[u8], u64)>>() {
-            let reward_addr = RewardAddress::from_address(
-                &cml_chain::address::Address::from_bytes(withdrawal.0.into()).unwrap(),
-            )
-            .unwrap();
+        for (reward_addr, _) in tx_body.withdrawals().cloned().unwrap_or_default().iter() {
             queue_address_credential(
                 vkey_relation_map,
                 &mut queued_address_credential,
                 &mut queued_address,
                 cardano_transaction.id,
                 &reward_addr.clone().to_address().to_raw_bytes(),
-                reward_addr.payment,
+                reward_addr.payment.clone(),
                 TxCredentialRelationValue::Withdrawal,
                 AddressCredentialRelationValue::PaymentKey,
             );
@@ -133,15 +132,15 @@ fn queue_certificate(
     queued_address_credential: &mut BTreeSet<QueuedAddressCredentialRelation>,
     queued_address: &mut BTreeMap<Vec<u8>, i64>,
     tx_id: i64,
-    cert: &MultiEraCert,
+    cert: &MultiEraCertificate,
 ) {
     // TODO: what's the policy for handling options? At the moment of writing, all certificates
     // are "alonzo-compatible", but that might change in a future HF. Should Carp skip data that
     // it doesn't understand or instead panic? For now, opting to panic as it seems to be what's
     // used for other options.
-    match cert.as_alonzo().unwrap() {
-        Certificate::StakeDelegation(credential, pool) => {
-            let credential = credential.encode_fragment().unwrap();
+    match cert {
+        MultiEraCertificate::StakeDelegation(delegation) => {
+            let credential = delegation.stake_credential.to_canonical_cbor_bytes();
 
             vkey_relation_map.add_relation(
                 tx_id,
@@ -151,15 +150,12 @@ fn queue_certificate(
 
             vkey_relation_map.add_relation(
                 tx_id,
-                RelationMap::keyhash_to_pallas(
-                    cml_chain::crypto::Ed25519KeyHash::from_raw_bytes(pool.as_slice()).unwrap(),
-                )
-                .as_slice(),
+                delegation.pool.to_raw_bytes(),
                 TxCredentialRelationValue::DelegationTarget,
             );
         }
-        Certificate::StakeRegistration(credential) => {
-            let credential = credential.encode_fragment().unwrap();
+        MultiEraCertificate::StakeRegistration(registration) => {
+            let credential = registration.stake_credential.to_canonical_cbor_bytes();
 
             vkey_relation_map.add_relation(
                 tx_id,
@@ -167,8 +163,8 @@ fn queue_certificate(
                 TxCredentialRelationValue::StakeRegistration,
             );
         }
-        Certificate::StakeDeregistration(credential) => {
-            let credential = credential.encode_fragment().unwrap();
+        MultiEraCertificate::StakeDeregistration(deregistration) => {
+            let credential = deregistration.stake_credential.to_canonical_cbor_bytes();
 
             vkey_relation_map.add_relation(
                 tx_id,
@@ -176,16 +172,8 @@ fn queue_certificate(
                 TxCredentialRelationValue::StakeDeregistration,
             );
         }
-        Certificate::PoolRegistration {
-            operator,
-            pool_owners,
-            reward_account,
-            ..
-        } => {
-            let operator_credential =
-                pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(*operator)
-                    .encode_fragment()
-                    .unwrap();
+        MultiEraCertificate::PoolRegistration(registration) => {
+            let operator_credential = registration.pool_params.operator.to_raw_bytes().to_vec();
 
             vkey_relation_map.add_relation(
                 tx_id,
@@ -193,10 +181,7 @@ fn queue_certificate(
                 TxCredentialRelationValue::PoolOperator,
             );
 
-            let reward_addr = RewardAddress::from_address(
-                &cml_chain::address::Address::from_bytes(reward_account.to_vec()).unwrap(),
-            )
-            .unwrap();
+            let reward_addr = registration.pool_params.reward_account.clone();
 
             queue_address_credential(
                 vkey_relation_map,
@@ -209,11 +194,8 @@ fn queue_certificate(
                 AddressCredentialRelationValue::PaymentKey,
             );
 
-            for &owner in pool_owners.iter() {
-                let owner_credential =
-                    pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(owner)
-                        .encode_fragment()
-                        .unwrap();
+            for &owner in registration.pool_params.pool_owners.iter() {
+                let owner_credential = owner.to_raw_bytes().to_vec();
 
                 vkey_relation_map.add_relation(
                     tx_id,
@@ -222,27 +204,25 @@ fn queue_certificate(
                 );
             }
         }
-        Certificate::PoolRetirement(key_hash, _) => {
-            let operator_credential =
-                pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(*key_hash)
-                    .encode_fragment()
-                    .unwrap();
+        MultiEraCertificate::PoolRetirement(retirement) => {
+            let operator_credential = retirement.pool.to_raw_bytes().to_vec();
             vkey_relation_map.add_relation(
                 tx_id,
                 &operator_credential,
                 TxCredentialRelationValue::PoolOperator,
             );
         }
-        Certificate::GenesisKeyDelegation(_, _, _) => {
+        MultiEraCertificate::GenesisKeyDelegation(_) => {
             // genesis keys aren't stake credentials
         }
-        Certificate::MoveInstantaneousRewardsCert(mir) => {
-            if let pallas::ledger::primitives::alonzo::InstantaneousRewardTarget::StakeCredentials(
-                credential_pairs,
-            ) = &mir.target
+        MultiEraCertificate::MoveInstantaneousRewardsCert(mir) => {
+            if let MIRAction::ToStakeCredentials {
+                to_stake_credentials,
+                ..
+            } = &mir.move_instantaneous_reward.action
             {
-                for pair in credential_pairs.deref() {
-                    let credential = pair.0.encode_fragment().unwrap();
+                for pair in to_stake_credentials.deref() {
+                    let credential = pair.0.to_canonical_cbor_bytes();
 
                     vkey_relation_map.add_relation(
                         tx_id,
@@ -252,6 +232,18 @@ fn queue_certificate(
                 }
             }
         }
+        MultiEraCertificate::RegCert(_) => {}
+        MultiEraCertificate::UnregCert(_) => {}
+        MultiEraCertificate::VoteDelegCert(_) => {}
+        MultiEraCertificate::StakeVoteDelegCert(_) => {}
+        MultiEraCertificate::StakeRegDelegCert(_) => {}
+        MultiEraCertificate::VoteRegDelegCert(_) => {}
+        MultiEraCertificate::StakeVoteRegDelegCert(_) => {}
+        MultiEraCertificate::AuthCommitteeHotCert(_) => {}
+        MultiEraCertificate::ResignCommitteeColdCert(_) => {}
+        MultiEraCertificate::RegDrepCert(_) => {}
+        MultiEraCertificate::UnregDrepCert(_) => {}
+        MultiEraCertificate::UpdateDrepCert(_) => {}
     };
 }
 
@@ -260,21 +252,15 @@ fn queue_output(
     queued_credentials: &mut RelationMap,
     queued_address_credential: &mut BTreeSet<QueuedAddressCredentialRelation>,
     queued_address: &mut BTreeMap<Vec<u8>, i64>,
-    tx_body: &MultiEraTx,
+    _tx_body: &cml_multi_era::MultiEraTransactionBody,
     tx_id: i64,
-    output: &MultiEraOutput,
+    output: &cml_multi_era::utils::MultiEraTransactionOutput,
     output_relation: TxCredentialRelationValue,
     output_stake_relation: TxCredentialRelationValue,
 ) {
     use cml_chain::address::Address;
 
-    let pallas_address = output
-        .address()
-        .map_err(|e| panic!("{:?} {:?}", e, hex::encode(tx_body.hash())))
-        .unwrap();
-    let addr = Address::from_bytes(pallas_address.to_vec())
-        .map_err(|e| panic!("{:?} {:?}", e, hex::encode(tx_body.hash())))
-        .unwrap();
+    let addr = output.address();
 
     let address_relation = AddressCredentialRelationValue::PaymentKey;
 

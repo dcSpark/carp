@@ -1,12 +1,11 @@
+use cml_core::serialization::{Serialize, ToBytes};
+use cml_multi_era::utils::MultiEraTransactionOutput;
+use cml_multi_era::MultiEraTransactionBody;
 use std::collections::BTreeMap;
 
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction, Set},
-};
-use pallas::ledger::{
-    primitives::Fragment,
-    traverse::{MultiEraBlock, MultiEraOutput, MultiEraTx},
 };
 
 use super::multiera_address::MultieraAddressTask;
@@ -26,7 +25,7 @@ carp_task! {
   write [multiera_outputs];
   should_add_task |block, _properties| {
     // recall: txs may have no outputs if they just burn all inputs as fee
-    block.1.txs().iter().any(|tx| tx.outputs().len() > 0)
+    block.1.transaction_bodies().iter().any(|tx| !tx.outputs().is_empty())
   };
   execute |previous_data, task| handle_output(
       task.db_tx,
@@ -58,7 +57,7 @@ async fn handle_output(
 ) -> Result<Vec<TransactionOutputModel>, DbErr> {
     let mut queued_output = Vec::<QueuedOutput>::default();
 
-    for (tx_body, cardano_transaction) in block.1.txs().iter().zip(multiera_txs) {
+    for (tx_body, cardano_transaction) in block.1.transaction_bodies().iter().zip(multiera_txs) {
         let outputs = tx_body.outputs();
         if cardano_transaction.is_valid {
             for (idx, output) in outputs.iter().enumerate() {
@@ -72,12 +71,12 @@ async fn handle_output(
             }
         }
         if !cardano_transaction.is_valid {
-            if let Some(output) = tx_body.collateral_return().as_ref() {
+            if let Some(output) = tx_body.collateral_return() {
                 queue_output(
                     &mut queued_output,
                     tx_body,
                     cardano_transaction.id,
-                    output,
+                    &output,
                     // only one collateral output is allowed
                     // and its index is output.len()
                     outputs.len(),
@@ -103,19 +102,19 @@ async fn handle_output(
 
 fn queue_output(
     queued_output: &mut Vec<QueuedOutput>,
-    tx_body: &MultiEraTx<'_>,
+    _tx_body: &MultiEraTransactionBody,
     tx_id: i64,
-    output: &MultiEraOutput,
+    output: &MultiEraTransactionOutput,
     idx: usize,
 ) {
-    let addr = output
-        .address()
-        .map_err(|e| panic!("{:?} {:?}", e, hex::encode(tx_body.hash())))
-        .unwrap();
+    let addr = output.address();
 
     queued_output.push(QueuedOutput {
-        payload: output.encode(),
-        address: addr.to_vec(),
+        payload: match output {
+            MultiEraTransactionOutput::Byron(byron) => byron.to_bytes(),
+            MultiEraTransactionOutput::Shelley(shelley) => shelley.to_canonical_cbor_bytes(),
+        },
+        address: addr.to_raw_bytes().to_vec(),
         tx_id,
         idx,
     });

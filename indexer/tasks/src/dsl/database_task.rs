@@ -66,12 +66,14 @@ pub struct GenesisTaskRegistryEntry {
 
 #[derive(Copy, Clone)]
 pub struct ByronTaskRegistryEntry {
-    pub builder: &'static (dyn for<'a> TaskBuilder<'a, cml_multi_era::MultiEraBlock, BlockGlobalInfo> + Sync),
+    pub builder: &'static (dyn for<'a> TaskBuilder<'a, cml_multi_era::MultiEraBlock, BlockGlobalInfo>
+                  + Sync),
 }
 
 #[derive(Copy, Clone)]
 pub struct MultieraTaskRegistryEntry {
-    pub builder: &'static (dyn for<'a> TaskBuilder<'a, cml_multi_era::MultiEraBlock, BlockGlobalInfo> + Sync),
+    pub builder: &'static (dyn for<'a> TaskBuilder<'a, cml_multi_era::MultiEraBlock, BlockGlobalInfo>
+                  + Sync),
 }
 
 inventory::collect!(TaskRegistryEntry);

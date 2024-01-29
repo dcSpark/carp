@@ -7,8 +7,6 @@ use crate::execution_plan::ExecutionPlan;
 use crate::utils::find_task_registry_entry;
 use crate::utils::TaskPerfAggregator;
 use entity::sea_orm::{prelude::*, DatabaseTransaction};
-use pallas::ledger::primitives::alonzo;
-use pallas::ledger::traverse::MultiEraBlock;
 use shred::{DispatcherBuilder, World};
 use tokio::runtime::Handle;
 
