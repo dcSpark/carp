@@ -7,9 +7,6 @@ edition = "2021"
 name = "tasks"
 
 [dependencies]
-dcspark-core = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "572af17e3e22101dee64e0999049a571aea26e0f" }
-dcspark-blockchain-source = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "572af17e3e22101dee64e0999049a571aea26e0f" }
-
 # [local]
 entity = { path = "../entity" }
 

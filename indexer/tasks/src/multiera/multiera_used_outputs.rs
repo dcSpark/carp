@@ -61,20 +61,13 @@ async fn handle_output(
         let outputs = tx_body.outputs();
         if cardano_transaction.is_valid {
             for (idx, output) in outputs.iter().enumerate() {
-                queue_output(
-                    &mut queued_output,
-                    tx_body,
-                    cardano_transaction.id,
-                    output,
-                    idx,
-                );
+                queue_output(&mut queued_output, cardano_transaction.id, output, idx);
             }
         }
         if !cardano_transaction.is_valid {
             if let Some(output) = tx_body.collateral_return() {
                 queue_output(
                     &mut queued_output,
-                    tx_body,
                     cardano_transaction.id,
                     &output,
                     // only one collateral output is allowed
@@ -102,7 +95,6 @@ async fn handle_output(
 
 fn queue_output(
     queued_output: &mut Vec<QueuedOutput>,
-    _tx_body: &MultiEraTransactionBody,
     tx_id: i64,
     output: &MultiEraTransactionOutput,
     idx: usize,
