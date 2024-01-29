@@ -144,7 +144,7 @@ impl Dex for MinSwapV1 {
                 let target_asset = build_asset(parse_asset_item(0, 0)?, parse_asset_item(0, 1)?);
 
                 // Get transaction output
-                let output_address_items = vec![
+                let output_address_items = [
                     String::from("01"), // mainnet
                     input_datum["fields"][1]["fields"][0]["fields"][0]["bytes"]
                         .as_str()

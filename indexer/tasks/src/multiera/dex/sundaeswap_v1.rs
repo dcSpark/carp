@@ -134,7 +134,7 @@ impl Dex for SundaeSwapV1 {
                 }
 
                 // Get transaction output
-                let output_address_items = vec![
+                let output_address_items = [
                     String::from("01"), // mainnet
                     input_datum["fields"][1]["fields"][0]["fields"][0]["fields"][0]["fields"][0]
                         ["bytes"]
