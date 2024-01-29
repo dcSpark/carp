@@ -1,18 +1,18 @@
 source:
   type: cardano_net
-  relay: 
-#    - relays-new.cardano-mainnet.iohk.io
-#    - 3001
-    - preview-node.world.dev.cardano.org
-    - 30002
+  relay:
+    - relays-new.cardano-mainnet.iohk.io
+    - 3001
+      # - preview-node.world.dev.cardano.org
+      # - 30002
       # - preprod-node.world.dev.cardano.org
-      # - 30000
+    # - 30000
 
 sink:
   type: cardano
   db:
     type: postgres
-    database_url: postgresql://postgres:1234@localhost:5432/postgres
-  network: preview # preview / preprod / testnet
+    database_url: postgresql://carp:1234@localhost:5432/carp_mainnet
+  network: mainnet # preview / preprod / testnet
 
 start_block:
