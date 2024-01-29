@@ -37,12 +37,6 @@ export type TransactionInfo = {
    */
   payload: string;
 
-  outputs: {
-    asset: { policyId: PolicyId; assetName: AssetName } | null;
-    amount: string;
-    address: string;
-  }[];
-
   metadata: string | null;
 
   inputCredentials: string[];

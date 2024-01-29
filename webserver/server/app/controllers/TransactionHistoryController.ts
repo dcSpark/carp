@@ -33,7 +33,9 @@ export class TransactionHistoryController extends Controller {
     requestBody: EndpointTypes[typeof route]['input'],
     @Res()
     errorResponse: TsoaResponse<
-      StatusCodes.CONFLICT | StatusCodes.BAD_REQUEST | StatusCodes.UNPROCESSABLE_ENTITY,
+      | StatusCodes.CONFLICT
+      | StatusCodes.BAD_REQUEST
+      | StatusCodes.UNPROCESSABLE_ENTITY,
       ErrorShape
     >
   ): Promise<EndpointTypes[typeof route]['response']> {
