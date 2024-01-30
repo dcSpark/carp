@@ -41,7 +41,7 @@ impl Dex for WingRidersV1 {
         .first()
         {
             let pallas_datum = pallas::ledger::primitives::alonzo::PlutusData::decode_fragment(
-                &datum.to_canonical_cbor_bytes(),
+                &datum.to_cbor_bytes(),
             )
             .map_err(|err| format!("can't decode datum: {err}"))?;
             let datum = pallas_datum.to_json();
@@ -104,7 +104,7 @@ impl Dex for WingRidersV1 {
             // Get pool input from redemeers
             let pool_input_redeemer = redeemers.first().ok_or("No redeemers")?;
             let pallas_datum = pallas::ledger::primitives::alonzo::PlutusData::decode_fragment(
-                &pool_input_redeemer.data.to_canonical_cbor_bytes(),
+                &pool_input_redeemer.data.to_cbor_bytes(),
             )
             .map_err(|err| format!("can't decode datum: {err}"))?;
 
@@ -119,7 +119,7 @@ impl Dex for WingRidersV1 {
                 .ok_or("Failed to find main redeemer")?;
             let redeemer = redeemer.data.clone();
             let pallas_datum = pallas::ledger::primitives::alonzo::PlutusData::decode_fragment(
-                &redeemer.to_canonical_cbor_bytes(),
+                &redeemer.to_cbor_bytes(),
             )
             .map_err(|err| format!("can't decode redeemer datum: {err}"))?;
             let redeemer = pallas_datum.to_json();
@@ -159,7 +159,7 @@ impl Dex for WingRidersV1 {
                 .unwrap();
 
                 let parent_datum = pallas::ledger::primitives::alonzo::PlutusData::decode_fragment(
-                    &parent_datum.to_canonical_cbor_bytes(),
+                    &parent_datum.to_cbor_bytes(),
                 )
                 .map_err(|err| format!("can't decode datum: {err}"))?
                 .to_json();
@@ -182,7 +182,7 @@ impl Dex for WingRidersV1 {
                 )
                 .unwrap();
                 let input_datum = pallas::ledger::primitives::alonzo::PlutusData::decode_fragment(
-                    &input_datum.to_canonical_cbor_bytes(),
+                    &input_datum.to_cbor_bytes(),
                 )
                 .map_err(|err| format!("can't decode redeemer datum: {err}"))?
                 .to_json();

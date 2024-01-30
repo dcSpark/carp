@@ -83,7 +83,7 @@ async fn handle_metadata(
                 |((label, metadata), tx_id)| TransactionMetadataActiveModel {
                     tx_id: Set(*tx_id),
                     label: Set(label.to_le_bytes().to_vec()),
-                    payload: Set(metadata.to_canonical_cbor_bytes()),
+                    payload: Set(metadata.to_cbor_bytes()),
                     ..Default::default()
                 },
             ),

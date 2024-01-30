@@ -68,7 +68,7 @@ async fn handle(
                     _ => continue,
                 };
 
-                let credential = credential.to_canonical_cbor_bytes();
+                let credential = credential.to_cbor_bytes();
 
                 let stake_credential_id = multiera_stake_credential
                     .get(&credential.to_vec())

@@ -104,7 +104,7 @@ fn queue_output(
     queued_output.push(QueuedOutput {
         payload: match output {
             MultiEraTransactionOutput::Byron(byron) => byron.to_bytes(),
-            MultiEraTransactionOutput::Shelley(shelley) => shelley.to_canonical_cbor_bytes(),
+            MultiEraTransactionOutput::Shelley(shelley) => shelley.to_cbor_bytes(),
         },
         address: addr.to_raw_bytes().to_vec(),
         tx_id,

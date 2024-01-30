@@ -67,7 +67,7 @@ async fn handle_tx(
         .enumerate()
         .map(|(idx, tx)| {
             let tx_payload = if include_payload {
-                tx.to_canonical_cbor_bytes()
+                tx.to_cbor_bytes()
             } else {
                 vec![]
             };

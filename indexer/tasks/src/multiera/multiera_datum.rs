@@ -77,7 +77,7 @@ async fn handle_datum(
                 .or_insert_with(|| cardano_transaction.id);
             hash_to_data
                 .entry(hash)
-                .or_insert_with(|| datum.to_canonical_cbor_bytes());
+                .or_insert_with(|| datum.to_cbor_bytes());
         }
         for output in tx_body.outputs().iter() {
             let output = match output {
@@ -106,7 +106,7 @@ async fn handle_datum(
                         .or_insert_with(|| cardano_transaction.id);
                     hash_to_data
                         .entry(hash)
-                        .or_insert_with(|| datum.to_canonical_cbor_bytes());
+                        .or_insert_with(|| datum.to_cbor_bytes());
                 }
             };
         }

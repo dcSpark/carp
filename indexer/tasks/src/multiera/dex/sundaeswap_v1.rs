@@ -38,7 +38,7 @@ impl Dex for SundaeSwapV1 {
         .first()
         {
             let pallas_datum = pallas::ledger::primitives::alonzo::PlutusData::decode_fragment(
-                &datum.to_canonical_cbor_bytes(),
+                &datum.to_cbor_bytes(),
             )
             .map_err(|err| format!("can't decode datum: {err}"))?;
             let datum = pallas_datum.to_json();
@@ -86,7 +86,7 @@ impl Dex for SundaeSwapV1 {
         .first()
         {
             let pallas_datum = pallas::ledger::primitives::alonzo::PlutusData::decode_fragment(
-                &main_datum.to_canonical_cbor_bytes(),
+                &main_datum.to_cbor_bytes(),
             )
             .map_err(|err| format!("can't decode datum: {err}"))?;
             let main_datum = pallas_datum.to_json();
@@ -119,7 +119,7 @@ impl Dex for SundaeSwapV1 {
                 &tx_witness.plutus_datums.clone().unwrap_or_default(),
             ) {
                 let pallas_datum = pallas::ledger::primitives::alonzo::PlutusData::decode_fragment(
-                    &input_datum.to_canonical_cbor_bytes(),
+                    &input_datum.to_cbor_bytes(),
                 )
                 .map_err(|err| format!("can't decode datum: {err}"))?;
                 let input_datum = pallas_datum.to_json();

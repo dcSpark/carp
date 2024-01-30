@@ -713,7 +713,7 @@ fn get_projected_nft_redeemers(redeemers: &[Redeemer]) -> Result<BTreeMap<i64, R
             continue;
         }
 
-        match Redeem::try_from(redeemer.data.to_canonical_cbor_bytes().as_slice()) {
+        match Redeem::try_from(redeemer.data.to_cbor_bytes().as_slice()) {
             Ok(redeem) => {
                 result.insert(redeemer.index as i64, redeem);
             }

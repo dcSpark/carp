@@ -140,7 +140,7 @@ fn queue_certificate(
     // used for other options.
     match cert {
         MultiEraCertificate::StakeDelegation(delegation) => {
-            let credential = delegation.stake_credential.to_canonical_cbor_bytes();
+            let credential = delegation.stake_credential.to_cbor_bytes();
 
             vkey_relation_map.add_relation(
                 tx_id,
@@ -155,7 +155,7 @@ fn queue_certificate(
             );
         }
         MultiEraCertificate::StakeRegistration(registration) => {
-            let credential = registration.stake_credential.to_canonical_cbor_bytes();
+            let credential = registration.stake_credential.to_cbor_bytes();
 
             vkey_relation_map.add_relation(
                 tx_id,
@@ -164,7 +164,7 @@ fn queue_certificate(
             );
         }
         MultiEraCertificate::StakeDeregistration(deregistration) => {
-            let credential = deregistration.stake_credential.to_canonical_cbor_bytes();
+            let credential = deregistration.stake_credential.to_cbor_bytes();
 
             vkey_relation_map.add_relation(
                 tx_id,
@@ -222,7 +222,7 @@ fn queue_certificate(
             } = &mir.move_instantaneous_reward.action
             {
                 for pair in to_stake_credentials.deref() {
-                    let credential = pair.0.to_canonical_cbor_bytes();
+                    let credential = pair.0.to_cbor_bytes();
 
                     vkey_relation_map.add_relation(
                         tx_id,
