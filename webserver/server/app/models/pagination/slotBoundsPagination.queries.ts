@@ -21,35 +21,40 @@ export interface ISlotBoundsPaginationQuery {
   result: ISlotBoundsPaginationResult;
 }
 
-const slotBoundsPaginationIR: any = {"usedParamSet":{"low":true,"high":true},"params":[{"name":"low","required":true,"transform":{"type":"scalar"},"locs":[{"a":193,"b":197}]},{"name":"high","required":true,"transform":{"type":"scalar"},"locs":[{"a":449,"b":454}]}],"statement":"WITH MIN_HASH AS\n\t(SELECT COALESCE(\"Transaction\".ID,\n\n\t\t\t\t\t\t\t\t\t\t-1) AS MIN_TX_ID,\n\t\t\tSLOT AS MIN_SLOT\n\t\tFROM \"Transaction\"\n\t\tJOIN \"Block\" ON \"Block\".ID = \"Transaction\".BLOCK_ID\n\t\tWHERE SLOT <= :low!\n\t\tORDER BY \"Block\".ID DESC, \"Transaction\".ID DESC\n\t\tLIMIT 1),\n\tMAX_HASH AS\n\t(SELECT SLOT AS MAX_SLOT,\n\t\t\tCOALESCE(MAX(\"Transaction\".ID),\n\n\t\t\t\t-2) AS MAX_TX_ID\n\t\tFROM \"Transaction\"\n\t\tJOIN \"Block\" ON \"Transaction\".BLOCK_ID = \"Block\".ID\n\t\tWHERE SLOT <= :high!\n\t\tGROUP BY \"Block\".ID\n\t\tORDER BY \"Block\".ID DESC\n\t\tLIMIT 1)\nSELECT *\nFROM MIN_HASH\nLEFT JOIN MAX_HASH ON 1 = 1"};
+const slotBoundsPaginationIR: any = {"usedParamSet":{"low":true,"high":true},"params":[{"name":"low","required":true,"transform":{"type":"scalar"},"locs":[{"a":281,"b":285}]},{"name":"high","required":true,"transform":{"type":"scalar"},"locs":[{"a":668,"b":673}]}],"statement":"WITH\nmin_hash AS\n(\n         SELECT   COALESCE(\"Transaction\".id, -1) AS min_tx_id,\n                  slot                           AS min_slot\n         FROM     \"Transaction\"\n         JOIN     \"Block\"\n         ON       \"Block\".id = \"Transaction\".block_id\n         WHERE    slot <= :low!\n         ORDER BY \"Block\".id DESC,\n                  \"Transaction\".id DESC\n         LIMIT 1\n),\nmax_hash AS\n(\n         SELECT   slot                                AS max_slot,\n                  COALESCE(Max(\"Transaction\".id), -2) AS max_tx_id\n         FROM     \"Transaction\"\n         JOIN     \"Block\"\n         ON       \"Transaction\".block_id = \"Block\".id\n         WHERE    slot <= :high!\n         GROUP BY \"Block\".id\n         ORDER BY \"Block\".id DESC\n         LIMIT 1\n)\nSELECT    *\nFROM      min_hash\nLEFT JOIN max_hash\nON        1 = 1"};
 
 /**
  * Query generated from SQL:
  * ```
- * WITH MIN_HASH AS
- * 	(SELECT COALESCE("Transaction".ID,
- * 
- * 										-1) AS MIN_TX_ID,
- * 			SLOT AS MIN_SLOT
- * 		FROM "Transaction"
- * 		JOIN "Block" ON "Block".ID = "Transaction".BLOCK_ID
- * 		WHERE SLOT <= :low!
- * 		ORDER BY "Block".ID DESC, "Transaction".ID DESC
- * 		LIMIT 1),
- * 	MAX_HASH AS
- * 	(SELECT SLOT AS MAX_SLOT,
- * 			COALESCE(MAX("Transaction".ID),
- * 
- * 				-2) AS MAX_TX_ID
- * 		FROM "Transaction"
- * 		JOIN "Block" ON "Transaction".BLOCK_ID = "Block".ID
- * 		WHERE SLOT <= :high!
- * 		GROUP BY "Block".ID
- * 		ORDER BY "Block".ID DESC
- * 		LIMIT 1)
- * SELECT *
- * FROM MIN_HASH
- * LEFT JOIN MAX_HASH ON 1 = 1
+ * WITH
+ * min_hash AS
+ * (
+ *          SELECT   COALESCE("Transaction".id, -1) AS min_tx_id,
+ *                   slot                           AS min_slot
+ *          FROM     "Transaction"
+ *          JOIN     "Block"
+ *          ON       "Block".id = "Transaction".block_id
+ *          WHERE    slot <= :low!
+ *          ORDER BY "Block".id DESC,
+ *                   "Transaction".id DESC
+ *          LIMIT 1
+ * ),
+ * max_hash AS
+ * (
+ *          SELECT   slot                                AS max_slot,
+ *                   COALESCE(Max("Transaction".id), -2) AS max_tx_id
+ *          FROM     "Transaction"
+ *          JOIN     "Block"
+ *          ON       "Transaction".block_id = "Block".id
+ *          WHERE    slot <= :high!
+ *          GROUP BY "Block".id
+ *          ORDER BY "Block".id DESC
+ *          LIMIT 1
+ * )
+ * SELECT    *
+ * FROM      min_hash
+ * LEFT JOIN max_hash
+ * ON        1 = 1
  * ```
  */
 export const slotBoundsPagination = new PreparedQuery<ISlotBoundsPaginationParams,ISlotBoundsPaginationResult>(slotBoundsPaginationIR);
