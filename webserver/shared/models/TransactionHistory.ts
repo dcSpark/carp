@@ -1,6 +1,5 @@
 import type { Address } from "./Address";
 import type { BlockSubset } from "./BlockLatest";
-import { AssetName, PolicyId } from "./PolicyIdAssetMap";
 import type { Pagination, RelationFilter } from "./common";
 
 export type TransactionHistoryRequest = {
@@ -10,7 +9,11 @@ export type TransactionHistoryRequest = {
   /** Defaults to `ADDRESS_LIMIT.RESPONSE` */
   limit?: number;
 
+  /** This limits the transactions in the result to this range of slots.
+   * Everything else is filtered out */
   slotLimits?: SlotLimits;
+  /** If this is set to true, the result includes the input addresses (which are
+   * not part of the tx), and the metadata (if any) */
   withInputContext?: boolean;
 } & Pagination;
 
@@ -52,6 +55,8 @@ export type TransactionHistoryResponse = {
 };
 
 export type SlotLimits = {
+  // this is exclusive
   from: number;
+  // this is inclusive
   to: number;
 };
