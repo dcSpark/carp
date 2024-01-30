@@ -12,6 +12,7 @@ export async function historyForCredentials(
     stakeCredentials: Buffer[];
     relationFilter: RelationFilter;
     limit: number;
+    withInputContext?: boolean;
   }
 ): Promise<TransactionHistoryResponse> {
   if (request.stakeCredentials.length === 0) return { transactions: [] };
@@ -22,6 +23,7 @@ export async function historyForCredentials(
       limit: request.limit.toString(),
       until_tx_id: request.until.tx_id.toString(),
       relation: request.relationFilter,
+      with_input_context: !!request.withInputContext,
     },
     request.dbTx
   );
@@ -38,12 +40,16 @@ export async function historyForCredentials(
       },
 
       transaction: {
-        hash: entry.hash.toString('hex'),
-        payload: entry.payload.toString('hex'),
-        metadata: entry.metadata && entry.metadata.toString('hex'),
-        inputCredentials: entry.input_addresses
-          ? (entry.input_addresses as string[]).map(getPaymentCred)
-          : [],
+        ...{
+          hash: entry.hash.toString('hex'),
+          payload: entry.payload.toString('hex'),
+        },
+        ...(request.withInputContext && {
+          metadata: entry.metadata && entry.metadata.toString('hex'),
+          inputCredentials: entry.input_addresses
+            ? (entry.input_addresses as string[]).map(getPaymentCred)
+            : [],
+        }),
       },
     })),
   };
@@ -54,6 +60,7 @@ export async function historyForAddresses(
     addresses: Buffer[];
     dbTx: PoolClient;
     limit: number;
+    withInputContext?: boolean;
   }
 ): Promise<TransactionHistoryResponse> {
   if (request.addresses?.length === 0) return { transactions: [] };
@@ -63,6 +70,7 @@ export async function historyForAddresses(
       after_tx_id: (request.after?.tx_id ?? -1)?.toString(),
       limit: request.limit.toString(),
       until_tx_id: request.until.tx_id.toString(),
+      with_input_context: !!request.withInputContext,
     },
     request.dbTx
   );
@@ -79,12 +87,16 @@ export async function historyForAddresses(
       },
 
       transaction: {
-        hash: entry.hash.toString('hex'),
-        payload: entry.payload.toString('hex'),
-        metadata: entry.metadata && entry.metadata.toString('hex'),
-        inputCredentials: entry.input_addresses
-          ? (entry.input_addresses as string[]).map(getPaymentCred)
-          : [],
+        ...{
+          hash: entry.hash.toString('hex'),
+          payload: entry.payload.toString('hex'),
+        },
+        ...(request.withInputContext && {
+          metadata: entry.metadata && entry.metadata.toString('hex'),
+          inputCredentials: entry.input_addresses
+            ? (entry.input_addresses as string[]).map(getPaymentCred)
+            : [],
+        }),
       },
     })),
   };

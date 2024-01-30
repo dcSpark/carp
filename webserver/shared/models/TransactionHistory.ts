@@ -11,6 +11,7 @@ export type TransactionHistoryRequest = {
   limit?: number;
 
   slotLimits?: SlotLimits;
+  withInputContext?: boolean;
 } & Pagination;
 
 export type BlockInfo = BlockSubset & {
@@ -37,9 +38,9 @@ export type TransactionInfo = {
    */
   payload: string;
 
-  metadata: string | null;
+  metadata?: string | null;
 
-  inputCredentials: string[];
+  inputCredentials?: string[];
 };
 
 export type TxAndBlockInfo = {

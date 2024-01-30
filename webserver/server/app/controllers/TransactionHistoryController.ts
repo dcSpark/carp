@@ -125,6 +125,7 @@ export class TransactionHistoryController extends Controller {
         limit: requestBody.limit ?? ADDRESS_LIMIT.RESPONSE,
         until,
         dbTx,
+        withInputContext: !!requestBody.withInputContext
       };
       const result = await Promise.all([
         historyForCredentials({

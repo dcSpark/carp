@@ -14,6 +14,7 @@ export interface ISqlHistoryForCredentialsParams {
   limit?: NumberOrString | null | void;
   relation?: number | null | void;
   until_tx_id?: NumberOrString | null | void;
+  with_input_context: boolean;
 }
 
 /** 'SqlHistoryForCredentials' return type */
@@ -23,10 +24,10 @@ export interface ISqlHistoryForCredentialsResult {
   era: number;
   hash: Buffer;
   height: number;
-  id: string;
+  id: string | null;
   input_addresses: Json | null;
   is_valid: boolean;
-  metadata: Buffer;
+  metadata: Buffer | null;
   payload: Buffer;
   slot: number;
   tx_index: number;
@@ -38,7 +39,7 @@ export interface ISqlHistoryForCredentialsQuery {
   result: ISqlHistoryForCredentialsResult;
 }
 
-const sqlHistoryForCredentialsIR: any = {"usedParamSet":{"credentials":true,"relation":true,"until_tx_id":true,"after_tx_id":true,"limit":true},"params":[{"name":"credentials","required":false,"transform":{"type":"scalar"},"locs":[{"a":288,"b":299}]},{"name":"relation","required":false,"transform":{"type":"scalar"},"locs":[{"a":354,"b":362}]},{"name":"until_tx_id","required":false,"transform":{"type":"scalar"},"locs":[{"a":464,"b":475}]},{"name":"after_tx_id","required":false,"transform":{"type":"scalar"},"locs":[{"a":527,"b":538}]},{"name":"limit","required":false,"transform":{"type":"scalar"},"locs":[{"a":598,"b":603}]}],"statement":"WITH\n  tx_relations AS (\n    SELECT DISTINCT ON (\"TxCredentialRelation\".tx_id) \"TxCredentialRelation\".tx_id\n    FROM \"StakeCredential\"\n    INNER JOIN \"TxCredentialRelation\" ON \"TxCredentialRelation\".credential_id = \"StakeCredential\".id\n    WHERE\n      \"StakeCredential\".credential = ANY (:credentials)\n      AND\n      (\"TxCredentialRelation\".relation & (:relation)) > 0\n      AND\n                                            \n      \"TxCredentialRelation\".tx_id <= (:until_tx_id)\n      AND \n      \"TxCredentialRelation\".tx_id > (:after_tx_id)\n    ORDER BY \"TxCredentialRelation\".tx_id ASC\n    LIMIT (:limit)\n  )\nSELECT \"Transaction\".id,\n        \"Transaction\".payload,\n        \"Transaction\".hash,\n        \"Transaction\".tx_index,\n        \"Transaction\".is_valid,\n        \"Block\".hash AS block_hash,\n        \"Block\".epoch,\n        \"Block\".slot,\n        \"Block\".era,\n        \"Block\".height,\n        \"TransactionMetadata\".payload AS metadata,\n        json_agg(DISTINCT \"Address\".PAYLOAD) input_addresses\nFROM tx_relations\nINNER JOIN \"Transaction\" ON tx_relations.tx_id = \"Transaction\".id\nINNER JOIN \"TransactionInput\" ON \"TransactionInput\".tx_id = \"Transaction\".id\nINNER JOIN \"Address\" ON \"Address\".id = \"TransactionInput\".address_id\nLEFT JOIN \"TransactionMetadata\" ON \"Transaction\".id = \"TransactionMetadata\".tx_id\nINNER JOIN \"Block\" ON \"Transaction\".block_id = \"Block\".id\nGROUP BY \"Transaction\".id, \"Block\".id, \"TransactionMetadata\".id"};
+const sqlHistoryForCredentialsIR: any = {"usedParamSet":{"credentials":true,"relation":true,"until_tx_id":true,"after_tx_id":true,"limit":true,"with_input_context":true},"params":[{"name":"credentials","required":false,"transform":{"type":"scalar"},"locs":[{"a":288,"b":299}]},{"name":"relation","required":false,"transform":{"type":"scalar"},"locs":[{"a":354,"b":362}]},{"name":"until_tx_id","required":false,"transform":{"type":"scalar"},"locs":[{"a":464,"b":475}]},{"name":"after_tx_id","required":false,"transform":{"type":"scalar"},"locs":[{"a":527,"b":538}]},{"name":"limit","required":false,"transform":{"type":"scalar"},"locs":[{"a":598,"b":603}]},{"name":"with_input_context","required":true,"transform":{"type":"scalar"},"locs":[{"a":2446,"b":2465},{"a":2529,"b":2548}]}],"statement":"WITH\n  tx_relations AS (\n    SELECT DISTINCT ON (\"TxCredentialRelation\".tx_id) \"TxCredentialRelation\".tx_id\n    FROM \"StakeCredential\"\n    INNER JOIN \"TxCredentialRelation\" ON \"TxCredentialRelation\".credential_id = \"StakeCredential\".id\n    WHERE\n      \"StakeCredential\".credential = ANY (:credentials)\n      AND\n      (\"TxCredentialRelation\".relation & (:relation)) > 0\n      AND\n                                            \n      \"TxCredentialRelation\".tx_id <= (:until_tx_id)\n      AND \n      \"TxCredentialRelation\".tx_id > (:after_tx_id)\n    ORDER BY \"TxCredentialRelation\".tx_id ASC\n    LIMIT (:limit)\n  ),\n  base_query AS (\n        SELECT \"Transaction\".id,\n            \"Transaction\".payload as \"payload!\",\n            \"Transaction\".hash as \"hash!\",\n            \"Transaction\".tx_index as \"tx_index!\",\n            \"Transaction\".is_valid as \"is_valid!\",\n            \"Block\".hash AS \"block_hash!\",\n            \"Block\".epoch as \"epoch!\",\n            \"Block\".slot as \"slot!\",\n            \"Block\".era as \"era!\",\n            \"Block\".height as \"height!\",\n            NULL :: bytea as metadata,\n            NULL :: json as input_addresses\n    FROM tx_relations\n    INNER JOIN \"Transaction\" ON tx_relations.tx_id = \"Transaction\".id\n    INNER JOIN \"Block\" ON \"Transaction\".block_id = \"Block\".id\n  ),\n  query_with_inputs_and_metadata AS (\n        SELECT \"Transaction\".id,\n                \"Transaction\".payload as \"payload!\",\n                \"Transaction\".hash as \"hash!\",\n                \"Transaction\".tx_index as \"tx_index!\",\n                \"Transaction\".is_valid as \"is_valid!\",\n                \"Block\".hash as \"block_hash!\",\n                \"Block\".epoch as \"epoch!\",\n                \"Block\".slot as \"slot!\",\n                \"Block\".era as \"era!\",\n                \"Block\".height as \"height!\",\n                \"TransactionMetadata\".payload AS metadata,\n                json_agg(DISTINCT \"Address\".PAYLOAD) input_addresses\n        FROM tx_relations\n        INNER JOIN \"Transaction\" ON tx_relations.tx_id = \"Transaction\".id\n        INNER JOIN \"TransactionInput\" ON \"TransactionInput\".tx_id = \"Transaction\".id\n        INNER JOIN \"Address\" ON \"Address\".id = \"TransactionInput\".address_id\n        LEFT JOIN \"TransactionMetadata\" ON \"Transaction\".id = \"TransactionMetadata\".tx_id\n        INNER JOIN \"Block\" ON \"Transaction\".block_id = \"Block\".id\n        GROUP BY \"Transaction\".id, \"Block\".id, \"TransactionMetadata\".id\n  )\nSELECT * FROM base_query WHERE NOT :with_input_context!\nUNION ALL (SELECT * FROM query_with_inputs_and_metadata WHERE :with_input_context!)"};
 
 /**
  * Query generated from SQL:
@@ -59,26 +60,47 @@ const sqlHistoryForCredentialsIR: any = {"usedParamSet":{"credentials":true,"rel
  *       "TxCredentialRelation".tx_id > (:after_tx_id)
  *     ORDER BY "TxCredentialRelation".tx_id ASC
  *     LIMIT (:limit)
+ *   ),
+ *   base_query AS (
+ *         SELECT "Transaction".id,
+ *             "Transaction".payload as "payload!",
+ *             "Transaction".hash as "hash!",
+ *             "Transaction".tx_index as "tx_index!",
+ *             "Transaction".is_valid as "is_valid!",
+ *             "Block".hash AS "block_hash!",
+ *             "Block".epoch as "epoch!",
+ *             "Block".slot as "slot!",
+ *             "Block".era as "era!",
+ *             "Block".height as "height!",
+ *             NULL :: bytea as metadata,
+ *             NULL :: json as input_addresses
+ *     FROM tx_relations
+ *     INNER JOIN "Transaction" ON tx_relations.tx_id = "Transaction".id
+ *     INNER JOIN "Block" ON "Transaction".block_id = "Block".id
+ *   ),
+ *   query_with_inputs_and_metadata AS (
+ *         SELECT "Transaction".id,
+ *                 "Transaction".payload as "payload!",
+ *                 "Transaction".hash as "hash!",
+ *                 "Transaction".tx_index as "tx_index!",
+ *                 "Transaction".is_valid as "is_valid!",
+ *                 "Block".hash as "block_hash!",
+ *                 "Block".epoch as "epoch!",
+ *                 "Block".slot as "slot!",
+ *                 "Block".era as "era!",
+ *                 "Block".height as "height!",
+ *                 "TransactionMetadata".payload AS metadata,
+ *                 json_agg(DISTINCT "Address".PAYLOAD) input_addresses
+ *         FROM tx_relations
+ *         INNER JOIN "Transaction" ON tx_relations.tx_id = "Transaction".id
+ *         INNER JOIN "TransactionInput" ON "TransactionInput".tx_id = "Transaction".id
+ *         INNER JOIN "Address" ON "Address".id = "TransactionInput".address_id
+ *         LEFT JOIN "TransactionMetadata" ON "Transaction".id = "TransactionMetadata".tx_id
+ *         INNER JOIN "Block" ON "Transaction".block_id = "Block".id
+ *         GROUP BY "Transaction".id, "Block".id, "TransactionMetadata".id
  *   )
- * SELECT "Transaction".id,
- *         "Transaction".payload,
- *         "Transaction".hash,
- *         "Transaction".tx_index,
- *         "Transaction".is_valid,
- *         "Block".hash AS block_hash,
- *         "Block".epoch,
- *         "Block".slot,
- *         "Block".era,
- *         "Block".height,
- *         "TransactionMetadata".payload AS metadata,
- *         json_agg(DISTINCT "Address".PAYLOAD) input_addresses
- * FROM tx_relations
- * INNER JOIN "Transaction" ON tx_relations.tx_id = "Transaction".id
- * INNER JOIN "TransactionInput" ON "TransactionInput".tx_id = "Transaction".id
- * INNER JOIN "Address" ON "Address".id = "TransactionInput".address_id
- * LEFT JOIN "TransactionMetadata" ON "Transaction".id = "TransactionMetadata".tx_id
- * INNER JOIN "Block" ON "Transaction".block_id = "Block".id
- * GROUP BY "Transaction".id, "Block".id, "TransactionMetadata".id
+ * SELECT * FROM base_query WHERE NOT :with_input_context!
+ * UNION ALL (SELECT * FROM query_with_inputs_and_metadata WHERE :with_input_context!)
  * ```
  */
 export const sqlHistoryForCredentials = new PreparedQuery<ISqlHistoryForCredentialsParams,ISqlHistoryForCredentialsResult>(sqlHistoryForCredentialsIR);
