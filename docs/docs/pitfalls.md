@@ -23,5 +23,5 @@ sidebar_position: 1
 
 ## Risks with using this codebase:
 
-- **Missing functionality in binary data parsing libraries**: This codebase parses raw CBOR (binary data) from the Cardano blockchain using CML. It has happened in the past that one of these libraries is missing some feature of the Cardano blockchain which could cause Carp to fail if these ever appear on-chain
+- **Missing functionality in binary data parsing libraries**: This codebase parses raw CBOR (binary data) from the Cardano blockchain using CML. It has happened in the past that the library is missing some feature of the Cardano blockchain which could cause Carp to fail if these ever appear on-chain.
 - **Cardano ledger bugs** (yes, this happens): There has been multiple occasions where the Cardano node itself has a bug in it causing the data generated not to be parsable by CML until patched.
