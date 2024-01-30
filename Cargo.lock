@@ -548,7 +548,7 @@ dependencies = [
 [[package]]
 name = "cardano-projected-nft"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/projected-nft-whirlpool.git?rev=7ba9a2f7a613f38bbce8f48a7d8575739e9caee0#7ba9a2f7a613f38bbce8f48a7d8575739e9caee0"
+source = "git+https://github.com/dcSpark/projected-nft-whirlpool.git?rev=13f81e8666743fefd14c5e1affb1cd828d8c473b#13f81e8666743fefd14c5e1affb1cd828d8c473b"
 dependencies = [
  "cbor_event",
  "cml-chain 0.1.0",
@@ -573,7 +573,7 @@ dependencies = [
  "cryptoxide",
  "ed25519-bip32",
  "hex",
- "strum",
+ "strum 0.24.1",
  "thiserror",
 ]
 
@@ -766,7 +766,7 @@ dependencies = [
 [[package]]
 name = "cml-chain"
 version = "4.0.2"
-source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=c5740393f10b7a68aa4719fbbef5a49170501ef6#c5740393f10b7a68aa4719fbbef5a49170501ef6"
+source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=fda222875b03f34058e3a71c72cc861eac0ed125#fda222875b03f34058e3a71c72cc861eac0ed125"
 dependencies = [
  "base64 0.21.7",
  "bech32 0.7.3",
@@ -820,7 +820,7 @@ dependencies = [
 [[package]]
 name = "cml-core"
 version = "4.0.2"
-source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=c5740393f10b7a68aa4719fbbef5a49170501ef6#c5740393f10b7a68aa4719fbbef5a49170501ef6"
+source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=fda222875b03f34058e3a71c72cc861eac0ed125#fda222875b03f34058e3a71c72cc861eac0ed125"
 dependencies = [
  "base64 0.13.1",
  "bech32 0.7.3",
@@ -869,7 +869,7 @@ dependencies = [
 [[package]]
 name = "cml-crypto"
 version = "4.0.2"
-source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=c5740393f10b7a68aa4719fbbef5a49170501ef6#c5740393f10b7a68aa4719fbbef5a49170501ef6"
+source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=fda222875b03f34058e3a71c72cc861eac0ed125#fda222875b03f34058e3a71c72cc861eac0ed125"
 dependencies = [
  "base64 0.21.7",
  "bech32 0.7.3",
@@ -892,7 +892,7 @@ dependencies = [
 [[package]]
 name = "cml-multi-era"
 version = "4.0.2"
-source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=c5740393f10b7a68aa4719fbbef5a49170501ef6#c5740393f10b7a68aa4719fbbef5a49170501ef6"
+source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=fda222875b03f34058e3a71c72cc861eac0ed125#fda222875b03f34058e3a71c72cc861eac0ed125"
 dependencies = [
  "bech32 0.7.3",
  "cbor_event",
@@ -929,7 +929,7 @@ dependencies = [
  "pathdiff",
  "serde",
  "serde_json",
- "toml",
+ "toml 0.5.11",
  "yaml-rust",
 ]
 
@@ -2289,8 +2289,8 @@ dependencies = [
  "prometheus_exporter",
  "serde",
  "serde_json",
- "strum",
- "strum_macros",
+ "strum 0.24.1",
+ "strum_macros 0.24.3",
  "unicode-truncate",
 ]
 
@@ -2538,10 +2538,10 @@ dependencies = [
  "anyhow",
  "clap 3.2.25",
  "dot",
- "strum",
- "strum_macros",
+ "strum 0.25.0",
+ "strum_macros 0.25.3",
  "tasks",
- "toml",
+ "toml 0.8.8",
  "tracing",
  "tracing-subscriber",
 ]
@@ -3244,6 +3244,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_spanned"
+version = "0.6.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eb3622f419d1296904700073ea6cc23ad690adbd66f13ea683df73298736f0c1"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "serde_yaml"
 version = "0.9.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3628,8 +3637,14 @@ version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "063e6045c0e62079840579a7e47a355ae92f60eb74daaf156fb1e84ba164e63f"
 dependencies = [
- "strum_macros",
+ "strum_macros 0.24.3",
 ]
+
+[[package]]
+name = "strum"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "290d54ea6f91c969195bdbcd7442c8c2a2ba87da8bf60a7ee86a235d4bc1e125"
 
 [[package]]
 name = "strum_macros"
@@ -3642,6 +3657,19 @@ dependencies = [
  "quote",
  "rustversion",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "strum_macros"
+version = "0.25.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23dc1fa9ac9c169a78ba62f0b841814b7abae11bdd047b9c58f893439e309ea0"
+dependencies = [
+ "heck 0.4.1",
+ "proc-macro2",
+ "quote",
+ "rustversion",
+ "syn 2.0.48",
 ]
 
 [[package]]
@@ -3709,7 +3737,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "cardano-projected-nft",
- "cfg-if 0.1.10",
+ "cfg-if 1.0.0",
  "cml-chain 4.0.2",
  "cml-core 4.0.2",
  "cml-crypto 4.0.2",
@@ -3726,7 +3754,7 @@ dependencies = [
  "serde",
  "shred",
  "tokio",
- "toml",
+ "toml 0.8.8",
  "tracing",
  "tracing-subscriber",
  "urlencoding",
@@ -3939,8 +3967,20 @@ version = "0.5.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f4f7f0dd8d50a853a531c426359045b1998f04219d88799810762cd4ad314234"
 dependencies = [
- "indexmap 1.9.3",
  "serde",
+]
+
+[[package]]
+name = "toml"
+version = "0.8.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a1a195ec8c9da26928f773888e0742ca3ca1040c6cd859c919c9f59c1954ab35"
+dependencies = [
+ "indexmap 2.2.1",
+ "serde",
+ "serde_spanned",
+ "toml_datetime",
+ "toml_edit",
 ]
 
 [[package]]
@@ -3948,6 +3988,9 @@ name = "toml_datetime"
 version = "0.6.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3550f4e9685620ac18a50ed434eb3aec30db8ba93b0287467bca5826ea25baf1"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "toml_edit"
@@ -3956,6 +3999,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d34d383cd00a163b4a5b85053df514d45bc330f6de7737edfe0a93311d1eaa03"
 dependencies = [
  "indexmap 2.2.1",
+ "serde",
+ "serde_spanned",
  "toml_datetime",
  "winnow",
 ]

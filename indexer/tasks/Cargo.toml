@@ -12,12 +12,12 @@ entity = { path = "../entity" }
 
 # [tasks]
 anyhow = { version = "1.0.69" }
-cml-chain = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "c5740393f10b7a68aa4719fbbef5a49170501ef6" }
-cml-core = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "c5740393f10b7a68aa4719fbbef5a49170501ef6" }
-cml-crypto = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "c5740393f10b7a68aa4719fbbef5a49170501ef6" }
-cml-multi-era = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "c5740393f10b7a68aa4719fbbef5a49170501ef6" }
-cardano-projected-nft = { git = "https://github.com/dcSpark/projected-nft-whirlpool.git", rev = "7ba9a2f7a613f38bbce8f48a7d8575739e9caee0" }
-cfg-if = { version = "0.1.10" }
+cml-chain = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "fda222875b03f34058e3a71c72cc861eac0ed125" }
+cml-core = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "fda222875b03f34058e3a71c72cc861eac0ed125" }
+cml-crypto = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "fda222875b03f34058e3a71c72cc861eac0ed125" }
+cml-multi-era = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "fda222875b03f34058e3a71c72cc861eac0ed125" }
+cardano-projected-nft = { git = "https://github.com/dcSpark/projected-nft-whirlpool.git", rev = "13f81e8666743fefd14c5e1affb1cd828d8c473b" }
+cfg-if = { version = "1.0.0" }
 cryptoxide = { version = "0.4.2" }
 hex = { version = "0.4.3" }
 inventory = { version = "0.2.3" }
@@ -29,7 +29,7 @@ sea-orm = { git = "https://github.com/dcSpark/sea-orm", branch = "insert-many-re
 serde = { version = "1.0.152", features = ["derive"] }
 shred = { git = "https://github.com/dcSpark/shred", branch = "builder-getters" }
 tokio = { version = "1.16.1", features = ["full"] }
-toml = { version = "0.5", features = ["preserve_order"] }
+toml = { version = "0.8.6", features = ["preserve_order"] }
 urlencoding = { version = "2.1.2" }
 tracing-subscriber = { version = "0.3.16" }
 tracing = { version = "0.1.37" }

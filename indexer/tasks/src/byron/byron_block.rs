@@ -7,7 +7,6 @@ use cml_multi_era::byron::block::ByronBlock;
 use cml_multi_era::MultiEraBlock;
 use entity::{block::EraValue, sea_orm::Set};
 use hex::ToHex;
-use sea_orm::sea_query::all;
 
 carp_task! {
   name ByronBlockTask;
