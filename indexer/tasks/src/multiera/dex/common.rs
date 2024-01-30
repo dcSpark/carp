@@ -5,6 +5,10 @@ use crate::{
         asset_from_pair, get_plutus_datum_for_output, get_shelley_payment_hash,
     },
 };
+use cml_chain::json::plutus_datums::{
+    decode_plutus_datum_to_json_str, decode_plutus_datum_to_json_value,
+    CardanoNodePlutusDatumSchema,
+};
 use entity::dex_swap::Operation;
 use entity::sea_orm::{DatabaseTransaction, Set};
 use std::collections::{BTreeMap, BTreeSet};
@@ -58,7 +62,7 @@ pub fn filter_outputs_and_datums_by_address(
 
 pub struct QueuedMeanPrice {
     pub tx_id: i64,
-    pub address: Vec<u8>, // pallas::crypto::hash::Hash<32>
+    pub address: Vec<u8>,
     pub dex_type: DexType,
     pub asset1: AssetPair,
     pub asset2: AssetPair,
@@ -68,7 +72,7 @@ pub struct QueuedMeanPrice {
 
 pub struct QueuedSwap {
     pub tx_id: i64,
-    pub address: Vec<u8>, // pallas::crypto::hash::Hash<32>
+    pub address: Vec<u8>,
     pub dex_type: DexType,
     pub asset1: AssetPair,
     pub asset2: AssetPair,
@@ -361,4 +365,37 @@ pub async fn handle_swap(
     .await?;
 
     Ok(())
+}
+
+pub fn datum_to_json(datum: &cml_chain::plutus::PlutusData) -> Result<serde_json::Value, String> {
+    let value =
+        decode_plutus_datum_to_json_str(datum, CardanoNodePlutusDatumSchema::DetailedSchema)
+            .map_err(|err| format!("can't decode datum as json: {err}"))?;
+    serde_json::from_str(&value).map_err(|err| format!("can't decode json: {err}"))
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::multiera::dex::common::datum_to_json;
+    use cml_chain::plutus::PlutusData;
+    use cml_core::serialization::FromBytes;
+
+    #[test]
+    fn datum_json() {
+        let bytes = hex::decode("d8799fd8799f581cc72d0438330ed1346f4437fcc1c263ea38e933c1124c8d0f2abc6312484b574943343838331b0000018c5e40eb10ffff").unwrap();
+        let data = PlutusData::from_bytes(bytes).unwrap();
+
+        let datum_json = datum_to_json(&data);
+        assert!(datum_json.is_ok(), "{:?}", datum_json.err());
+
+        let datum_json = datum_json.unwrap();
+        println!("{:?}", datum_json);
+        let item = datum_json["fields"][0]["fields"][0]["bytes"]
+            .as_str()
+            .unwrap();
+        assert_eq!(
+            item,
+            "c72d0438330ed1346f4437fcc1c263ea38e933c1124c8d0f2abc6312"
+        );
+    }
 }

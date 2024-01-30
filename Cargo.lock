@@ -766,7 +766,7 @@ dependencies = [
 [[package]]
 name = "cml-chain"
 version = "4.0.2"
-source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=fda222875b03f34058e3a71c72cc861eac0ed125#fda222875b03f34058e3a71c72cc861eac0ed125"
+source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=2227ab6e6a0ca157c94edca250ecb2eb0f7d08b5#2227ab6e6a0ca157c94edca250ecb2eb0f7d08b5"
 dependencies = [
  "base64 0.21.7",
  "bech32 0.7.3",
@@ -820,7 +820,7 @@ dependencies = [
 [[package]]
 name = "cml-core"
 version = "4.0.2"
-source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=fda222875b03f34058e3a71c72cc861eac0ed125#fda222875b03f34058e3a71c72cc861eac0ed125"
+source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=2227ab6e6a0ca157c94edca250ecb2eb0f7d08b5#2227ab6e6a0ca157c94edca250ecb2eb0f7d08b5"
 dependencies = [
  "base64 0.13.1",
  "bech32 0.7.3",
@@ -869,7 +869,7 @@ dependencies = [
 [[package]]
 name = "cml-crypto"
 version = "4.0.2"
-source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=fda222875b03f34058e3a71c72cc861eac0ed125#fda222875b03f34058e3a71c72cc861eac0ed125"
+source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=2227ab6e6a0ca157c94edca250ecb2eb0f7d08b5#2227ab6e6a0ca157c94edca250ecb2eb0f7d08b5"
 dependencies = [
  "base64 0.21.7",
  "bech32 0.7.3",
@@ -892,7 +892,7 @@ dependencies = [
 [[package]]
 name = "cml-multi-era"
 version = "4.0.2"
-source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=fda222875b03f34058e3a71c72cc861eac0ed125#fda222875b03f34058e3a71c72cc861eac0ed125"
+source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=2227ab6e6a0ca157c94edca250ecb2eb0f7d08b5#2227ab6e6a0ca157c94edca250ecb2eb0f7d08b5"
 dependencies = [
  "bech32 0.7.3",
  "cbor_event",
@@ -1229,7 +1229,6 @@ checksum = "a26ae43d7bcc3b814de94796a5e736d4029efb0ee900c12e2d54c993ad1a1e07"
 name = "entity"
 version = "0.0.0"
 dependencies = [
- "pallas",
  "sea-orm",
  "serde",
 ]
@@ -3748,10 +3747,11 @@ dependencies = [
  "inventory",
  "markdown-gen",
  "nameof",
- "pallas",
  "paste",
+ "schemars",
  "sea-orm",
  "serde",
+ "serde_json",
  "shred",
  "tokio",
  "toml 0.8.8",

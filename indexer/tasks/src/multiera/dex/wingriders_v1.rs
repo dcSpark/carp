@@ -5,13 +5,13 @@ use cml_multi_era::utils::MultiEraTransactionOutput;
 use std::collections::BTreeMap;
 
 use entity::block::EraValue;
-use pallas::ledger::primitives::{Fragment, ToCanonicalJson};
 use sea_orm::DbErr;
 
 use super::common::{
     build_asset, filter_outputs_and_datums_by_hash, reduce_ada_amount, Dex, DexType,
     QueuedMeanPrice, QueuedSwap, WingRidersV1,
 };
+use crate::multiera::dex::common::datum_to_json;
 use crate::multiera::utils::common::output_from_bytes;
 use crate::{
     era_common::OutputWithTxData,
@@ -40,11 +40,7 @@ impl Dex for WingRidersV1 {
         )
         .first()
         {
-            let pallas_datum = pallas::ledger::primitives::alonzo::PlutusData::decode_fragment(
-                &datum.to_cbor_bytes(),
-            )
-            .map_err(|err| format!("can't decode datum: {err}"))?;
-            let datum = pallas_datum.to_json();
+            let datum = datum_to_json(datum)?;
 
             let treasury1 = datum["fields"][1]["fields"][2]["int"]
                 .as_u64()
@@ -103,12 +99,7 @@ impl Dex for WingRidersV1 {
 
             // Get pool input from redemeers
             let pool_input_redeemer = redeemers.first().ok_or("No redeemers")?;
-            let pallas_datum = pallas::ledger::primitives::alonzo::PlutusData::decode_fragment(
-                &pool_input_redeemer.data.to_cbor_bytes(),
-            )
-            .map_err(|err| format!("can't decode datum: {err}"))?;
-
-            let pool_input = pallas_datum.to_json()["fields"][0]["int"]
+            let pool_input = datum_to_json(&pool_input_redeemer.data)?["fields"][0]["int"]
                 .as_i64()
                 .ok_or("Failed to parse pool input index")?;
 
@@ -118,11 +109,7 @@ impl Dex for WingRidersV1 {
                 .find(|&r| r.index as i64 == pool_input)
                 .ok_or("Failed to find main redeemer")?;
             let redeemer = redeemer.data.clone();
-            let pallas_datum = pallas::ledger::primitives::alonzo::PlutusData::decode_fragment(
-                &redeemer.to_cbor_bytes(),
-            )
-            .map_err(|err| format!("can't decode redeemer datum: {err}"))?;
-            let redeemer = pallas_datum.to_json();
+            let redeemer = datum_to_json(&redeemer)?;
 
             // Extract input list from redemeer
             let redeemer_map: Vec<usize> = redeemer["fields"][2]["list"]
@@ -158,11 +145,7 @@ impl Dex for WingRidersV1 {
                 )
                 .unwrap();
 
-                let parent_datum = pallas::ledger::primitives::alonzo::PlutusData::decode_fragment(
-                    &parent_datum.to_cbor_bytes(),
-                )
-                .map_err(|err| format!("can't decode datum: {err}"))?
-                .to_json();
+                let parent_datum = datum_to_json(&parent_datum)?;
 
                 let parse_asset_item = |i, j| -> Result<Vec<u8>, &str> {
                     let item = parent_datum["fields"][1]["fields"][0]["fields"][i]["fields"][j]
@@ -181,11 +164,7 @@ impl Dex for WingRidersV1 {
                     &tx_witness.plutus_datums.clone().unwrap_or_default(),
                 )
                 .unwrap();
-                let input_datum = pallas::ledger::primitives::alonzo::PlutusData::decode_fragment(
-                    &input_datum.to_cbor_bytes(),
-                )
-                .map_err(|err| format!("can't decode redeemer datum: {err}"))?
-                .to_json();
+                let input_datum = datum_to_json(&input_datum)?;
                 // identify operation: 0 = swap
                 let operation = input_datum["fields"][1]["constructor"]
                     .as_i64()

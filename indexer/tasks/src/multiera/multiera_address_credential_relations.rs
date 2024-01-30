@@ -39,7 +39,7 @@ carp_task! {
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 pub struct QueuedAddressCredentialRelation {
     pub address: Vec<u8>,
-    pub stake_credential: Vec<u8>, // pallas::crypto::hash::Hash<32>
+    pub stake_credential: Vec<u8>,
     pub address_relation: AddressCredentialRelationValue,
 }
 

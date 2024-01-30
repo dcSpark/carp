@@ -2,12 +2,12 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::config::EmptyConfig::EmptyConfig;
 use cml_chain::crypto::ScriptHash;
+use cml_core::metadata::TransactionMetadatum;
+use cml_core::serialization::FromBytes;
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, Condition, DatabaseTransaction, Set},
 };
-use pallas::ledger::primitives::alonzo::Metadatum;
-use pallas::ledger::primitives::Fragment;
 
 use super::{
     multiera_asset_mint::MultieraAssetMintTask,
@@ -59,9 +59,10 @@ async fn handle_entries(
 
     let mut to_insert: Vec<Cip25EntryActiveModel> = vec![];
     for metadata in multiera_metadata {
-        if let Ok(pairs) =
-            &get_cip25_pairs(&Metadatum::decode_fragment(metadata.payload.as_slice()).unwrap())
-        {
+        if let Ok(pairs) = &get_cip25_pairs(
+            &TransactionMetadatum::from_bytes(metadata.payload.clone())
+                .map_err(|err| DbErr::Custom(format!("can't decode metadata: {err}")))?,
+        ) {
             for ((asset_name, payload), policy_id) in pairs
                 .1
                 .iter()

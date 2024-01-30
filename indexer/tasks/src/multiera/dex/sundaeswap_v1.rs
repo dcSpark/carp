@@ -5,13 +5,13 @@ use cml_multi_era::utils::MultiEraTransactionOutput;
 use std::collections::BTreeMap;
 
 use entity::block::EraValue;
-use pallas::ledger::primitives::{Fragment, ToCanonicalJson};
 use sea_orm::DbErr;
 
 use super::common::{
     build_asset, filter_outputs_and_datums_by_address, filter_outputs_and_datums_by_hash,
     reduce_ada_amount, Dex, DexType, QueuedMeanPrice, QueuedSwap, SundaeSwapV1,
 };
+use crate::multiera::dex::common::datum_to_json;
 use crate::multiera::utils::common::output_from_bytes;
 use crate::{era_common::OutputWithTxData, multiera::utils::common::get_asset_amount};
 use entity::dex_swap::Operation;
@@ -37,11 +37,7 @@ impl Dex for SundaeSwapV1 {
         )
         .first()
         {
-            let pallas_datum = pallas::ledger::primitives::alonzo::PlutusData::decode_fragment(
-                &datum.to_cbor_bytes(),
-            )
-            .map_err(|err| format!("can't decode datum: {err}"))?;
-            let datum = pallas_datum.to_json();
+            let datum = datum_to_json(datum)?;
 
             let parse_asset_item = |i, j| -> Result<Vec<u8>, &str> {
                 let item = datum["fields"][0]["fields"][i]["fields"][j]["bytes"]
@@ -85,11 +81,8 @@ impl Dex for SundaeSwapV1 {
         )
         .first()
         {
-            let pallas_datum = pallas::ledger::primitives::alonzo::PlutusData::decode_fragment(
-                &main_datum.to_cbor_bytes(),
-            )
-            .map_err(|err| format!("can't decode datum: {err}"))?;
-            let main_datum = pallas_datum.to_json();
+            let main_datum = datum_to_json(main_datum)?;
+
             let mut free_utxos: Vec<MultiEraTransactionOutput> = tx.outputs();
 
             // Extract asset information from plutus data of pool input
@@ -118,11 +111,7 @@ impl Dex for SundaeSwapV1 {
                 &[REQUEST_SCRIPT_HASH],
                 &tx_witness.plutus_datums.clone().unwrap_or_default(),
             ) {
-                let pallas_datum = pallas::ledger::primitives::alonzo::PlutusData::decode_fragment(
-                    &input_datum.to_cbor_bytes(),
-                )
-                .map_err(|err| format!("can't decode datum: {err}"))?;
-                let input_datum = pallas_datum.to_json();
+                let input_datum = datum_to_json(&input_datum)?;
 
                 // identify operation: 0 = swap
                 let operation = input_datum["fields"][3]["constructor"]

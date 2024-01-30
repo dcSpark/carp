@@ -45,7 +45,7 @@ struct QueuedOutput {
     tx_id: i64,
     idx: usize,
     payload: Vec<u8>,
-    address: Vec<u8>, // pallas::crypto::hash::Hash<32>
+    address: Vec<u8>,
 }
 
 async fn handle_output(
