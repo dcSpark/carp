@@ -108,8 +108,7 @@ impl Dex for WingRidersV1 {
                 .iter()
                 .find(|&r| r.index as i64 == pool_input)
                 .ok_or("Failed to find main redeemer")?;
-            let redeemer = redeemer.data.clone();
-            let redeemer = datum_to_json(&redeemer)?;
+            let redeemer = datum_to_json(&redeemer.data)?;
 
             // Extract input list from redemeer
             let redeemer_map: Vec<usize> = redeemer["fields"][2]["list"]
