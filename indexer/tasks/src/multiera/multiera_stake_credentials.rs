@@ -1,6 +1,10 @@
+use cml_chain::transaction::utils::RequiredSignersSet;
+use cml_chain::transaction::TransactionWitnessSet;
+use cml_core::serialization::FromBytes;
+use cml_crypto::RawBytesEncoding;
 use std::collections::{BTreeMap, BTreeSet};
+use std::hash::Hash;
 
-use cardano_multiplatform_lib::RequiredSignersSet;
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, Condition, DatabaseTransaction, Set},
@@ -15,10 +19,6 @@ use super::{
 use crate::config::EmptyConfig::EmptyConfig;
 use crate::dsl::database_task::BlockGlobalInfo;
 use crate::dsl::task_macro::*;
-use pallas::ledger::{
-    primitives::Fragment,
-    traverse::{MultiEraBlock, MultiEraTx},
-};
 
 carp_task! {
   name MultieraStakeCredentialTask;
@@ -44,45 +44,32 @@ carp_task! {
   };
 }
 
-pub fn to_witness_cbor(tx: &MultiEraTx) -> Vec<u8> {
-    match tx {
-        MultiEraTx::AlonzoCompatible(x, _) => x.transaction_witness_set.encode_fragment().unwrap(),
-        MultiEraTx::Babbage(x) => x.transaction_witness_set.encode_fragment().unwrap(),
-        MultiEraTx::Byron(x) => x.witness.encode_fragment().unwrap(),
-        _ => panic!("to_witness_cbor - Unhandled tx type"),
-    }
-}
-
 async fn handle_stake_credentials(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
+    block: BlockInfo<'_, cml_multi_era::MultiEraBlock, BlockGlobalInfo>,
     multiera_txs: &[TransactionModel],
     vkey_relation_map: &mut RelationMap,
 ) -> Result<BTreeMap<Vec<u8>, StakeCredentialModel>, DbErr> {
-    for (tx_body, cardano_transaction) in block.1.txs().iter().zip(multiera_txs) {
+    for ((tx_body, tx_witness), cardano_transaction) in block
+        .1
+        .transaction_bodies()
+        .iter()
+        .zip(block.1.transaction_witness_sets().iter())
+        .zip(multiera_txs)
+    {
         queue_witness(
             vkey_relation_map,
             cardano_transaction.id,
-            &cardano_multiplatform_lib::TransactionWitnessSet::from_bytes(to_witness_cbor(tx_body))
-                .map_err(|e| {
-                    panic!(
-                        "{:?} {:?} {:?}",
-                        e,
-                        hex::encode(tx_body.hash()),
-                        hex::encode(to_witness_cbor(tx_body))
-                    )
-                })
-                .unwrap(),
+            tx_witness.clone(),
         );
 
-        for signer in tx_body.required_signers().collect::<Vec<_>>() {
-            let owner_credential =
-                pallas::ledger::primitives::alonzo::StakeCredential::AddrKeyhash(*signer)
-                    .encode_fragment()
-                    .unwrap();
+        for signer in tx_body.required_signers().cloned().unwrap_or_default() {
+            let owner_credential = cml_chain::certs::Credential::new_pub_key(signer)
+                .to_raw_bytes()
+                .to_vec();
             vkey_relation_map.add_relation(
                 cardano_transaction.id,
-                &owner_credential.clone(),
+                &owner_credential,
                 TxCredentialRelationValue::RequiredSigner,
             );
         }
@@ -159,24 +146,22 @@ async fn insert_stake_credentials(
 fn queue_witness(
     vkey_relation_map: &mut RelationMap,
     tx_id: i64,
-    witness_set: &cardano_multiplatform_lib::TransactionWitnessSet,
+    witness_set: TransactionWitnessSet,
 ) {
-    if let Some(vkeys) = witness_set.vkeys() {
-        for i in 0..vkeys.len() {
-            let vkey = vkeys.get(i);
+    if let Some(vkeys) = witness_set.vkeywitnesses {
+        for vkey in vkeys {
             vkey_relation_map.add_relation(
                 tx_id,
-                RelationMap::keyhash_to_pallas(&vkey.vkey().public_key().hash()).as_slice(),
+                vkey.vkey.hash().to_raw_bytes(),
                 TxCredentialRelationValue::Witness,
             );
         }
     }
-    if let Some(scripts) = witness_set.native_scripts() {
-        for i in 0..scripts.len() {
-            let script = scripts.get(i);
+    if let Some(scripts) = witness_set.native_scripts {
+        for script in scripts {
             vkey_relation_map.add_relation(
                 tx_id,
-                RelationMap::scripthash_to_pallas(&script.hash()).as_slice(),
+                script.hash().to_raw_bytes(),
                 TxCredentialRelationValue::Witness,
             );
 
@@ -184,29 +169,27 @@ fn queue_witness(
             for vkey_in_script in vkeys_in_script {
                 vkey_relation_map.add_relation(
                     tx_id,
-                    RelationMap::keyhash_to_pallas(&vkey_in_script).as_slice(),
+                    vkey_in_script.to_raw_bytes(),
                     TxCredentialRelationValue::InNativeScript,
                 );
             }
         }
     }
 
-    if let Some(scripts) = &witness_set.plutus_v1_scripts() {
-        for i in 0..scripts.len() {
-            let script = scripts.get(i);
+    if let Some(scripts) = &witness_set.plutus_v1_scripts {
+        for script in scripts {
             vkey_relation_map.add_relation(
                 tx_id,
-                RelationMap::scripthash_to_pallas(&script.hash()).as_slice(),
+                script.hash().to_raw_bytes(),
                 TxCredentialRelationValue::Witness,
             );
         }
     }
-    if let Some(scripts) = &witness_set.plutus_v2_scripts() {
-        for i in 0..scripts.len() {
-            let script = scripts.get(i);
+    if let Some(scripts) = &witness_set.plutus_v2_scripts {
+        for script in scripts {
             vkey_relation_map.add_relation(
                 tx_id,
-                RelationMap::scripthash_to_pallas(&script.hash()).as_slice(),
+                script.hash().to_raw_bytes(),
                 TxCredentialRelationValue::Witness,
             );
         }

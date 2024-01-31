@@ -12,7 +12,7 @@ carp_task! {
   read [multiera_txs, multiera_addresses];
   write [];
   should_add_task |block, _properties| {
-    block.1.txs().iter().any(|tx| tx.outputs().len() > 0)
+    block.1.transaction_bodies().iter().any(|tx| !tx.outputs().is_empty())
   };
   execute |previous_data, task| handle_mean_price(
       task.db_tx,

@@ -4,7 +4,10 @@ use std::fs;
 use std::sync::{Arc, Mutex};
 use tasks::dsl::database_task::BlockGlobalInfo;
 
-use cardano_multiplatform_lib::genesis::byron::{config::GenesisData, parse::parse};
+use cml_chain::genesis::byron::config::GenesisData;
+use cml_chain::genesis::byron::parse::parse_genesis_data;
+
+use cml_crypto::RawBytesEncoding;
 use entity::sea_orm::{DatabaseConnection, DatabaseTransaction, TransactionTrait};
 use migration::DbErr;
 use tasks::utils::TaskPerfAggregator;
@@ -40,7 +43,9 @@ pub async fn process_genesis(
     let mut time_counter = std::time::Instant::now();
 
     let file = fs::File::open(genesis_path).expect("Failed to open genesis file");
-    let genesis_file: Box<GenesisData> = Box::new(parse(file));
+    let genesis_file: Box<GenesisData> = Box::new(
+        parse_genesis_data(file).map_err(|err| anyhow!("can't parse genesis data: {:?}", err))?,
+    );
 
     tracing::info!(
         "Finished parsing genesis file after {:?}",
@@ -77,10 +82,10 @@ pub async fn insert_genesis(
     exec_plan: Arc<ExecutionPlan>,
     task_perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
 ) -> Result<(), DbErr> {
-    let genesis_hash = genesis_file.genesis_prev.to_bytes();
+    let genesis_hash = genesis_file.genesis_prev.to_raw_bytes();
     tracing::info!(
         "Starting sync based on genesis hash {}",
-        hex::encode(genesis_hash.clone())
+        hex::encode(genesis_hash)
     );
 
     let block_global_info = BlockGlobalInfo {

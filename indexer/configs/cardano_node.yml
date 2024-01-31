@@ -1,12 +1,12 @@
 source:
   type: cardano_net
-  relay: 
+  relay:
     - relays-new.cardano-mainnet.iohk.io
     - 3001
       # - preview-node.world.dev.cardano.org
       # - 30002
       # - preprod-node.world.dev.cardano.org
-      # - 30000
+    # - 30000
 
 sink:
   type: cardano

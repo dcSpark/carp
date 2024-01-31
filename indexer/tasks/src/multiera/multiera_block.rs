@@ -4,9 +4,6 @@ use crate::dsl::task_macro::*;
 use crate::era_common::block_from_hash;
 use crate::utils::blake2b256;
 use entity::sea_orm::{DatabaseTransaction, Set};
-use pallas::ledger::primitives::alonzo::{self};
-use pallas::ledger::primitives::Fragment;
-use pallas::ledger::traverse::MultiEraBlock;
 
 carp_task! {
   name MultieraBlockTask;
@@ -32,11 +29,11 @@ carp_task! {
 
 async fn handle_block(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
+    block: BlockInfo<'_, cml_multi_era::MultiEraBlock, BlockGlobalInfo>,
     readonly: bool,
     include_payload: bool,
 ) -> Result<BlockModel, DbErr> {
-    let hash = blake2b256(block.1.header().cbor());
+    let hash = block.1.hash();
     if readonly {
         return block_from_hash(db_tx, &hash).await;
     }
@@ -48,9 +45,9 @@ async fn handle_block(
     let block = BlockActiveModel {
         era: Set(block.2.era.into()),
         hash: Set(hash.to_vec()),
-        height: Set(block.1.number() as i32),
+        height: Set(block.1.header().block_number() as i32),
         epoch: Set(block.2.epoch.unwrap() as i32),
-        slot: Set(block.1.slot() as i32),
+        slot: Set(block.1.header().slot() as i32),
         payload: Set(Some(block_payload)),
         ..Default::default()
     };

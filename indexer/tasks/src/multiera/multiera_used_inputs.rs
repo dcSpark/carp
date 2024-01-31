@@ -4,15 +4,17 @@ use crate::dsl::database_task::BlockGlobalInfo;
 use crate::era_common::input_from_pointer;
 use crate::types::TxCredentialRelationValue;
 use crate::{config::ReadonlyConfig::ReadonlyConfig, era_common::OutputWithTxData};
-use cardano_multiplatform_lib::{
+use cml_chain::{
     address::{BaseAddress, EnterpriseAddress, PointerAddress, RewardAddress},
     byron::ByronAddress,
 };
+use cml_core::serialization::{FromBytes, ToBytes};
+use cml_crypto::RawBytesEncoding;
+use cml_multi_era::utils::MultiEraTransactionInput;
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction},
 };
-use pallas::ledger::traverse::{MultiEraBlock, MultiEraInput, OutputRef};
 
 use super::{multiera_used_outputs::MultieraOutputTask, relation_map::RelationMap};
 
@@ -44,13 +46,13 @@ carp_task! {
 }
 
 type QueuedInputs = Vec<(
-    Vec<OutputRef>,
+    Vec<MultiEraTransactionInput>,
     i64, // tx_id
 )>;
 
 async fn handle_input(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
+    block: BlockInfo<'_, cml_multi_era::MultiEraBlock, BlockGlobalInfo>,
     multiera_txs: &[TransactionModel],
     vkey_relation_map: &mut RelationMap,
     readonly: bool,
@@ -62,19 +64,21 @@ async fn handle_input(
     DbErr,
 > {
     let mut queued_inputs = QueuedInputs::default();
-    let txs = block.1.txs();
+    let txs = block.1.transaction_bodies();
 
     for (tx_body, cardano_transaction) in txs.iter().zip(multiera_txs) {
         if cardano_transaction.is_valid {
-            let refs = tx_body.inputs().iter().map(|x| x.output_ref()).collect();
+            let refs = tx_body.inputs();
             queued_inputs.push((refs, cardano_transaction.id));
         }
 
         if !cardano_transaction.is_valid {
             let refs = tx_body
-                .collateral()
-                .iter()
-                .map(|x| x.output_ref())
+                .collateral_inputs()
+                .cloned()
+                .unwrap_or_default()
+                .into_iter()
+                .map(MultiEraTransactionInput::Shelley)
                 .collect();
             queued_inputs.push((refs, cardano_transaction.id))
         }
@@ -129,7 +133,7 @@ async fn handle_input(
 
 pub fn add_input_relations(
     vkey_relation_map: &mut RelationMap,
-    inputs: &[(Vec<OutputRef>, i64)],
+    inputs: &[(Vec<MultiEraTransactionInput>, i64)],
     outputs: &[&TransactionOutputModel],
     input_to_output_map: &BTreeMap<Vec<u8>, BTreeMap<i64, OutputWithTxData>>,
     input_relation: TxCredentialRelationValue,
@@ -138,25 +142,29 @@ pub fn add_input_relations(
     let mut output_to_input_tx = BTreeMap::<i64, i64>::default();
     for input_tx_pair in inputs.iter() {
         for input in input_tx_pair.0.iter() {
-            match input_to_output_map.get(&input.hash().to_vec()) {
+            match input_to_output_map.get(&input.hash().unwrap().to_raw_bytes().to_vec()) {
                 Some(entry_for_tx) => {
-                    let output = &entry_for_tx[&(input.index() as i64)];
+                    let output = &entry_for_tx[&(input.index().unwrap() as i64)];
                     output_to_input_tx.insert(output.model.id, input_tx_pair.1);
                 }
                 None => {
-                    panic!("tx: {} index:{}", input.hash(), input.index());
+                    panic!(
+                        "tx: {} index:{}",
+                        input.hash().unwrap().to_hex(),
+                        input.index().unwrap()
+                    );
                 }
             }
         }
     }
 
     outputs.iter().for_each(|&output| {
-        match &cardano_multiplatform_lib::TransactionOutput::from_bytes(output.payload.clone()) {
+        match &cml_chain::transaction::TransactionOutput::from_bytes(output.payload.clone()) {
             Ok(payload) => {
                 add_input_cred_relation(
                     vkey_relation_map,
                     output_to_input_tx[&output.id],
-                    &payload.address(),
+                    payload.address(),
                     input_relation,
                     input_stake_relation,
                 );
@@ -171,45 +179,40 @@ pub fn add_input_relations(
 fn add_input_cred_relation(
     vkey_relation_map: &mut RelationMap,
     tx_id: i64,
-    addr: &cardano_multiplatform_lib::address::Address,
+    addr: &cml_chain::address::Address,
     input_relation: TxCredentialRelationValue,
     input_stake_relation: TxCredentialRelationValue,
 ) {
     if let Some(base_addr) = BaseAddress::from_address(addr) {
         // Payment Key
         {
-            vkey_relation_map.add_relation(
-                tx_id,
-                &base_addr.payment_cred().to_bytes(),
-                input_relation,
-            );
+            vkey_relation_map.add_relation(tx_id, base_addr.payment.to_raw_bytes(), input_relation);
         }
 
         // Stake Key
         {
             vkey_relation_map.add_relation(
                 tx_id,
-                &base_addr.stake_cred().to_bytes(),
+                base_addr.stake.to_raw_bytes(),
                 input_stake_relation,
             );
         }
     } else if let Some(reward_addr) = RewardAddress::from_address(addr) {
-        vkey_relation_map.add_relation(
-            tx_id,
-            &reward_addr.payment_cred().to_bytes(),
-            input_relation,
-        );
+        vkey_relation_map.add_relation(tx_id, reward_addr.payment.to_raw_bytes(), input_relation);
     } else if ByronAddress::from_address(addr).is_some() {
         // Byron address has no credentials
     } else if let Some(enterprise_addr) = EnterpriseAddress::from_address(addr) {
         vkey_relation_map.add_relation(
             tx_id,
-            &enterprise_addr.payment_cred().to_bytes(),
+            enterprise_addr.payment.to_raw_bytes(),
             input_relation,
         );
     } else if let Some(ptr_addr) = PointerAddress::from_address(addr) {
-        vkey_relation_map.add_relation(tx_id, &ptr_addr.payment_cred().to_bytes(), input_relation);
+        vkey_relation_map.add_relation(tx_id, ptr_addr.payment.to_raw_bytes(), input_relation);
     } else {
-        panic!("Unexpected address type {}", hex::encode(addr.to_bytes()));
+        panic!(
+            "Unexpected address type {}",
+            hex::encode(addr.to_raw_bytes())
+        );
     }
 }

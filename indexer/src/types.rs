@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-pub type MultiEraBlock<'b> = pallas::ledger::traverse::MultiEraBlock<'b>;
+pub type MultiEraBlock = cml_multi_era::MultiEraBlock;
 
 #[async_trait]
 pub trait StoppableService {

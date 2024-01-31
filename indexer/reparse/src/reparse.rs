@@ -1,3 +1,4 @@
+use cml_core::serialization::FromBytes;
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, JoinType, QueryOrder, QuerySelect},
@@ -34,8 +35,7 @@ async fn reparse_txs(conn: &DatabaseConnection, start_index: u64) -> Result<(), 
         for tx in txs {
             // TODO: this will fail on all Byron txs
             // https://github.com/dcSpark/cardano-multiplatform-lib/issues/61
-            if let Err(e) = &cardano_multiplatform_lib::Transaction::from_bytes(tx.payload.clone())
-            {
+            if let Err(e) = &cml_chain::transaction::Transaction::from_bytes(tx.payload.clone()) {
                 println!(
                     "\nFailed tx at tx hash {}. {:?} {}\n",
                     hex::encode(&tx.hash),
@@ -65,9 +65,7 @@ async fn reparse_addresses(conn: &DatabaseConnection, start_index: u64) -> Resul
             (100.0 * addresses.first().unwrap().id as f64) / (address_count as f64)
         );
         for addr in addresses {
-            if let Err(e) =
-                &cardano_multiplatform_lib::address::Address::from_bytes(addr.payload.clone())
-            {
+            if let Err(e) = &cml_chain::address::Address::from_bytes(addr.payload.clone()) {
                 let bad_tx = Transaction::find()
                     .join(
                         JoinType::InnerJoin,
@@ -119,7 +117,7 @@ async fn reparse_tx_out(conn: &DatabaseConnection, start_index: u64) -> Result<(
             // TODO: this will fail on all Byron txs
             // https://github.com/dcSpark/cardano-multiplatform-lib/issues/61
             if let Err(e) =
-                &cardano_multiplatform_lib::TransactionOutput::from_bytes(tx_out.payload.clone())
+                &cml_chain::transaction::TransactionOutput::from_bytes(tx_out.payload.clone())
             {
                 let bad_tx = Transaction::find()
                     .join(

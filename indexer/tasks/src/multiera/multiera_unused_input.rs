@@ -4,11 +4,11 @@ use super::{
 };
 use crate::dsl::database_task::BlockGlobalInfo;
 use crate::{config::EmptyConfig::EmptyConfig, types::TxCredentialRelationValue};
+use cml_multi_era::utils::MultiEraTransactionInput;
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction},
 };
-use pallas::ledger::traverse::{MultiEraBlock, OutputRef};
 
 use crate::dsl::task_macro::*;
 
@@ -22,7 +22,7 @@ carp_task! {
   write [vkey_relation_map];
   should_add_task |block, _properties| {
     // if any txs has collateral defined, then it has some unused input (either collateral or main inputs if tx failed)
-    block.1.txs().iter().any(|tx| tx.collateral().len() > 0)
+    block.1.transaction_bodies().iter().any(|tx| !tx.collateral_inputs().cloned().unwrap_or_default().is_empty())
   };
   execute |previous_data, task| handle_unused_input(
       task.db_tx,
@@ -34,20 +34,20 @@ carp_task! {
   };
 }
 
-type QueuedInputs = Vec<(Vec<OutputRef>, i64)>;
+type QueuedInputs = Vec<(Vec<MultiEraTransactionInput>, i64)>;
 
 async fn handle_unused_input(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
+    block: BlockInfo<'_, cml_multi_era::MultiEraBlock, BlockGlobalInfo>,
     multiera_txs: &[TransactionModel],
     vkey_relation_map: &mut RelationMap,
 ) -> Result<(), DbErr> {
     let mut queued_unused_inputs = QueuedInputs::default();
-    let txs = block.1.txs();
+    let txs = block.1.transaction_bodies();
 
     for (tx_body, cardano_transaction) in txs.iter().zip(multiera_txs) {
         if !cardano_transaction.is_valid {
-            let refs = tx_body.inputs().iter().map(|x| x.output_ref()).collect();
+            let refs = tx_body.inputs();
             queued_unused_inputs.push((refs, cardano_transaction.id))
         }
 
@@ -55,9 +55,11 @@ async fn handle_unused_input(
             // note: we consider collateral as just another kind of input instead of a separate table
             // you can use the is_valid field to know what kind of input it actually is
             let refs = tx_body
-                .collateral()
-                .iter()
-                .map(|x| x.output_ref())
+                .collateral_inputs()
+                .cloned()
+                .unwrap_or_default()
+                .into_iter()
+                .map(MultiEraTransactionInput::Shelley)
                 .collect();
             queued_unused_inputs.push((refs, cardano_transaction.id))
         }

@@ -7,20 +7,18 @@ use crate::multiera::dex::common::filter_outputs_and_datums_by_address;
 use crate::multiera::multiera_txs::MultieraTransactionTask;
 use crate::multiera::multiera_used_inputs::MultieraUsedInputTask;
 use crate::multiera::multiera_used_outputs::MultieraOutputTask;
+use crate::multiera::utils::common::output_from_bytes;
 use crate::types::AddressCredentialRelationValue;
-use cardano_multiplatform_lib::error::DeserializeError;
-use cml_core::serialization::{FromBytes, ToBytes};
+use cml_core::serialization::{Deserialize, FromBytes, Serialize, ToBytes};
 use cml_crypto::RawBytesEncoding;
+use cml_multi_era::utils::{MultiEraTransactionInput, MultiEraTransactionOutput};
+use entity::block::EraValue;
 use entity::sea_orm::Condition;
 use entity::transaction_output::Model;
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, DatabaseTransaction, Set},
 };
-use pallas::ledger::primitives::babbage::DatumOption;
-use pallas::ledger::primitives::Fragment;
-use pallas::ledger::traverse::{Asset, MultiEraInput, MultiEraOutput};
-use projected_nft_sdk::{Owner, State, Status};
 use sea_orm::{FromQueryResult, JoinType, QuerySelect, QueryTrait};
 use std::collections::{BTreeSet, HashMap};
 
@@ -48,7 +46,7 @@ carp_task! {
 
 async fn handle(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
+    block: BlockInfo<'_, cml_multi_era::MultiEraBlock, BlockGlobalInfo>,
     multiera_txs: &[TransactionModel],
     multiera_outputs: &[TransactionOutputModel],
     multiera_used_inputs_to_outputs_map: &BTreeMap<Vec<u8>, BTreeMap<i64, OutputWithTxData>>,
@@ -71,11 +69,28 @@ async fn handle(
         .map(|output| ((output.tx_id, output.output_index), output))
         .collect();
 
-    for (tx_body, cardano_transaction) in block.1.txs().iter().zip(multiera_txs) {
-        for input in tx_body.inputs().iter().chain(tx_body.collateral().iter()) {
+    for (tx_body, cardano_transaction) in block.1.transaction_bodies().iter().zip(multiera_txs) {
+        let collateral_inputs = tx_body
+            .collateral_inputs()
+            .cloned()
+            .unwrap_or_default()
+            .into_iter()
+            .map(MultiEraTransactionInput::Shelley)
+            .collect::<Vec<_>>();
+
+        for input in tx_body.inputs().iter().chain(collateral_inputs.iter()) {
             let utxo = multiera_used_inputs_to_outputs_map
-                .get(input.hash().as_ref())
-                .and_then(|by_index| by_index.get(&(input.index() as i64)));
+                .get(
+                    input
+                        .hash()
+                        .ok_or(DbErr::Custom("can't get hash of input".to_string()))?
+                        .to_raw_bytes(),
+                )
+                .and_then(|by_index| {
+                    input
+                        .index()
+                        .and_then(|index| by_index.get(&(index as i64)))
+                });
 
             let utxo = if let Some(utxo) = utxo {
                 utxo
@@ -94,34 +109,46 @@ async fn handle(
                 continue;
             };
 
-            let output = MultiEraOutput::decode(utxo.era, &utxo.model.payload).unwrap();
+            let output = output_from_bytes(utxo)?;
+            let output = match output {
+                MultiEraTransactionOutput::Byron(_) => {
+                    continue;
+                }
+                MultiEraTransactionOutput::Shelley(shelley) => shelley,
+            };
 
-            for asset in output.non_ada_assets() {
-                let (policy_id, asset_name, value) = match asset {
-                    Asset::Ada(_) => continue,
-                    Asset::NativeAsset(policy_id, asset_name, value) => {
-                        (policy_id, asset_name, value)
-                    }
-                };
-
+            for (policy_id, asset_name, value) in
+                output
+                    .amount()
+                    .multiasset
+                    .iter()
+                    .flat_map(|(policy_id, assets)| {
+                        assets
+                            .iter()
+                            .map(|(asset_name, value)| (*policy_id, asset_name, value))
+                    })
+            {
                 // 0 values were allowed in the serialization of multiassets
                 // before conway. We need to filter these here, because the
                 // asset may not actually be in the assets table.
-                if value == 0 {
+                if *value == 0 {
                     continue;
                 }
 
                 condition = condition.add(
                     Condition::all()
-                        .add(entity::native_asset::Column::PolicyId.eq(policy_id.as_ref()))
-                        .add(entity::native_asset::Column::AssetName.eq(asset_name.clone())),
+                        .add(
+                            entity::native_asset::Column::PolicyId
+                                .eq(policy_id.to_raw_bytes().to_vec()),
+                        )
+                        .add(entity::native_asset::Column::AssetName.eq(asset_name.get().clone())),
                 );
 
                 queued_inserts.push(PartialEntry {
                     utxo_id: utxo.model.id,
                     amount: None,
                     tx_id: cardano_transaction.id,
-                    asset: (policy_id.as_ref().to_vec(), asset_name),
+                    asset: (policy_id.to_raw_bytes().to_vec(), asset_name.get().clone()),
                 });
             }
         }
@@ -132,13 +159,7 @@ async fn handle(
             .chain(tx_body.collateral_return().iter())
             .enumerate()
         {
-            let address = output
-                .address()
-                .map_err(|err| DbErr::Custom(format!("invalid pallas address: {}", err)))?
-                .to_vec();
-
-            let address = cardano_multiplatform_lib::address::Address::from_bytes(address)
-                .map_err(|err| DbErr::Custom(format!("cml can't parse address: {}", err)))?;
+            let address = output.address();
 
             if address.payment_cred().is_none() {
                 continue;
@@ -152,32 +173,45 @@ async fn handle(
                 Some(output) => output,
             };
 
-            for asset in output.non_ada_assets() {
-                let (policy_id, asset_name, value) = match asset {
-                    Asset::Ada(_) => continue,
-                    Asset::NativeAsset(policy_id, asset_name, value) => {
-                        (policy_id, asset_name, value)
-                    }
-                };
+            let output = match output {
+                MultiEraTransactionOutput::Byron(_) => {
+                    continue;
+                }
+                MultiEraTransactionOutput::Shelley(shelley) => shelley,
+            };
 
+            for (policy_id, asset_name, value) in
+                output
+                    .amount()
+                    .multiasset
+                    .iter()
+                    .flat_map(|(policy_id, assets)| {
+                        assets
+                            .iter()
+                            .map(|(asset_name, value)| (*policy_id, asset_name, value))
+                    })
+            {
                 // 0 values were allowed in the serialization of multiassets
                 // before conway. We need to filter these here, because the
                 // asset may not actually be in the assets table.
-                if value == 0 {
+                if *value == 0 {
                     continue;
                 }
 
                 condition = condition.add(
                     Condition::all()
-                        .add(entity::native_asset::Column::PolicyId.eq(policy_id.as_ref()))
-                        .add(entity::native_asset::Column::AssetName.eq(asset_name.clone())),
+                        .add(
+                            entity::native_asset::Column::PolicyId
+                                .eq(policy_id.to_raw_bytes().to_vec()),
+                        )
+                        .add(entity::native_asset::Column::AssetName.eq(asset_name.get().clone())),
                 );
 
                 queued_inserts.push(PartialEntry {
                     utxo_id: output_model.id,
-                    amount: Some(value as i64),
+                    amount: Some(*value as i64),
                     tx_id: cardano_transaction.id,
-                    asset: (policy_id.as_ref().to_vec(), asset_name),
+                    asset: (policy_id.to_raw_bytes().to_vec(), asset_name.get().clone()),
                 });
             }
         }

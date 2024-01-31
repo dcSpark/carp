@@ -1,11 +1,12 @@
 extern crate shred;
 
 use crate::config::PayloadConfig::PayloadConfig;
-use cardano_multiplatform_lib::{
+use cml_chain::{
     byron::ByronAddress,
     genesis::byron::{config::GenesisData, parse::redeem_pubkey_to_txid},
-    ledger::common::value::Value,
 };
+use cml_core::serialization::ToBytes;
+use cml_crypto::RawBytesEncoding;
 use entity::{
     prelude::*,
     sea_orm::{DatabaseTransaction, DbErr, EntityTrait, Set},
@@ -63,7 +64,7 @@ async fn handle_txs(
     // note: genesis file is a JSON structure, so there shouldn't be duplicate addresses
     // even across avvm and non-avvm it should be unique, otherwise two txs with the same tx hash would exist
     let mut addresses: Vec<Box<dyn Fn(i64) -> AddressActiveModel>> = vec![];
-    let mut outputs: Vec<cardano_multiplatform_lib::byron::ByronTxout> = vec![];
+    let mut outputs: Vec<cml_chain::byron::ByronTxOut> = vec![];
 
     for (pub_key, amount) in block.1.avvm_distr.iter() {
         let (tx_hash, byron_addr) = redeem_pubkey_to_txid(pub_key, Some(block.1.protocol_magic));
@@ -77,7 +78,7 @@ async fn handle_txs(
         let tx_index = transactions.len() as i32;
         transactions.push(TransactionActiveModel {
             block_id: Set(database_block.id),
-            hash: Set(tx_hash.to_bytes().to_vec()),
+            hash: Set(tx_hash.to_raw_bytes().to_vec()),
             is_valid: Set(true),
             payload: Set(payload),
             tx_index: Set(tx_index),
@@ -91,9 +92,9 @@ async fn handle_txs(
             ..Default::default()
         }));
 
-        outputs.push(cardano_multiplatform_lib::byron::ByronTxout::new(
-            &byron_addr,
-            amount,
+        outputs.push(cml_chain::byron::ByronTxOut::new(
+            byron_addr.clone(),
+            *amount,
         ));
     }
 
@@ -128,8 +129,9 @@ async fn handle_txs(
             ..Default::default()
         }));
 
-        outputs.push(cardano_multiplatform_lib::byron::ByronTxout::new(
-            byron_addr, amount,
+        outputs.push(cml_chain::byron::ByronTxOut::new(
+            byron_addr.clone(),
+            *amount,
         ));
     }
 

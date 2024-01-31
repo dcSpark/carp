@@ -1,4 +1,5 @@
-use std::collections::BTreeSet;
+use cml_core::serialization::Serialize;
+use std::collections::{BTreeSet, HashSet};
 
 use super::multiera_block::MultieraBlockTask;
 use crate::config::PayloadAndReadonlyConfig::PayloadAndReadonlyConfig;
@@ -6,9 +7,6 @@ use crate::dsl::database_task::BlockGlobalInfo;
 use crate::dsl::task_macro::*;
 use crate::era_common::transactions_from_hashes;
 use entity::sea_orm::{DatabaseTransaction, QueryOrder, Set};
-use pallas::ledger::primitives::alonzo::{self};
-use pallas::ledger::primitives::Fragment;
-use pallas::ledger::traverse::MultiEraBlock;
 
 carp_task! {
   name MultieraTransactionTask;
@@ -35,7 +33,7 @@ carp_task! {
 
 async fn handle_tx(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
+    block: BlockInfo<'_, cml_multi_era::MultiEraBlock, BlockGlobalInfo>,
     database_block: &BlockModel,
     readonly: bool,
     include_payload: bool,
@@ -45,7 +43,7 @@ async fn handle_tx(
             db_tx,
             block
                 .1
-                .txs()
+                .transaction_bodies()
                 .iter()
                 .map(|tx_body| tx_body.hash().to_vec())
                 .collect::<Vec<_>>()
@@ -55,19 +53,30 @@ async fn handle_tx(
         return txs;
     }
 
+    let invalid_txs: HashSet<usize> = HashSet::from_iter(
+        block
+            .1
+            .invalid_transactions()
+            .into_iter()
+            .map(|index| index as usize),
+    );
     let txs: Vec<TransactionActiveModel> = block
         .1
-        .txs()
+        .transaction_bodies()
         .iter()
         .enumerate()
         .map(|(idx, tx)| {
-            let tx_payload = if include_payload { tx.encode() } else { vec![] };
+            let tx_payload = if include_payload {
+                tx.to_cbor_bytes()
+            } else {
+                vec![]
+            };
             TransactionActiveModel {
                 hash: Set(tx.hash().to_vec()),
                 block_id: Set(database_block.id),
                 tx_index: Set(idx as i32),
                 payload: Set(tx_payload),
-                is_valid: Set(tx.is_valid()),
+                is_valid: Set(!invalid_txs.contains(&idx)),
                 ..Default::default()
             }
         })

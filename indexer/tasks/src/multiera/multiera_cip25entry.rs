@@ -1,15 +1,12 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::config::EmptyConfig::EmptyConfig;
-use cardano_multiplatform_lib::crypto::ScriptHash;
+use cml_chain::crypto::ScriptHash;
+use cml_core::metadata::TransactionMetadatum;
+use cml_core::serialization::FromBytes;
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, Condition, DatabaseTransaction, Set},
-};
-use pallas::ledger::primitives::Fragment;
-use pallas::{
-    codec::utils::KeyValuePairs,
-    ledger::primitives::alonzo::{self, AuxiliaryData, Metadatum, MetadatumLabel},
 };
 
 use super::{
@@ -30,7 +27,7 @@ carp_task! {
   read [multiera_assets, multiera_metadata];
   write [];
   should_add_task |block, _properties| {
-    block.1.has_aux_data()
+    !block.1.auxiliary_data_set().is_empty()
   };
   execute |previous_data, task| handle_entries(
       task.db_tx,
@@ -62,9 +59,10 @@ async fn handle_entries(
 
     let mut to_insert: Vec<Cip25EntryActiveModel> = vec![];
     for metadata in multiera_metadata {
-        if let Ok(pairs) =
-            &get_cip25_pairs(&Metadatum::decode_fragment(metadata.payload.as_slice()).unwrap())
-        {
+        if let Ok(pairs) = &get_cip25_pairs(
+            &TransactionMetadatum::from_bytes(metadata.payload.clone())
+                .map_err(|err| DbErr::Custom(format!("can't decode metadata: {err}")))?,
+        ) {
             for ((asset_name, payload), policy_id) in pairs
                 .1
                 .iter()

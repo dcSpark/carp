@@ -5,7 +5,7 @@ use crate::dsl::database_task::{BlockGlobalInfo, BlockInfo};
 use crate::execution_plan::ExecutionPlan;
 use crate::utils::find_task_registry_entry;
 use crate::utils::TaskPerfAggregator;
-use cardano_multiplatform_lib::genesis::byron::config::GenesisData;
+use cml_chain::genesis::byron::config::GenesisData;
 use entity::sea_orm::{prelude::*, DatabaseTransaction};
 use shred::{DispatcherBuilder, World};
 use tokio::runtime::Handle;

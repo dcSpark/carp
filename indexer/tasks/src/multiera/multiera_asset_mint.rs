@@ -1,3 +1,4 @@
+use cml_chain::assets::Mint;
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::utils::common::asset_from_pair;
@@ -5,17 +6,13 @@ use super::{multiera_txs::MultieraTransactionTask, utils::user_asset::AssetName}
 use crate::config::ReadonlyConfig::ReadonlyConfig;
 use crate::dsl::database_task::BlockGlobalInfo;
 use crate::utils::blake2b160;
-use cardano_multiplatform_lib::crypto::ScriptHash;
+use cml_chain::crypto::ScriptHash;
+use cml_core::serialization::Serialize;
+use cml_crypto::RawBytesEncoding;
 use entity::sea_orm::QueryOrder;
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, Condition, DatabaseTransaction, Set},
-};
-use pallas::ledger::primitives::Fragment;
-use pallas::ledger::traverse::MultiEraBlock;
-use pallas::{
-    codec::utils::KeyValuePairs,
-    ledger::primitives::alonzo::{self, AuxiliaryData, Metadatum, MetadatumLabel},
 };
 
 use crate::dsl::task_macro::*;
@@ -29,7 +26,7 @@ carp_task! {
   read [multiera_block, multiera_txs];
   write [multiera_assets];
   should_add_task |block, _properties| {
-    block.1.txs().iter().any(|tx| tx.mint().len() > 0)
+    block.1.transaction_bodies().iter().any(|tx| tx.mint().map(|mint| mint.len() > 0).unwrap_or(false))
   };
   execute |previous_data, task| handle_mints(
       task.db_tx,
@@ -44,17 +41,21 @@ carp_task! {
 
 async fn handle_mints(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
+    block: BlockInfo<'_, cml_multi_era::MultiEraBlock, BlockGlobalInfo>,
     multiera_txs: &[TransactionModel],
     readonly: bool,
 ) -> Result<Vec<NativeAssetModel>, DbErr> {
     let mut queued_mints = Vec::<(i64, (Vec<u8>, Vec<u8>), i64)>::default();
-    for (tx_body, cardano_transaction) in block.1.txs().iter().zip(multiera_txs) {
-        for (policy_id, assets) in tx_body.mint().as_alonzo().iter().flat_map(|x| x.iter()) {
+    for (tx_body, cardano_transaction) in block.1.transaction_bodies().iter().zip(multiera_txs) {
+        let mint = match tx_body.mint() {
+            None => continue,
+            Some(mint) => mint,
+        };
+        for (policy_id, assets) in mint.iter() {
             for (asset_name, amount) in assets.iter() {
                 queued_mints.push((
                     cardano_transaction.id,
-                    (policy_id.to_vec(), asset_name.to_vec()),
+                    (policy_id.to_raw_bytes().to_vec(), asset_name.get().clone()),
                     *amount,
                 ));
             }

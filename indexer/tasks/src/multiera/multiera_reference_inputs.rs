@@ -3,16 +3,17 @@ use std::collections::BTreeMap;
 use crate::dsl::database_task::BlockGlobalInfo;
 use crate::types::TxCredentialRelationValue;
 use crate::{config::ReadonlyConfig::ReadonlyConfig, era_common::OutputWithTxData};
-use cardano_multiplatform_lib::{
+use cml_chain::{
     address::{BaseAddress, EnterpriseAddress, PointerAddress, RewardAddress},
     byron::ByronAddress,
 };
+use cml_crypto::RawBytesEncoding;
+use cml_multi_era::utils::MultiEraTransactionInput;
 use entity::sea_orm::QueryOrder;
 use entity::{
     prelude::*,
     sea_orm::{prelude::*, Condition, DatabaseTransaction, Set},
 };
-use pallas::ledger::traverse::{MultiEraBlock, MultiEraInput, OutputRef};
 
 use super::{
     multiera_used_inputs::add_input_relations, multiera_used_outputs::MultieraOutputTask,
@@ -30,7 +31,7 @@ carp_task! {
   read [multiera_txs];
   write [vkey_relation_map];
   should_add_task |block, _properties| {
-    block.1.txs().iter().any(|tx| !tx.reference_inputs().is_empty())
+    block.1.transaction_bodies().iter().any(|tx| !tx.reference_inputs().cloned().unwrap_or_default().is_empty())
   };
   execute |previous_data, task| handle_input(
       task.db_tx,
@@ -44,25 +45,27 @@ carp_task! {
 }
 
 type QueuedInputs = Vec<(
-    Vec<OutputRef>,
+    Vec<MultiEraTransactionInput>,
     i64, // tx_id
 )>;
 
 async fn handle_input(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
+    block: BlockInfo<'_, cml_multi_era::MultiEraBlock, BlockGlobalInfo>,
     multiera_txs: &[TransactionModel],
     vkey_relation_map: &mut RelationMap,
     readonly: bool,
 ) -> Result<Vec<TransactionReferenceInputModel>, DbErr> {
     let mut queued_inputs = QueuedInputs::default();
-    let txs = block.1.txs();
+    let txs = block.1.transaction_bodies();
 
     for (tx_body, cardano_transaction) in txs.iter().zip(multiera_txs) {
         let refs = tx_body
             .reference_inputs()
-            .iter()
-            .map(|x| x.output_ref())
+            .cloned()
+            .unwrap_or_default()
+            .into_iter()
+            .map(MultiEraTransactionInput::Shelley)
             .collect();
         queued_inputs.push((refs, cardano_transaction.id));
     }
@@ -106,7 +109,7 @@ async fn handle_input(
 }
 
 pub async fn insert_reference_inputs(
-    inputs: &[(Vec<pallas::ledger::traverse::OutputRef>, i64)],
+    inputs: &[(Vec<MultiEraTransactionInput>, i64)],
     input_to_output_map: &BTreeMap<Vec<u8>, BTreeMap<i64, OutputWithTxData>>,
     txn: &DatabaseTransaction,
 ) -> Result<Vec<TransactionReferenceInputModel>, DbErr> {
@@ -121,7 +124,8 @@ pub async fn insert_reference_inputs(
             .iter()
             .flat_map(|pair| pair.0.iter().enumerate().zip(std::iter::repeat(pair.1)))
             .map(|((idx, input), tx_id)| {
-                let output = &input_to_output_map[&input.hash().to_vec()][&(input.index() as i64)];
+                let output = &input_to_output_map[&input.hash().unwrap().to_raw_bytes().to_vec()]
+                    [&(input.index().unwrap() as i64)];
                 TransactionReferenceInputActiveModel {
                     utxo_id: Set(output.model.id),
                     address_id: Set(output.model.address_id),

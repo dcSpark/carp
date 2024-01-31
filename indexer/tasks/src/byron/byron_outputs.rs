@@ -2,15 +2,11 @@ use super::byron_address::ByronAddressTask;
 use crate::config::EmptyConfig::EmptyConfig;
 use crate::dsl::database_task::BlockGlobalInfo;
 use crate::{dsl::task_macro::*, era_common::get_truncated_address};
+use cml_chain::byron::ByronTxOut;
+use cml_core::serialization::ToBytes;
+use cml_multi_era::byron::block::ByronBlock;
+use cml_multi_era::MultiEraBlock;
 use entity::sea_orm::Set;
-use pallas::ledger::traverse::MultiEraOutput;
-use pallas::{
-    codec::utils::MaybeIndefArray,
-    ledger::primitives::{
-        byron::{self, TxOut},
-        Fragment,
-    },
-};
 
 carp_task! {
   name ByronOutputTask;
@@ -22,7 +18,7 @@ carp_task! {
   write [byron_outputs];
   should_add_task |block, _properties| {
     // recall: txs may have no outputs if they just burn all inputs as fee
-    block.1.txs().iter().any(|tx| tx.outputs().len() > 0)
+    block.1.transaction_bodies().iter().any(|tx| !tx.outputs().is_empty())
   };
   execute |previous_data, task| handle_outputs(
       task.db_tx,
@@ -37,20 +33,20 @@ carp_task! {
 
 async fn handle_outputs(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, MultiEraBlock<'_>, BlockGlobalInfo>,
+    block: BlockInfo<'_, cml_multi_era::MultiEraBlock, BlockGlobalInfo>,
     byron_txs: &[TransactionModel],
     byron_addresses: &BTreeMap<Vec<u8>, AddressInBlock>,
 ) -> Result<Vec<TransactionOutputModel>, DbErr> {
-    let tx_outputs: Vec<_> = block
-        .1
-        .as_byron()
-        .unwrap()
-        .body
-        .tx_payload
-        .iter()
-        .map(|payload| &payload.transaction.outputs)
-        .zip(byron_txs)
-        .collect();
+    let tx_outputs: Vec<_> = match block.1 {
+        MultiEraBlock::Byron(ByronBlock::Main(block)) => block
+            .body
+            .tx_payload
+            .iter()
+            .map(|payload| &payload.byron_tx.outputs)
+            .zip(byron_txs)
+            .collect(),
+        _ => return Ok(vec![]),
+    };
 
     if tx_outputs.is_empty() {
         return Ok(vec![]);
@@ -63,7 +59,7 @@ async fn handle_outputs(
 async fn insert_byron_outputs(
     txn: &DatabaseTransaction,
     address_map: &BTreeMap<Vec<u8>, AddressInBlock>,
-    outputs: &[(&MaybeIndefArray<TxOut>, &TransactionModel)],
+    outputs: &[(&Vec<ByronTxOut>, &TransactionModel)],
 ) -> Result<Vec<TransactionOutputModel>, DbErr> {
     let result = TransactionOutput::insert_many(
         outputs
@@ -71,11 +67,9 @@ async fn insert_byron_outputs(
             .flat_map(|pair| pair.0.iter().enumerate().zip(std::iter::repeat(pair.1)))
             .map(
                 |((output_index, output), tx_id)| TransactionOutputActiveModel {
-                    payload: Set(output.encode_fragment().unwrap()),
+                    payload: Set(output.to_bytes()),
                     address_id: Set(address_map
-                        .get(get_truncated_address(
-                            &output.address.encode_fragment().unwrap(),
-                        ))
+                        .get(get_truncated_address(&output.address.to_bytes()))
                         .unwrap()
                         .model
                         .id),

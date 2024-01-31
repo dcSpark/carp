@@ -1,5 +1,7 @@
 use crate::config::PayloadConfig::PayloadConfig;
 use crate::dsl::task_macro::*;
+use cml_core::serialization::ToBytes;
+use cml_crypto::RawBytesEncoding;
 use entity::{block::EraValue, sea_orm::Set};
 use hex::ToHex;
 
@@ -29,7 +31,7 @@ async fn handle_block(
     block: BlockInfo<'_, GenesisData, BlockGlobalInfo>,
     include_payload: bool,
 ) -> Result<BlockModel, DbErr> {
-    let genesis_hash = block.1.genesis_prev.to_bytes();
+    let genesis_hash = block.1.genesis_prev.to_raw_bytes().to_vec();
 
     let block_payload = if include_payload {
         hex::decode(block.0).unwrap()
