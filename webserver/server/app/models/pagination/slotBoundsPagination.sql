@@ -1,30 +1,54 @@
- /* @name slotBoundsPagination */
+/* @name slotBoundsPagination */
 WITH
-min_hash AS
-(
-         SELECT   COALESCE("Transaction".id, -1) AS min_tx_id,
-                  slot                           AS min_slot
-         FROM     "Transaction"
-         JOIN     "Block"
-         ON       "Block".id = "Transaction".block_id
-         WHERE    slot <= :low!
-         ORDER BY "Block".id DESC,
-                  "Transaction".id DESC
-         LIMIT 1
-),
-max_hash AS
-(
-         SELECT   slot                                AS max_slot,
-                  COALESCE(Max("Transaction".id), -2) AS max_tx_id
-         FROM     "Transaction"
-         JOIN     "Block"
-         ON       "Transaction".block_id = "Block".id
-         WHERE    slot <= :high!
-         GROUP BY "Block".id
-         ORDER BY "Block".id DESC
-         LIMIT 1
-)
-SELECT    *
-FROM      min_hash
-LEFT JOIN max_hash
-ON        1 = 1; 
+    low_block AS (
+        SELECT
+            "Block".id,
+            "Block".slot
+        FROM
+            "Block"
+        WHERE
+            slot <= :low! AND tx_count > 0
+        ORDER BY
+            "Block".id DESC
+        LIMIT
+            1
+    ),
+    high_block AS (
+        SELECT
+            "Block".id,
+            "Block".slot
+        FROM
+            "Block"
+        WHERE
+            slot <= :high! AND tx_count > 0
+        ORDER BY
+            "Block".id DESC
+        LIMIT
+            1
+    ),
+    min_hash AS (
+        SELECT
+            COALESCE(MAX("Transaction".id), -1) AS min_tx_id,
+            slot AS min_slot
+        FROM
+            "Transaction"
+            JOIN low_block ON "Transaction".block_id = low_block.id
+        GROUP BY
+            low_block.slot
+        LIMIT
+            1
+    ),
+    max_hash AS (
+        SELECT
+            COALESCE(MAX("Transaction".id), -2) AS max_tx_id,
+            slot AS max_slot
+        FROM
+            "Transaction"
+            JOIN high_block ON "Transaction".block_id = high_block.id
+        GROUP BY
+            high_block.slot
+    )
+SELECT
+    *
+FROM min_hash
+LEFT JOIN max_hash ON 1 = 1;

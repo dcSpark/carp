@@ -49,6 +49,7 @@ async fn handle_block(
         epoch: Set(block.2.epoch.unwrap() as i32),
         slot: Set(block.1.header().slot() as i32),
         payload: Set(Some(block_payload)),
+        tx_count: Set(block.1.txs().len() as i32),
         ..Default::default()
     };
     block.insert(db_tx).await
