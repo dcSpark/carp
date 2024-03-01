@@ -3,17 +3,19 @@
 @param fingerprints -> (...)
 @param policyIds -> (...)
 */
-SELECT ENCODE(TXO.HASH,
-        'hex') OUTPUT_TX_HASH,
-    "TransactionOutput".OUTPUT_INDEX,
-	"NativeAsset".CIP14_FINGERPRINT,
-	"NativeAsset".POLICY_ID,
-	"NativeAsset".ASSET_NAME,
-	"AssetUtxo".AMOUNT,
-	"Block".SLOT,
-	ENCODE("Transaction".HASH,
-        'hex') TX_HASH,
-	"Address".PAYLOAD ADDRESS_RAW
+SELECT
+	ENCODE("Transaction".HASH, 'hex') TX,
+	ENCODE("Block".HASH, 'hex') AS "block!",
+	json_agg(json_build_object(
+		'outputIndex', "TransactionOutput".OUTPUT_INDEX,
+		'outputTxHash', ENCODE(TXO.HASH, 'hex'),
+		'cip14Fingerprint', ENCODE("NativeAsset".CIP14_FINGERPRINT, 'hex'),
+		'policyId', ENCODE("NativeAsset".POLICY_ID, 'hex'),
+		'assetName', ENCODE("NativeAsset".ASSET_NAME, 'hex'),
+		'amount', "AssetUtxo".AMOUNT,
+		'slot', "Block".SLOT,
+		'addressRaw', ENCODE("Address".PAYLOAD, 'hex')
+	)) as "payload!"
 FROM "AssetUtxo"
 JOIN "Transaction" ON "AssetUtxo".TX_ID = "Transaction".ID
 JOIN "TransactionOutput" ON "AssetUtxo".UTXO_ID = "TransactionOutput".ID
@@ -25,6 +27,8 @@ WHERE
 	("NativeAsset".CIP14_FINGERPRINT IN :fingerprints
 		OR "NativeAsset".POLICY_ID IN :policyIds
 	) AND
-	"Block".SLOT > :min_slot! AND
-	"Block".SLOT <= :max_slot!
-ORDER BY "Transaction".ID, "AssetUtxo".ID ASC;
+	"Transaction".id > :after_tx_id! AND
+	"Transaction".id <= :until_tx_id!
+GROUP BY ("Block".ID, "Transaction".ID)
+ORDER BY "Transaction".ID ASC
+LIMIT :limit!;

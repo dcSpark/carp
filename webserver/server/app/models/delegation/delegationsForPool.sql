@@ -3,13 +3,18 @@
 @param pools -> (...)
 */
 SELECT 
-	encode(credential, 'hex') as "credential!",
 	encode("Transaction".hash, 'hex') as "tx_id!",
-	"Block".slot,
-	CASE WHEN "StakeDelegationCredentialRelation".pool_credential IN :pools! 
-		THEN encode("StakeDelegationCredentialRelation".pool_credential, 'hex') 
-		ELSE NULL
-		END AS pool
+	encode("Block".hash, 'hex') as "block!",
+	json_agg(json_build_object(
+		'credential', encode(credential, 'hex'),
+		'slot', "Block".slot,
+		'pool',
+			CASE WHEN "StakeDelegationCredentialRelation".pool_credential IN :pools!
+			THEN encode("StakeDelegationCredentialRelation".pool_credential, 'hex')
+			ELSE NULL
+			END
+		)
+	) as "payload!"
 FROM "StakeDelegationCredentialRelation"
 JOIN "StakeCredential" ON stake_credential = "StakeCredential".id
 JOIN "Transaction" ON "Transaction".id = "StakeDelegationCredentialRelation".tx_id
@@ -19,6 +24,8 @@ WHERE
 		"StakeDelegationCredentialRelation".pool_credential IN :pools! OR
 	 	"StakeDelegationCredentialRelation".previous_pool IN :pools!
 	) AND
-	"Block".slot > :min_slot! AND
-	"Block".slot <= :max_slot!
-ORDER BY ("Block".height, "Transaction".tx_index) ASC;
+	"Transaction".id > :after_tx_id! AND
+	"Transaction".id <= :until_tx_id!
+GROUP BY ("Block".hash, "Transaction".id)
+ORDER BY "Transaction".id ASC
+LIMIT :limit!;

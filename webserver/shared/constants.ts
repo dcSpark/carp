@@ -34,9 +34,10 @@ export const PROJECTED_NFT_LIMIT = {
 
 export const POOL_DELEGATION_LIMIT = {
   POOLS: 50,
-  SLOT_RANGE: 10000,
+  DEFAULT_PAGE_SIZE: 50,
 };
 
 export const ASSET_UTXOS_LIMIT = {
   ASSETS: 50,
+  DEFAULT_PAGE_SIZE: 50,
 };
