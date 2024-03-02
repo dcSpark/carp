@@ -1,4 +1,4 @@
-import { SlotLimits } from "./DelegationForPool";
+import { SlotLimits } from "../../server/app/services/PaginationService";
 import { AssetName, PolicyId } from "./PolicyIdAssetMap";
 import { Pagination } from "./common";
 

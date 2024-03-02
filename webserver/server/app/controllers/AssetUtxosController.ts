@@ -11,7 +11,7 @@ import type { IAssetUtxosResult } from '../models/asset/assetUtxos.queries';
 import { bech32 } from 'bech32';
 import { ASSET_UTXOS_LIMIT } from '../../../shared/constants';
 import { Address } from '@dcspark/cardano-multiplatform-lib-nodejs';
-import { resolvePageStart, resolveUntilTransaction } from '../services/PaginationService';
+import { adjustToSlotLimits, resolvePageStart, resolveUntilTransaction } from '../services/PaginationService';
 import { slotBoundsPagination } from '../models/pagination/slotBoundsPagination.queries';
 import { expectType } from 'tsd';
 
@@ -76,31 +76,7 @@ export class AssetUtxosController extends Controller {
         });
       }
 
-      let pageStartWithSlot = pageStart;
-
-      // if the slotLimits field is set, this shrinks the tx id range
-      // accordingly if necessary.
-      if (requestBody.slotLimits) {
-        const bounds = slotBounds ? slotBounds[0] : { min_tx_id: -1, max_tx_id: -2 };
-
-        const minTxId = Number(bounds.min_tx_id);
-
-        if (!pageStartWithSlot) {
-          pageStartWithSlot = {
-            // block_id is not really used by this query.
-            block_id: -1,
-            // if no *after* argument is provided, this starts the pagination
-            // from the corresponding slot. This allows skipping slots you are
-            // not interested in. If there is also no slotLimits specified this
-            // starts from the first tx because of the default of -1.
-            tx_id: minTxId,
-          };
-        } else {
-          pageStartWithSlot.tx_id = Math.max(Number(bounds.min_tx_id), pageStartWithSlot.tx_id);
-        }
-
-        until.tx_id = Math.min(until.tx_id, Number(bounds.max_tx_id));
-      }
+      const pageStartWithSlot = adjustToSlotLimits(pageStart, until, requestBody.slotLimits, slotBounds);
 
       const data = await getAssetUtxos({
         after: pageStartWithSlot?.tx_id || 0,
@@ -120,8 +96,10 @@ export class AssetUtxosController extends Controller {
         return {
           txId: data.tx as string,
           block: data.block,
-          payload: (data.payload as any[]).map(x => {
-            const address = Address.from_bytes(Uint8Array.from(Buffer.from(x.addressRaw, 'hex')));
+          payload: (data.payload as { [key: string]: string | number }[]).map(x => {
+            const address = Address.from_bytes(
+              Uint8Array.from(Buffer.from(x.addressRaw as string, 'hex'))
+            );
 
             const paymentCred = address.payment_cred();
             const addressBytes = paymentCred?.to_bytes();
@@ -137,7 +115,10 @@ export class AssetUtxosController extends Controller {
               paymentCred: Buffer.from(addressBytes as Uint8Array).toString('hex'),
               amount: x.amount ? x.amount : undefined,
               slot: x.slot,
-              cip14Fingerprint: bech32.encode('asset', bech32.toWords(Buffer.from(x.cip14Fingerprint, 'hex'))),
+              cip14Fingerprint: bech32.encode(
+                'asset',
+                bech32.toWords(Buffer.from(x.cip14Fingerprint as string, 'hex'))
+              ),
               policyId: x.policyId,
               assetName: x.assetName,
             };

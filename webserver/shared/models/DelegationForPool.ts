@@ -1,13 +1,7 @@
 import type { Pagination } from "./common";
 import { Address } from "./Address";
 import { Pool, PoolHex } from "./Pool";
-
-export type SlotLimits = {
-  // this is exclusive
-  from: number;
-  // this is inclusive
-  to: number;
-};
+import { SlotLimits } from "../../server/app/services/PaginationService";
 
 export type DelegationForPoolRequest = {
   pools: Pool[];
