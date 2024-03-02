@@ -853,6 +853,100 @@
                 ],
                 "type": "object"
             },
+            "MintBurnSingleResponse": {
+                "properties": {
+                    "assets": {
+                        "properties": {},
+                        "additionalProperties": {
+                            "properties": {},
+                            "additionalProperties": {
+                                "$ref": "#/components/schemas/Amount"
+                            },
+                            "type": "object"
+                        },
+                        "type": "object",
+                        "description": "Assets changed in a particular transaction",
+                        "example": {
+                            "b863bc7369f46136ac1048adb2fa7dae3af944c3bbb2be2f216a8d4f": {
+                                "42657272794e617679": "1"
+                            }
+                        }
+                    },
+                    "metadata": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Transaction metadata of related mint / burn event"
+                    },
+                    "actionBlockId": {
+                        "type": "string",
+                        "description": "Block id of related mint / burn event",
+                        "example": "4e90f1d14ad742a1c0e094a89ad180b896068f93fc3969614b1c53bac547b374",
+                        "pattern": "[0-9a-fA-F]{64}"
+                    },
+                    "actionTxId": {
+                        "type": "string",
+                        "description": "Transaction id of related mint / burn event",
+                        "example": "28eb069e3e8c13831d431e3b2e35f58525493ab2d77fde83184993e4aa7a0eda",
+                        "pattern": "[0-9a-fA-F]{64}"
+                    },
+                    "actionSlot": {
+                        "type": "number",
+                        "format": "double",
+                        "description": "Slot at which the transaction happened",
+                        "example": 512345
+                    }
+                },
+                "required": [
+                    "assets",
+                    "metadata",
+                    "actionBlockId",
+                    "actionTxId",
+                    "actionSlot"
+                ],
+                "type": "object"
+            },
+            "MintBurnHistoryResponse": {
+                "items": {
+                    "$ref": "#/components/schemas/MintBurnSingleResponse"
+                },
+                "type": "array"
+            },
+            "MintBurnHistoryRequest": {
+                "properties": {
+                    "policyIds": {
+                        "items": {
+                            "$ref": "#/components/schemas/PolicyId"
+                        },
+                        "type": "array"
+                    },
+                    "range": {
+                        "properties": {
+                            "maxSlot": {
+                                "type": "number",
+                                "format": "double",
+                                "description": "Maximal slot from which the events should be returned (inclusive)",
+                                "example": 46154860
+                            },
+                            "minSlot": {
+                                "type": "number",
+                                "format": "double",
+                                "description": "Minimal slot from which the events should be returned (not inclusive)",
+                                "example": 46154769
+                            }
+                        },
+                        "required": [
+                            "maxSlot",
+                            "minSlot"
+                        ],
+                        "type": "object",
+                        "description": "Mint Burn events in this slot range will be returned"
+                    }
+                },
+                "required": [
+                    "range"
+                ],
+                "type": "object"
+            },
             "ProjectedNftStatus": {
                 "enum": [
                     "Lock",
@@ -1757,6 +1851,65 @@
                         "application/json": {
                             "schema": {
                                 "$ref": "#/components/schemas/PolicyIdAssetMapType"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/asset/mint-burn-history": {
+            "post": {
+                "operationId": "ProjectedNftRange",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MintBurnHistoryResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [],
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MintBurnHistoryRequest"
                             }
                         }
                     }
