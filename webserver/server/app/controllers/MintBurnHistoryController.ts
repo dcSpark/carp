@@ -3,7 +3,7 @@ import { StatusCodes } from 'http-status-codes';
 import tx from 'pg-tx';
 import pool from '../services/PgPoolSingleton';
 
-import type { ErrorShape } from '../../../shared/errors';
+import { Errors, genErrorMessage, type ErrorShape } from '../../../shared/errors';
 import type { EndpointTypes } from '../../../shared/routes';
 import { Routes } from '../../../shared/routes';
 import { mintBurnRange, mintBurnRangeByPolicyIds } from '../services/MintBurnHistoryService';
@@ -11,8 +11,15 @@ import type { MintBurnSingleResponse } from '../../../shared/models/MintBurn';
 import type { PolicyId } from '../../../shared/models/PolicyIdAssetMap';
 import type {
   ISqlMintBurnRangeResult,
-  ISqlMintBurnRangeByPolicyIdsResult,
 } from '../models/asset/mintBurnHistory.queries';
+import {
+  adjustToSlotLimits,
+  resolvePageStart,
+  resolveUntilTransaction,
+} from '../services/PaginationService';
+import { slotBoundsPagination } from '../models/pagination/slotBoundsPagination.queries';
+import { MINT_BURN_HISTORY_LIMIT } from '../../../shared/constants';
+import { expectType } from 'tsd';
 
 const route = Routes.mintBurnHistory;
 
@@ -34,122 +41,102 @@ export class MintRangeController extends Controller {
       ErrorShape
     >
   ): Promise<EndpointTypes[typeof route]['response']> {
-    if (requestBody.policyIds !== undefined && requestBody.policyIds.length > 0) {
-      return await this.handle_by_policy_ids_query(requestBody.policyIds, requestBody);
-    } else {
-      return await this.handle_general_query(requestBody);
-    }
-  }
+    // note: we use a SQL transaction to make sure the pagination check works properly
+    // otherwise, a rollback could happen between getting the pagination info and the history query
+    const response = await tx<ErrorShape | MintBurnSingleResponse[]>(pool, async dbTx => {
+      const [until, pageStart, slotBounds] = await Promise.all([
+        resolveUntilTransaction({
+          block_hash: Buffer.from(requestBody.untilBlock, 'hex'),
+          dbTx,
+        }),
+        requestBody.after == null
+          ? Promise.resolve(undefined)
+          : resolvePageStart({
+              after_block: Buffer.from(requestBody.after.block, 'hex'),
+              after_tx: Buffer.from(requestBody.after.tx, 'hex'),
+              dbTx,
+            }),
+        !requestBody.slotLimits
+          ? Promise.resolve(undefined)
+          : slotBoundsPagination.run(
+              { low: requestBody.slotLimits.from, high: requestBody.slotLimits.to },
+              dbTx
+            ),
+      ]);
 
-  async handle_general_query(
-    requestBody: EndpointTypes[typeof route]['input']
-  ): Promise<EndpointTypes[typeof route]['response']> {
-    const assets = await tx<ISqlMintBurnRangeResult[]>(pool, async dbTx => {
-      const data = await mintBurnRange({
-        range: requestBody.range,
-        dbTx,
-      });
-
-      return data;
-    });
-
-    let mintRangeResponse: MintBurnSingleResponse = {
-      actionTxId: '',
-      actionBlockId: '',
-      metadata: null,
-      actionSlot: 0,
-      assets: {},
-    };
-
-    const result: MintBurnSingleResponse[] = [];
-
-    for (const entry of assets) {
-      const policyId = entry.policy_id !== null ? entry.policy_id.toString() : '';
-      const assetName = entry.asset_name !== null ? entry.asset_name.toString() : '';
-      const actionTxId = entry.action_tx_id !== null ? entry.action_tx_id.toString() : '';
-      const actionBlockId = entry.action_block_id !== null ? entry.action_block_id.toString() : '';
-
-      if (mintRangeResponse.actionTxId != actionTxId) {
-        if (mintRangeResponse.actionTxId.length > 0) {
-          result.push(mintRangeResponse);
-        }
-
-        mintRangeResponse = {
-          actionSlot: entry.action_slot,
-          actionTxId: actionTxId,
-          actionBlockId: actionBlockId,
-          metadata: entry.action_tx_metadata,
-          assets: {},
-        };
+      if (until == null) {
+        return genErrorMessage(Errors.BlockHashNotFound, {
+          untilBlock: requestBody.untilBlock,
+        });
+      }
+      if (requestBody.after != null && pageStart == null) {
+        return genErrorMessage(Errors.PageStartNotFound, {
+          blockHash: requestBody.after.block,
+          txHash: requestBody.after.tx,
+        });
       }
 
-      const for_policy = mintRangeResponse.assets[policyId] ?? {};
+      const pageStartWithSlot = adjustToSlotLimits(
+        pageStart,
+        until,
+        requestBody.slotLimits,
+        slotBounds
+      );
 
-      for_policy[assetName] = entry.amount;
-      mintRangeResponse.assets[policyId] = for_policy;
-    }
+      const assets = await tx<ISqlMintBurnRangeResult[]>(pool, async dbTx => {
+        if (requestBody.policyIds !== undefined && requestBody.policyIds.length > 0) {
+          const data = await mintBurnRangeByPolicyIds({
+            after: pageStartWithSlot?.tx_id || 0,
+            until: until.tx_id,
+            limit: requestBody.limit || MINT_BURN_HISTORY_LIMIT.DEFAULT_PAGE_SIZE,
+            policyIds: requestBody.policyIds,
+            dbTx,
+          });
 
-    if (mintRangeResponse.actionTxId.length > 0) {
-      result.push(mintRangeResponse);
-    }
+          return data;
+        } else {
+          const data = await mintBurnRange({
+            after: pageStartWithSlot?.tx_id || 0,
+            until: until.tx_id,
+            limit: requestBody.limit || MINT_BURN_HISTORY_LIMIT.DEFAULT_PAGE_SIZE,
+            dbTx,
+          });
 
-    return result;
-  }
-
-  async handle_by_policy_ids_query(
-    policyIds: PolicyId[],
-    requestBody: EndpointTypes[typeof route]['input']
-  ): Promise<EndpointTypes[typeof route]['response']> {
-    const assets = await tx<ISqlMintBurnRangeByPolicyIdsResult[]>(pool, async dbTx => {
-      const data = await mintBurnRangeByPolicyIds({
-        range: requestBody.range,
-        policyIds: policyIds,
-        dbTx,
+          return data;
+        }
       });
 
-      return data;
-    });
+      return assets.map(entry => {
+        const assets: { [policyId: PolicyId]: { [assetName: string]: string } } = {};
 
-    let mintRangeResponse: MintBurnSingleResponse = {
-      actionTxId: '',
-      actionBlockId: '',
-      metadata: null,
-      actionSlot: 0,
-      assets: {},
-    };
-
-    const result: MintBurnSingleResponse[] = [];
-
-    for (const entry of assets) {
-      const policyId = entry.policy_id !== null ? entry.policy_id.toString() : '';
-      const assetName = entry.asset_name !== null ? entry.asset_name.toString() : '';
-      const actionTxId = entry.action_tx_id !== null ? entry.action_tx_id.toString() : '';
-      const actionBlockId = entry.action_block_id !== null ? entry.action_block_id.toString() : '';
-
-      if (mintRangeResponse.actionTxId != actionTxId) {
-        if (mintRangeResponse.actionTxId.length > 0) {
-          result.push(mintRangeResponse);
+        for (const pair of entry.payload as {
+          policyId: string;
+          assetName: string;
+          amount: string;
+        }[]) {
+          if (!assets[pair.policyId]) {
+            assets[pair.policyId] = { [pair.assetName]: pair.amount };
+          } else {
+            assets[pair.policyId][pair.assetName] = pair.amount;
+          }
         }
 
-        mintRangeResponse = {
+        return {
+          assets: assets,
           actionSlot: entry.action_slot,
-          actionTxId: actionTxId,
-          actionBlockId: actionBlockId,
           metadata: entry.action_tx_metadata,
-          assets: {},
+          txId: entry.tx,
+          block: entry.block,
         };
-      }
+      });
+    });
 
-      const for_policy = mintRangeResponse.assets[policyId] ?? {};
-
-      for_policy[assetName] = entry.amount;
-      mintRangeResponse.assets[policyId] = for_policy;
+    if ('code' in response) {
+      expectType<Equals<typeof response, ErrorShape>>(true);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+      return errorResponse(StatusCodes.CONFLICT, response);
     }
 
-    if (mintRangeResponse.actionTxId.length > 0) {
-      result.push(mintRangeResponse);
-    }
-
-    return result;
+    return response;
   }
 }

@@ -40,3 +40,7 @@ export const ASSET_UTXOS_LIMIT = {
   ASSETS: 50,
   DEFAULT_PAGE_SIZE: 50,
 };
+
+export const MINT_BURN_HISTORY_LIMIT = {
+  DEFAULT_PAGE_SIZE: 50,
+};
