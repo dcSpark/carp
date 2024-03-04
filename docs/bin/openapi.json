@@ -1902,6 +1902,7 @@
                         }
                     }
                 },
+                "description": "Gets mint and burn events in the provided slot range, optionally filtering\nby policyId(s). A burn event is a mint with a negative value.",
                 "security": [],
                 "parameters": [],
                 "requestBody": {
