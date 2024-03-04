@@ -11,7 +11,11 @@ import type { IAssetUtxosResult } from '../models/asset/assetUtxos.queries';
 import { bech32 } from 'bech32';
 import { ASSET_UTXOS_LIMIT } from '../../../shared/constants';
 import { Address } from '@dcspark/cardano-multiplatform-lib-nodejs';
-import { adjustToSlotLimits, resolvePageStart, resolveUntilTransaction } from '../services/PaginationService';
+import {
+  adjustToSlotLimits,
+  resolvePageStart,
+  resolveUntilTransaction,
+} from '../services/PaginationService';
 import { slotBoundsPagination } from '../models/pagination/slotBoundsPagination.queries';
 import { expectType } from 'tsd';
 
@@ -19,6 +23,11 @@ const route = Routes.assetUtxos;
 
 @Route('asset/utxos')
 export class AssetUtxosController extends Controller {
+  /**
+   * Returns utxo entries filtered either by cip 14 fingerprint or by policy id.
+   *
+   * This is useful to keep track of the utxo set of a particular asset.
+   */
   @SuccessResponse(`${StatusCodes.OK}`)
   @Post()
   public async assetUtxos(
@@ -76,7 +85,12 @@ export class AssetUtxosController extends Controller {
         });
       }
 
-      const pageStartWithSlot = adjustToSlotLimits(pageStart, until, requestBody.slotLimits, slotBounds);
+      const pageStartWithSlot = adjustToSlotLimits(
+        pageStart,
+        until,
+        requestBody.slotLimits,
+        slotBounds
+      );
 
       const data = await getAssetUtxos({
         after: pageStartWithSlot?.tx_id || 0,

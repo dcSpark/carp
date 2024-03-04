@@ -196,7 +196,8 @@
                                         "type": "string"
                                     },
                                     "amount": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "If the utxo is created, this has the amount. It's undefined if the utxo\nis spent."
                                     }
                                 },
                                 "required": [
@@ -209,8 +210,7 @@
                                 ],
                                 "type": "object"
                             },
-                            "type": "array",
-                            "description": "If the utxo is created, this has the amount. It's undefined if the utxo\nis spent."
+                            "type": "array"
                         }
                     },
                     "required": [
@@ -1473,6 +1473,7 @@
                         }
                     }
                 },
+                "description": "Returns utxo entries filtered either by cip 14 fingerprint or by policy id.\n\nThis is useful to keep track of the utxo set of a particular asset.",
                 "security": [],
                 "parameters": [],
                 "requestBody": {
@@ -1632,6 +1633,7 @@
                         }
                     }
                 },
+                "description": "Returns the pool of the last delegation for this address.\n\nNote: the tx can be in the current epoch, so the delegation may not be in\neffect yet.",
                 "security": [],
                 "parameters": [],
                 "requestBody": {
@@ -1691,6 +1693,7 @@
                         }
                     }
                 },
+                "description": "Returns the list of delegations for the provided pools. The pool field in\nthe response will be null when the address was previously delegating to a\npool in the input, but now the delegation is moved to a pool outside the\nlist, or when the staking key is unregistered.\n\nThis is useful to keep track of the delegators for a particular pool.",
                 "security": [],
                 "parameters": [],
                 "requestBody": {

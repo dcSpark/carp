@@ -18,13 +18,13 @@ export type AssetUtxosRequest = {
 } & Pagination;
 
 export type AssetUtxosResponse = {
-  /**
-   * If the utxo is created, this has the amount. It's undefined if the utxo
-   * is spent.
-   *
-   * @example '1031423725351'
-   */
   payload: {
+    /**
+     * If the utxo is created, this has the amount. It's undefined if the utxo
+     * is spent.
+     *
+     * @example '1031423725351'
+     */
     amount: string | undefined;
     cip14Fingerprint: string;
     policyId: string;

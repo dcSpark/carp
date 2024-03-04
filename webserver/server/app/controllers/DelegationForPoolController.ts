@@ -20,6 +20,14 @@ const route = Routes.delegationForPool;
 
 @Route('delegation/pool')
 export class DelegationForPoolController extends Controller {
+  /**
+   * Returns the list of delegations for the provided pools. The pool field in
+   * the response will be null when the address was previously delegating to a
+   * pool in the input, but now the delegation is moved to a pool outside the
+   * list, or when the staking key is unregistered.
+   *
+   * This is useful to keep track of the delegators for a particular pool.
+   */
   @SuccessResponse(`${StatusCodes.OK}`)
   @Post()
   public async delegationForPool(
