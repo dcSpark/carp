@@ -49,8 +49,25 @@ async fn handle_block(
         epoch: Set(block.2.epoch.unwrap() as i32),
         slot: Set(block.1.header().slot() as i32),
         payload: Set(Some(block_payload)),
-        tx_count: Set(block.1.txs().len() as i32),
+        tx_count: Set(block_tx_count(block.1) as i32),
         ..Default::default()
     };
     block.insert(db_tx).await
+}
+
+fn block_tx_count(block: &cml_multi_era::MultiEraBlock) -> usize {
+    match block {
+        cml_multi_era::MultiEraBlock::Byron(
+            cml_multi_era::byron::block::ByronBlock::EpochBoundary(_),
+        ) => 0,
+        cml_multi_era::MultiEraBlock::Byron(cml_multi_era::byron::block::ByronBlock::Main(
+            block,
+        )) => block.body.tx_payload.len(),
+        cml_multi_era::MultiEraBlock::Shelley(block) => block.transaction_bodies.len(),
+        cml_multi_era::MultiEraBlock::Allegra(block) => block.transaction_bodies.len(),
+        cml_multi_era::MultiEraBlock::Mary(block) => block.transaction_bodies.len(),
+        cml_multi_era::MultiEraBlock::Alonzo(block) => block.transaction_bodies.len(),
+        cml_multi_era::MultiEraBlock::Babbage(block) => block.transaction_bodies.len(),
+        cml_multi_era::MultiEraBlock::Conway(block) => block.transaction_bodies.len(),
+    }
 }
