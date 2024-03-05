@@ -47,6 +47,7 @@ async fn handle_block(
         epoch: Set(0),
         slot: Set(0),
         payload: Set(Some(block_payload)),
+        tx_count: Set(0),
         ..Default::default()
     };
 
