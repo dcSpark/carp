@@ -7,6 +7,21 @@ WITH
         FROM
             "Block"
         WHERE
+        /*
+            We use <= here even though slot filter parameter is exclusive on the
+            lower bound. This is because the tx that we find here (after joining
+            with min_hash) is used later in a condition of the form:
+
+            "Transaction".id > :after_tx_id!
+
+            For example.
+
+            Lets say :low is 1, and there is a block with txs at this slot. This
+            means we want to find _at least_ the first tx in slot 2.
+
+            So what we want in this query is to find the last tx in slot 1.
+            Then, when we use the > comparator we would get the right tx.
+        */
             slot <= :low! AND tx_count > 0
         ORDER BY
             "Block".id DESC
