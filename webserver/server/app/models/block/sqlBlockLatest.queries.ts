@@ -17,6 +17,7 @@ export interface ISqlBlockLatestResult {
   id: number;
   payload: Buffer | null;
   slot: number;
+  tx_count: number | null;
 }
 
 /** 'SqlBlockLatest' query type */

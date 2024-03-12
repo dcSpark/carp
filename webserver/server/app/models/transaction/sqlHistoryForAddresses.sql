@@ -37,19 +37,49 @@ WITH
           "TransactionReferenceInput".tx_id > (:after_tx_id)
         ORDER BY "TransactionReferenceInput".tx_id ASC
         LIMIT (:limit)
+  ),
+  base_query AS (
+        SELECT "Transaction".id,
+            "Transaction".payload as "payload!",
+            "Transaction".hash as "hash!",
+            "Transaction".tx_index as "tx_index!",
+            "Transaction".is_valid as "is_valid!",
+            "Block".hash AS "block_hash!",
+            "Block".epoch as "epoch!",
+            "Block".slot as "slot!",
+            "Block".era as "era!",
+            "Block".height as "height!",
+            NULL :: bytea as metadata,
+            NULL :: json as input_addresses
+        FROM "Transaction"
+        INNER JOIN "Block" ON "Transaction".block_id = "Block".id
+        WHERE "Transaction".id IN (SELECT * FROM inputs UNION ALL SELECT * from ref_inputs UNION ALL SELECT * from outputs)
+        ORDER BY "Transaction".id ASC
+        LIMIT (:limit)
+  ),
+  query_with_inputs_and_metadata AS (
+        SELECT "Transaction".id,
+                "Transaction".payload as "payload!",
+                "Transaction".hash as "hash!",
+                "Transaction".tx_index as "tx_index!",
+                "Transaction".is_valid as "is_valid!",
+                "Block".hash AS "block_hash!",
+                "Block".epoch as "epoch!",
+                "Block".slot as "slot!",
+                "Block".era as "era!",
+                "Block".height as "height!",
+                "TransactionMetadata".payload AS metadata,
+                json_agg(DISTINCT "Address".PAYLOAD) input_addresses
+        FROM "Transaction"
+        INNER JOIN "Block" ON "Transaction".block_id = "Block".id
+        INNER JOIN "TransactionInput" ON "TransactionInput".tx_id = "Transaction".id
+        INNER JOIN "Address" ON "Address".id = "TransactionInput".address_id
+        LEFT JOIN "TransactionMetadata" ON "Transaction".id = "TransactionMetadata".tx_id
+        WHERE "Transaction".id IN (SELECT * FROM inputs UNION ALL SELECT * from ref_inputs UNION ALL SELECT * from outputs)
+        GROUP BY "Transaction".id, "Block".id, "TransactionMetadata".id
+        ORDER BY "Transaction".id ASC
+        LIMIT (:limit)
   )
-SELECT "Transaction".id,
-        "Transaction".payload,
-        "Transaction".hash,
-        "Transaction".tx_index,
-        "Transaction".is_valid,
-        "Block".hash AS block_hash,
-        "Block".epoch,
-        "Block".slot,
-        "Block".era,
-        "Block".height
-FROM "Transaction"
-INNER JOIN "Block" ON "Transaction".block_id = "Block".id
-WHERE "Transaction".id IN (SELECT * FROM inputs UNION ALL SELECT * from ref_inputs UNION ALL SELECT * from outputs)
-ORDER BY "Transaction".id ASC
-LIMIT (:limit);
+SELECT * FROM base_query WHERE NOT :with_input_context!
+UNION ALL
+(SELECT * from query_with_inputs_and_metadata WHERE :with_input_context!);

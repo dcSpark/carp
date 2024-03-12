@@ -4,6 +4,7 @@ import { sqlHistoryForAddresses } from '../models/transaction/sqlHistoryForAddre
 import type { PoolClient } from 'pg';
 import type { TransactionPaginationType } from './PaginationService';
 import type { RelationFilter } from '../../../shared/models/common';
+import { Address } from '@dcspark/cardano-multiplatform-lib-nodejs';
 
 export async function historyForCredentials(
   request: TransactionPaginationType & {
@@ -11,6 +12,7 @@ export async function historyForCredentials(
     stakeCredentials: Buffer[];
     relationFilter: RelationFilter;
     limit: number;
+    withInputContext?: boolean;
   }
 ): Promise<TransactionHistoryResponse> {
   if (request.stakeCredentials.length === 0) return { transactions: [] };
@@ -21,6 +23,7 @@ export async function historyForCredentials(
       limit: request.limit.toString(),
       until_tx_id: request.until.tx_id.toString(),
       relation: request.relationFilter,
+      with_input_context: !!request.withInputContext,
     },
     request.dbTx
   );
@@ -37,8 +40,16 @@ export async function historyForCredentials(
       },
 
       transaction: {
-        hash: entry.hash.toString('hex'),
-        payload: entry.payload.toString('hex'),
+        ...{
+          hash: entry.hash.toString('hex'),
+          payload: entry.payload.toString('hex'),
+        },
+        ...(request.withInputContext && {
+          metadata: entry.metadata && entry.metadata.toString('hex'),
+          inputCredentials: entry.input_addresses
+            ? (entry.input_addresses as string[]).map(getPaymentCred)
+            : [],
+        }),
       },
     })),
   };
@@ -49,6 +60,7 @@ export async function historyForAddresses(
     addresses: Buffer[];
     dbTx: PoolClient;
     limit: number;
+    withInputContext?: boolean;
   }
 ): Promise<TransactionHistoryResponse> {
   if (request.addresses?.length === 0) return { transactions: [] };
@@ -58,6 +70,7 @@ export async function historyForAddresses(
       after_tx_id: (request.after?.tx_id ?? -1)?.toString(),
       limit: request.limit.toString(),
       until_tx_id: request.until.tx_id.toString(),
+      with_input_context: !!request.withInputContext,
     },
     request.dbTx
   );
@@ -74,9 +87,29 @@ export async function historyForAddresses(
       },
 
       transaction: {
-        hash: entry.hash.toString('hex'),
-        payload: entry.payload.toString('hex'),
+        ...{
+          hash: entry.hash.toString('hex'),
+          payload: entry.payload.toString('hex'),
+        },
+        ...(request.withInputContext && {
+          metadata: entry.metadata && entry.metadata.toString('hex'),
+          inputCredentials: entry.input_addresses
+            ? (entry.input_addresses as string[]).map(getPaymentCred)
+            : [],
+        }),
       },
     })),
   };
+}
+
+function getPaymentCred(addressRaw: string): string {
+  const address = Address.from_bytes(Buffer.from(addressRaw.slice(2), 'hex'));
+
+  const paymentCred = address.payment_cred();
+  const addressBytes = paymentCred?.to_bytes();
+
+  address.free();
+  paymentCred?.free();
+
+  return Buffer.from(addressBytes as Uint8Array).toString('hex');
 }
