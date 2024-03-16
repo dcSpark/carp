@@ -15,6 +15,12 @@ const route = Routes.delegationForAddress;
 
 @Route('delegation/address')
 export class DelegationForAddressController extends Controller {
+    /**
+     * Returns the pool of the last delegation for this address.
+     *
+     * Note: the tx can be in the current epoch, so the delegation may not be in
+     * effect yet.
+     */
     @SuccessResponse(`${StatusCodes.OK}`)
     @Post()
     public async delegationForAddress(

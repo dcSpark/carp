@@ -11,11 +11,23 @@ import type { IAssetUtxosResult } from '../models/asset/assetUtxos.queries';
 import { bech32 } from 'bech32';
 import { ASSET_UTXOS_LIMIT } from '../../../shared/constants';
 import { Address } from '@dcspark/cardano-multiplatform-lib-nodejs';
+import {
+  adjustToSlotLimits,
+  resolvePageStart,
+  resolveUntilTransaction,
+} from '../services/PaginationService';
+import { slotBoundsPagination } from '../models/pagination/slotBoundsPagination.queries';
+import { expectType } from 'tsd';
 
 const route = Routes.assetUtxos;
 
 @Route('asset/utxos')
 export class AssetUtxosController extends Controller {
+  /**
+   * Returns utxo entries filtered either by cip 14 fingerprint or by policy id.
+   *
+   * This is useful to keep track of the utxo set of a particular asset.
+   */
   @SuccessResponse(`${StatusCodes.OK}`)
   @Post()
   public async assetUtxos(
@@ -40,9 +52,50 @@ export class AssetUtxosController extends Controller {
       );
     }
 
-    const response = await tx<AssetUtxosResponse>(pool, async dbTx => {
+    const response = await tx<ErrorShape | AssetUtxosResponse>(pool, async dbTx => {
+      const [until, pageStart, slotBounds] = await Promise.all([
+        resolveUntilTransaction({
+          block_hash: Buffer.from(requestBody.untilBlock, 'hex'),
+          dbTx,
+        }),
+        requestBody.after == null
+          ? Promise.resolve(undefined)
+          : resolvePageStart({
+              after_block: Buffer.from(requestBody.after.block, 'hex'),
+              after_tx: Buffer.from(requestBody.after.tx, 'hex'),
+              dbTx,
+            }),
+        !requestBody.slotLimits
+          ? Promise.resolve(undefined)
+          : slotBoundsPagination.run(
+              { low: requestBody.slotLimits.from, high: requestBody.slotLimits.to },
+              dbTx
+            ),
+      ]);
+
+      if (until == null) {
+        return genErrorMessage(Errors.BlockHashNotFound, {
+          untilBlock: requestBody.untilBlock,
+        });
+      }
+      if (requestBody.after != null && pageStart == null) {
+        return genErrorMessage(Errors.PageStartNotFound, {
+          blockHash: requestBody.after.block,
+          txHash: requestBody.after.tx,
+        });
+      }
+
+      const pageStartWithSlot = adjustToSlotLimits(
+        pageStart,
+        until,
+        requestBody.slotLimits,
+        slotBounds
+      );
+
       const data = await getAssetUtxos({
-        range: requestBody.range,
+        after: pageStartWithSlot?.tx_id || 0,
+        until: until.tx_id,
+        limit: requestBody.limit || ASSET_UTXOS_LIMIT.DEFAULT_PAGE_SIZE,
         fingerprints: requestBody.fingerprints?.map(asset => {
           const decoded = bech32.decode(asset);
           const payload = bech32.fromWords(decoded.words);
@@ -53,30 +106,46 @@ export class AssetUtxosController extends Controller {
         dbTx,
       });
 
-      return data.map((data: IAssetUtxosResult): AssetUtxosResponse[0] => {
-        const address = Address.from_bytes(Uint8Array.from(data.address_raw));
-
-        const paymentCred = address.payment_cred();
-        const addressBytes = paymentCred?.to_bytes();
-
-        address.free();
-        paymentCred?.free();
-
+      return data.map((data: IAssetUtxosResult) => {
         return {
-          txId: data.tx_hash as string,
-          utxo: {
-            index: data.output_index,
-            tx: data.output_tx_hash as string,
-          },
-          paymentCred: Buffer.from(addressBytes as Uint8Array).toString('hex'),
-          amount: data.amount ? data.amount : undefined,
-          slot: data.slot,
-          cip14Fingerprint: bech32.encode('asset', bech32.toWords(data.cip14_fingerprint)),
-          policyId: Buffer.from(data.policy_id).toString('hex'),
-          assetName: Buffer.from(data.asset_name).toString('hex'),
-        };
+          txId: data.tx as string,
+          block: data.block,
+          payload: (data.payload as { [key: string]: string | number }[]).map(x => {
+            const address = Address.from_bytes(
+              Uint8Array.from(Buffer.from(x.addressRaw as string, 'hex'))
+            );
+
+            const paymentCred = address.payment_cred();
+            const addressBytes = paymentCred?.to_bytes();
+
+            address.free();
+            paymentCred?.free();
+
+            return {
+              utxo: {
+                index: x.outputIndex,
+                tx: x.outputTxHash,
+              },
+              paymentCred: Buffer.from(addressBytes as Uint8Array).toString('hex'),
+              amount: x.amount ? x.amount : undefined,
+              slot: x.slot,
+              cip14Fingerprint: bech32.encode(
+                'asset',
+                bech32.toWords(Buffer.from(x.cip14Fingerprint as string, 'hex'))
+              ),
+              policyId: x.policyId,
+              assetName: x.assetName,
+            };
+          }),
+        } as AssetUtxosResponse[0];
       });
     });
+
+    if ('code' in response) {
+      expectType<Equals<typeof response, ErrorShape>>(true);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+      return errorResponse(StatusCodes.CONFLICT, response);
+    }
 
     return response;
   }

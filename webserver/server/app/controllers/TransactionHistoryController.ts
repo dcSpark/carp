@@ -5,7 +5,7 @@ import type { TransactionHistoryResponse } from '../../../shared/models/Transact
 import { ADDRESS_LIMIT } from '../../../shared/constants';
 import tx from 'pg-tx';
 import pool from '../services/PgPoolSingleton';
-import { resolvePageStart, resolveUntilTransaction } from '../services/PaginationService';
+import { adjustToSlotLimits, resolvePageStart, resolveUntilTransaction } from '../services/PaginationService';
 import type { ErrorShape } from '../../../shared/errors';
 import { genErrorMessage } from '../../../shared/errors';
 import { Errors } from '../../../shared/errors';
@@ -96,31 +96,7 @@ export class TransactionHistoryController extends Controller {
         });
       }
 
-      let pageStartWithSlot = pageStart;
-
-      // if the slotLimits field is set, this shrinks the tx id range
-      // accordingly if necessary.
-      if (requestBody.slotLimits) {
-        const bounds = slotBounds ? slotBounds[0] : { min_tx_id: -1, max_tx_id: -2 };
-
-        const minTxId = Number(bounds.min_tx_id);
-
-        if (!pageStartWithSlot) {
-          pageStartWithSlot = {
-            // block_id is not really used by this query.
-            block_id: -1,
-            // if no *after* argument is provided, this starts the pagination
-            // from the corresponding slot. This allows skipping slots you are
-            // not interested in. If there is also no slotLimits specified this
-            // starts from the first tx because of the default of -1.
-            tx_id: minTxId,
-          };
-        } else {
-          pageStartWithSlot.tx_id = Math.max(Number(bounds.min_tx_id), pageStartWithSlot.tx_id);
-        }
-
-        until.tx_id = Math.min(until.tx_id, Number(bounds.max_tx_id));
-      }
+      const pageStartWithSlot = adjustToSlotLimits(pageStart, until, requestBody.slotLimits, slotBounds);
 
       const commonRequest = {
         after: pageStartWithSlot,

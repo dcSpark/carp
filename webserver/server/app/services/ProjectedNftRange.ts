@@ -4,23 +4,29 @@ import { sqlProjectedNftRange } from '../models/projected_nft/projectedNftRange.
 import { sqlProjectedNftRangeByAddress } from '../models/projected_nft/projectedNftRangeByAddress.queries';
 
 export async function projectedNftRange(request: {
-    range: { minSlot: number, maxSlot: number },
+    after: number;
+    until: number;
+    limit: number;
     dbTx: PoolClient,
 }): Promise<ISqlProjectedNftRangeResult[]> {
     return (await sqlProjectedNftRange.run({
-        min_slot: request.range.minSlot,
-        max_slot: request.range.maxSlot,
+        after_tx_id: request.after,
+        until_tx_id: request.until,
+        limit: request.limit,
     }, request.dbTx));
 }
 
 export async function projectedNftRangeByAddress(request: {
     address: string,
-    range: { minSlot: number, maxSlot: number },
+    after: number;
+    until: number;
+    limit: number;
     dbTx: PoolClient,
 }): Promise<ISqlProjectedNftRangeResult[]> {
     return (await sqlProjectedNftRangeByAddress.run({
         owner_address: request.address,
-        min_slot: request.range.minSlot,
-        max_slot: request.range.maxSlot,
+        after_tx_id: request.after,
+        until_tx_id: request.until,
+        limit: request.limit,
     }, request.dbTx));
 }

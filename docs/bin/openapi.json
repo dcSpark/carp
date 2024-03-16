@@ -154,54 +154,69 @@
             "AssetUtxosResponse": {
                 "items": {
                     "properties": {
+                        "block": {
+                            "type": "string"
+                        },
                         "txId": {
                             "type": "string"
                         },
-                        "slot": {
-                            "type": "number",
-                            "format": "double"
-                        },
-                        "paymentCred": {
-                            "type": "string"
-                        },
-                        "assetName": {
-                            "$ref": "#/components/schemas/AssetName"
-                        },
-                        "policyId": {
-                            "type": "string"
-                        },
-                        "cip14Fingerprint": {
-                            "type": "string"
-                        },
-                        "utxo": {
-                            "properties": {
-                                "index": {
-                                    "type": "number",
-                                    "format": "double"
+                        "payload": {
+                            "items": {
+                                "properties": {
+                                    "utxo": {
+                                        "properties": {
+                                            "index": {
+                                                "type": "number",
+                                                "format": "double"
+                                            },
+                                            "tx": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "index",
+                                            "tx"
+                                        ],
+                                        "type": "object"
+                                    },
+                                    "slot": {
+                                        "type": "number",
+                                        "format": "double"
+                                    },
+                                    "paymentCred": {
+                                        "type": "string"
+                                    },
+                                    "assetName": {
+                                        "$ref": "#/components/schemas/AssetName"
+                                    },
+                                    "policyId": {
+                                        "type": "string"
+                                    },
+                                    "cip14Fingerprint": {
+                                        "type": "string"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "If the utxo is created, this has the amount. It's undefined if the utxo\nis spent."
+                                    }
                                 },
-                                "tx": {
-                                    "type": "string"
-                                }
+                                "required": [
+                                    "utxo",
+                                    "slot",
+                                    "paymentCred",
+                                    "assetName",
+                                    "policyId",
+                                    "cip14Fingerprint"
+                                ],
+                                "type": "object"
                             },
-                            "required": [
-                                "index",
-                                "tx"
-                            ],
-                            "type": "object"
-                        },
-                        "amount": {
-                            "type": "string",
-                            "description": "If the utxo is created, this has the amount. It's undefined if the utxo\nis spent."
+                            "type": "array"
                         }
                     },
                     "required": [
+                        "block",
                         "txId",
-                        "slot",
-                        "paymentCred",
-                        "assetName",
-                        "policyId",
-                        "cip14Fingerprint",
-                        "utxo"
+                        "payload"
                     ],
                     "type": "object"
                 },
@@ -216,42 +231,54 @@
                 "example": "b863bc7369f46136ac1048adb2fa7dae3af944c3bbb2be2f216a8d4f",
                 "pattern": "[0-9a-fA-F]{56}"
             },
-            "AssetUtxosRequest": {
+            "SlotLimits": {
                 "properties": {
-                    "policyIds": {
-                        "items": {
-                            "$ref": "#/components/schemas/PolicyId"
-                        },
-                        "type": "array"
+                    "to": {
+                        "type": "number",
+                        "format": "double"
                     },
-                    "fingerprints": {
-                        "items": {
-                            "$ref": "#/components/schemas/Cip14Fingerprint"
-                        },
-                        "type": "array"
-                    },
-                    "range": {
-                        "properties": {
-                            "maxSlot": {
-                                "type": "number",
-                                "format": "double"
-                            },
-                            "minSlot": {
-                                "type": "number",
-                                "format": "double"
-                            }
-                        },
-                        "required": [
-                            "maxSlot",
-                            "minSlot"
-                        ],
-                        "type": "object"
+                    "from": {
+                        "type": "number",
+                        "format": "double"
                     }
                 },
                 "required": [
-                    "range"
+                    "to",
+                    "from"
                 ],
                 "type": "object"
+            },
+            "AssetUtxosRequest": {
+                "allOf": [
+                    {
+                        "properties": {
+                            "limit": {
+                                "type": "number",
+                                "format": "double"
+                            },
+                            "slotLimits": {
+                                "$ref": "#/components/schemas/SlotLimits",
+                                "description": "This limits the transactions in the result to this range of slots.\nEverything else is filtered out"
+                            },
+                            "policyIds": {
+                                "items": {
+                                    "$ref": "#/components/schemas/PolicyId"
+                                },
+                                "type": "array"
+                            },
+                            "fingerprints": {
+                                "items": {
+                                    "$ref": "#/components/schemas/Cip14Fingerprint"
+                                },
+                                "type": "array"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    {
+                        "$ref": "#/components/schemas/Pagination"
+                    }
+                ]
             },
             "BlockSubset": {
                 "properties": {
@@ -438,30 +465,45 @@
             "DelegationForPoolResponse": {
                 "items": {
                     "properties": {
-                        "slot": {
-                            "type": "number",
-                            "format": "double"
+                        "block": {
+                            "type": "string"
                         },
                         "txId": {
                             "type": "string"
                         },
-                        "pool": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/components/schemas/PoolHex"
-                                }
-                            ],
-                            "nullable": true
-                        },
-                        "credential": {
-                            "$ref": "#/components/schemas/Address"
+                        "payload": {
+                            "items": {
+                                "properties": {
+                                    "slot": {
+                                        "type": "number",
+                                        "format": "double"
+                                    },
+                                    "pool": {
+                                        "allOf": [
+                                            {
+                                                "$ref": "#/components/schemas/PoolHex"
+                                            }
+                                        ],
+                                        "nullable": true
+                                    },
+                                    "credential": {
+                                        "$ref": "#/components/schemas/Address"
+                                    }
+                                },
+                                "required": [
+                                    "slot",
+                                    "pool",
+                                    "credential"
+                                ],
+                                "type": "object"
+                            },
+                            "type": "array"
                         }
                     },
                     "required": [
-                        "slot",
+                        "block",
                         "txId",
-                        "pool",
-                        "credential"
+                        "payload"
                     ],
                     "type": "object"
                 },
@@ -471,36 +513,33 @@
                 "$ref": "#/components/schemas/PoolHex"
             },
             "DelegationForPoolRequest": {
-                "properties": {
-                    "range": {
+                "allOf": [
+                    {
                         "properties": {
-                            "maxSlot": {
+                            "limit": {
                                 "type": "number",
                                 "format": "double"
                             },
-                            "minSlot": {
-                                "type": "number",
-                                "format": "double"
+                            "slotLimits": {
+                                "$ref": "#/components/schemas/SlotLimits",
+                                "description": "This limits the transactions in the result to this range of slots.\nEverything else is filtered out"
+                            },
+                            "pools": {
+                                "items": {
+                                    "$ref": "#/components/schemas/Pool"
+                                },
+                                "type": "array"
                             }
                         },
                         "required": [
-                            "maxSlot",
-                            "minSlot"
+                            "pools"
                         ],
                         "type": "object"
                     },
-                    "pools": {
-                        "items": {
-                            "$ref": "#/components/schemas/Pool"
-                        },
-                        "type": "array"
+                    {
+                        "$ref": "#/components/schemas/Pagination"
                     }
-                },
-                "required": [
-                    "range",
-                    "pools"
-                ],
-                "type": "object"
+                ]
             },
             "Asset": {
                 "properties": {
@@ -855,6 +894,29 @@
             },
             "MintBurnSingleResponse": {
                 "properties": {
+                    "block": {
+                        "type": "string",
+                        "description": "Block id of related mint / burn event",
+                        "example": "4e90f1d14ad742a1c0e094a89ad180b896068f93fc3969614b1c53bac547b374",
+                        "pattern": "[0-9a-fA-F]{64}"
+                    },
+                    "txId": {
+                        "type": "string",
+                        "description": "Transaction id of related mint / burn event",
+                        "example": "28eb069e3e8c13831d431e3b2e35f58525493ab2d77fde83184993e4aa7a0eda",
+                        "pattern": "[0-9a-fA-F]{64}"
+                    },
+                    "metadata": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Transaction metadata of related mint / burn event"
+                    },
+                    "actionSlot": {
+                        "type": "number",
+                        "format": "double",
+                        "description": "Slot at which the transaction happened",
+                        "example": 512345
+                    },
                     "assets": {
                         "properties": {},
                         "additionalProperties": {
@@ -871,37 +933,14 @@
                                 "42657272794e617679": "1"
                             }
                         }
-                    },
-                    "metadata": {
-                        "type": "string",
-                        "nullable": true,
-                        "description": "Transaction metadata of related mint / burn event"
-                    },
-                    "actionBlockId": {
-                        "type": "string",
-                        "description": "Block id of related mint / burn event",
-                        "example": "4e90f1d14ad742a1c0e094a89ad180b896068f93fc3969614b1c53bac547b374",
-                        "pattern": "[0-9a-fA-F]{64}"
-                    },
-                    "actionTxId": {
-                        "type": "string",
-                        "description": "Transaction id of related mint / burn event",
-                        "example": "28eb069e3e8c13831d431e3b2e35f58525493ab2d77fde83184993e4aa7a0eda",
-                        "pattern": "[0-9a-fA-F]{64}"
-                    },
-                    "actionSlot": {
-                        "type": "number",
-                        "format": "double",
-                        "description": "Slot at which the transaction happened",
-                        "example": 512345
                     }
                 },
                 "required": [
-                    "assets",
+                    "block",
+                    "txId",
                     "metadata",
-                    "actionBlockId",
-                    "actionTxId",
-                    "actionSlot"
+                    "actionSlot",
+                    "assets"
                 ],
                 "type": "object"
             },
@@ -912,40 +951,30 @@
                 "type": "array"
             },
             "MintBurnHistoryRequest": {
-                "properties": {
-                    "policyIds": {
-                        "items": {
-                            "$ref": "#/components/schemas/PolicyId"
-                        },
-                        "type": "array"
-                    },
-                    "range": {
+                "allOf": [
+                    {
                         "properties": {
-                            "maxSlot": {
+                            "limit": {
                                 "type": "number",
-                                "format": "double",
-                                "description": "Maximal slot from which the events should be returned (inclusive)",
-                                "example": 46154860
+                                "format": "double"
                             },
-                            "minSlot": {
-                                "type": "number",
-                                "format": "double",
-                                "description": "Minimal slot from which the events should be returned (not inclusive)",
-                                "example": 46154769
+                            "slotLimits": {
+                                "$ref": "#/components/schemas/SlotLimits",
+                                "description": "This limits the transactions in the result to this range of slots.\nEverything else is filtered out"
+                            },
+                            "policyIds": {
+                                "items": {
+                                    "$ref": "#/components/schemas/PolicyId"
+                                },
+                                "type": "array"
                             }
                         },
-                        "required": [
-                            "maxSlot",
-                            "minSlot"
-                        ],
-                        "type": "object",
-                        "description": "Mint Burn events in this slot range will be returned"
+                        "type": "object"
+                    },
+                    {
+                        "$ref": "#/components/schemas/Pagination"
                     }
-                },
-                "required": [
-                    "range"
-                ],
-                "type": "object"
+                ]
             },
             "ProjectedNftStatus": {
                 "enum": [
@@ -959,131 +988,135 @@
             "ProjectedNftRangeResponse": {
                 "items": {
                     "properties": {
-                        "forHowLong": {
-                            "type": "string",
-                            "nullable": true,
-                            "description": "UNIX timestamp till which the funds can't be claimed in the Unlocking state.\nIf the status is not Unlocking this is always null.",
-                            "example": "1701266986000"
-                        },
-                        "plutusDatum": {
-                            "type": "string",
-                            "description": "Projected NFT datum: serialized state of the Projected NFT",
-                            "example": "d8799fd8799f581c9040f057461d9adc09108fe5cb630077cf75c6e981d3ed91f6fb18f6ffd87980ff",
-                            "pattern": "[0-9a-fA-F]+"
-                        },
-                        "status": {
-                            "$ref": "#/components/schemas/ProjectedNftStatus",
-                            "description": "Projected NFT status: Lock / Unlocking / Claim / Invalid",
-                            "example": "Lock"
-                        },
-                        "amount": {
-                            "type": "string",
-                            "description": "Number of assets of `asset` type used in this Projected NFT event.",
-                            "example": "1"
-                        },
-                        "assetName": {
-                            "type": "string",
-                            "description": "Asset name that relates to Projected NFT event",
-                            "example": "415045",
-                            "pattern": "([0-9a-fA-F]{2}){0,32}"
-                        },
-                        "policyId": {
-                            "type": "string",
-                            "description": "Asset policy id that relates to Projected NFT event",
-                            "example": "96f7dc9749ede0140f042516f4b723d7261610d6b12ccb19f3475278",
-                            "pattern": "[0-9a-fA-F]{56}"
-                        },
-                        "previousTxOutputIndex": {
-                            "type": "number",
-                            "format": "double",
-                            "nullable": true,
-                            "description": "Output index of related previous Projected NFT event. Null if event has `status` Lock.",
-                            "example": 1
-                        },
-                        "previousTxHash": {
-                            "type": "string",
-                            "nullable": true,
-                            "description": "Transaction id of related previous Projected NFT event.\nE.g. you locked the NFT and get unlocking event: you will see previousTxHash = transaction hash of lock event.\nNull if event has `status` Lock.",
-                            "example": "28eb069e3e8c13831d431e3b2e35f58525493ab2d77fde83184993e4aa7a0eda",
-                            "pattern": "[0-9a-fA-F]{64}"
-                        },
-                        "actionOutputIndex": {
-                            "type": "number",
-                            "format": "double",
-                            "nullable": true,
-                            "description": "Output index of related Projected NFT event. Null if it is claim event (No new UTxO is created).",
-                            "example": 1
-                        },
-                        "actionTxId": {
+                        "txId": {
                             "type": "string",
                             "description": "Transaction id of related Projected NFT event",
                             "example": "28eb069e3e8c13831d431e3b2e35f58525493ab2d77fde83184993e4aa7a0eda",
                             "pattern": "[0-9a-fA-F]{64}"
                         },
-                        "ownerAddress": {
-                            "type": "string",
-                            "nullable": true,
-                            "description": "Projected NFT owner address. Not null only if owned by Public Key Hash.",
-                            "example": "9040f057461d9adc09108fe5cb630077cf75c6e981d3ed91f6fb18f6",
-                            "pattern": "[0-9a-fA-F]+"
+                        "block": {
+                            "type": "string"
                         },
-                        "actionSlot": {
-                            "type": "number",
-                            "format": "double",
-                            "description": "Slot at which the transaction happened",
-                            "example": 512345
+                        "payload": {
+                            "items": {
+                                "properties": {
+                                    "forHowLong": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "description": "UNIX timestamp till which the funds can't be claimed in the Unlocking state.\nIf the status is not Unlocking this is always null.",
+                                        "example": "1701266986000"
+                                    },
+                                    "plutusDatum": {
+                                        "type": "string",
+                                        "description": "Projected NFT datum: serialized state of the Projected NFT",
+                                        "example": "d8799fd8799f581c9040f057461d9adc09108fe5cb630077cf75c6e981d3ed91f6fb18f6ffd87980ff",
+                                        "pattern": "[0-9a-fA-F]+"
+                                    },
+                                    "status": {
+                                        "$ref": "#/components/schemas/ProjectedNftStatus",
+                                        "description": "Projected NFT status: Lock / Unlocking / Claim / Invalid",
+                                        "example": "Lock"
+                                    },
+                                    "amount": {
+                                        "type": "string",
+                                        "description": "Number of assets of `asset` type used in this Projected NFT event.",
+                                        "example": "1"
+                                    },
+                                    "assetName": {
+                                        "type": "string",
+                                        "description": "Asset name that relates to Projected NFT event",
+                                        "example": "415045",
+                                        "pattern": "([0-9a-fA-F]{2}){0,32}"
+                                    },
+                                    "policyId": {
+                                        "type": "string",
+                                        "description": "Asset policy id that relates to Projected NFT event",
+                                        "example": "96f7dc9749ede0140f042516f4b723d7261610d6b12ccb19f3475278",
+                                        "pattern": "[0-9a-fA-F]{56}"
+                                    },
+                                    "previousTxOutputIndex": {
+                                        "type": "number",
+                                        "format": "double",
+                                        "nullable": true,
+                                        "description": "Output index of related previous Projected NFT event. Null if event has `status` Lock.",
+                                        "example": 1
+                                    },
+                                    "previousTxHash": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "description": "Transaction id of related previous Projected NFT event.\nE.g. you locked the NFT and get unlocking event: you will see previousTxHash = transaction hash of lock event.\nNull if event has `status` Lock.",
+                                        "example": "28eb069e3e8c13831d431e3b2e35f58525493ab2d77fde83184993e4aa7a0eda",
+                                        "pattern": "[0-9a-fA-F]{64}"
+                                    },
+                                    "actionOutputIndex": {
+                                        "type": "number",
+                                        "format": "double",
+                                        "nullable": true,
+                                        "description": "Output index of related Projected NFT event. Null if it is claim event (No new UTxO is created).",
+                                        "example": 1
+                                    },
+                                    "ownerAddress": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "description": "Projected NFT owner address. Not null only if owned by Public Key Hash.",
+                                        "example": "9040f057461d9adc09108fe5cb630077cf75c6e981d3ed91f6fb18f6",
+                                        "pattern": "[0-9a-fA-F]+"
+                                    },
+                                    "actionSlot": {
+                                        "type": "number",
+                                        "format": "double",
+                                        "description": "Slot at which the transaction happened",
+                                        "example": 512345
+                                    }
+                                },
+                                "required": [
+                                    "forHowLong",
+                                    "plutusDatum",
+                                    "status",
+                                    "amount",
+                                    "assetName",
+                                    "policyId",
+                                    "previousTxOutputIndex",
+                                    "previousTxHash",
+                                    "actionOutputIndex",
+                                    "ownerAddress",
+                                    "actionSlot"
+                                ],
+                                "type": "object"
+                            },
+                            "type": "array"
                         }
                     },
                     "required": [
-                        "forHowLong",
-                        "plutusDatum",
-                        "status",
-                        "amount",
-                        "assetName",
-                        "policyId",
-                        "previousTxOutputIndex",
-                        "previousTxHash",
-                        "actionOutputIndex",
-                        "actionTxId",
-                        "ownerAddress",
-                        "actionSlot"
+                        "txId",
+                        "block",
+                        "payload"
                     ],
                     "type": "object"
                 },
                 "type": "array"
             },
             "ProjectedNftRangeRequest": {
-                "properties": {
-                    "address": {
-                        "type": "string"
-                    },
-                    "range": {
+                "allOf": [
+                    {
                         "properties": {
-                            "maxSlot": {
+                            "limit": {
                                 "type": "number",
-                                "format": "double",
-                                "description": "Maximal slot from which the events should be returned (inclusive)",
-                                "example": 46154860
+                                "format": "double"
                             },
-                            "minSlot": {
-                                "type": "number",
-                                "format": "double",
-                                "description": "Minimal slot from which the events should be returned (not inclusive)",
-                                "example": 46154769
+                            "slotLimits": {
+                                "$ref": "#/components/schemas/SlotLimits"
+                            },
+                            "address": {
+                                "type": "string"
                             }
                         },
-                        "required": [
-                            "maxSlot",
-                            "minSlot"
-                        ],
-                        "type": "object",
-                        "description": "Projected NFT events in this slot range will be returned"
+                        "type": "object"
+                    },
+                    {
+                        "$ref": "#/components/schemas/Pagination"
                     }
-                },
-                "required": [
-                    "range"
-                ],
-                "type": "object"
+                ]
             },
             "BlockInfo": {
                 "allOf": [
@@ -1430,6 +1463,7 @@
                         }
                     }
                 },
+                "description": "Returns utxo entries filtered either by cip 14 fingerprint or by policy id.\n\nThis is useful to keep track of the utxo set of a particular asset.",
                 "security": [],
                 "parameters": [],
                 "requestBody": {
@@ -1589,6 +1623,7 @@
                         }
                     }
                 },
+                "description": "Returns the pool of the last delegation for this address.\n\nNote: the tx can be in the current epoch, so the delegation may not be in\neffect yet.",
                 "security": [],
                 "parameters": [],
                 "requestBody": {
@@ -1648,6 +1683,7 @@
                         }
                     }
                 },
+                "description": "Returns the list of delegations for the provided pools. The pool field in\nthe response will be null when the address was previously delegating to a\npool in the input, but now the delegation is moved to a pool outside the\nlist, or when the staking key is unregistered.\n\nThis is useful to keep track of the delegators for a particular pool.",
                 "security": [],
                 "parameters": [],
                 "requestBody": {
