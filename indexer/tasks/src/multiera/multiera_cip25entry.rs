@@ -1,8 +1,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::config::EmptyConfig::EmptyConfig;
+use cml_chain::auxdata::metadata::TransactionMetadatum;
 use cml_chain::crypto::ScriptHash;
-use cml_core::metadata::TransactionMetadatum;
 use cml_core::serialization::FromBytes;
 use entity::{
     prelude::*,

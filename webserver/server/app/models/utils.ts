@@ -3,8 +3,9 @@ import {
   Address,
   ByronAddress,
   Ed25519KeyHash,
+  RewardAddress,
   ScriptHash,
-  StakeCredential,
+  Credential,
 } from '@dcspark/cardano-multiplatform-lib-nodejs';
 import Cip5 from '@dcspark/cip5-js';
 import type { ParsedAddressTypes } from './pagination/ParsedAddressTypes';
@@ -46,12 +47,11 @@ export const getAddressTypes = (addresses: string[]): ParsedAddressTypes => {
 
     if (ByronAddress.is_valid(address)) {
       const byronAddr = ByronAddress.from_base58(address);
-      const asHex = Buffer.from(byronAddr.to_bytes()).toString('hex');
+      const asHex = Buffer.from(byronAddr.to_cbor_bytes()).toString('hex');
 
       updateSet(asHex, address);
       result.exactLegacyAddress.push(asHex);
 
-      byronAddr.free();
       continue;
     }
     result.invalid.push(address);
@@ -76,15 +76,11 @@ export function getAsCredentialHex(address: string): undefined | string {
       case Cip5.miscellaneous.stake:
       case Cip5.miscellaneous.stake_test: {
         const addr = Address.from_bech32(address);
-        const rewardAddr = addr.as_reward();
+        const rewardAddr = RewardAddress.from_address(addr);
         if (rewardAddr == null) {
-          addr.free();
         } else {
-          const cred = rewardAddr.payment_cred();
-          const asHex = Buffer.from(cred.to_bytes()).toString('hex');
-
-          addr.free();
-          cred.free();
+          const cred = rewardAddr.payment();
+          const asHex = Buffer.from(cred.to_cbor_bytes()).toString('hex');
 
           return asHex;
         }
@@ -95,24 +91,17 @@ export function getAsCredentialHex(address: string): undefined | string {
       case Cip5.hashes.stake_shared_vkh:
       case Cip5.hashes.addr_shared_vkh: {
         const payload = bech32.fromWords(bech32Info.words);
-        const keyHash = Ed25519KeyHash.from_bytes(Buffer.from(payload));
-        const stakeCred = StakeCredential.from_keyhash(keyHash);
-        const asHex = Buffer.from(stakeCred.to_bytes()).toString('hex');
-
-        keyHash.free();
-        stakeCred.free();
+        const keyHash = Ed25519KeyHash.from_raw_bytes(Buffer.from(payload));
+        const stakeCred = Credential.new_pub_key(keyHash);
+        const asHex = Buffer.from(stakeCred.to_cbor_bytes()).toString('hex');
 
         return asHex;
       }
       case Cip5.hashes.script: {
         const payload = bech32.fromWords(bech32Info.words);
-        const keyHash = ScriptHash.from_bytes(Buffer.from(payload));
-        const stakeCred = StakeCredential.from_scripthash(keyHash);
-        const asHex = Buffer.from(stakeCred.to_bytes()).toString('hex');
-
-        keyHash.free();
-        stakeCred.free();
-
+        const keyHash = ScriptHash.from_raw_bytes(Buffer.from(payload));
+        const stakeCred = Credential.new_script(keyHash);
+        const asHex = Buffer.from(stakeCred.to_cbor_bytes()).toString('hex');
         return asHex;
       }
     }

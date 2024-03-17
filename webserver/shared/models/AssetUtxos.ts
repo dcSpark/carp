@@ -1,6 +1,5 @@
-import { SlotLimits } from "../../server/app/services/PaginationService";
 import { AssetName, PolicyId } from "./PolicyIdAssetMap";
-import { Pagination } from "./common";
+import { Pagination, SlotLimits } from "./common";
 
 /**
  * @example "asset1c43p68zwjezc7f6w4w9qkhkwv9ppwz0f7c3amw"

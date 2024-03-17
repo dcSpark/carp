@@ -113,3 +113,10 @@ export type Asset = {
  * @example "2042352568679"
  */
 export type Amount = string;
+
+export type SlotLimits = {
+  // this is exclusive
+  from: number;
+  // this is inclusive
+  to: number;
+};

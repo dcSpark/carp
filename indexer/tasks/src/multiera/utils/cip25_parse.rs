@@ -3,8 +3,8 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use cml_chain::auxdata::metadata::TransactionMetadatum;
 use cml_chain::crypto::ScriptHash;
-use cml_core::metadata::TransactionMetadatum;
 use cml_core::serialization::{Serialize, ToBytes};
 
 use super::user_asset::{AssetName, Cip25ParseError, Payload, PolicyId};

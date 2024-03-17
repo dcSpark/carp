@@ -19,9 +19,8 @@ export async function addressesForCredential(
 
   return {
     addresses: addresses.map(addr => {
-      const wasmAddr = cml.Address.from_bytes(addr.payload);
+      const wasmAddr = cml.Address.from_raw_bytes(addr.payload);
       const bech32 = wasmAddr.to_bech32();
-      wasmAddr.free();
       return bech32;
     }),
     pageInfo: { hasNextPage },

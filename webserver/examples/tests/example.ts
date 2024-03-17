@@ -21,10 +21,10 @@ async function getHistoryForAddress(
   });
 
   const wasmAddr = cml.Address.from_bech32(bech32Address);
-  const paymentKey = wasmAddr.as_base()?.payment_cred();
+  const paymentKey = cml.BaseAddress.from_address(wasmAddr)?.payment();
   if (paymentKey == null) throw new Error();
 
-  const stakingKey = wasmAddr.as_base()?.stake_cred();
+  const stakingKey = cml.BaseAddress.from_address(wasmAddr)?.stake();
   if (stakingKey == null) throw new Error();
 
   const result = await paginatedTransactionHistory(urlBase, {
@@ -32,8 +32,8 @@ async function getHistoryForAddress(
       // Note: querying both the payment key & staking key here is different from querying the base32 address directly
       // Both methods are supported by Carp (and multiple different kinds of inputs too)
       // Be sure to pick the method that best works for you as they will give different results
-      Buffer.from(paymentKey.to_bytes()).toString("hex"),
-      Buffer.from(stakingKey.to_bytes()).toString("hex"),
+      Buffer.from(paymentKey.to_cbor_bytes()).toString("hex"),
+      Buffer.from(stakingKey.to_cbor_bytes()).toString("hex"),
     ],
     untilBlock: bestBlock.block.hash,
   });

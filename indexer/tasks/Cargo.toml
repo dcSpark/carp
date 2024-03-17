@@ -12,10 +12,10 @@ entity = { path = "../entity" }
 
 # [tasks]
 anyhow = { version = "1.0.69" }
-cml-chain = { version = "5.0.0" }
-cml-core = { version = "5.0.0" }
-cml-crypto = { version = "5.0.0" }
-cml-multi-era = { version = "5.0.0" }
+cml-chain = { version = "5.2.0" }
+cml-core = { version = "5.2.0" }
+cml-crypto = { version = "5.2.0" }
+cml-multi-era = { version = "5.2.0" }
 cardano-projected-nft = { git = "https://github.com/dcSpark/projected-nft-whirlpool.git", rev = "13f81e8666743fefd14c5e1affb1cd828d8c473b" }
 cfg-if = { version = "1.0.0" }
 cryptoxide = { version = "0.4.2" }

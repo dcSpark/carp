@@ -9,7 +9,7 @@ import type { EndpointTypes } from '../../../shared/routes';
 import { Routes } from '../../../shared/routes';
 import { delegationForAddress } from '../services/DelegationForAddress';
 import type { DelegationForAddressResponse } from '../../../shared/models/DelegationForAddress';
-import { Address } from '@dcspark/cardano-multiplatform-lib-nodejs';
+import { Address, RewardAddress } from '@dcspark/cardano-multiplatform-lib-nodejs';
 
 const route = Routes.delegationForAddress;
 
@@ -33,22 +33,18 @@ export class DelegationForAddressController extends Controller {
         >
     ): Promise<EndpointTypes[typeof route]['response']> {
         const address = Address.from_bech32(requestBody.address);
-        const rewardAddr = address.as_reward();
+        const rewardAddr = RewardAddress.from_address(address);
         const stakingCred = address.staking_cred();
 
         let credential: Buffer;
 
         if(rewardAddr) {
-            credential = Buffer.from(rewardAddr.payment_cred().to_bytes());
-            rewardAddr.free();
+            credential = Buffer.from(rewardAddr.payment().to_cbor_bytes());
         }
         else if(stakingCred) {
-            credential = Buffer.from(stakingCred.to_bytes());
-            stakingCred.free();
+            credential = Buffer.from(stakingCred.to_cbor_bytes());
         }
         else {
-            address.free();
-
             // eslint-disable-next-line @typescript-eslint/no-unsafe-return
             return errorResponse(
                 StatusCodes.UNPROCESSABLE_ENTITY,
@@ -57,8 +53,6 @@ export class DelegationForAddressController extends Controller {
                 })
             );
         }
-
-        address.free();
 
         const response = await tx<
             DelegationForAddressResponse

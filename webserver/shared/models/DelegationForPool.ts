@@ -1,7 +1,6 @@
-import type { Pagination } from "./common";
+import type { Pagination, SlotLimits } from "./common";
 import { Address } from "./Address";
 import { Pool, PoolHex } from "./Pool";
-import { SlotLimits } from "../../server/app/services/PaginationService";
 
 export type DelegationForPoolRequest = {
   pools: Pool[];

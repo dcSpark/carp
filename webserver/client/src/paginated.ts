@@ -113,7 +113,7 @@ export function nftCborToJson(
   for (const [policyId, assetNames] of Object.entries(request.cip25)) {
     const newAssetNameMap: Record<string, string> = {};
     for (const [assetName, cbor] of Object.entries(assetNames)) {
-      const metadatum = cmlTransactioMetadatum.from_bytes(
+      const metadatum = cmlTransactioMetadatum.from_cbor_bytes(
         Buffer.from(cbor, "hex")
       );
       const json = decode_metadatum_to_json_str(metadatum, conversionType);

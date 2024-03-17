@@ -3,6 +3,7 @@ import { pageStartByHash } from '../models/pagination/pageStartByHash.queries';
 import { sqlBlockByHash } from '../models/pagination/sqlBlockByHash.queries';
 import { sqlTransactionBeforeBlock } from '../models/pagination/sqlTransactionBeforeBlock.queries';
 import type { ISlotBoundsPaginationResult } from '../models/pagination/slotBoundsPagination.queries';
+import type { SlotLimits } from '../../../shared/models/common';
 
 export type UntilPaginationType = {
   until: {
@@ -75,13 +76,6 @@ export async function resolvePageStart(request: {
     tx_id: Number.parseInt(result[0].after_tx_id, 10),
   };
 }
-
-export type SlotLimits = {
-  // this is exclusive
-  from: number;
-  // this is inclusive
-  to: number;
-};
 
 export function adjustToSlotLimits(
   pageStartWithSlot: { tx_id: number, block_id: number } | undefined,

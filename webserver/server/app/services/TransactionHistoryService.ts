@@ -103,13 +103,10 @@ export async function historyForAddresses(
 }
 
 function getPaymentCred(addressRaw: string): string {
-  const address = Address.from_bytes(Buffer.from(addressRaw.slice(2), 'hex'));
+  const address = Address.from_raw_bytes(Buffer.from(addressRaw.slice(2), 'hex'));
 
   const paymentCred = address.payment_cred();
-  const addressBytes = paymentCred?.to_bytes();
-
-  address.free();
-  paymentCred?.free();
+  const addressBytes = paymentCred?.to_cbor_bytes();
 
   return Buffer.from(addressBytes as Uint8Array).toString('hex');
 }

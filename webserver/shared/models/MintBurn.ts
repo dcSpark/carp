@@ -1,6 +1,5 @@
-import { SlotLimits } from "../../server/app/services/PaginationService";
 import { PolicyId } from "./PolicyIdAssetMap";
-import { Amount, Pagination } from "./common";
+import { Amount, Pagination, SlotLimits } from "./common";
 
 export type MintBurnHistoryRequest = {
   policyIds: PolicyId[] | undefined;

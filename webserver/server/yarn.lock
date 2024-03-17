@@ -35,10 +35,10 @@
   dependencies:
     "@jridgewell/trace-mapping" "0.3.9"
 
-"@dcspark/cardano-multiplatform-lib-nodejs@3.0.1":
-  version "3.0.1"
-  resolved "https://registry.npmjs.org/@dcspark/cardano-multiplatform-lib-nodejs/-/cardano-multiplatform-lib-nodejs-3.0.1.tgz"
-  integrity sha512-dTCIDamFxcZGVXvym+nqH2mjJMuHqlE8KQUqAJwkbVNwikplQfYoGBKdhnZPkKjxdmfQvaRKJ/UQyqpkNyg8Fw==
+"@dcspark/cardano-multiplatform-lib-nodejs@5.2.0":
+  version "5.2.0"
+  resolved "https://registry.yarnpkg.com/@dcspark/cardano-multiplatform-lib-nodejs/-/cardano-multiplatform-lib-nodejs-5.2.0.tgz#716d780f120650ed3e7d2df58af85bf673e03c0a"
+  integrity sha512-EwXyOF0MrHGBDFyqjGqxhvpYqq0I4x1RtDW8eubQoePFpHnysiYUf6qYdnP7FRLpuiyubQC96P0lurYkISCBeA==
 
 "@dcspark/cip5-js@^1.0.0":
   version "1.0.0"

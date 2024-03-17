@@ -1,5 +1,4 @@
-import { SlotLimits } from "../../server/app/services/PaginationService";
-import { Pagination } from "./common";
+import { Pagination, SlotLimits } from "./common";
 
 export type ProjectedNftRangeRequest = {
   address: string | undefined;

@@ -584,9 +584,9 @@ dependencies = [
  "anyhow",
  "async-trait",
  "clap 3.2.25",
- "cml-chain 5.0.0",
- "cml-core 5.0.0",
- "cml-crypto 5.0.0",
+ "cml-chain 5.2.0",
+ "cml-core 5.2.0",
+ "cml-crypto 5.2.0",
  "cml-multi-era",
  "ctrlc",
  "dcspark-blockchain-source",
@@ -765,15 +765,15 @@ dependencies = [
 
 [[package]]
 name = "cml-chain"
-version = "5.0.0"
+version = "5.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9771caeea0ff074be4d59235eb261806d1e2a33d42dad909396f908eaa8cea81"
+checksum = "ec309ed37a653542db58bf506bf31f59f942a5cf269c1709d9555b699a1b302a"
 dependencies = [
  "base64 0.21.7",
  "bech32 0.7.3",
  "cbor_event",
- "cml-core 5.0.0",
- "cml-crypto 5.0.0",
+ "cml-core 5.2.0",
+ "cml-crypto 5.2.0",
  "derivative",
  "fraction",
  "getrandom",
@@ -820,9 +820,9 @@ dependencies = [
 
 [[package]]
 name = "cml-core"
-version = "5.0.0"
+version = "5.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "710010ebd36f8562462929605c5bb5eb472e444f4abee17bc27214f80f1fed52"
+checksum = "38c826dd7e8939826e1090ebbef48dce630bbceb2a4a4aadbdccd6b583bb7d02"
 dependencies = [
  "base64 0.13.1",
  "bech32 0.7.3",
@@ -870,15 +870,15 @@ dependencies = [
 
 [[package]]
 name = "cml-crypto"
-version = "5.0.0"
+version = "5.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b82642c8b143e7c019fcf73b5f8676825e8f90e7d0b8e3dae6aa3170c3fd0e6"
+checksum = "3e79a9a6614c1fce917db76eda4ba44fc9a3d8ee5d43becf66299e89e04a8a0f"
 dependencies = [
  "base64 0.21.7",
  "bech32 0.7.3",
  "cbor_event",
  "cfg-if 1.0.0",
- "cml-core 5.0.0",
+ "cml-core 5.2.0",
  "cryptoxide",
  "derivative",
  "digest 0.9.0",
@@ -894,15 +894,15 @@ dependencies = [
 
 [[package]]
 name = "cml-multi-era"
-version = "5.0.0"
+version = "5.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8c41a87f93aa47c69a88bf9b7f0b28f13efe8968a0c3fd01412146ce6aab825"
+checksum = "e71d10d6eb5afaa9c2befec03827defea3929b455166154ab8bc25d6dc717767"
 dependencies = [
  "bech32 0.7.3",
  "cbor_event",
- "cml-chain 5.0.0",
- "cml-core 5.0.0",
- "cml-crypto 5.0.0",
+ "cml-chain 5.2.0",
+ "cml-core 5.2.0",
+ "cml-crypto 5.2.0",
  "derivative",
  "hex",
  "linked-hash-map",
@@ -2852,9 +2852,9 @@ name = "reparse"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "cml-chain 5.0.0",
- "cml-core 5.0.0",
- "cml-crypto 5.0.0",
+ "cml-chain 5.2.0",
+ "cml-core 5.2.0",
+ "cml-crypto 5.2.0",
  "cml-multi-era",
  "dotenv",
  "entity",
@@ -3741,9 +3741,9 @@ dependencies = [
  "anyhow",
  "cardano-projected-nft",
  "cfg-if 1.0.0",
- "cml-chain 5.0.0",
- "cml-core 5.0.0",
- "cml-crypto 5.0.0",
+ "cml-chain 5.2.0",
+ "cml-core 5.2.0",
+ "cml-crypto 5.2.0",
  "cml-multi-era",
  "cryptoxide",
  "entity",

@@ -111,15 +111,12 @@ export class AssetUtxosController extends Controller {
           txId: data.tx as string,
           block: data.block,
           payload: (data.payload as { [key: string]: string | number }[]).map(x => {
-            const address = Address.from_bytes(
+            const address = Address.from_raw_bytes(
               Uint8Array.from(Buffer.from(x.addressRaw as string, 'hex'))
             );
 
             const paymentCred = address.payment_cred();
-            const addressBytes = paymentCred?.to_bytes();
-
-            address.free();
-            paymentCred?.free();
+            const addressBytes = paymentCred?.to_cbor_bytes();
 
             return {
               utxo: {

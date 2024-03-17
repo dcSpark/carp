@@ -61,7 +61,7 @@ describe(`/${Routes.metadataNft}`, function () {
       },
     });
 
-    const metadatum = cml.TransactionMetadatum.from_bytes(
+    const metadatum = cml.TransactionMetadatum.from_cbor_bytes(
       Buffer.from(
         result.cip25[
           "b863bc7369f46136ac1048adb2fa7dae3af944c3bbb2be2f216a8d4f"
