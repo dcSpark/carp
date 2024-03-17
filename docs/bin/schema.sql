@@ -115,7 +115,8 @@ CREATE TABLE public."Block" (
     height integer NOT NULL,
     epoch integer NOT NULL,
     slot integer NOT NULL,
-    payload bytea
+    payload bytea,
+    tx_count integer
 );
 
 

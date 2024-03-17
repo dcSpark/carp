@@ -1209,23 +1209,6 @@
                 "description": "Filter which uses of the address are considered relevant for the query.\n\nThis is a bitmask, so you can combine multiple options\nex: `RelationFilterType.Input & RelationFilterType.Output`\n\nNote: relations only apply to credentials and not to full bech32 addresses",
                 "pattern": "([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])"
             },
-            "SlotLimits": {
-                "properties": {
-                    "to": {
-                        "type": "number",
-                        "format": "double"
-                    },
-                    "from": {
-                        "type": "number",
-                        "format": "double"
-                    }
-                },
-                "required": [
-                    "to",
-                    "from"
-                ],
-                "type": "object"
-            },
             "TransactionHistoryRequest": {
                 "allOf": [
                     {
