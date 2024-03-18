@@ -1,5 +1,4 @@
-use cml_chain::auxdata::AuxiliaryData;
-use cml_core::metadata::Metadata;
+use cml_chain::auxdata::{AuxiliaryData, Metadata};
 use cml_core::serialization::Serialize;
 use std::collections::BTreeMap;
 
