@@ -149,19 +149,30 @@ async fn main() -> anyhow::Result<()> {
         ),
     };
 
-    let start_from = sink
-        .start_from(config.start_block)
-        .await
-        .context("Can't get starting point from sink")?;
+    tracing::info!("Passed start_block config: {:?}", config.start_block);
+
+    let start_from_candidates = match config.start_block {
+        None => sink
+            .get_latest_points(15)
+            .await
+            .context("Can't get starting point from sink"),
+        Some(block_hash) => sink
+            .start_from(Option::from(block_hash))
+            .await
+            .context("Can't get starting point from config")
+    }?;
+
+    let start_from = start_from_candidates
+        .last()
+        .cloned()
+        .ok_or_else(|| anyhow!("Starting points list is empty"))?;
+
+    tracing::info!("Using start_from: {:?}", start_from);
 
     match &config.source {
         SourceConfig::Oura { .. } => {
-            let source = OuraSource::new(config.source, network, start_from.clone())
+            let source = OuraSource::new(config.source, network, start_from_candidates)
                 .context("Can't create oura source")?;
-            let start_from = start_from
-                .last()
-                .cloned()
-                .ok_or_else(|| anyhow!("Starting points list is empty"))?;
 
             main_loop(source, sink, start_from, running, processing_finished).await
         }
@@ -172,17 +183,6 @@ async fn main() -> anyhow::Result<()> {
                 "preview" => dcspark_blockchain_source::cardano::NetworkConfiguration::preview(),
                 _ => return Err(anyhow::anyhow!("network not supported by source")),
             };
-
-            // try to find a confirmed point.
-            //
-            // this way the multiverse can be temporary, which saves setting up the extra db
-            // (at the expense of repulling some extra blocks at startup)
-            let start_from = sink
-                .get_latest_points(15)
-                .await?
-                .last()
-                .cloned()
-                .ok_or_else(|| anyhow!("Starting points list is empty"))?;
 
             let network_config = dcspark_blockchain_source::cardano::NetworkConfiguration {
                 relay: relay.clone(),
