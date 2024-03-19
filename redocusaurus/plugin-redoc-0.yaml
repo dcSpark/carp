@@ -151,45 +151,55 @@ components:
     AssetUtxosResponse:
       items:
         properties:
+          block:
+            type: string
           txId:
             type: string
-          slot:
-            type: number
-            format: double
-          paymentCred:
-            type: string
-          assetName:
-            $ref: '#/components/schemas/AssetName'
-          policyId:
-            type: string
-          cip14Fingerprint:
-            type: string
-          utxo:
-            properties:
-              index:
-                type: number
-                format: double
-              tx:
-                type: string
-            required:
-              - index
-              - tx
-            type: object
-          amount:
-            type: string
-            description: >-
-              If the utxo is created, this has the amount. It's undefined if the
-              utxo
+          payload:
+            items:
+              properties:
+                utxo:
+                  properties:
+                    index:
+                      type: number
+                      format: double
+                    tx:
+                      type: string
+                  required:
+                    - index
+                    - tx
+                  type: object
+                slot:
+                  type: number
+                  format: double
+                paymentCred:
+                  type: string
+                assetName:
+                  $ref: '#/components/schemas/AssetName'
+                policyId:
+                  type: string
+                cip14Fingerprint:
+                  type: string
+                amount:
+                  type: string
+                  description: >-
+                    If the utxo is created, this has the amount. It's undefined
+                    if the utxo
 
-              is spent.
+                    is spent.
+              required:
+                - utxo
+                - slot
+                - paymentCred
+                - assetName
+                - policyId
+                - cip14Fingerprint
+              type: object
+            type: array
         required:
+          - block
           - txId
-          - slot
-          - paymentCred
-          - assetName
-          - policyId
-          - cip14Fingerprint
-          - utxo
+          - payload
         type: object
       type: array
     Cip14Fingerprint:
@@ -199,31 +209,41 @@ components:
       type: string
       example: b863bc7369f46136ac1048adb2fa7dae3af944c3bbb2be2f216a8d4f
       pattern: '[0-9a-fA-F]{56}'
-    AssetUtxosRequest:
+    SlotLimits:
       properties:
-        policyIds:
-          items:
-            $ref: '#/components/schemas/PolicyId'
-          type: array
-        fingerprints:
-          items:
-            $ref: '#/components/schemas/Cip14Fingerprint'
-          type: array
-        range:
-          properties:
-            maxSlot:
-              type: number
-              format: double
-            minSlot:
-              type: number
-              format: double
-          required:
-            - maxSlot
-            - minSlot
-          type: object
+        to:
+          type: number
+          format: double
+        from:
+          type: number
+          format: double
       required:
-        - range
+        - to
+        - from
       type: object
+    AssetUtxosRequest:
+      allOf:
+        - properties:
+            limit:
+              type: number
+              format: double
+            slotLimits:
+              $ref: '#/components/schemas/SlotLimits'
+              description: >-
+                This limits the transactions in the result to this range of
+                slots.
+
+                Everything else is filtered out
+            policyIds:
+              items:
+                $ref: '#/components/schemas/PolicyId'
+              type: array
+            fingerprints:
+              items:
+                $ref: '#/components/schemas/Cip14Fingerprint'
+              type: array
+          type: object
+        - $ref: '#/components/schemas/Pagination'
     BlockSubset:
       properties:
         slot:
@@ -357,49 +377,57 @@ components:
     DelegationForPoolResponse:
       items:
         properties:
-          slot:
-            type: number
-            format: double
+          block:
+            type: string
           txId:
             type: string
-            nullable: true
-          pool:
-            allOf:
-              - $ref: '#/components/schemas/PoolHex'
-            nullable: true
-          credential:
-            $ref: '#/components/schemas/Address'
+          payload:
+            items:
+              properties:
+                slot:
+                  type: number
+                  format: double
+                pool:
+                  allOf:
+                    - $ref: '#/components/schemas/PoolHex'
+                  nullable: true
+                credential:
+                  $ref: '#/components/schemas/Address'
+              required:
+                - slot
+                - pool
+                - credential
+              type: object
+            type: array
         required:
-          - slot
+          - block
           - txId
-          - pool
-          - credential
+          - payload
         type: object
       type: array
     Pool:
       $ref: '#/components/schemas/PoolHex'
     DelegationForPoolRequest:
-      properties:
-        range:
-          properties:
-            maxSlot:
+      allOf:
+        - properties:
+            limit:
               type: number
               format: double
-            minSlot:
-              type: number
-              format: double
+            slotLimits:
+              $ref: '#/components/schemas/SlotLimits'
+              description: >-
+                This limits the transactions in the result to this range of
+                slots.
+
+                Everything else is filtered out
+            pools:
+              items:
+                $ref: '#/components/schemas/Pool'
+              type: array
           required:
-            - maxSlot
-            - minSlot
+            - pools
           type: object
-        pools:
-          items:
-            $ref: '#/components/schemas/Pool'
-          type: array
-      required:
-        - range
-        - pools
-      type: object
+        - $ref: '#/components/schemas/Pagination'
     Asset:
       properties:
         assetName:
@@ -638,6 +666,69 @@ components:
       required:
         - assets
       type: object
+    MintBurnSingleResponse:
+      properties:
+        block:
+          type: string
+          description: Block id of related mint / burn event
+          example: 4e90f1d14ad742a1c0e094a89ad180b896068f93fc3969614b1c53bac547b374
+          pattern: '[0-9a-fA-F]{64}'
+        txId:
+          type: string
+          description: Transaction id of related mint / burn event
+          example: 28eb069e3e8c13831d431e3b2e35f58525493ab2d77fde83184993e4aa7a0eda
+          pattern: '[0-9a-fA-F]{64}'
+        metadata:
+          type: string
+          nullable: true
+          description: Transaction metadata of related mint / burn event
+        actionSlot:
+          type: number
+          format: double
+          description: Slot at which the transaction happened
+          example: 512345
+        assets:
+          properties: {}
+          additionalProperties:
+            properties: {}
+            additionalProperties:
+              $ref: '#/components/schemas/Amount'
+            type: object
+          type: object
+          description: Assets changed in a particular transaction
+          example:
+            b863bc7369f46136ac1048adb2fa7dae3af944c3bbb2be2f216a8d4f:
+              '42657272794e617679': '1'
+      required:
+        - block
+        - txId
+        - metadata
+        - actionSlot
+        - assets
+      type: object
+    MintBurnHistoryResponse:
+      items:
+        $ref: '#/components/schemas/MintBurnSingleResponse'
+      type: array
+    MintBurnHistoryRequest:
+      allOf:
+        - properties:
+            limit:
+              type: number
+              format: double
+            slotLimits:
+              $ref: '#/components/schemas/SlotLimits'
+              description: >-
+                This limits the transactions in the result to this range of
+                slots.
+
+                Everything else is filtered out
+            policyIds:
+              items:
+                $ref: '#/components/schemas/PolicyId'
+              type: array
+          type: object
+        - $ref: '#/components/schemas/Pagination'
     ProjectedNftStatus:
       enum:
         - Lock
@@ -648,132 +739,125 @@ components:
     ProjectedNftRangeResponse:
       items:
         properties:
-          forHowLong:
+          txId:
             type: string
-            nullable: true
-            description: >-
-              UNIX timestamp till which the funds can't be claimed in the
-              Unlocking state.
-
-              If the status is not Unlocking this is always null.
-            example: '1701266986000'
-          plutusDatum:
-            type: string
-            nullable: true
-            description: 'Projected NFT datum: serialized state of the Projected NFT'
-            example: >-
-              d8799fd8799f581c9040f057461d9adc09108fe5cb630077cf75c6e981d3ed91f6fb18f6ffd87980ff
-            pattern: '[0-9a-fA-F]+'
-          status:
-            allOf:
-              - $ref: '#/components/schemas/ProjectedNftStatus'
-            nullable: true
-            description: 'Projected NFT status: Lock / Unlocking / Claim / Invalid'
-            example: Lock
-          amount:
-            type: string
-            description: Number of assets of `asset` type used in this Projected NFT event.
-            example: '1'
-          assetName:
-            type: string
-            description: Asset name that relates to Projected NFT event
-            example: '415045'
-            pattern: ([0-9a-fA-F]{2}){0,32}
-          policyId:
-            type: string
-            description: Asset policy id that relates to Projected NFT event
-            example: 96f7dc9749ede0140f042516f4b723d7261610d6b12ccb19f3475278
-            pattern: '[0-9a-fA-F]{56}'
-          previousTxOutputIndex:
-            type: number
-            format: double
-            nullable: true
-            description: >-
-              Output index of related previous Projected NFT event. Null if
-              event has `status` Lock.
-            example: 1
-          previousTxHash:
-            type: string
-            nullable: true
-            description: >-
-              Transaction id of related previous Projected NFT event.
-
-              E.g. you locked the NFT and get unlocking event: you will see
-              previousTxHash = transaction hash of lock event.
-
-              Null if event has `status` Lock.
-            example: 28eb069e3e8c13831d431e3b2e35f58525493ab2d77fde83184993e4aa7a0eda
-            pattern: '[0-9a-fA-F]{64}'
-          actionOutputIndex:
-            type: number
-            format: double
-            nullable: true
-            description: >-
-              Output index of related Projected NFT event. Null if it is claim
-              event (No new UTxO is created).
-            example: 1
-          actionTxId:
-            type: string
-            nullable: true
             description: Transaction id of related Projected NFT event
             example: 28eb069e3e8c13831d431e3b2e35f58525493ab2d77fde83184993e4aa7a0eda
             pattern: '[0-9a-fA-F]{64}'
-          ownerAddress:
+          block:
             type: string
-            nullable: true
-            description: >-
-              Projected NFT owner address. Not null only if owned by Public Key
-              Hash.
-            example: 9040f057461d9adc09108fe5cb630077cf75c6e981d3ed91f6fb18f6
-            pattern: '[0-9a-fA-F]+'
-          actionSlot:
-            type: number
-            format: double
-            description: Slot at which the transaction happened
-            example: 512345
+          payload:
+            items:
+              properties:
+                forHowLong:
+                  type: string
+                  nullable: true
+                  description: >-
+                    UNIX timestamp till which the funds can't be claimed in the
+                    Unlocking state.
+
+                    If the status is not Unlocking this is always null.
+                  example: '1701266986000'
+                plutusDatum:
+                  type: string
+                  description: 'Projected NFT datum: serialized state of the Projected NFT'
+                  example: >-
+                    d8799fd8799f581c9040f057461d9adc09108fe5cb630077cf75c6e981d3ed91f6fb18f6ffd87980ff
+                  pattern: '[0-9a-fA-F]+'
+                status:
+                  $ref: '#/components/schemas/ProjectedNftStatus'
+                  description: 'Projected NFT status: Lock / Unlocking / Claim / Invalid'
+                  example: Lock
+                amount:
+                  type: string
+                  description: >-
+                    Number of assets of `asset` type used in this Projected NFT
+                    event.
+                  example: '1'
+                assetName:
+                  type: string
+                  description: Asset name that relates to Projected NFT event
+                  example: '415045'
+                  pattern: ([0-9a-fA-F]{2}){0,32}
+                policyId:
+                  type: string
+                  description: Asset policy id that relates to Projected NFT event
+                  example: 96f7dc9749ede0140f042516f4b723d7261610d6b12ccb19f3475278
+                  pattern: '[0-9a-fA-F]{56}'
+                previousTxOutputIndex:
+                  type: number
+                  format: double
+                  nullable: true
+                  description: >-
+                    Output index of related previous Projected NFT event. Null
+                    if event has `status` Lock.
+                  example: 1
+                previousTxHash:
+                  type: string
+                  nullable: true
+                  description: >-
+                    Transaction id of related previous Projected NFT event.
+
+                    E.g. you locked the NFT and get unlocking event: you will
+                    see previousTxHash = transaction hash of lock event.
+
+                    Null if event has `status` Lock.
+                  example: >-
+                    28eb069e3e8c13831d431e3b2e35f58525493ab2d77fde83184993e4aa7a0eda
+                  pattern: '[0-9a-fA-F]{64}'
+                actionOutputIndex:
+                  type: number
+                  format: double
+                  nullable: true
+                  description: >-
+                    Output index of related Projected NFT event. Null if it is
+                    claim event (No new UTxO is created).
+                  example: 1
+                ownerAddress:
+                  type: string
+                  nullable: true
+                  description: >-
+                    Projected NFT owner address. Not null only if owned by
+                    Public Key Hash.
+                  example: 9040f057461d9adc09108fe5cb630077cf75c6e981d3ed91f6fb18f6
+                  pattern: '[0-9a-fA-F]+'
+                actionSlot:
+                  type: number
+                  format: double
+                  description: Slot at which the transaction happened
+                  example: 512345
+              required:
+                - forHowLong
+                - plutusDatum
+                - status
+                - amount
+                - assetName
+                - policyId
+                - previousTxOutputIndex
+                - previousTxHash
+                - actionOutputIndex
+                - ownerAddress
+                - actionSlot
+              type: object
+            type: array
         required:
-          - forHowLong
-          - plutusDatum
-          - status
-          - amount
-          - assetName
-          - policyId
-          - previousTxOutputIndex
-          - previousTxHash
-          - actionOutputIndex
-          - actionTxId
-          - ownerAddress
-          - actionSlot
+          - txId
+          - block
+          - payload
         type: object
       type: array
     ProjectedNftRangeRequest:
-      properties:
-        address:
-          type: string
-        range:
-          properties:
-            maxSlot:
+      allOf:
+        - properties:
+            limit:
               type: number
               format: double
-              description: >-
-                Maximal slot from which the events should be returned
-                (inclusive)
-              example: 46154860
-            minSlot:
-              type: number
-              format: double
-              description: >-
-                Minimal slot from which the events should be returned (not
-                inclusive)
-              example: 46154769
-          required:
-            - maxSlot
-            - minSlot
+            slotLimits:
+              $ref: '#/components/schemas/SlotLimits'
+            address:
+              type: string
           type: object
-          description: Projected NFT events in this slot range will be returned
-      required:
-        - range
-      type: object
+        - $ref: '#/components/schemas/Pagination'
     BlockInfo:
       allOf:
         - $ref: '#/components/schemas/BlockSubset'
@@ -790,6 +874,13 @@ components:
           type: object
     TransactionInfo:
       properties:
+        inputCredentials:
+          items:
+            type: string
+          type: array
+        metadata:
+          type: string
+          nullable: true
         payload:
           type: string
           description: cbor-encoded transaction
@@ -845,6 +936,20 @@ components:
     TransactionHistoryRequest:
       allOf:
         - properties:
+            withInputContext:
+              type: boolean
+              description: >-
+                If this is set to true, the result includes the input addresses
+                (which are
+
+                not part of the tx), and the metadata (if any)
+            slotLimits:
+              $ref: '#/components/schemas/SlotLimits'
+              description: >-
+                This limits the transactions in the result to this range of
+                slots.
+
+                Everything else is filtered out
             limit:
               type: number
               format: double
@@ -914,7 +1019,7 @@ components:
   securitySchemes: {}
 info:
   title: carp
-  version: 2.4.0
+  version: 3.0.0
   description: API for the Postgres database generated by Carp
   license:
     name: MIT
@@ -999,6 +1104,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorShape'
+      description: >-
+        Returns utxo entries filtered either by cip 14 fingerprint or by policy
+        id.
+
+
+        This is useful to keep track of the utxo set of a particular asset.
       security: []
       parameters: []
       requestBody:
@@ -1104,6 +1215,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorShape'
+      description: >-
+        Returns the pool of the last delegation for this address.
+
+
+        Note: the tx can be in the current epoch, so the delegation may not be
+        in
+
+        effect yet.
       security: []
       parameters: []
       requestBody:
@@ -1140,6 +1259,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorShape'
+      description: >-
+        Returns the list of delegations for the provided pools. The pool field
+        in
+
+        the response will be null when the address was previously delegating to
+        a
+
+        pool in the input, but now the delegation is moved to a pool outside the
+
+        list, or when the staking key is unregistered.
+
+
+        This is useful to keep track of the delegators for a particular pool.
       security: []
       parameters: []
       requestBody:
@@ -1322,6 +1454,47 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PolicyIdAssetMapType'
+  /asset/mint-burn-history:
+    post:
+      operationId: ProjectedNftRange
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MintBurnHistoryResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+        '409':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+        '422':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+      description: >-
+        Gets mint and burn events in the provided slot range, optionally
+        filtering
+
+        by policyId(s). A burn event is a mint with a negative value.
+      security: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MintBurnHistoryRequest'
   /projected-nft/range:
     post:
       operationId: ProjectedNftRange
@@ -1350,6 +1523,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorShape'
+      description: >-
+        Query any [projected
+        NFT](https://github.com/dcSpark/projected-nft-whirlpool).
       security: []
       parameters: []
       requestBody:
