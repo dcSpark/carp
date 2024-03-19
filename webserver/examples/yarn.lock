@@ -20,7 +20,7 @@
   integrity sha512-EwXyOF0MrHGBDFyqjGqxhvpYqq0I4x1RtDW8eubQoePFpHnysiYUf6qYdnP7FRLpuiyubQC96P0lurYkISCBeA==
 
 "@dcspark/carp-client@../client/dist":
-  version "2.4.1"
+  version "3.0.0"
   dependencies:
     axios "^0.27.2"
 
