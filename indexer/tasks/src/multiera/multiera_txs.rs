@@ -1,4 +1,5 @@
 use cml_core::serialization::Serialize;
+use cml_crypto::RawBytesEncoding;
 use std::collections::{BTreeSet, HashSet};
 
 use super::multiera_block::MultieraBlockTask;
@@ -45,7 +46,7 @@ async fn handle_tx(
                 .1
                 .transaction_bodies()
                 .iter()
-                .map(|tx_body| <[u8; 32]>::from(tx_body.hash()).to_vec())
+                .map(|tx_body| tx_body.hash().to_raw_bytes().to_vec())
                 .collect::<Vec<_>>()
                 .as_slice(),
         )
@@ -72,7 +73,7 @@ async fn handle_tx(
                 vec![]
             };
             TransactionActiveModel {
-                hash: Set(<[u8; 32]>::from(tx.hash()).to_vec()),
+                hash: Set(tx.hash().to_raw_bytes().to_vec()),
                 block_id: Set(database_block.id),
                 tx_index: Set(idx as i32),
                 payload: Set(tx_payload),

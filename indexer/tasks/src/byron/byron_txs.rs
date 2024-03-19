@@ -1,5 +1,6 @@
 use crate::{dsl::task_macro::*, era_common::transactions_from_hashes, utils::blake2b256};
 use cml_core::serialization::ToBytes;
+use cml_crypto::RawBytesEncoding;
 use cml_multi_era::byron::block::ByronBlock;
 use cml_multi_era::MultiEraBlock;
 use entity::sea_orm::Set;
@@ -48,7 +49,7 @@ async fn handle_tx(
                 .body
                 .tx_payload
                 .iter()
-                .map(|tx| <[u8; 32]>::from(tx.byron_tx.hash()).to_vec())
+                .map(|tx| tx.byron_tx.hash().to_raw_bytes().to_vec())
                 .collect::<Vec<Vec<u8>>>(),
             _ => vec![],
         };
@@ -70,7 +71,7 @@ async fn handle_tx(
             };
 
             TransactionActiveModel {
-                hash: Set(<[u8; 32]>::from(tx.byron_tx.hash()).to_vec()),
+                hash: Set(tx.byron_tx.hash().to_raw_bytes().to_vec()),
                 block_id: Set(database_block.id),
                 tx_index: Set(idx as i32),
                 payload: Set(tx_payload),

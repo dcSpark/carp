@@ -12,6 +12,11 @@ pub struct Model {
     pub epoch: i32,
     pub slot: i32,
     pub payload: Option<Vec<u8>>,
+    /**
+     * tx_count is useful to skip empty blocks during pagination
+     * We cache tx_count here even though you can derive this number by doing a join of Block<>Transaction
+     * Since caching it is a relatively small amount of data for better performance
+     */
     pub tx_count: i32,
 }
 
