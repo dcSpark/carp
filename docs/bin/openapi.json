@@ -1913,7 +1913,7 @@
         },
         "/asset/mint-burn-history": {
             "post": {
-                "operationId": "ProjectedNftRange",
+                "operationId": "MintBurnHistory",
                 "responses": {
                     "200": {
                         "description": "",
@@ -2016,7 +2016,7 @@
                         }
                     }
                 },
-                "description": "Query any [projected NFT](https://github.com/dcSpark/projected-nft-whirlpool).",
+                "description": "Query any projected NFT. Learn more[<u>here</u>](https://github.com/dcSpark/projected-nft-whirlpool).",
                 "security": [],
                 "parameters": [],
                 "requestBody": {

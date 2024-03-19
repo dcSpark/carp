@@ -32,7 +32,7 @@ export class MintRangeController extends Controller {
    */
   @SuccessResponse(`${StatusCodes.OK}`)
   @Post()
-  public async projectedNftRange(
+  public async mintBurnHistory(
     @Body()
     requestBody: EndpointTypes[typeof route]['input'],
     @Res()
