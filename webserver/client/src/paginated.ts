@@ -1,6 +1,6 @@
-import { query } from "./index";
-import type { EndpointTypes } from "./index";
-import { Routes } from "./index";
+import { query } from "./template";
+import type { EndpointTypes } from "../../shared/routes";
+import { Routes } from "../../shared/routes";
 import type { Pagination } from "../../shared/models/common";
 import type { TxAndBlockInfo } from "../../shared/models/TransactionHistory";
 import type {

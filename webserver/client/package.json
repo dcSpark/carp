@@ -2,7 +2,7 @@
   "name": "@dcspark/carp-client",
   "version": "3.0.0",
   "description": "Web client for the Carp server",
-  "main": "app/index.js",
+  "main": "client/src/index.js",
   "scripts": {
     "eslint": "eslint src",
     "clean": "rm -rf ./dist",
