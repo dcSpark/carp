@@ -1,4 +1,4 @@
-import { PolicyId } from "./PolicyIdAssetMap";
+import { PolicyId, AssetName } from "./PolicyIdAssetMap";
 import { Amount, Pagination, SlotLimits } from "./common";
 
 export type MintBurnHistoryRequest = {
@@ -18,6 +18,9 @@ export type MintBurnSingleResponse = {
    * @example { "b863bc7369f46136ac1048adb2fa7dae3af944c3bbb2be2f216a8d4f": { "42657272794e617679": "1" }}
    */
   assets: { [policyId: string]: { [assetName: string]: Amount } };
+
+  inputAddresses: { [address: string]: {policyId: PolicyId, assetName: AssetName, amount: Amount}[]}
+  outputAddresses: { [address: string]: {policyId: PolicyId, assetName: AssetName, amount: Amount}[]}
 
   /**
    * Slot at which the transaction happened

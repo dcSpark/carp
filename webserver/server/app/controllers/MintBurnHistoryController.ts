@@ -9,9 +9,7 @@ import { Routes } from '../../../shared/routes';
 import { mintBurnRange, mintBurnRangeByPolicyIds } from '../services/MintBurnHistoryService';
 import type { MintBurnSingleResponse } from '../../../shared/models/MintBurn';
 import type { PolicyId } from '../../../shared/models/PolicyIdAssetMap';
-import type {
-  ISqlMintBurnRangeResult,
-} from '../models/asset/mintBurnHistory.queries';
+import type { ISqlMintBurnRangeResult } from '../models/asset/mintBurnHistory.queries';
 import {
   adjustToSlotLimits,
   resolvePageStart,
@@ -20,6 +18,8 @@ import {
 import { slotBoundsPagination } from '../models/pagination/slotBoundsPagination.queries';
 import { MINT_BURN_HISTORY_LIMIT } from '../../../shared/constants';
 import { expectType } from 'tsd';
+import { TransactionOutput } from '@dcspark/cardano-multiplatform-lib-nodejs';
+import { BufferArray } from '../models/address/sqlAddressUsed.queries';
 
 const route = Routes.mintBurnHistory;
 
@@ -121,12 +121,66 @@ export class MintRangeController extends Controller {
           }
         }
 
+        const f = (payloads: BufferArray) => {
+          const inputAddresses: {
+            [address: string]: { policyId: string; assetName: string; amount: string }[];
+          } = {};
+
+          for (const rawOutput of payloads) {
+            const output = TransactionOutput.from_cbor_bytes(rawOutput);
+
+            const inputAddress = output.address().payment_cred()?.to_cbor_hex();
+
+            if (!inputAddress) continue;
+
+            const ma = output.amount().multi_asset();
+
+            const policyIdsInInput = ma.keys();
+
+            for (let i = 0; i < policyIdsInInput.len(); i++) {
+              const policyId = policyIdsInInput.get(i);
+
+              const hexPolicyId = policyId.to_hex();
+
+              const assetsInOutput = ma.get_assets(policyId);
+
+              const assetNames = assetsInOutput?.keys();
+
+              if (!assetNames) continue;
+
+              for (let j = 0; j < assetNames.len(); j++) {
+                const assetName = assetNames.get(j);
+                const hexAssetName = Buffer.from(assetName.get()).toString('hex');
+
+                if (assets[hexPolicyId] && assets[hexPolicyId][hexAssetName]) {
+                  if (!inputAddresses[inputAddress]) {
+                    inputAddresses[inputAddress] = [];
+                  }
+
+                  inputAddresses[inputAddress].push({
+                    policyId: hexPolicyId,
+                    assetName: hexAssetName,
+                    amount: assetsInOutput?.get(assetName)?.toString()!,
+                  });
+                }
+              }
+            }
+          }
+
+          return inputAddresses;
+        };
+
+        const inputAddresses = f(entry.input_payloads || []);
+        const outputAddresses = f(entry.output_payloads || []);
+
         return {
           assets: assets,
           actionSlot: entry.action_slot,
           metadata: entry.action_tx_metadata,
           txId: entry.tx,
           block: entry.block,
+          inputAddresses,
+          outputAddresses,
         };
       });
     });
