@@ -917,6 +917,78 @@
                         "description": "Slot at which the transaction happened",
                         "example": 512345
                     },
+                    "outputAddresses": {
+                        "properties": {},
+                        "additionalProperties": {
+                            "items": {
+                                "properties": {
+                                    "amount": {
+                                        "$ref": "#/components/schemas/Amount"
+                                    },
+                                    "assetName": {
+                                        "$ref": "#/components/schemas/AssetName"
+                                    },
+                                    "policyId": {
+                                        "$ref": "#/components/schemas/PolicyId"
+                                    }
+                                },
+                                "required": [
+                                    "amount",
+                                    "assetName",
+                                    "policyId"
+                                ],
+                                "type": "object"
+                            },
+                            "type": "array"
+                        },
+                        "type": "object",
+                        "description": "Output parts indexed by address. This mapping will only contain assets that\nwere minted or burned in this transaction.",
+                        "example": {
+                            "8200581c4b2e7295ac876cfdf70e82c1cb8df3ee5cb23d93949e3322230fc447": [
+                                {
+                                    "policyId": "b863bc7369f46136ac1048adb2fa7dae3af944c3bbb2be2f216a8d4f",
+                                    "assetName": "42657272794e617679",
+                                    "amount": "1"
+                                }
+                            ]
+                        }
+                    },
+                    "inputAddresses": {
+                        "properties": {},
+                        "additionalProperties": {
+                            "items": {
+                                "properties": {
+                                    "amount": {
+                                        "$ref": "#/components/schemas/Amount"
+                                    },
+                                    "assetName": {
+                                        "$ref": "#/components/schemas/AssetName"
+                                    },
+                                    "policyId": {
+                                        "$ref": "#/components/schemas/PolicyId"
+                                    }
+                                },
+                                "required": [
+                                    "amount",
+                                    "assetName",
+                                    "policyId"
+                                ],
+                                "type": "object"
+                            },
+                            "type": "array"
+                        },
+                        "type": "object",
+                        "description": "Input parts indexed by address. This mapping will only contain assets that\nwere minted or burned in this transaction.",
+                        "example": {
+                            "8200581c4b2e7295ac876cfdf70e82c1cb8df3ee5cb23d93949e3322230fc447": [
+                                {
+                                    "policyId": "b863bc7369f46136ac1048adb2fa7dae3af944c3bbb2be2f216a8d4f",
+                                    "assetName": "42657272794e617680",
+                                    "amount": "2"
+                                }
+                            ]
+                        }
+                    },
                     "assets": {
                         "properties": {},
                         "additionalProperties": {
@@ -930,7 +1002,8 @@
                         "description": "Assets changed in a particular transaction",
                         "example": {
                             "b863bc7369f46136ac1048adb2fa7dae3af944c3bbb2be2f216a8d4f": {
-                                "42657272794e617679": "1"
+                                "42657272794e617679": "1",
+                                "42657272794e617680": "-2"
                             }
                         }
                     }
@@ -940,6 +1013,8 @@
                     "txId",
                     "metadata",
                     "actionSlot",
+                    "outputAddresses",
+                    "inputAddresses",
                     "assets"
                 ],
                 "type": "object"
