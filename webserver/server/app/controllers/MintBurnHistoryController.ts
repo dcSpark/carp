@@ -9,7 +9,10 @@ import { Routes } from '../../../shared/routes';
 import { mintBurnRange, mintBurnRangeByPolicyIds } from '../services/MintBurnHistoryService';
 import type { MintBurnSingleResponse } from '../../../shared/models/MintBurn';
 import type { PolicyId } from '../../../shared/models/PolicyIdAssetMap';
-import type { ISqlMintBurnRangeResult } from '../models/asset/mintBurnHistory.queries';
+import {
+  getTransactionInputs,
+  type ISqlMintBurnRangeResult,
+} from '../models/asset/mintBurnHistory.queries';
 import {
   adjustToSlotLimits,
   resolvePageStart,
@@ -106,6 +109,15 @@ export class MintRangeController extends Controller {
         }
       });
 
+      const txs = assets.map(entry => entry.tx_db_id);
+
+      const inputs = txs.length > 0 ? Object.fromEntries(
+        (await getTransactionInputs.run({ tx_ids: txs }, dbTx)).map(tx => [
+          tx.tx_id,
+          tx.input_payloads,
+        ])
+      ): {};
+
       return assets.map(entry => {
         const assets: { [policyId: PolicyId]: { [assetName: string]: string } } = {};
 
@@ -170,7 +182,7 @@ export class MintRangeController extends Controller {
           return inputAddresses;
         };
 
-        const inputAddresses = f(entry.input_payloads || []);
+        const inputAddresses = f(inputs[entry.tx_db_id] || []);
         const outputAddresses = f(entry.output_payloads || []);
 
         return {
