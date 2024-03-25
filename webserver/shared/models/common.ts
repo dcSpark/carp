@@ -4,7 +4,7 @@ import { AssetName, PolicyId } from "./PolicyIdAssetMap";
  * Filter which uses of the address are considered relevant for the query.
  *
  * This is a bitmask, so you can combine multiple options
- * ex: `RelationFilterType.Input & RelationFilterType.Output`
+ * ex: `RelationFilterType.Input | RelationFilterType.Output`
  *
  * Note: relations only apply to credentials and not to full bech32 addresses
  * @pattern ([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])
