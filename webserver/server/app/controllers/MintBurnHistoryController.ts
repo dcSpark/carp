@@ -86,37 +86,35 @@ export class MintRangeController extends Controller {
         slotBounds
       );
 
-      const assets = await tx<ISqlMintBurnRangeResult[]>(pool, async dbTx => {
-        if (requestBody.policyIds !== undefined && requestBody.policyIds.length > 0) {
-          const data = await mintBurnRangeByPolicyIds({
-            after: pageStartWithSlot?.tx_id || 0,
-            until: until.tx_id,
-            limit: requestBody.limit || MINT_BURN_HISTORY_LIMIT.DEFAULT_PAGE_SIZE,
-            policyIds: requestBody.policyIds,
-            dbTx,
-          });
-
-          return data;
-        } else {
-          const data = await mintBurnRange({
-            after: pageStartWithSlot?.tx_id || 0,
-            until: until.tx_id,
-            limit: requestBody.limit || MINT_BURN_HISTORY_LIMIT.DEFAULT_PAGE_SIZE,
-            dbTx,
-          });
-
-          return data;
-        }
-      });
+      let assets;
+      if (requestBody.policyIds !== undefined && requestBody.policyIds.length > 0) {
+        assets = await mintBurnRangeByPolicyIds({
+          after: pageStartWithSlot?.tx_id || 0,
+          until: until.tx_id,
+          limit: requestBody.limit || MINT_BURN_HISTORY_LIMIT.DEFAULT_PAGE_SIZE,
+          policyIds: requestBody.policyIds,
+          dbTx,
+        });
+      } else {
+        assets = await mintBurnRange({
+          after: pageStartWithSlot?.tx_id || 0,
+          until: until.tx_id,
+          limit: requestBody.limit || MINT_BURN_HISTORY_LIMIT.DEFAULT_PAGE_SIZE,
+          dbTx,
+        });
+      }
 
       const txs = assets.map(entry => entry.tx_db_id);
 
-      const inputs = txs.length > 0 ? Object.fromEntries(
-        (await getTransactionInputs.run({ tx_ids: txs }, dbTx)).map(tx => [
-          tx.tx_id,
-          tx.input_payloads,
-        ])
-      ): {};
+      const inputs =
+        txs.length > 0
+          ? Object.fromEntries(
+              (await getTransactionInputs.run({ tx_ids: txs }, dbTx)).map(tx => [
+                tx.tx_id,
+                tx.input_payloads,
+              ])
+            )
+          : {};
 
       return assets.map(entry => {
         const assets: { [policyId: PolicyId]: { [assetName: string]: string } } = {};
