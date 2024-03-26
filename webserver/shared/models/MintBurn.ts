@@ -1,4 +1,4 @@
-import { PolicyId } from "./PolicyIdAssetMap";
+import { PolicyId, AssetName } from "./PolicyIdAssetMap";
 import { Amount, Pagination, SlotLimits } from "./common";
 
 export type MintBurnHistoryRequest = {
@@ -15,9 +15,36 @@ export type MintBurnSingleResponse = {
   /**
    * Assets changed in a particular transaction
    *
-   * @example { "b863bc7369f46136ac1048adb2fa7dae3af944c3bbb2be2f216a8d4f": { "42657272794e617679": "1" }}
+   * @example { "b863bc7369f46136ac1048adb2fa7dae3af944c3bbb2be2f216a8d4f":
+   *    {
+   *      "42657272794e617679": "1",
+   *      "42657272794e617680": "-2"
+   *    }
+   * }
    */
   assets: { [policyId: string]: { [assetName: string]: Amount } };
+
+  /**
+   * Input parts indexed by address. This mapping will only contain assets that
+   * were minted or burned in this transaction.
+   *
+   * @example {
+   *  "8200581c4b2e7295ac876cfdf70e82c1cb8df3ee5cb23d93949e3322230fc447":
+   *    [ { "policyId": "b863bc7369f46136ac1048adb2fa7dae3af944c3bbb2be2f216a8d4f", "assetName": "42657272794e617680", "amount": "2" } ]
+   * }
+   */
+  inputAddresses: { [address: string]: {policyId: PolicyId, assetName: AssetName, amount: Amount}[]}
+
+  /**
+   * Output parts indexed by address. This mapping will only contain assets that
+   * were minted or burned in this transaction.
+   *
+   * @example {
+   *  "8200581c4b2e7295ac876cfdf70e82c1cb8df3ee5cb23d93949e3322230fc447":
+   *    [ { "policyId": "b863bc7369f46136ac1048adb2fa7dae3af944c3bbb2be2f216a8d4f", "assetName": "42657272794e617679", "amount": "1" } ]
+   * }
+   */
+  outputAddresses: { [address: string]: {policyId: PolicyId, assetName: AssetName, amount: Amount}[]}
 
   /**
    * Slot at which the transaction happened
