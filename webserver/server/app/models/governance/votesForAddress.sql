@@ -24,12 +24,11 @@ LIMIT :limit!;
 @name didVote
 @param gov_action_ids -> (...)
 */
-SELECT gov_action_id, vote
+SELECT gov_action_id as "govActionId!", vote as "vote!", "Transaction".id as "txId!"
 FROM  "GovernanceVote"
 JOIN "Transaction" ON "GovernanceVote".tx_id = "Transaction".id
 WHERE
 	"Transaction".id <= :until_tx_id! AND
     voter = :voter! AND
-    gov_action_id = ANY(:gov_action_ids!)
-ORDER BY "Transaction".id
-LIMIT :limit!;
+    gov_action_id IN :gov_action_ids!
+ORDER BY "Transaction".id;

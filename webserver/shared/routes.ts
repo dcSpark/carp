@@ -37,7 +37,7 @@ import type {
   MintBurnHistoryRequest,
   MintBurnHistoryResponse,
 } from "./models/MintBurn";
-import { GovernanceVotesForAddressRequest, GovernanceVotesForAddressResponse } from "./models/Governance";
+import { GovernanceCredentialDidVoteRequest, GovernanceCredentialDidVoteResponse, GovernanceVotesForAddressRequest, GovernanceVotesForAddressResponse } from "./models/Governance";
 
 export enum Routes {
   transactionHistory = "transaction/history",
@@ -55,7 +55,8 @@ export enum Routes {
   assetUtxos = "asset/utxos",
   mintBurnHistory = "asset/mint-burn-history",
   drepDelegationForAddress = "delegation/drep/address",
-  governanceVotesForAddress = "governance/votes/address",
+  governanceVotesForAddress = "governance/credential/votes",
+  governanceCredentialVotesByGovActionId = "governance/credential/votesByGovId",
 }
 
 export type EndpointTypes = {
@@ -138,5 +139,10 @@ export type EndpointTypes = {
     name: typeof Routes.governanceVotesForAddress;
     input: GovernanceVotesForAddressRequest;
     response: GovernanceVotesForAddressResponse;
+  };
+  [Routes.governanceCredentialVotesByGovActionId]: {
+    name: typeof Routes.governanceCredentialVotesByGovActionId;
+    input: GovernanceCredentialDidVoteRequest;
+    response: GovernanceCredentialDidVoteResponse;
   };
 };

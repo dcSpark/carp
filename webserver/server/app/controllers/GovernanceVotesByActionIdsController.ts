@@ -7,22 +7,21 @@ import { genErrorMessage } from '../../../shared/errors';
 import { Errors } from '../../../shared/errors';
 import type { EndpointTypes } from '../../../shared/routes';
 import { Routes } from '../../../shared/routes';
-import { governanceVotesForAddress } from '../services/GovernanceVotesForAddress';
-import { resolvePageStart, resolveUntilTransaction } from '../services/PaginationService';
-import { GOVERNANCE_VOTES_LIMIT } from '../../../shared/constants';
+import { resolveUntilTransaction } from '../services/PaginationService';
 import { expectType } from 'tsd';
-import { GovernanceVotesForAddressResponse } from '../../../shared/models/Governance';
+import { governanceCredentialDidVote } from '../services/GovernanceCredentialVotesByActionIds';
+import { GOVERNANCE_VOTES_BY_GOV_IDS_LIMIT } from '../../../shared/constants';
 
-const route = Routes.governanceVotesForAddress;
+const route = Routes.governanceCredentialVotesByGovActionId;
 
-@Route('governance/credential/votes')
-export class GovernanceVotesForAddress extends Controller {
+@Route('governance/credential/votesByGovId')
+export class GovernanceCredentialVotesByGovId extends Controller {
   /**
-   * Returns the drep of the last delegation for this address.
+   * Gets votes cast for a set of governance action ids.
    */
   @SuccessResponse(`${StatusCodes.OK}`)
   @Post()
-  public async governanceVotesForAddress(
+  public async governanceCredentialDidVote(
     @Body()
     requestBody: EndpointTypes[typeof route]['input'],
     @Res()
@@ -31,21 +30,27 @@ export class GovernanceVotesForAddress extends Controller {
       ErrorShape
     >
   ): Promise<EndpointTypes[typeof route]['response']> {
+
+    if (requestBody.actionIds.length > GOVERNANCE_VOTES_BY_GOV_IDS_LIMIT.MAX_ACTION_IDS) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+      return errorResponse(
+        StatusCodes.BAD_REQUEST,
+        genErrorMessage(Errors.GovActionIdsLimitExceeded, {
+          limit: GOVERNANCE_VOTES_BY_GOV_IDS_LIMIT.MAX_ACTION_IDS,
+          found: requestBody.actionIds.length,
+        })
+      );
+    }
+
     let credential = Buffer.from(requestBody.credential, 'hex');
 
     const response = await tx<EndpointTypes[typeof route]['response'] | ErrorShape>(
       pool,
       async dbTx => {
-        const [until, pageStart] = await Promise.all([
-          resolveUntilTransaction({ block_hash: Buffer.from(requestBody.untilBlock, 'hex'), dbTx }),
-          requestBody.after == null
-            ? Promise.resolve(undefined)
-            : resolvePageStart({
-                after_block: Buffer.from(requestBody.after.block, 'hex'),
-                after_tx: Buffer.from(requestBody.after.tx, 'hex'),
-                dbTx,
-              }),
-        ]);
+        const until = await resolveUntilTransaction({
+          block_hash: Buffer.from(requestBody.untilBlock, 'hex'),
+          dbTx,
+        });
 
         if (until == null) {
           return genErrorMessage(Errors.BlockHashNotFound, {
@@ -53,22 +58,22 @@ export class GovernanceVotesForAddress extends Controller {
           });
         }
 
-        if (requestBody.after && !pageStart) {
-          return genErrorMessage(Errors.PageStartNotFound, {
-            blockHash: requestBody.after.block,
-            txHash: requestBody.after.tx,
-          });
+        if(requestBody.actionIds.length === 0) {
+          return [];
         }
 
-        const data = await governanceVotesForAddress({
+        const data = await governanceCredentialDidVote({
           credential,
-          before: pageStart?.tx_id || Number.MAX_SAFE_INTEGER,
+          govActionIds: requestBody.actionIds.map(actionId => Buffer.from(actionId, 'hex')),
           until: until.tx_id,
-          limit: requestBody.limit || GOVERNANCE_VOTES_LIMIT.DEFAULT_PAGE_SIZE,
           dbTx,
         });
 
-        return data as GovernanceVotesForAddressResponse;
+        return data.map(vote => ({
+          actionId: vote.govActionId.toString('hex'),
+          txId: vote.txId,
+          payload: vote.vote.toString('hex'),
+        }));
       }
     );
 
