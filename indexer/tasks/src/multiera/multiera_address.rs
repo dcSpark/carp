@@ -250,16 +250,44 @@ fn queue_certificate(
                 }
             }
         }
-        MultiEraCertificate::VoteDelegCert(_) => {}
+        MultiEraCertificate::VoteDelegCert(cert) => {
+            let operator_credential = cert.stake_credential.to_raw_bytes().to_vec();
+            vkey_relation_map.add_relation(
+                tx_id,
+                &operator_credential,
+                TxCredentialRelationValue::DrepStakeDelegation,
+            );
+        }
         MultiEraCertificate::StakeVoteDelegCert(_) => {}
         MultiEraCertificate::StakeRegDelegCert(_) => {}
         MultiEraCertificate::VoteRegDelegCert(_) => {}
         MultiEraCertificate::StakeVoteRegDelegCert(_) => {}
         MultiEraCertificate::AuthCommitteeHotCert(_) => {}
         MultiEraCertificate::ResignCommitteeColdCert(_) => {}
-        MultiEraCertificate::RegDrepCert(_) => {}
-        MultiEraCertificate::UnregDrepCert(_) => {}
-        MultiEraCertificate::UpdateDrepCert(_) => {}
+        MultiEraCertificate::RegDrepCert(cert) => {
+            let operator_credential = cert.drep_credential.to_raw_bytes().to_vec();
+            vkey_relation_map.add_relation(
+                tx_id,
+                &operator_credential,
+                TxCredentialRelationValue::Drep,
+            );
+        }
+        MultiEraCertificate::UnregDrepCert(cert) => {
+            let operator_credential = cert.drep_credential.to_raw_bytes().to_vec();
+            vkey_relation_map.add_relation(
+                tx_id,
+                &operator_credential,
+                TxCredentialRelationValue::Drep,
+            );
+        }
+        MultiEraCertificate::UpdateDrepCert(cert) => {
+            let operator_credential = cert.drep_credential.to_raw_bytes().to_vec();
+            vkey_relation_map.add_relation(
+                tx_id,
+                &operator_credential,
+                TxCredentialRelationValue::Drep,
+            );
+        }
     };
 }
 

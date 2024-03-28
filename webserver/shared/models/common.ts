@@ -36,6 +36,8 @@ export enum RelationFilterType {
   UnusedOutputStake = 0b10000000000000000000,
   ReferenceInput = 0b100000000000000000000,
   ReferenceInputStake = 0b1000000000000000000000,
+  DrepStakeDelegation = 0b10000000000000000000000,
+  Drep = 0b100000000000000000000000,
   NO_FILTER = 0xff,
 }
 

@@ -22,6 +22,8 @@ pub enum TxCredentialRelationValue {
     Withdrawal,
     RequiredSigner,
     InNativeScript, // keyhash in scripts including mints
+    DrepStakeDelegation,
+    Drep,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -56,6 +58,8 @@ impl From<TxCredentialRelationValue> for i32 {
             TxCredentialRelationValue::UnusedOutputStake => 0b10000000000000000000,
             TxCredentialRelationValue::ReferenceInput => 0b100000000000000000000,
             TxCredentialRelationValue::ReferenceInputStake => 0b1000000000000000000000,
+            TxCredentialRelationValue::DrepStakeDelegation => 0b10000000000000000000000,
+            TxCredentialRelationValue::Drep => 0b100000000000000000000000,
         }
     }
 }
