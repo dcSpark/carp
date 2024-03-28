@@ -7,7 +7,6 @@ import { genErrorMessage } from '../../../shared/errors';
 import { Errors } from '../../../shared/errors';
 import type { EndpointTypes } from '../../../shared/routes';
 import { Routes } from '../../../shared/routes';
-import { Address, RewardAddress } from '@dcspark/cardano-multiplatform-lib-nodejs';
 import { governanceVotesForAddress } from '../services/GovernanceVotesForAddress';
 import { resolvePageStart, resolveUntilTransaction } from '../services/PaginationService';
 import { GOVERNANCE_VOTES_LIMIT } from '../../../shared/constants';
@@ -32,27 +31,7 @@ export class GovernanceVotesForAddress extends Controller {
       ErrorShape
     >
   ): Promise<EndpointTypes[typeof route]['response']> {
-    const address = Address.from_bech32(requestBody.address);
-    const rewardAddr = RewardAddress.from_address(address);
-    const stakingCred = address.staking_cred();
-
-    let credential: Buffer;
-
-    if (rewardAddr) {
-      credential = Buffer.from(rewardAddr.payment().to_cbor_bytes());
-    } else if (stakingCred) {
-      credential = Buffer.from(stakingCred.to_cbor_bytes());
-    } else {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-      return errorResponse(
-        StatusCodes.UNPROCESSABLE_ENTITY,
-        genErrorMessage(Errors.IncorrectAddressFormat, {
-          addresses: [requestBody.address],
-        })
-      );
-    }
-
-    console.log('cred', credential.toString('hex'));
+    let credential = Buffer.from(requestBody.credential, 'hex');
 
     const response = await tx<EndpointTypes[typeof route]['response'] | ErrorShape>(
       pool,
@@ -82,7 +61,7 @@ export class GovernanceVotesForAddress extends Controller {
         }
 
         const data = await governanceVotesForAddress({
-          address: credential,
+          credential,
           before: pageStart?.tx_id || Number.MAX_SAFE_INTEGER,
           until: until.tx_id,
           limit: requestBody.limit || GOVERNANCE_VOTES_LIMIT.DEFAULT_PAGE_SIZE,

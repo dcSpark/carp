@@ -1,8 +1,8 @@
-import { Address } from "./Address";
+import { CredentialHex } from "./Address";
 import { AfterBlockPagination, UntilBlockPagination } from "./common";
 
 export type GovernanceVotesForAddressRequest = {
-  address: Address;
+  credential: CredentialHex;
   limit?: number | undefined;
 } & UntilBlockPagination & AfterBlockPagination;
 

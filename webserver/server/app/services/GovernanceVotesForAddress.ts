@@ -5,7 +5,7 @@ import {
 } from '../models/governance/votesForAddress.queries';
 
 export async function governanceVotesForAddress(request: {
-  address: Buffer;
+  credential: Buffer;
   dbTx: PoolClient;
   limit: number;
   before: number;
@@ -14,7 +14,7 @@ export async function governanceVotesForAddress(request: {
   return (
     await votesForAddress.run(
       {
-        voter: request.address,
+        voter: request.credential,
         limit: request.limit,
         before_tx_id: request.before,
         until_tx_id: request.until,
