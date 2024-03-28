@@ -1,0 +1,25 @@
+use sea_orm::entity::prelude::*;
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Deserialize, Serialize)]
+#[sea_orm(table_name = "GovernanceVote")]
+pub struct Model {
+    #[sea_orm(primary_key, column_type = "BigInteger")]
+    pub id: i64,
+    pub tx_id: i64,
+    pub voter: Vec<u8>,
+    pub gov_action_id: Vec<u8>,
+    pub vote: Vec<u8>,
+}
+
+#[derive(Copy, Clone, Debug, DeriveRelation, EnumIter)]
+pub enum Relation {
+    #[sea_orm(
+        belongs_to = "super::transaction::Entity",
+        from = "Column::TxId",
+        to = "super::transaction::Column::Id"
+    )]
+    Transaction,
+}
+
+impl ActiveModelBehavior for ActiveModel {}

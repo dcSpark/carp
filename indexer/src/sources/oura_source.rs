@@ -143,10 +143,30 @@ fn oura_bootstrap(
     network: &str,
     socket: String,
 ) -> anyhow::Result<(Vec<JoinHandle<()>>, StageReceiver)> {
-    let magic = MagicArg::from_str(network).map_err(|_| anyhow!("magic arg failed"))?;
+    let magic = match network {
+        "sanchonet" => MagicArg(4),
+        _ => MagicArg::from_str(network).map_err(|_| anyhow!("magic arg failed"))?,
+    };
 
-    let well_known = ChainWellKnownInfo::try_from_magic(*magic)
-        .map_err(|_| anyhow!("chain well known info failed"))?;
+    let well_known = if magic.0 == 4 {
+        ChainWellKnownInfo {
+            byron_epoch_length: 86400,
+            byron_slot_length: 20,
+            byron_known_slot: 0,
+            byron_known_hash: "".to_string(),
+            byron_known_time: 1686789000,
+            shelley_epoch_length: 86400,
+            shelley_slot_length: 1,
+            shelley_known_slot: 0,
+            shelley_known_hash: "".to_string(),
+            shelley_known_time: 1686789000,
+            address_hrp: "addr_test".to_string(),
+            adahandle_policy: "".to_string(),
+        }
+    } else {
+        ChainWellKnownInfo::try_from_magic(*magic)
+            .map_err(|_| anyhow!("chain well known info failed"))?
+    };
 
     let utils = Arc::new(Utils::new(well_known));
 
