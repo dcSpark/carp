@@ -22,9 +22,9 @@ carp_task! {
       task.block,
       &previous_data.multiera_txs,
   );
-  merge_result |previous_data, result| {
-  };
+  merge_result |_previous_data, _result| {};
 }
+
 async fn handle(
     db_tx: &DatabaseTransaction,
     block: BlockInfo<'_, cml_multi_era::MultiEraBlock, BlockGlobalInfo>,
@@ -51,9 +51,11 @@ async fn handle(
         }
     }
 
-    GovernanceVote::insert_many(queued_inserts.into_iter())
-        .exec(db_tx)
-        .await?;
+    if !queued_inserts.is_empty() {
+        GovernanceVote::insert_many(queued_inserts.into_iter())
+            .exec(db_tx)
+            .await?;
+    }
 
     Ok(())
 }
