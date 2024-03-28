@@ -22,6 +22,7 @@ import type {
 import type {
   DelegationForAddressRequest,
   DelegationForAddressResponse,
+  DrepDelegationForAddressResponse,
 } from "./models/DelegationForAddress";
 import type {
   DelegationForPoolRequest,
@@ -36,6 +37,7 @@ import type {
   MintBurnHistoryRequest,
   MintBurnHistoryResponse,
 } from "./models/MintBurn";
+import { GovernanceVotesForAddressRequest, GovernanceVotesForAddressResponse } from "./models/Governance";
 
 export enum Routes {
   transactionHistory = "transaction/history",
@@ -52,6 +54,8 @@ export enum Routes {
   projectedNftEventsRange = "projected-nft/range",
   assetUtxos = "asset/utxos",
   mintBurnHistory = "asset/mint-burn-history",
+  drepDelegationForAddress = "delegation/drep/address",
+  governanceVotesForAddress = "governance/votes/address",
 }
 
 export type EndpointTypes = {
@@ -124,5 +128,15 @@ export type EndpointTypes = {
     name: typeof Routes.mintBurnHistory;
     input: MintBurnHistoryRequest;
     response: MintBurnHistoryResponse;
+  };
+  [Routes.drepDelegationForAddress]: {
+    name: typeof Routes.drepDelegationForAddress;
+    input: DelegationForAddressRequest;
+    response: DrepDelegationForAddressResponse;
+  };
+  [Routes.governanceVotesForAddress]: {
+    name: typeof Routes.governanceVotesForAddress;
+    input: GovernanceVotesForAddressRequest;
+    response: GovernanceVotesForAddressResponse;
   };
 };
