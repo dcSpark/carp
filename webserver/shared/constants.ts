@@ -44,3 +44,7 @@ export const ASSET_UTXOS_LIMIT = {
 export const MINT_BURN_HISTORY_LIMIT = {
   DEFAULT_PAGE_SIZE: 50,
 };
+
+export const GOVERNANCE_VOTES_LIMIT = {
+  DEFAULT_PAGE_SIZE: 50,
+};

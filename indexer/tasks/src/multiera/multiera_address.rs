@@ -163,7 +163,25 @@ fn queue_certificate(
                 TxCredentialRelationValue::StakeRegistration,
             );
         }
+        MultiEraCertificate::RegCert(registration) => {
+            let credential = registration.stake_credential.to_cbor_bytes();
+
+            vkey_relation_map.add_relation(
+                tx_id,
+                &credential,
+                TxCredentialRelationValue::StakeRegistration,
+            );
+        }
         MultiEraCertificate::StakeDeregistration(deregistration) => {
+            let credential = deregistration.stake_credential.to_cbor_bytes();
+
+            vkey_relation_map.add_relation(
+                tx_id,
+                &credential,
+                TxCredentialRelationValue::StakeDeregistration,
+            );
+        }
+        MultiEraCertificate::UnregCert(deregistration) => {
             let credential = deregistration.stake_credential.to_cbor_bytes();
 
             vkey_relation_map.add_relation(
@@ -232,8 +250,6 @@ fn queue_certificate(
                 }
             }
         }
-        MultiEraCertificate::RegCert(_) => {}
-        MultiEraCertificate::UnregCert(_) => {}
         MultiEraCertificate::VoteDelegCert(_) => {}
         MultiEraCertificate::StakeVoteDelegCert(_) => {}
         MultiEraCertificate::StakeRegDelegCert(_) => {}
