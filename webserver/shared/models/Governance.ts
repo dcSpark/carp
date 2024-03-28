@@ -1,13 +1,13 @@
 import { CredentialHex } from "./Address";
 import { AfterBlockPagination, UntilBlockPagination } from "./common";
 
-export type GovernanceVotesForAddressRequest = {
+export type GovernanceVotesForCredentialRequest = {
   credential: CredentialHex;
   limit?: number | undefined;
 } & UntilBlockPagination &
   AfterBlockPagination;
 
-export type GovernanceVotesForAddressResponse = {
+export type GovernanceVotesForCredentialResponse = {
   votes: { govActionId: string; vote: string }[];
   txId: string;
   block: string;

@@ -11,14 +11,14 @@ import { governanceVotesForAddress } from '../services/GovernanceVotesForAddress
 import { resolvePageStart, resolveUntilTransaction } from '../services/PaginationService';
 import { GOVERNANCE_VOTES_LIMIT } from '../../../shared/constants';
 import { expectType } from 'tsd';
-import { GovernanceVotesForAddressResponse } from '../../../shared/models/Governance';
+import { GovernanceVotesForCredentialResponse } from '../../../shared/models/Governance';
 
 const route = Routes.governanceVotesForAddress;
 
 @Route('governance/credential/votes')
-export class GovernanceVotesForAddress extends Controller {
+export class GovernanceVotesForCredential extends Controller {
   /**
-   * Returns the drep of the last delegation for this address.
+   * Returns votes cast by a credential. Sorted in descending order (newer first).
    */
   @SuccessResponse(`${StatusCodes.OK}`)
   @Post()
@@ -68,7 +68,7 @@ export class GovernanceVotesForAddress extends Controller {
           dbTx,
         });
 
-        return data as GovernanceVotesForAddressResponse;
+        return data as GovernanceVotesForCredentialResponse;
       }
     );
 
