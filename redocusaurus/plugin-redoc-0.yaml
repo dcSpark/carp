@@ -1,0 +1,1678 @@
+components:
+  examples: {}
+  headers: {}
+  parameters: {}
+  requestBodies: {}
+  responses: {}
+  schemas:
+    CredentialHex:
+      type: string
+      example: 8200581c8baf48931c5187cd59fde553f4e7da2e1a2aa9202ec6e67815cb3f8a
+      pattern: '[0-9a-fA-F]{64}'
+    Bech32FullAddress:
+      type: string
+      example: stake1ux236z4g4r4pztn5v69txyj2yq6a3esq5x4p4stxydra7zsnv25ue
+    Bech32Credential:
+      type: string
+      example: script1ffv7hkf75573h0mlsg3jc7cpyuq2pn6tk7xc08dtkx3q5ah7h47
+    Base58Address:
+      type: string
+      example: Ae2tdPwUPEZHu3NZa6kCwet2msq4xrBXKHBDvogFKwMsF18Jca8JHLRBas7
+    Address:
+      anyOf:
+        - $ref: '#/components/schemas/CredentialHex'
+        - $ref: '#/components/schemas/Bech32FullAddress'
+        - $ref: '#/components/schemas/Bech32Credential'
+        - $ref: '#/components/schemas/Base58Address'
+      example: >-
+        addr1qxzksn47upfu4fwqfmxx29rn5znlkw3ag98ul8rgndwm79aaql88xw6ez84k2ln6lawnt79sdqh7qwq0wcs672auktmsawshfe
+      description: >-
+        Supported types:
+
+        - Credential hex (8200581c...) - note this is not a keyhash (it contains
+        a credential type prefix)
+
+        - Bech32 full address (`addr` / `addr_test` / `stake` / `stake_test`)
+
+        - Bech32 credentials ( `addr_vkh`, `script`, etc.) - this is the
+        recommended approach
+
+        - Legacy Byron format (Ae2, Dd, etc.)
+
+
+        Note: we recommend avoiding to query base addresses history using bech32
+
+        As Cardano UTXO spendability depends only on the payment credential and
+        not the full base address
+
+        The result will also miss transactions that are only related to the
+        payment key of the address
+
+        ex: the payment key is used in a multisig
+
+
+        Note: using two different address representations in the same query will
+        hurt performance (ex: addr1 and addr_vkh1)
+
+        This because under-the-hood this will run multiple independent SQL
+        queries for the different formats
+
+
+        Warning: querying reward bech32 addresses is equivalent to querying the
+        stake credential inside it
+
+        This may return more results than expected (ex: a multisig containing
+        the staking key of the wallet)
+    AddressUsedResponse:
+      properties:
+        addresses:
+          items:
+            $ref: '#/components/schemas/Address'
+          type: array
+      required:
+        - addresses
+      type: object
+    BlockTxPair:
+      properties:
+        tx:
+          type: string
+          description: tx hash
+          example: 336d520af58ff440b2f20210ddb5ef5b2c035e0ec7ec258bae4b519a87fa1696
+          pattern: '[0-9a-fA-F]{64}'
+        block:
+          type: string
+          description: block hash
+          example: 2548ad5d0d9d33d50ab43151f574474454017a733e307229fa509c4987ca9782
+          pattern: '[0-9a-fA-F]{64}'
+      required:
+        - tx
+        - block
+      type: object
+    AfterBlockPagination:
+      properties:
+        after:
+          $ref: '#/components/schemas/BlockTxPair'
+          description: >-
+            Omitting "after" means you query starting from the genesis block.
+
+
+            Note: the reason you have to specify both a tx hash AND a block hash
+            in the "after" for pagination
+
+            is because this is the only way to make sure your pagination doesn't
+            get affected by rollbacks.
+
+            ex: a rollback could cause a tx to be removed from one block and
+            appear in a totally different block.
+
+            Specifying the block hash as well allows making sure you're
+            paginating on the right tx in the right block.
+      type: object
+    UntilBlockPagination:
+      properties:
+        untilBlock:
+          type: string
+          description: block hash - inclusive
+          example: cf8c63a909d91776e27f7d05457e823a9dba606a7ab499ac435e7904ee70d7c8
+          pattern: '[0-9a-fA-F]{64}'
+      required:
+        - untilBlock
+      type: object
+    Pagination:
+      allOf:
+        - $ref: '#/components/schemas/AfterBlockPagination'
+        - $ref: '#/components/schemas/UntilBlockPagination'
+    AddressUsedRequest:
+      allOf:
+        - properties:
+            addresses:
+              items:
+                $ref: '#/components/schemas/Address'
+              type: array
+          required:
+            - addresses
+          type: object
+        - $ref: '#/components/schemas/Pagination'
+    ErrorShape:
+      properties:
+        reason:
+          type: string
+        code:
+          type: number
+          format: double
+      required:
+        - reason
+        - code
+      type: object
+    AssetName:
+      type: string
+      example: '42657272794e617679'
+      pattern: '[0-9a-fA-F]{0,64}'
+    AssetUtxosResponse:
+      items:
+        properties:
+          block:
+            type: string
+          txId:
+            type: string
+          payload:
+            items:
+              properties:
+                utxo:
+                  properties:
+                    index:
+                      type: number
+                      format: double
+                    tx:
+                      type: string
+                  required:
+                    - index
+                    - tx
+                  type: object
+                slot:
+                  type: number
+                  format: double
+                paymentCred:
+                  type: string
+                assetName:
+                  $ref: '#/components/schemas/AssetName'
+                policyId:
+                  type: string
+                cip14Fingerprint:
+                  type: string
+                amount:
+                  type: string
+                  description: >-
+                    If the utxo is created, this has the amount. It's undefined
+                    if the utxo
+
+                    is spent.
+              required:
+                - utxo
+                - slot
+                - paymentCred
+                - assetName
+                - policyId
+                - cip14Fingerprint
+              type: object
+            type: array
+        required:
+          - block
+          - txId
+          - payload
+        type: object
+      type: array
+    Cip14Fingerprint:
+      type: string
+      example: asset1c43p68zwjezc7f6w4w9qkhkwv9ppwz0f7c3amw
+    PolicyId:
+      type: string
+      example: b863bc7369f46136ac1048adb2fa7dae3af944c3bbb2be2f216a8d4f
+      pattern: '[0-9a-fA-F]{56}'
+    SlotLimits:
+      properties:
+        to:
+          type: number
+          format: double
+        from:
+          type: number
+          format: double
+      required:
+        - to
+        - from
+      type: object
+    AssetUtxosRequest:
+      allOf:
+        - properties:
+            limit:
+              type: number
+              format: double
+            slotLimits:
+              $ref: '#/components/schemas/SlotLimits'
+              description: >-
+                This limits the transactions in the result to this range of
+                slots.
+
+                Everything else is filtered out
+            policyIds:
+              items:
+                $ref: '#/components/schemas/PolicyId'
+              type: array
+            fingerprints:
+              items:
+                $ref: '#/components/schemas/Cip14Fingerprint'
+              type: array
+          type: object
+        - $ref: '#/components/schemas/Pagination'
+    BlockSubset:
+      properties:
+        slot:
+          type: number
+          format: double
+          example: 4924800
+        epoch:
+          type: number
+          format: double
+          example: 209
+        height:
+          type: number
+          format: double
+          example: 4512067
+        hash:
+          type: string
+          example: cf8c63a909d91776e27f7d05457e823a9dba606a7ab499ac435e7904ee70d7c8
+          pattern: '[0-9a-fA-F]{64}'
+        era:
+          type: number
+          format: double
+          example: 1
+      required:
+        - slot
+        - epoch
+        - height
+        - hash
+        - era
+      type: object
+    BlockLatestResponse:
+      properties:
+        block:
+          $ref: '#/components/schemas/BlockSubset'
+      required:
+        - block
+      type: object
+    BlockLatestRequest:
+      properties:
+        offset:
+          type: number
+          format: double
+          description: >-
+            Note: an offset of -1 is treated the same as an offset of +1
+
+
+            It's usually best to avoid pagination on the latest block as in
+            Cardano, small rollbacks of 1~2 block are very frequent and expected
+            (read Ouroboros for why)
+
+            That means that using this block for pagination will often lead to
+            your pagination being invalidated by a rollback
+
+            To avoid this, you can pass an `offset` from the tip for more stable
+            pagination
+      required:
+        - offset
+      type: object
+    PageInfo:
+      properties:
+        pageInfo:
+          properties:
+            hasNextPage:
+              type: boolean
+              example: false
+          required:
+            - hasNextPage
+          type: object
+      required:
+        - pageInfo
+      type: object
+    CredentialAddressResponse:
+      allOf:
+        - properties:
+            addresses:
+              items:
+                $ref: '#/components/schemas/Bech32FullAddress'
+              type: array
+          required:
+            - addresses
+          type: object
+        - $ref: '#/components/schemas/PageInfo'
+    Credential:
+      anyOf:
+        - $ref: '#/components/schemas/CredentialHex'
+        - $ref: '#/components/schemas/Bech32Credential'
+    CredentialAddressRequest:
+      allOf:
+        - properties:
+            after:
+              $ref: '#/components/schemas/Bech32FullAddress'
+            credentials:
+              items:
+                $ref: '#/components/schemas/Credential'
+              type: array
+          required:
+            - credentials
+          type: object
+        - $ref: '#/components/schemas/UntilBlockPagination'
+    DelegationForAddressResponse:
+      properties:
+        txId:
+          type: string
+          nullable: true
+        pool:
+          type: string
+          nullable: true
+      required:
+        - txId
+        - pool
+      type: object
+    DelegationForAddressRequest:
+      properties:
+        until:
+          properties:
+            absoluteSlot:
+              type: number
+              format: double
+          required:
+            - absoluteSlot
+          type: object
+        address:
+          $ref: '#/components/schemas/Address'
+      required:
+        - until
+        - address
+      type: object
+    PoolHex:
+      type: string
+      example: 8200581c8baf48931c5187cd59fde553f4e7da2e1a2aa9202ec6e67815cb3f8a
+      pattern: '[0-9a-fA-F]{56}'
+    DelegationForPoolResponse:
+      items:
+        properties:
+          block:
+            type: string
+          txId:
+            type: string
+          payload:
+            items:
+              properties:
+                slot:
+                  type: number
+                  format: double
+                pool:
+                  allOf:
+                    - $ref: '#/components/schemas/PoolHex'
+                  nullable: true
+                credential:
+                  $ref: '#/components/schemas/Address'
+              required:
+                - slot
+                - pool
+                - credential
+              type: object
+            type: array
+        required:
+          - block
+          - txId
+          - payload
+        type: object
+      type: array
+    Pool:
+      $ref: '#/components/schemas/PoolHex'
+    DelegationForPoolRequest:
+      allOf:
+        - properties:
+            limit:
+              type: number
+              format: double
+            slotLimits:
+              $ref: '#/components/schemas/SlotLimits'
+              description: >-
+                This limits the transactions in the result to this range of
+                slots.
+
+                Everything else is filtered out
+            pools:
+              items:
+                $ref: '#/components/schemas/Pool'
+              type: array
+          required:
+            - pools
+          type: object
+        - $ref: '#/components/schemas/Pagination'
+    Asset:
+      properties:
+        assetName:
+          $ref: '#/components/schemas/AssetName'
+        policyId:
+          $ref: '#/components/schemas/PolicyId'
+      required:
+        - assetName
+        - policyId
+      type: object
+      nullable: true
+    Amount:
+      type: string
+      example: '2042352568679'
+      pattern: '[1-9][0-9]*'
+    Dex:
+      enum:
+        - WingRiders
+        - SundaeSwap
+        - MinSwap
+      type: string
+    DexLastPrice:
+      properties:
+        dex:
+          $ref: '#/components/schemas/Dex'
+        amount2:
+          $ref: '#/components/schemas/Amount'
+        amount1:
+          $ref: '#/components/schemas/Amount'
+        asset2:
+          $ref: '#/components/schemas/Asset'
+        asset1:
+          $ref: '#/components/schemas/Asset'
+      required:
+        - dex
+        - amount2
+        - amount1
+        - asset2
+        - asset1
+      type: object
+    DexLastPriceResponse:
+      properties:
+        lastPrice:
+          items:
+            $ref: '#/components/schemas/DexLastPrice'
+          type: array
+      required:
+        - lastPrice
+      type: object
+    PriceType:
+      enum:
+        - buy
+        - sell
+        - mean
+      type: string
+    DexLastPriceRequest:
+      properties:
+        type:
+          $ref: '#/components/schemas/PriceType'
+        assetPairs:
+          items:
+            properties:
+              asset2:
+                $ref: '#/components/schemas/Asset'
+              asset1:
+                $ref: '#/components/schemas/Asset'
+            required:
+              - asset2
+              - asset1
+            type: object
+          type: array
+      required:
+        - type
+        - assetPairs
+      type: object
+    DexMeanPrice:
+      properties:
+        amount2:
+          $ref: '#/components/schemas/Amount'
+        amount1:
+          $ref: '#/components/schemas/Amount'
+        asset2:
+          $ref: '#/components/schemas/Asset'
+        asset1:
+          $ref: '#/components/schemas/Asset'
+        dex:
+          $ref: '#/components/schemas/Dex'
+        tx_hash:
+          type: string
+      required:
+        - amount2
+        - amount1
+        - asset2
+        - asset1
+        - dex
+        - tx_hash
+      type: object
+    DexMeanPriceResponse:
+      properties:
+        meanPrices:
+          items:
+            $ref: '#/components/schemas/DexMeanPrice'
+          type: array
+      required:
+        - meanPrices
+      type: object
+    DexMeanPriceRequest:
+      allOf:
+        - properties:
+            limit:
+              type: number
+              format: double
+              description: Defaults to `DEX_PRICE_LIMIT.RESPONSE`
+            dexes:
+              items:
+                $ref: '#/components/schemas/Dex'
+              type: array
+            assetPairs:
+              items:
+                properties:
+                  asset2:
+                    $ref: '#/components/schemas/Asset'
+                  asset1:
+                    $ref: '#/components/schemas/Asset'
+                required:
+                  - asset2
+                  - asset1
+                type: object
+              type: array
+          required:
+            - dexes
+            - assetPairs
+          type: object
+        - $ref: '#/components/schemas/Pagination'
+    Direction:
+      enum:
+        - buy
+        - sell
+      type: string
+    DexSwap:
+      properties:
+        direction:
+          $ref: '#/components/schemas/Direction'
+        amount2:
+          $ref: '#/components/schemas/Amount'
+        amount1:
+          $ref: '#/components/schemas/Amount'
+        asset2:
+          $ref: '#/components/schemas/Asset'
+        asset1:
+          $ref: '#/components/schemas/Asset'
+        dex:
+          $ref: '#/components/schemas/Dex'
+        tx_hash:
+          type: string
+      required:
+        - direction
+        - amount2
+        - amount1
+        - asset2
+        - asset1
+        - dex
+        - tx_hash
+      type: object
+    DexSwapResponse:
+      properties:
+        swap:
+          items:
+            $ref: '#/components/schemas/DexSwap'
+          type: array
+      required:
+        - swap
+      type: object
+    DexSwapRequest:
+      allOf:
+        - properties:
+            limit:
+              type: number
+              format: double
+              description: Defaults to `DEX_PRICE_LIMIT.RESPONSE`
+            assetPairs:
+              items:
+                properties:
+                  asset2:
+                    $ref: '#/components/schemas/Asset'
+                  asset1:
+                    $ref: '#/components/schemas/Asset'
+                required:
+                  - asset2
+                  - asset1
+                type: object
+              type: array
+            dexes:
+              items:
+                $ref: '#/components/schemas/Dex'
+              type: array
+          required:
+            - assetPairs
+            - dexes
+          type: object
+        - $ref: '#/components/schemas/Pagination'
+    Cip25Metadata:
+      type: string
+      example: >-
+        a365636f6c6f72672330303030383065696d616765783a697066733a2f2f697066732f516d534b593167317a5375506b3536635869324b38524e766961526b44485633505a756a7474663755676b343379646e616d656a4265727279204e617679
+      pattern: '[0-9a-fA-F]*'
+    Cip25Response:
+      properties:
+        cip25:
+          properties: {}
+          additionalProperties:
+            properties: {}
+            additionalProperties:
+              $ref: '#/components/schemas/Cip25Metadata'
+            type: object
+          type: object
+          example:
+            b863bc7369f46136ac1048adb2fa7dae3af944c3bbb2be2f216a8d4f:
+              '42657272794e617679': >-
+                a365636f6c6f72672330303030383065696d616765783a697066733a2f2f697066732f516d534b593167317a5375506b3536635869324b38524e766961526b44485633505a756a7474663755676b343379646e616d656a4265727279204e617679
+      required:
+        - cip25
+      type: object
+    PolicyIdAssetMapType:
+      properties:
+        assets:
+          properties: {}
+          additionalProperties:
+            items:
+              $ref: '#/components/schemas/AssetName'
+            type: array
+          type: object
+          example:
+            b863bc7369f46136ac1048adb2fa7dae3af944c3bbb2be2f216a8d4f:
+              - '42657272794e617679'
+      required:
+        - assets
+      type: object
+    MintBurnSingleResponse:
+      properties:
+        block:
+          type: string
+          description: Block id of related mint / burn event
+          example: 4e90f1d14ad742a1c0e094a89ad180b896068f93fc3969614b1c53bac547b374
+          pattern: '[0-9a-fA-F]{64}'
+        txId:
+          type: string
+          description: Transaction id of related mint / burn event
+          example: 28eb069e3e8c13831d431e3b2e35f58525493ab2d77fde83184993e4aa7a0eda
+          pattern: '[0-9a-fA-F]{64}'
+        metadata:
+          type: string
+          nullable: true
+          description: Transaction metadata of related mint / burn event
+        actionSlot:
+          type: number
+          format: double
+          description: Slot at which the transaction happened
+          example: 512345
+        outputAddresses:
+          properties: {}
+          additionalProperties:
+            items:
+              properties:
+                amount:
+                  $ref: '#/components/schemas/Amount'
+                assetName:
+                  $ref: '#/components/schemas/AssetName'
+                policyId:
+                  $ref: '#/components/schemas/PolicyId'
+              required:
+                - amount
+                - assetName
+                - policyId
+              type: object
+            type: array
+          type: object
+          description: >-
+            Output parts indexed by address. This mapping will only contain
+            assets that
+
+            were minted or burned in this transaction.
+          example:
+            8200581c4b2e7295ac876cfdf70e82c1cb8df3ee5cb23d93949e3322230fc447:
+              - policyId: b863bc7369f46136ac1048adb2fa7dae3af944c3bbb2be2f216a8d4f
+                assetName: '42657272794e617679'
+                amount: '1'
+        inputAddresses:
+          properties: {}
+          additionalProperties:
+            items:
+              properties:
+                amount:
+                  $ref: '#/components/schemas/Amount'
+                assetName:
+                  $ref: '#/components/schemas/AssetName'
+                policyId:
+                  $ref: '#/components/schemas/PolicyId'
+              required:
+                - amount
+                - assetName
+                - policyId
+              type: object
+            type: array
+          type: object
+          description: >-
+            Input parts indexed by address. This mapping will only contain
+            assets that
+
+            were minted or burned in this transaction.
+          example:
+            8200581c4b2e7295ac876cfdf70e82c1cb8df3ee5cb23d93949e3322230fc447:
+              - policyId: b863bc7369f46136ac1048adb2fa7dae3af944c3bbb2be2f216a8d4f
+                assetName: '42657272794e617680'
+                amount: '2'
+        assets:
+          properties: {}
+          additionalProperties:
+            properties: {}
+            additionalProperties:
+              $ref: '#/components/schemas/Amount'
+            type: object
+          type: object
+          description: Assets changed in a particular transaction
+          example:
+            b863bc7369f46136ac1048adb2fa7dae3af944c3bbb2be2f216a8d4f:
+              '42657272794e617679': '1'
+              '42657272794e617680': '-2'
+      required:
+        - block
+        - txId
+        - metadata
+        - actionSlot
+        - outputAddresses
+        - inputAddresses
+        - assets
+      type: object
+    MintBurnHistoryResponse:
+      items:
+        $ref: '#/components/schemas/MintBurnSingleResponse'
+      type: array
+    MintBurnHistoryRequest:
+      allOf:
+        - properties:
+            limit:
+              type: number
+              format: double
+            slotLimits:
+              $ref: '#/components/schemas/SlotLimits'
+              description: >-
+                This limits the transactions in the result to this range of
+                slots.
+
+                Everything else is filtered out
+            policyIds:
+              items:
+                $ref: '#/components/schemas/PolicyId'
+              type: array
+          type: object
+        - $ref: '#/components/schemas/Pagination'
+    ProjectedNftStatus:
+      enum:
+        - Lock
+        - Unlocking
+        - Claim
+        - Invalid
+      type: string
+    ProjectedNftRangeResponse:
+      items:
+        properties:
+          txId:
+            type: string
+            description: Transaction id of related Projected NFT event
+            example: 28eb069e3e8c13831d431e3b2e35f58525493ab2d77fde83184993e4aa7a0eda
+            pattern: '[0-9a-fA-F]{64}'
+          block:
+            type: string
+          payload:
+            items:
+              properties:
+                forHowLong:
+                  type: string
+                  nullable: true
+                  description: >-
+                    UNIX timestamp till which the funds can't be claimed in the
+                    Unlocking state.
+
+                    If the status is not Unlocking this is always null.
+                  example: '1701266986000'
+                plutusDatum:
+                  type: string
+                  description: 'Projected NFT datum: serialized state of the Projected NFT'
+                  example: >-
+                    d8799fd8799f581c9040f057461d9adc09108fe5cb630077cf75c6e981d3ed91f6fb18f6ffd87980ff
+                  pattern: '[0-9a-fA-F]+'
+                status:
+                  $ref: '#/components/schemas/ProjectedNftStatus'
+                  description: 'Projected NFT status: Lock / Unlocking / Claim / Invalid'
+                  example: Lock
+                amount:
+                  type: string
+                  description: >-
+                    Number of assets of `asset` type used in this Projected NFT
+                    event.
+                  example: '1'
+                assetName:
+                  type: string
+                  description: Asset name that relates to Projected NFT event
+                  example: '415045'
+                  pattern: ([0-9a-fA-F]{2}){0,32}
+                policyId:
+                  type: string
+                  description: Asset policy id that relates to Projected NFT event
+                  example: 96f7dc9749ede0140f042516f4b723d7261610d6b12ccb19f3475278
+                  pattern: '[0-9a-fA-F]{56}'
+                previousTxOutputIndex:
+                  type: number
+                  format: double
+                  nullable: true
+                  description: >-
+                    Output index of related previous Projected NFT event. Null
+                    if event has `status` Lock.
+                  example: 1
+                previousTxHash:
+                  type: string
+                  nullable: true
+                  description: >-
+                    Transaction id of related previous Projected NFT event.
+
+                    E.g. you locked the NFT and get unlocking event: you will
+                    see previousTxHash = transaction hash of lock event.
+
+                    Null if event has `status` Lock.
+                  example: >-
+                    28eb069e3e8c13831d431e3b2e35f58525493ab2d77fde83184993e4aa7a0eda
+                  pattern: '[0-9a-fA-F]{64}'
+                actionOutputIndex:
+                  type: number
+                  format: double
+                  nullable: true
+                  description: >-
+                    Output index of related Projected NFT event. Null if it is
+                    claim event (No new UTxO is created).
+                  example: 1
+                ownerAddress:
+                  type: string
+                  nullable: true
+                  description: >-
+                    Projected NFT owner address. Not null only if owned by
+                    Public Key Hash.
+                  example: 9040f057461d9adc09108fe5cb630077cf75c6e981d3ed91f6fb18f6
+                  pattern: '[0-9a-fA-F]+'
+                actionSlot:
+                  type: number
+                  format: double
+                  description: Slot at which the transaction happened
+                  example: 512345
+              required:
+                - forHowLong
+                - plutusDatum
+                - status
+                - amount
+                - assetName
+                - policyId
+                - previousTxOutputIndex
+                - previousTxHash
+                - actionOutputIndex
+                - ownerAddress
+                - actionSlot
+              type: object
+            type: array
+        required:
+          - txId
+          - block
+          - payload
+        type: object
+      type: array
+    ProjectedNftRangeRequest:
+      allOf:
+        - properties:
+            limit:
+              type: number
+              format: double
+            slotLimits:
+              $ref: '#/components/schemas/SlotLimits'
+            address:
+              type: string
+          type: object
+        - $ref: '#/components/schemas/Pagination'
+    BlockInfo:
+      allOf:
+        - $ref: '#/components/schemas/BlockSubset'
+        - properties:
+            isValid:
+              type: boolean
+            indexInBlock:
+              type: number
+              format: double
+              description: index of tx in block
+          required:
+            - isValid
+            - indexInBlock
+          type: object
+    TransactionInfo:
+      properties:
+        inputCredentials:
+          items:
+            type: string
+          type: array
+        metadata:
+          type: string
+          nullable: true
+        payload:
+          type: string
+          description: cbor-encoded transaction
+          example: >-
+            84a500818258209cb4f8c2eecccc9f1e13768046f37ef56dcb5a4dc44f58907fe4ae21d7cf621d020181825839019cb581f4337a6142e477af6e00fe41b1fc4a5944a575681b8499a3c0bd07ce733b5911eb657e7aff5d35f8b0682fe0380f7621af2bbcb2f71b0000000586321393021a0002a389031a004b418c048183028200581cbd07ce733b5911eb657e7aff5d35f8b0682fe0380f7621af2bbcb2f7581c53215c471b7ac752e3ddf8f2c4c1e6ed111857bfaa675d5e31ce8bcea1008282582073e584cda9fe483fbefb81c251e616018a2b493ef56820f0095b63adede54ff758404f13df42ef1684a3fd55255d8368c9ecbd15b55e2761a2991cc4f401a753c16d6da1da158e84b87b4de9715af7d9adc0d79a7c1f2c3097228e02b20be4616a0c82582066c606974819f457ceface78ee3c4d181a84ca9927a3cfc92ef8c0b6dd4576e8584014ae9ee9ed5eb5700b6c5ac270543671f5d4f943d4726f4614dc061174ee29db44b9e7fc58e6c98c13fad8594f2633c5ec70a9a87f5cbf130308a42edb553001f5f6
+          pattern: '[0-9a-fA-F]*'
+        hash:
+          type: string
+          description: |-
+            Strictly speaking, you can calculate this by hashing the payload
+            It's just provided for convenience
+          example: 011b86557367525891331b4bb985545120efc335b606d6a1c0d5a35fb330f421
+          pattern: '[0-9a-fA-F]{64}'
+      required:
+        - payload
+        - hash
+      type: object
+    TxAndBlockInfo:
+      properties:
+        transaction:
+          $ref: '#/components/schemas/TransactionInfo'
+        block:
+          $ref: '#/components/schemas/BlockInfo'
+      required:
+        - transaction
+        - block
+      type: object
+    TransactionHistoryResponse:
+      properties:
+        transactions:
+          items:
+            $ref: '#/components/schemas/TxAndBlockInfo'
+          type: array
+      required:
+        - transactions
+      type: object
+    RelationFilter:
+      type: number
+      format: double
+      example: 255
+      description: >-
+        Filter which uses of the address are considered relevant for the query.
+
+
+        This is a bitmask, so you can combine multiple options
+
+        ex: `RelationFilterType.Input | RelationFilterType.Output`
+
+
+        Note: relations only apply to credentials and not to full bech32
+        addresses
+      pattern: ([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])
+    TransactionHistoryRequest:
+      allOf:
+        - properties:
+            withInputContext:
+              type: boolean
+              description: >-
+                If this is set to true, the result includes the input addresses
+                (which are
+
+                not part of the tx), and the metadata (if any)
+            slotLimits:
+              $ref: '#/components/schemas/SlotLimits'
+              description: >-
+                This limits the transactions in the result to this range of
+                slots.
+
+                Everything else is filtered out
+            limit:
+              type: number
+              format: double
+              description: Defaults to `ADDRESS_LIMIT.RESPONSE`
+            relationFilter:
+              $ref: '#/components/schemas/RelationFilter'
+              description: Defaults to `RelationFilterType.NO_FILTER`
+            addresses:
+              items:
+                $ref: '#/components/schemas/Address'
+              type: array
+          required:
+            - addresses
+          type: object
+        - $ref: '#/components/schemas/Pagination'
+    UtxoPointer:
+      properties:
+        index:
+          type: number
+          format: double
+        txHash:
+          type: string
+          example: 011b86557367525891331b4bb985545120efc335b606d6a1c0d5a35fb330f421
+          pattern: '[0-9a-fA-F]{64}'
+      required:
+        - index
+        - txHash
+      type: object
+    UtxoAndBlockInfo:
+      properties:
+        utxo:
+          allOf:
+            - $ref: '#/components/schemas/UtxoPointer'
+            - properties:
+                payload:
+                  type: string
+                  example: >-
+                    825839019cb581f4337a6142e477af6e00fe41b1fc4a5944a575681b8499a3c0bd07ce733b5911eb657e7aff5d35f8b0682fe0380f7621af2bbcb2f71b0000000586321393
+                  pattern: '[0-9a-fA-F]*'
+              required:
+                - payload
+              type: object
+        block:
+          $ref: '#/components/schemas/BlockInfo'
+      required:
+        - utxo
+        - block
+      type: object
+    TransactionOutputResponse:
+      properties:
+        utxos:
+          items:
+            $ref: '#/components/schemas/UtxoAndBlockInfo'
+          type: array
+      required:
+        - utxos
+      type: object
+    TransactionOutputRequest:
+      properties:
+        utxoPointers:
+          items:
+            $ref: '#/components/schemas/UtxoPointer'
+          type: array
+      required:
+        - utxoPointers
+      type: object
+  securitySchemes: {}
+info:
+  title: carp
+  version: 3.0.0
+  description: API for the Postgres database generated by Carp
+  license:
+    name: MIT
+  contact:
+    name: https://github.com/dcSpark
+openapi: 3.0.0
+paths:
+  /address/used:
+    post:
+      operationId: AddressUsed
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddressUsedResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+        '409':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+        '422':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+      description: >-
+        Ordered lexicographically (order is not maintained)
+
+
+        Warning: the pagination on this endpoint is NOT whether or not an
+        address was used during this block interval,
+
+        but rather whether or not the address was first used within this
+        interval.
+
+
+        Note: this endpoint only returns addresses that are in a block. Use
+        another tool to see mempool information
+      security: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressUsedRequest'
+  /asset/utxos:
+    post:
+      operationId: AssetUtxos
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetUtxosResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+        '409':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+        '422':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+      description: >-
+        Returns utxo entries filtered either by cip 14 fingerprint or by policy
+        id.
+
+
+        This is useful to keep track of the utxo set of a particular asset.
+      security: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssetUtxosRequest'
+  /block/latest:
+    post:
+      operationId: BlockLatest
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlockLatestResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+        '409':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+      description: >-
+        Get the latest block. Useful for checking synchronization process and
+        pagination
+      security: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlockLatestRequest'
+  /credential/address:
+    post:
+      operationId: AddressesForCredential
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CredentialAddressResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+        '422':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+      description: >-
+        Ordered by the first time the address was seen on-chain
+
+
+        Note: this endpoint only returns addresses that are in a block. Use
+        another tool to see mempool information
+      security: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CredentialAddressRequest'
+  /delegation/address:
+    post:
+      operationId: DelegationForAddress
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DelegationForAddressResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+        '409':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+        '422':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+      description: >-
+        Returns the pool of the last delegation for this address.
+
+
+        Note: the tx can be in the current epoch, so the delegation may not be
+        in
+
+        effect yet.
+      security: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DelegationForAddressRequest'
+  /delegation/pool:
+    post:
+      operationId: DelegationForPool
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DelegationForPoolResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+        '409':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+        '422':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+      description: >-
+        Returns the list of delegations for the provided pools. The pool field
+        in
+
+        the response will be null when the address was previously delegating to
+        a
+
+        pool in the input, but now the delegation is moved to a pool outside the
+
+        list, or when the staking key is unregistered.
+
+
+        This is useful to keep track of the delegators for a particular pool.
+      security: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DelegationForPoolRequest'
+  /dex/last-price:
+    post:
+      operationId: DexLastPrice
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DexLastPriceResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+        '409':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+        '422':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+      description: >-
+        Gets the swap prices for the given liquidity pool and asset pairs.
+
+        Operation "mean" is not AVG from the last values, but the remaining
+        amount of assets on the pool output
+      security: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DexLastPriceRequest'
+  /dex/mean-price:
+    post:
+      operationId: DexMeanPrice
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DexMeanPriceResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+        '409':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+        '422':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+      description: >-
+        Gets the mean prices for the given liquidity pool and asset pairs.
+
+        Mean is not AVG from the last values, but the remaining amount of assets
+        on the pool output
+      security: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DexMeanPriceRequest'
+  /dex/swap-price:
+    post:
+      operationId: DexSwap
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DexSwapResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+        '409':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+        '422':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+      description: Gets the swap prices for the given liquidity pool and asset pairs.
+      security: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DexSwapRequest'
+  /metadata/nft:
+    post:
+      operationId: MetadataNft
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cip25Response'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+        '422':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+      description: >-
+        Gets the CIP25 metadata for given <policy, asset_name> pairs
+
+
+        Note: policy IDs and asset names MUST be in hex strings. Do not use UTF8
+        asset names.
+
+
+        Note: This endpoint returns the NFT metadata as a CBOR object and NOT
+        JSON.
+
+        You may expect a JSON object, but actually Cardano has no concept of
+        on-chain JSON.
+
+        In fact, on-chain JSON is not even possible!
+
+        Instead, Cardano stores metadata as CBOR which can then be converted to
+        JSON
+
+        The conversion of CBOR to JSON is project-dependent, and so Carp instead
+        returns the raw cbor
+
+        It's up to you to choose how you want to do the JSON conversion.
+
+        The common case is handled inside the Carp client library.
+      security: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PolicyIdAssetMapType'
+  /asset/mint-burn-history:
+    post:
+      operationId: MintBurnHistory
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MintBurnHistoryResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+        '409':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+        '422':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+      description: >-
+        Gets mint and burn events in the provided slot range, optionally
+        filtering
+
+        by policyId(s). A burn event is a mint with a negative value.
+      security: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MintBurnHistoryRequest'
+  /projected-nft/range:
+    post:
+      operationId: ProjectedNftRange
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectedNftRangeResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+        '409':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+        '422':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+      description: >-
+        Query any projected NFT. Learn
+        more[<u>here</u>](https://github.com/dcSpark/projected-nft-whirlpool).
+      security: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectedNftRangeRequest'
+  /transaction/history:
+    post:
+      operationId: TransactionHistory
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionHistoryResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+        '409':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+        '422':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+      description: >-
+        Ordered by `<block.height, transaction.tx_index>`
+
+
+        Note: this endpoint only returns txs that are in a block. Use another
+        tool to see mempool for txs not in a block
+      security: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionHistoryRequest'
+  /transaction/output:
+    post:
+      operationId: TransactionOutput
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionOutputResponse'
+        '400':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+        '422':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorShape'
+      description: >-
+        Get the outputs for given `<tx hash, output index>` pairs.
+
+
+        This endpoint will return both used AND unused outputs
+
+
+        Note: this endpoint only returns txs that are in a block. Use another
+        tool to see mempool for txs not in a block
+      security: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionOutputRequest'
+servers:
+  - url: /
