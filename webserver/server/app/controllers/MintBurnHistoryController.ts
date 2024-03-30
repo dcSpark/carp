@@ -11,7 +11,6 @@ import type { MintBurnSingleResponse } from '../../../shared/models/MintBurn';
 import type { PolicyId } from '../../../shared/models/PolicyIdAssetMap';
 import {
   getTransactionInputs,
-  type ISqlMintBurnRangeResult,
 } from '../models/asset/mintBurnHistory.queries';
 import {
   adjustToSlotLimits,
@@ -22,7 +21,7 @@ import { slotBoundsPagination } from '../models/pagination/slotBoundsPagination.
 import { MINT_BURN_HISTORY_LIMIT } from '../../../shared/constants';
 import { expectType } from 'tsd';
 import { TransactionOutput } from '@dcspark/cardano-multiplatform-lib-nodejs';
-import { BufferArray } from '../models/address/sqlAddressUsed.queries';
+import type { BufferArray } from '../models/address/sqlAddressUsed.queries';
 
 const route = Routes.mintBurnHistory;
 
