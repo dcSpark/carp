@@ -194,4 +194,13 @@ fn queue_witness(
             );
         }
     }
+    if let Some(scripts) = &witness_set.plutus_v3_scripts {
+        for script in scripts {
+            vkey_relation_map.add_relation(
+                tx_id,
+                script.hash().to_raw_bytes(),
+                TxCredentialRelationValue::Witness,
+            );
+        }
+    }
 }
