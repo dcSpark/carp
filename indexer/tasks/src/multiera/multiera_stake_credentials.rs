@@ -63,8 +63,14 @@ async fn handle_stake_credentials(
             tx_witness.clone(),
         );
 
-        for signer in tx_body.required_signers().cloned().unwrap_or_default() {
-            let owner_credential = cml_chain::certs::Credential::new_pub_key(signer)
+        let required_signers = if let Some(required_signers) = tx_body.required_signers() {
+            required_signers
+        } else {
+            continue;
+        };
+
+        for signer in required_signers {
+            let owner_credential = cml_chain::certs::Credential::new_pub_key(*signer)
                 .to_raw_bytes()
                 .to_vec();
             vkey_relation_map.add_relation(
@@ -149,7 +155,7 @@ fn queue_witness(
     witness_set: TransactionWitnessSet,
 ) {
     if let Some(vkeys) = witness_set.vkeywitnesses {
-        for vkey in vkeys {
+        for vkey in vkeys.iter() {
             vkey_relation_map.add_relation(
                 tx_id,
                 vkey.vkey.hash().to_raw_bytes(),
@@ -158,14 +164,14 @@ fn queue_witness(
         }
     }
     if let Some(scripts) = witness_set.native_scripts {
-        for script in scripts {
+        for script in scripts.iter() {
             vkey_relation_map.add_relation(
                 tx_id,
                 script.hash().to_raw_bytes(),
                 TxCredentialRelationValue::Witness,
             );
 
-            let vkeys_in_script = RequiredSignersSet::from(&script);
+            let vkeys_in_script = RequiredSignersSet::from(script);
             for vkey_in_script in vkeys_in_script {
                 vkey_relation_map.add_relation(
                     tx_id,
@@ -177,7 +183,7 @@ fn queue_witness(
     }
 
     if let Some(scripts) = &witness_set.plutus_v1_scripts {
-        for script in scripts {
+        for script in scripts.iter() {
             vkey_relation_map.add_relation(
                 tx_id,
                 script.hash().to_raw_bytes(),
@@ -186,7 +192,7 @@ fn queue_witness(
         }
     }
     if let Some(scripts) = &witness_set.plutus_v2_scripts {
-        for script in scripts {
+        for script in scripts.iter() {
             vkey_relation_map.add_relation(
                 tx_id,
                 script.hash().to_raw_bytes(),

@@ -766,8 +766,7 @@ dependencies = [
 [[package]]
 name = "cml-chain"
 version = "5.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec309ed37a653542db58bf506bf31f59f942a5cf269c1709d9555b699a1b302a"
+source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?branch=new-conway-cddl-updates#386e91dbd41179fa6b975d6cb324a52f76d0f160"
 dependencies = [
  "base64 0.21.7",
  "bech32 0.7.3",
@@ -821,8 +820,7 @@ dependencies = [
 [[package]]
 name = "cml-core"
 version = "5.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "38c826dd7e8939826e1090ebbef48dce630bbceb2a4a4aadbdccd6b583bb7d02"
+source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?branch=new-conway-cddl-updates#386e91dbd41179fa6b975d6cb324a52f76d0f160"
 dependencies = [
  "base64 0.13.1",
  "bech32 0.7.3",
@@ -871,8 +869,7 @@ dependencies = [
 [[package]]
 name = "cml-crypto"
 version = "5.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e79a9a6614c1fce917db76eda4ba44fc9a3d8ee5d43becf66299e89e04a8a0f"
+source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?branch=new-conway-cddl-updates#386e91dbd41179fa6b975d6cb324a52f76d0f160"
 dependencies = [
  "base64 0.21.7",
  "bech32 0.7.3",
@@ -895,8 +892,7 @@ dependencies = [
 [[package]]
 name = "cml-multi-era"
 version = "5.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e71d10d6eb5afaa9c2befec03827defea3929b455166154ab8bc25d6dc717767"
+source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?branch=new-conway-cddl-updates#386e91dbd41179fa6b975d6cb324a52f76d0f160"
 dependencies = [
  "bech32 0.7.3",
  "cbor_event",

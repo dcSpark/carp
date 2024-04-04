@@ -31,7 +31,11 @@ carp_task! {
   read [multiera_txs];
   write [vkey_relation_map];
   should_add_task |block, _properties| {
-    block.1.transaction_bodies().iter().any(|tx| !tx.reference_inputs().cloned().unwrap_or_default().is_empty())
+    block.1.transaction_bodies().iter().any(|tx| {
+        !tx.reference_inputs()
+            .map(|reference_inputs| reference_inputs.is_empty())
+            .unwrap_or(true)
+    })
   };
   execute |previous_data, task| handle_input(
       task.db_tx,
@@ -62,11 +66,14 @@ async fn handle_input(
     for (tx_body, cardano_transaction) in txs.iter().zip(multiera_txs) {
         let refs = tx_body
             .reference_inputs()
-            .cloned()
-            .unwrap_or_default()
-            .into_iter()
-            .map(MultiEraTransactionInput::Shelley)
-            .collect();
+            .map(|reference_inputs| {
+                reference_inputs
+                    .iter()
+                    .cloned()
+                    .map(MultiEraTransactionInput::Shelley)
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_else(std::vec::Vec::new);
         queued_inputs.push((refs, cardano_transaction.id));
     }
 

@@ -9,3 +9,10 @@ members = [
     "indexer/plan-visualizer",
     "indexer/task-docgen"
 ]
+
+
+[workspace.dependencies]
+cml-chain = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "new-conway-cddl-updates" }
+cml-core = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "new-conway-cddl-updates" }
+cml-crypto = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "new-conway-cddl-updates" }
+cml-multi-era = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "new-conway-cddl-updates" }
