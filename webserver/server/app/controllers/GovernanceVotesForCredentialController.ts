@@ -13,7 +13,7 @@ import { GOVERNANCE_VOTES_LIMIT } from '../../../shared/constants';
 import { expectType } from 'tsd';
 import { GovernanceVotesForCredentialResponse } from '../../../shared/models/Governance';
 
-const route = Routes.governanceVotesForAddress;
+const route = Routes.governanceVotesForCredential;
 
 @Route('governance/credential/votes')
 export class GovernanceVotesForCredential extends Controller {

@@ -75,12 +75,14 @@ export interface IDidVoteQuery {
   result: IDidVoteResult;
 }
 
-const didVoteIR: any = {"usedParamSet":{"until_tx_id":true,"voter":true,"gov_action_ids":true},"params":[{"name":"gov_action_ids","required":true,"transform":{"type":"array_spread"},"locs":[{"a":262,"b":277}]},{"name":"until_tx_id","required":true,"transform":{"type":"scalar"},"locs":[{"a":199,"b":211}]},{"name":"voter","required":true,"transform":{"type":"scalar"},"locs":[{"a":229,"b":235}]}],"statement":"SELECT gov_action_id as \"govActionId!\", vote as \"vote!\", \"Transaction\".id as \"txId!\"\nFROM  \"GovernanceVote\"\nJOIN \"Transaction\" ON \"GovernanceVote\".tx_id = \"Transaction\".id\nWHERE\n\t\"Transaction\".id <= :until_tx_id! AND\n    voter = :voter! AND\n    gov_action_id IN :gov_action_ids!\nORDER BY \"Transaction\".id"};
+const didVoteIR: any = {"usedParamSet":{"until_tx_id":true,"voter":true,"gov_action_ids":true},"params":[{"name":"gov_action_ids","required":true,"transform":{"type":"array_spread"},"locs":[{"a":293,"b":308}]},{"name":"until_tx_id","required":true,"transform":{"type":"scalar"},"locs":[{"a":230,"b":242}]},{"name":"voter","required":true,"transform":{"type":"scalar"},"locs":[{"a":260,"b":266}]}],"statement":"SELECT gov_action_id as \"govActionId!\",\n       vote as \"vote!\",\n       encode(\"Transaction\".hash, 'hex') as \"txId!\"\nFROM  \"GovernanceVote\"\nJOIN \"Transaction\" ON \"GovernanceVote\".tx_id = \"Transaction\".id\nWHERE\n\t\"Transaction\".id <= :until_tx_id! AND\n    voter = :voter! AND\n    gov_action_id IN :gov_action_ids!\nORDER BY \"Transaction\".id"};
 
 /**
  * Query generated from SQL:
  * ```
- * SELECT gov_action_id as "govActionId!", vote as "vote!", "Transaction".id as "txId!"
+ * SELECT gov_action_id as "govActionId!",
+ *        vote as "vote!",
+ *        encode("Transaction".hash, 'hex') as "txId!"
  * FROM  "GovernanceVote"
  * JOIN "Transaction" ON "GovernanceVote".tx_id = "Transaction".id
  * WHERE

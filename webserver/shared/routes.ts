@@ -7,9 +7,15 @@ import type {
   CredentialAddressRequest,
   CredentialAddressResponse,
 } from "./models/CredentialAddress";
-import { DexMeanPriceRequest, DexMeanPriceResponse } from "./models/DexMeanPrice";
+import {
+  DexMeanPriceRequest,
+  DexMeanPriceResponse,
+} from "./models/DexMeanPrice";
 import { DexSwapRequest, DexSwapResponse } from "./models/DexSwap";
-import { DexLastPriceRequest, DexLastPriceResponse } from "./models/DexLastPrice";
+import {
+  DexLastPriceRequest,
+  DexLastPriceResponse,
+} from "./models/DexLastPrice";
 import { Cip25Response, PolicyIdAssetMapType } from "./models/PolicyIdAssetMap";
 import type {
   TransactionHistoryRequest,
@@ -37,7 +43,12 @@ import type {
   MintBurnHistoryRequest,
   MintBurnHistoryResponse,
 } from "./models/MintBurn";
-import { GovernanceCredentialDidVoteRequest, GovernanceCredentialDidVoteResponse, GovernanceVotesForAddressRequest, GovernanceVotesForAddressResponse } from "./models/Governance";
+import {
+  GovernanceCredentialDidVoteRequest,
+  GovernanceCredentialDidVoteResponse,
+  GovernanceVotesForCredentialRequest,
+  GovernanceVotesForCredentialResponse,
+} from "./models/Governance";
 
 export enum Routes {
   transactionHistory = "transaction/history",
@@ -55,7 +66,7 @@ export enum Routes {
   assetUtxos = "asset/utxos",
   mintBurnHistory = "asset/mint-burn-history",
   drepDelegationForAddress = "delegation/drep/address",
-  governanceVotesForAddress = "governance/credential/votes",
+  governanceVotesForCredential = "governance/credential/votes",
   governanceCredentialVotesByGovActionId = "governance/credential/votesByGovId",
 }
 
@@ -135,10 +146,10 @@ export type EndpointTypes = {
     input: DelegationForAddressRequest;
     response: DrepDelegationForAddressResponse;
   };
-  [Routes.governanceVotesForAddress]: {
-    name: typeof Routes.governanceVotesForAddress;
-    input: GovernanceVotesForAddressRequest;
-    response: GovernanceVotesForAddressResponse;
+  [Routes.governanceVotesForCredential]: {
+    name: typeof Routes.governanceVotesForCredential;
+    input: GovernanceVotesForCredentialRequest;
+    response: GovernanceVotesForCredentialResponse;
   };
   [Routes.governanceCredentialVotesByGovActionId]: {
     name: typeof Routes.governanceCredentialVotesByGovActionId;

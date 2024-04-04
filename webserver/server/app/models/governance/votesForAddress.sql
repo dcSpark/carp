@@ -24,7 +24,9 @@ LIMIT :limit!;
 @name didVote
 @param gov_action_ids -> (...)
 */
-SELECT gov_action_id as "govActionId!", vote as "vote!", "Transaction".id as "txId!"
+SELECT gov_action_id as "govActionId!",
+       vote as "vote!",
+       encode("Transaction".hash, 'hex') as "txId!"
 FROM  "GovernanceVote"
 JOIN "Transaction" ON "GovernanceVote".tx_id = "Transaction".id
 WHERE
