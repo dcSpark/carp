@@ -464,30 +464,14 @@ fn queue_address_credential(
 // AlwaysAbstain and AlwaysNoConfidence are ignored here because we only can add
 // relations to actual credentials
 fn drep_to_credential(d_rep: &cml_chain::certs::DRep) -> Option<Credential> {
-    let drep_cred = match d_rep {
-        cml_chain::certs::DRep::Key {
-            pool,
-            len_encoding,
-            index_0_encoding,
-            pool_encoding,
-        } => Some(StakeCredential::new_pub_key(*pool)),
-        cml_chain::certs::DRep::Script {
-            script_hash,
-            len_encoding,
-            index_0_encoding,
-            script_hash_encoding,
-        } => Some(StakeCredential::new_script(*script_hash)),
-        cml_chain::certs::DRep::AlwaysAbstain {
-            always_abstain_encoding,
-            len_encoding,
-        } => None,
-        cml_chain::certs::DRep::AlwaysNoConfidence {
-            always_no_confidence_encoding,
-            len_encoding,
-        } => None,
-    };
-
-    drep_cred
+    match d_rep {
+        cml_chain::certs::DRep::Key { pool, .. } => Some(StakeCredential::new_pub_key(*pool)),
+        cml_chain::certs::DRep::Script { script_hash, .. } => {
+            Some(StakeCredential::new_script(*script_hash))
+        }
+        cml_chain::certs::DRep::AlwaysAbstain { .. } => None,
+        cml_chain::certs::DRep::AlwaysNoConfidence { .. } => None,
+    }
 }
 
 fn delegate_to_drep(
@@ -498,7 +482,7 @@ fn delegate_to_drep(
 ) {
     vkey_relation_map.add_relation(
         tx_id,
-        &credential,
+        credential,
         TxCredentialRelationValue::DrepStakeDelegation,
     );
 
@@ -507,7 +491,7 @@ fn delegate_to_drep(
     if let Some(drep_cred) = drep_cred {
         vkey_relation_map.add_relation(
             tx_id,
-            &d_rep.to_cbor_bytes(),
+            &drep_cred.to_cbor_bytes(),
             TxCredentialRelationValue::DrepStakeDelegationTarget,
         );
     }
