@@ -63,6 +63,18 @@ async fn handle(
                         delegation.stake_credential.clone(),
                         Some(delegation.d_rep.to_cbor_bytes()),
                     ),
+                    MultiEraCertificate::StakeVoteDelegCert(delegation) => (
+                        delegation.stake_credential.clone(),
+                        Some(delegation.d_rep.to_cbor_bytes()),
+                    ),
+                    MultiEraCertificate::VoteRegDelegCert(delegation) => (
+                        delegation.stake_credential.clone(),
+                        Some(delegation.d_rep.to_cbor_bytes()),
+                    ),
+                    MultiEraCertificate::StakeVoteRegDelegCert(delegation) => (
+                        delegation.stake_credential.clone(),
+                        Some(delegation.d_rep.to_cbor_bytes()),
+                    ),
                     MultiEraCertificate::StakeDeregistration(deregistration) => {
                         (deregistration.stake_credential.clone(), None)
                     }
