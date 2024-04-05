@@ -251,10 +251,11 @@ fn queue_certificate(
             }
         }
         MultiEraCertificate::VoteDelegCert(cert) => {
-            let operator_credential = cert.stake_credential.to_raw_bytes().to_vec();
+            let voter_credential = cert.stake_credential.to_cbor_bytes();
+
             vkey_relation_map.add_relation(
                 tx_id,
-                &operator_credential,
+                &voter_credential,
                 TxCredentialRelationValue::DrepStakeDelegation,
             );
         }
