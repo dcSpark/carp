@@ -463,7 +463,7 @@ fn queue_address_credential(
 
 // AlwaysAbstain and AlwaysNoConfidence are ignored here because we only can add
 // relations to actual credentials
-fn drep_to_credential(d_rep: &cml_chain::certs::DRep) -> Option<Credential> {
+pub fn drep_to_credential(d_rep: &cml_chain::certs::DRep) -> Option<Credential> {
     match d_rep {
         cml_chain::certs::DRep::Key { pool, .. } => Some(StakeCredential::new_pub_key(*pool)),
         cml_chain::certs::DRep::Script { script_hash, .. } => {

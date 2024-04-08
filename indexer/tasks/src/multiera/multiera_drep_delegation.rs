@@ -14,6 +14,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::ops::Deref;
 
 use super::{
+    multiera_address::drep_to_credential,
     multiera_address_credential_relations::QueuedAddressCredentialRelation,
     multiera_txs::MultieraTransactionTask, relation_map::RelationMap,
 };
@@ -61,19 +62,19 @@ async fn handle(
                 let (credential, drep) = match cert {
                     MultiEraCertificate::VoteDelegCert(delegation) => (
                         delegation.stake_credential.clone(),
-                        Some(delegation.d_rep.to_cbor_bytes()),
+                        drep_to_credential(&delegation.d_rep),
                     ),
                     MultiEraCertificate::StakeVoteDelegCert(delegation) => (
                         delegation.stake_credential.clone(),
-                        Some(delegation.d_rep.to_cbor_bytes()),
+                        drep_to_credential(&delegation.d_rep),
                     ),
                     MultiEraCertificate::VoteRegDelegCert(delegation) => (
                         delegation.stake_credential.clone(),
-                        Some(delegation.d_rep.to_cbor_bytes()),
+                        drep_to_credential(&delegation.d_rep),
                     ),
                     MultiEraCertificate::StakeVoteRegDelegCert(delegation) => (
                         delegation.stake_credential.clone(),
-                        Some(delegation.d_rep.to_cbor_bytes()),
+                        drep_to_credential(&delegation.d_rep),
                     ),
                     MultiEraCertificate::StakeDeregistration(deregistration) => {
                         (deregistration.stake_credential.clone(), None)
@@ -83,6 +84,7 @@ async fn handle(
                 };
 
                 let credential = credential.to_cbor_bytes();
+                let drep = drep.map(|cred| cred.to_cbor_bytes());
 
                 let stake_credential_id = multiera_stake_credential
                     .get(&credential.to_vec())
