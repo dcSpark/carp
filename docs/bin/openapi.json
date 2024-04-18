@@ -2091,7 +2091,7 @@
                         }
                     }
                 },
-                "description": "Query any projected NFT. Learn more[<u>here</u>](https://github.com/dcSpark/projected-nft-whirlpool).",
+                "description": "Query any projected NFT. Learn more [<u>here</u>](https://github.com/dcSpark/projected-nft-whirlpool).",
                 "security": [],
                 "parameters": [],
                 "requestBody": {
