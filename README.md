@@ -1,6 +1,8 @@
 # Carp - Cardano Postgres Indexer
 
-**Important**: Full documentation can be found [here](https://dcspark.github.io/carp/docs/intro)
+**Important**:
+- Documentation: [here](https://dcspark.github.io/carp/docs/intro)
+- NPM package (client): [here](https://www.npmjs.com/package/@dcspark/carp-client)
 
 Welcome to Carp, a Cardano Postgres Indexer. This project is designed to sync data from the Cardano blockchain and store it into a Postgres database. The backend is written in Rust using Oura and CML, while the server and client are written in TypeScript.
 
