@@ -10,7 +10,6 @@ SELECT
             WHEN "TransactionOutput".output_index = NULL THEN NULL
             ELSE "TransactionOutput".output_index
             END,
-        'actionTxId', encode("Transaction".hash, 'hex'),
         'policyId', "ProjectedNFT".policy_id,
         'assetName', "ProjectedNFT".asset_name,
         'amount', "ProjectedNFT".amount,
