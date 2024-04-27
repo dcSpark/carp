@@ -42,10 +42,13 @@ async fn handle_block(
         return block_from_hash(db_tx, &hash).await;
     }
 
-    let block_epoch = match block.1 {
+    let (tx_count, block_epoch) = match block.1 {
         MultiEraBlock::Byron(byron) => match byron {
-            ByronBlock::EpochBoundary(byron) => byron.header.consensus_data.epoch_id,
-            ByronBlock::Main(byron) => byron.header.consensus_data.byron_slot_id.epoch,
+            ByronBlock::EpochBoundary(byron) => (0, byron.header.consensus_data.epoch_id),
+            ByronBlock::Main(byron) => (
+                byron.body.tx_payload.len(),
+                byron.header.consensus_data.byron_slot_id.epoch,
+            ),
         },
         _ => {
             return Err(DbErr::Custom("Non-byron block in byron task".to_string()));
@@ -64,6 +67,7 @@ async fn handle_block(
         epoch: Set(block_epoch as i32),
         slot: Set(block.1.header().slot() as i32),
         payload: Set(Some(block_payload)),
+        tx_count: Set(tx_count as i32),
         ..Default::default()
     };
 
