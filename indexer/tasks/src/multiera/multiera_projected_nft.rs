@@ -38,7 +38,7 @@ carp_task! {
   read [multiera_txs, multiera_outputs, multiera_used_inputs_to_outputs_map];
   write [];
   should_add_task |block, _properties| {
-    !block.1.is_empty()
+    !block.1.is_empty() && block.1.transaction_witness_sets().iter().any(|set| set.redeemers.is_some())
   };
   execute |previous_data, task| handle_projected_nft(
       task.db_tx,
@@ -358,7 +358,7 @@ fn get_payment_cred(address: String) -> Result<cml_chain::certs::Credential, DbE
         ))
     })?;
 
-    let config_address = cml_chain::address::Address::from_bytes(config_address)
+    let config_address = cml_chain::address::Address::from_raw_bytes(&config_address)
         .map_err(|err| DbErr::Custom(format!("cml can't parse config address: {:?}", err)))?;
     match config_address.payment_cred() {
         None => Err(DbErr::Custom(
