@@ -35,6 +35,10 @@ pub struct Cli {
     /// path to config file
     #[clap(long, value_parser)]
     config_path: Option<PathBuf>,
+
+    /// path to config file
+    #[clap(short, long, action = clap::ArgAction::SetTrue)]
+    verbose: bool,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -75,6 +79,18 @@ pub struct Config {
 #[allow(unreachable_patterns)]
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    let Cli {
+        plan,
+        config_path,
+        verbose,
+    } = Cli::parse();
+
+    let default_trace = if verbose {
+        tracing::Level::DEBUG
+    } else {
+        tracing::Level::INFO
+    };
+
     // Start logging setup block
     let fmt_layer = tracing_subscriber::fmt::layer().with_test_writer();
 
@@ -83,7 +99,7 @@ async fn main() -> anyhow::Result<()> {
         .with_target("sqlx", tracing::Level::WARN)
         .with_target("oura", tracing::Level::WARN)
         .with_target("sled", tracing::Level::INFO)
-        .with_target("carp", tracing::Level::TRACE)
+        .with_target("carp", default_trace)
         .with_target("cardano-net", tracing::Level::INFO)
         .with_target("cardano-sdk", tracing::Level::INFO)
         .with_target("dcspark-blockchain-source", tracing::Level::INFO)
@@ -108,8 +124,6 @@ async fn main() -> anyhow::Result<()> {
     .expect("Error setting terminate handler");
 
     tracing::info!("{}", "Starting Carp");
-
-    let Cli { plan, config_path } = Cli::parse();
 
     tracing::info!("Execution plan {}", plan);
     let exec_plan = Arc::new(ExecutionPlan::load_from_file(&plan)?);
