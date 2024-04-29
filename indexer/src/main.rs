@@ -52,7 +52,11 @@ pub enum DbConfig {
 #[serde(tag = "type", rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
 pub enum SinkConfig {
-    Cardano { db: DbConfig, network: String },
+    Cardano {
+        db: DbConfig,
+        network: String,
+        genesis_folder: Option<String>,
+    },
 }
 
 pub enum Network {}
@@ -184,6 +188,33 @@ async fn main() -> anyhow::Result<()> {
                 "mainnet" => dcspark_blockchain_source::cardano::NetworkConfiguration::mainnet(),
                 "preprod" => dcspark_blockchain_source::cardano::NetworkConfiguration::preprod(),
                 "preview" => dcspark_blockchain_source::cardano::NetworkConfiguration::preview(),
+                "custom" => dcspark_blockchain_source::cardano::NetworkConfiguration {
+                    // TODO: dynamically fill in all of this
+                    chain_info: dcspark_blockchain_source::cardano::ChainInfo::Custom {
+                        protocol_magic: 0,
+                        network_id: 0,
+                    },
+                    relay: (Cow::Borrowed("preprod-node.world.dev.cardano.org."), 30000),
+                    from: dcspark_blockchain_source::cardano::Point::BlockHeader {
+                        slot_nb: dcspark_core::SlotNumber::new(86400),
+                        hash: dcspark_core::BlockId::new(
+                            "c4a1595c5cc7a31eda9e544986fe9387af4e3491afe0ca9a80714f01951bbd5c",
+                        ),
+                    },
+                    genesis_parent: dcspark_core::BlockId::new(
+                        "d4b8de7a11d929a323373cbab6c1a9bdc931beffff11db111cf9d57356ee1937",
+                    ),
+                    genesis: dcspark_core::BlockId::new(
+                        "9ad7ff320c9cf74e0f5ee78d22a85ce42bb0a487d0506bf60cfb5a91ea4497d2",
+                    ),
+                    shelley_era_config: dcspark_blockchain_source::cardano::time::Era {
+                        first_slot: 4492800,
+                        start_epoch: 208,
+                        known_time: 1596059091,
+                        slot_length: 1,
+                        epoch_length_seconds: 432000,
+                    },
+                },
                 _ => return Err(anyhow::anyhow!("network not supported by source")),
             };
 

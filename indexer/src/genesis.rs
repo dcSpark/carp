@@ -13,36 +13,19 @@ use migration::DbErr;
 use tasks::utils::TaskPerfAggregator;
 use tasks::{execution_plan::ExecutionPlan, genesis::genesis_executor::process_genesis_block};
 
-const GENESIS_MAINNET: &str = "./genesis/mainnet-byron-genesis.json";
-const GENESIS_PREVIEW: &str = "./genesis/preview-byron-genesis.json";
-const GENESIS_PREPROD: &str = "./genesis/preprod-byron-genesis.json";
-const GENESIS_TESTNET: &str = "./genesis/testnet-byron-genesis.json";
-
 pub async fn process_genesis(
     conn: &DatabaseConnection,
     network: &str,
+    genesis_folder: &str,
     exec_plan: Arc<ExecutionPlan>,
 ) -> anyhow::Result<()> {
-    // https://github.com/txpipe/oura/blob/67b01e8739ed2927ced270e08daea74b03bcc7f7/src/sources/common.rs#L91
-    let genesis_path = match dbg!(network) {
-        "mainnet" => GENESIS_MAINNET,
-        "testnet" => GENESIS_TESTNET,
-        "preview" => GENESIS_PREVIEW,
-        "preprod" => GENESIS_PREPROD,
-        rest => {
-            return Err(anyhow!(
-                "{} is invalid. NETWORK must be either mainnet/preview/preprod/testnet",
-                rest
-            ))
-        }
-    };
-
     let task_perf_aggregator = Arc::new(Mutex::new(TaskPerfAggregator::default()));
 
     tracing::info!("Parsing genesis file...");
     let mut time_counter = std::time::Instant::now();
 
-    let file = fs::File::open(genesis_path).expect("Failed to open genesis file");
+    let file = fs::File::open(format!("{}/{}-byron-genesis.json", genesis_folder, network))
+        .expect("Failed to open genesis file");
     let genesis_file: Box<GenesisData> = Box::new(
         parse_genesis_data(file).map_err(|err| anyhow!("can't parse genesis data: {:?}", err))?,
     );

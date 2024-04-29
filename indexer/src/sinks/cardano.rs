@@ -3,6 +3,7 @@ use crate::perf_aggregator::PerfAggregator;
 use crate::sink::Sink;
 use crate::types::{MultiEraBlock, StoppableService};
 use crate::{genesis, DbConfig, SinkConfig};
+use anyhow::anyhow;
 use async_trait::async_trait;
 
 use dcspark_blockchain_source::cardano::Point;
@@ -28,6 +29,7 @@ use tasks::utils::TaskPerfAggregator;
 pub struct CardanoSink {
     db: DatabaseConnection,
     network: String,
+    genesis_folder: Option<String>,
     exec_plan: Arc<ExecutionPlan>,
 
     last_epoch: i128,
@@ -38,8 +40,12 @@ pub struct CardanoSink {
 impl CardanoSink {
     #[allow(unreachable_patterns)]
     pub async fn new(config: SinkConfig, exec_plan: Arc<ExecutionPlan>) -> anyhow::Result<Self> {
-        let (db_config, network) = match config {
-            SinkConfig::Cardano { db, network } => (db, network),
+        let (db_config, network, genesis_folder) = match config {
+            SinkConfig::Cardano {
+                db,
+                network,
+                genesis_folder,
+            } => (db, network, genesis_folder),
             _ => todo!("Invalid sink config provided"),
         };
         match db_config {
@@ -49,6 +55,7 @@ impl CardanoSink {
                 Ok(Self {
                     db: conn,
                     network,
+                    genesis_folder,
                     exec_plan,
                     last_epoch: -1,
                     epoch_start_time: std::time::Instant::now(),
@@ -118,6 +125,8 @@ impl CardanoSink {
     }
 }
 
+const KNOWN_GENESIS_FOLDER: &str = "./genesis";
+
 #[async_trait]
 impl Sink for CardanoSink {
     type From = Point;
@@ -130,7 +139,27 @@ impl Sink for CardanoSink {
         };
 
         if start.is_empty() {
-            genesis::process_genesis(&self.db, &self.network, self.exec_plan.clone()).await?;
+            // https://github.com/txpipe/oura/blob/67b01e8739ed2927ced270e08daea74b03bcc7f7/src/sources/common.rs#L91
+            let genesis_folder: &str = match dbg!(&self.network[..]) {
+                "mainnet" | "testnet" | "preview" | "preprod" => KNOWN_GENESIS_FOLDER,
+                "custom" => &self
+                    .genesis_folder
+                    .as_ref()
+                    .expect("genesis_folder should be specified for custom networks")[..],
+                rest => {
+                    return Err(anyhow!(
+                        "{} is invalid. NETWORK must be either mainnet/preview/preprod/testnet or a 'custom' network",
+                        rest
+                    ))
+                }
+            };
+            genesis::process_genesis(
+                &self.db,
+                &self.network,
+                genesis_folder,
+                self.exec_plan.clone(),
+            )
+            .await?;
             return self.get_latest_point().await;
         }
 
