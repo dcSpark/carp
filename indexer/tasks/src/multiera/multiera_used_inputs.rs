@@ -75,11 +75,14 @@ async fn handle_input(
         if !cardano_transaction.is_valid {
             let refs = tx_body
                 .collateral_inputs()
-                .cloned()
-                .unwrap_or_default()
-                .into_iter()
-                .map(MultiEraTransactionInput::Shelley)
-                .collect();
+                .map(|collateral_inputs| {
+                    collateral_inputs
+                        .iter()
+                        .cloned()
+                        .map(MultiEraTransactionInput::Shelley)
+                        .collect()
+                })
+                .unwrap_or_else(std::vec::Vec::new);
             queued_inputs.push((refs, cardano_transaction.id))
         }
     }

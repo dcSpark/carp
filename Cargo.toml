@@ -9,3 +9,10 @@ members = [
     "indexer/plan-visualizer",
     "indexer/task-docgen"
 ]
+
+
+[workspace.dependencies]
+cml-chain = { version = "5.3.0" }
+cml-core = { version = "5.3.0" }
+cml-crypto = { version = "5.3.0" }
+cml-multi-era = { version = "5.3.0" }

@@ -14,6 +14,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::ops::Deref;
 
 use super::{
+    multiera_address::drep_to_credential,
     multiera_address_credential_relations::QueuedAddressCredentialRelation,
     multiera_txs::MultieraTransactionTask, relation_map::RelationMap,
 };
@@ -22,17 +23,19 @@ use crate::dsl::database_task::BlockGlobalInfo;
 use crate::dsl::task_macro::*;
 
 carp_task! {
-  name MultieraAddressDelegationTask;
+  name MultieraDrepDelegationTask;
   configuration EmptyConfig;
-  doc "Tracks stake delegation actions to pools.";
+  doc "Tracks stake delegation actions to dreps";
   era multiera;
   dependencies [MultieraStakeCredentialTask];
   read [multiera_txs, multiera_stake_credential];
   write [];
   should_add_task |block, _properties| {
-    // recall: txs may have no outputs if they just burn all inputs as fee
-    // TODO: this runs slightly more than it should
-    !block.1.is_empty()
+    block
+      .1
+      .transaction_bodies()
+      .iter()
+      .any(|x| x.certs().is_some());
   };
   execute |previous_data, task| handle(
       task.db_tx,
@@ -58,19 +61,23 @@ async fn handle(
             {
                 let tx_id = cardano_transaction.id;
                 let cert = &cert;
-                let (credential, pool) = match cert {
-                    MultiEraCertificate::StakeDelegation(delegation) => {
-                        (delegation.stake_credential.clone(), Some(delegation.pool))
-                    }
-                    MultiEraCertificate::StakeVoteDelegCert(cert) => {
-                        (cert.stake_credential.clone(), Some(cert.pool))
-                    }
-                    MultiEraCertificate::StakeRegDelegCert(cert) => {
-                        (cert.stake_credential.clone(), Some(cert.pool))
-                    }
-                    MultiEraCertificate::StakeVoteRegDelegCert(cert) => {
-                        (cert.stake_credential.clone(), Some(cert.pool))
-                    }
+                let (credential, drep) = match cert {
+                    MultiEraCertificate::VoteDelegCert(delegation) => (
+                        delegation.stake_credential.clone(),
+                        drep_to_credential(&delegation.d_rep),
+                    ),
+                    MultiEraCertificate::StakeVoteDelegCert(delegation) => (
+                        delegation.stake_credential.clone(),
+                        drep_to_credential(&delegation.d_rep),
+                    ),
+                    MultiEraCertificate::VoteRegDelegCert(delegation) => (
+                        delegation.stake_credential.clone(),
+                        drep_to_credential(&delegation.d_rep),
+                    ),
+                    MultiEraCertificate::StakeVoteRegDelegCert(delegation) => (
+                        delegation.stake_credential.clone(),
+                        drep_to_credential(&delegation.d_rep),
+                    ),
                     MultiEraCertificate::StakeDeregistration(deregistration) => {
                         (deregistration.stake_credential.clone(), None)
                     }
@@ -79,38 +86,40 @@ async fn handle(
                 };
 
                 let credential = credential.to_cbor_bytes();
+                let drep = drep.map(|cred| cred.to_cbor_bytes());
 
                 let stake_credential_id = multiera_stake_credential
                     .get(&credential.to_vec())
                     .unwrap()
                     .id;
 
-                let previous_entry = entity::stake_delegation::Entity::find()
+                let previous_entry = entity::stake_delegation_drep::Entity::find()
                     .filter(
-                        entity::stake_delegation::Column::StakeCredential.eq(stake_credential_id),
+                        entity::stake_delegation_drep::Column::StakeCredential
+                            .eq(stake_credential_id),
                     )
-                    .order_by_desc(entity::stake_delegation::Column::Id)
+                    .order_by_desc(entity::stake_delegation_drep::Column::Id)
                     .one(db_tx)
                     .await?;
 
-                let pool = pool.map(|pool| pool.to_raw_bytes().to_vec());
-
-                if let Some((previous, pool)) = previous_entry
+                if let Some((previous, drep)) = previous_entry
                     .as_ref()
-                    .and_then(|entry| entry.pool_credential.as_ref())
-                    .zip(pool.as_ref())
+                    .and_then(|entry| entry.drep_credential.as_ref())
+                    .zip(drep.as_ref())
                 {
                     // re-delegating shouldn't have any effect.
-                    if previous == pool {
+                    if previous == drep {
                         continue;
                     }
                 }
 
-                entity::stake_delegation::ActiveModel {
+                entity::stake_delegation_drep::ActiveModel {
                     stake_credential: Set(stake_credential_id),
-                    pool_credential: Set(pool.map(|pool| pool.to_vec())),
+                    drep_credential: Set(drep),
                     tx_id: Set(tx_id),
-                    previous_pool: Set(previous_entry.and_then(|entity| entity.pool_credential)),
+                    previous_drep_credential: Set(
+                        previous_entry.and_then(|entity| entity.drep_credential)
+                    ),
                     ..Default::default()
                 }
                 .save(db_tx)

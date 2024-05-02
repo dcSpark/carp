@@ -10,10 +10,10 @@ entity = { path = "../entity" }
 
 # [reparse]
 anyhow = { version = "1.0.69" }
-cml-chain = { version = "5.2.0" }
-cml-core = { version = "5.2.0" }
-cml-crypto = { version = "5.2.0" }
-cml-multi-era = { version = "5.2.0" }
+cml-chain = { workspace = true }
+cml-core = { workspace = true }
+cml-crypto = { workspace = true }
+cml-multi-era = { workspace = true }
 dotenv = { version = "0.15.0" }
 futures = { version = "0.3.21" }
 hex = { version = "0.4.0" }

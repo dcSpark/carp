@@ -22,7 +22,11 @@ carp_task! {
   write [vkey_relation_map];
   should_add_task |block, _properties| {
     // if any txs has collateral defined, then it has some unused input (either collateral or main inputs if tx failed)
-    block.1.transaction_bodies().iter().any(|tx| !tx.collateral_inputs().cloned().unwrap_or_default().is_empty())
+    block.1.transaction_bodies().iter().any(|tx| {
+        !tx.collateral_inputs()
+            .map(|collateral_inputs| collateral_inputs.is_empty())
+            .unwrap_or(true)
+    })
   };
   execute |previous_data, task| handle_unused_input(
       task.db_tx,
@@ -56,11 +60,14 @@ async fn handle_unused_input(
             // you can use the is_valid field to know what kind of input it actually is
             let refs = tx_body
                 .collateral_inputs()
-                .cloned()
-                .unwrap_or_default()
-                .into_iter()
-                .map(MultiEraTransactionInput::Shelley)
-                .collect();
+                .map(|collateral_inputs| {
+                    collateral_inputs
+                        .iter()
+                        .cloned()
+                        .map(MultiEraTransactionInput::Shelley)
+                        .collect()
+                })
+                .unwrap_or_else(std::vec::Vec::new);
             queued_unused_inputs.push((refs, cardano_transaction.id))
         }
     }

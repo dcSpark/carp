@@ -1,5 +1,5 @@
 use cardano_projected_nft::{Owner, Redeem, State, Status};
-use cml_chain::plutus::{Redeemer, RedeemerTag};
+use cml_chain::plutus::{LegacyRedeemer, PlutusData, RedeemerTag, Redeemers};
 use cml_chain::transaction::DatumOption;
 use cml_core::serialization::{FromBytes, Serialize};
 use cml_crypto::{Ed25519KeyHash, RawBytesEncoding, TransactionHash};
@@ -705,23 +705,44 @@ fn extract_operation_and_datum(
     Ok(result)
 }
 
-fn get_projected_nft_redeemers(redeemers: &[Redeemer]) -> Result<BTreeMap<i64, Redeem>, DbErr> {
-    let mut result = BTreeMap::new();
+fn get_projected_nft_redeemers(redeemers: &Redeemers) -> Result<BTreeMap<i64, Redeem>, DbErr> {
+    fn build_map<'a>(
+        redeemers: impl Iterator<Item = (RedeemerTag, u64, &'a PlutusData)>,
+    ) -> BTreeMap<i64, Redeem> {
+        let mut result = BTreeMap::new();
 
-    for redeemer in redeemers {
-        if redeemer.tag != RedeemerTag::Spend {
-            continue;
+        for (tag, index, data) in redeemers {
+            if tag != RedeemerTag::Spend {
+                continue;
+            }
+
+            match Redeem::try_from(data.to_cbor_bytes().as_slice()) {
+                Ok(redeem) => {
+                    result.insert(index as i64, redeem);
+                }
+                Err(err) => {
+                    tracing::info!("Can't parse redeemer: {err}");
+                }
+            }
         }
 
-        match Redeem::try_from(redeemer.data.to_cbor_bytes().as_slice()) {
-            Ok(redeem) => {
-                result.insert(redeemer.index as i64, redeem);
-            }
-            Err(err) => {
-                tracing::info!("Can't parse redeemer: {err}");
-            }
-        }
+        result
     }
 
-    Ok(result)
+    match redeemers {
+        Redeemers::ArrLegacyRedeemer {
+            arr_legacy_redeemer,
+            arr_legacy_redeemer_encoding: _,
+        } => Ok(build_map(arr_legacy_redeemer.iter().map(|redeemeer| {
+            (redeemeer.tag, redeemeer.index, &redeemeer.data)
+        }))),
+        Redeemers::MapRedeemerKeyToRedeemerVal {
+            map_redeemer_key_to_redeemer_val,
+            map_redeemer_key_to_redeemer_val_encoding: _,
+        } => Ok(build_map(
+            map_redeemer_key_to_redeemer_val
+                .iter()
+                .map(|(key, val)| (key.tag, key.index, &val.data)),
+        )),
+    }
 }

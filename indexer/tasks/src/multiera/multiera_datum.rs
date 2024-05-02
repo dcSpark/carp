@@ -65,19 +65,16 @@ async fn handle_datum(
         .zip(block.1.transaction_witness_sets().iter())
         .zip(multiera_txs)
     {
-        for datum in tx_witness_set
-            .plutus_datums
-            .clone()
-            .unwrap_or_default()
-            .iter()
-        {
-            let hash = datum.hash();
-            hash_to_tx
-                .entry(hash)
-                .or_insert_with(|| cardano_transaction.id);
-            hash_to_data
-                .entry(hash)
-                .or_insert_with(|| datum.to_cbor_bytes());
+        if let Some(plutus_datums) = &tx_witness_set.plutus_datums {
+            for datum in plutus_datums.iter() {
+                let hash = datum.hash();
+                hash_to_tx
+                    .entry(hash)
+                    .or_insert_with(|| cardano_transaction.id);
+                hash_to_data
+                    .entry(hash)
+                    .or_insert_with(|| datum.to_cbor_bytes());
+            }
         }
         for output in tx_body.outputs().iter() {
             let output = match output {

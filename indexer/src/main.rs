@@ -184,6 +184,7 @@ async fn main() -> anyhow::Result<()> {
                 "mainnet" => dcspark_blockchain_source::cardano::NetworkConfiguration::mainnet(),
                 "preprod" => dcspark_blockchain_source::cardano::NetworkConfiguration::preprod(),
                 "preview" => dcspark_blockchain_source::cardano::NetworkConfiguration::preview(),
+                "sanchonet" => dcspark_blockchain_source::cardano::NetworkConfiguration::sancho(),
                 _ => return Err(anyhow::anyhow!("network not supported by source")),
             };
 

@@ -21,6 +21,8 @@ mod m20230927_000016_create_stake_delegation_table;
 mod m20231025_000017_projected_nft;
 mod m20231220_000018_asset_utxo_table;
 mod m20240229_000019_add_block_tx_count_column;
+mod m20240326_000020_create_drep_delegation_table;
+mod m20240326_000021_create_governance_voting_table;
 
 pub struct Migrator;
 
@@ -49,6 +51,8 @@ impl MigratorTrait for Migrator {
             Box::new(m20231025_000017_projected_nft::Migration),
             Box::new(m20231220_000018_asset_utxo_table::Migration),
             Box::new(m20240229_000019_add_block_tx_count_column::Migration),
+            Box::new(m20240326_000020_create_drep_delegation_table::Migration),
+            Box::new(m20240326_000021_create_governance_voting_table::Migration),
         ]
     }
 }
