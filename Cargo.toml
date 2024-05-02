@@ -12,7 +12,7 @@ members = [
 
 
 [workspace.dependencies]
-cml-chain = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "new-conway-cddl-updates" }
-cml-core = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "new-conway-cddl-updates" }
-cml-crypto = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "new-conway-cddl-updates" }
-cml-multi-era = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", branch = "new-conway-cddl-updates" }
+cml-chain = { version = "5.3.0" }
+cml-core = { version = "5.3.0" }
+cml-crypto = { version = "5.3.0" }
+cml-multi-era = { version = "5.3.0" }

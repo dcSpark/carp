@@ -31,9 +31,11 @@ carp_task! {
   read [multiera_txs, multiera_stake_credential];
   write [];
   should_add_task |block, _properties| {
-    // recall: txs may have no outputs if they just burn all inputs as fee
-    // TODO: this runs slightly more than it should
-    !block.1.is_empty()
+    block
+      .1
+      .transaction_bodies()
+      .iter()
+      .any(|x| x.certs().is_some());
   };
   execute |previous_data, task| handle(
       task.db_tx,
