@@ -35,7 +35,7 @@ carp_task! {
       .1
       .transaction_bodies()
       .iter()
-      .any(|x| x.certs().is_some());
+      .any(|x| x.certs().is_some())
   };
   execute |previous_data, task| handle(
       task.db_tx,

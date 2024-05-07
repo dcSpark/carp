@@ -102,7 +102,6 @@ async fn main() -> anyhow::Result<()> {
         .with_target("carp", default_trace)
         .with_target("cardano-net", tracing::Level::INFO)
         .with_target("cardano-sdk", tracing::Level::INFO)
-        .with_target("dcspark-blockchain-source", tracing::Level::INFO)
         .with_default(tracing::Level::INFO);
 
     tracing_subscriber::registry()
