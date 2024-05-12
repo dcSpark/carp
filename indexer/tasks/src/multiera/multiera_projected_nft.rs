@@ -114,6 +114,9 @@ impl ProjectedNftInputsQueryOutputResult {
     }
 }
 
+type TxInputToProjectedNft =
+    BTreeMap<Vec<u8>, BTreeMap<i64, Vec<ProjectedNftInputsQueryOutputResult>>>;
+
 async fn handle_projected_nft(
     db_tx: &DatabaseTransaction,
     block: BlockInfo<'_, cml_multi_era::MultiEraBlock, BlockGlobalInfo>,
@@ -132,9 +135,8 @@ async fn handle_projected_nft(
     let async_get_projected_nft_inputs =
         || async { get_projected_nft_inputs(db_tx, multiera_used_inputs_to_outputs_map).await };
 
-    let ONCE_USED_PROJECTED_NFTS: OnceCell<
-        Result<BTreeMap<Vec<u8>, BTreeMap<i64, Vec<ProjectedNftInputsQueryOutputResult>>>, DbErr>,
-    > = OnceCell::const_new();
+    let once_used_projected_nfts: OnceCell<Result<TxInputToProjectedNft, DbErr>> =
+        OnceCell::const_new();
 
     for ((tx_body, tx_witness), cardano_transaction) in block
         .1
@@ -146,10 +148,7 @@ async fn handle_projected_nft(
         if !cardano_transaction.is_valid {
             continue;
         }
-        let mut partial_withdrawals_inputs: BTreeMap<
-            Vec<u8>,
-            BTreeMap<i64, Vec<ProjectedNftInputsQueryOutputResult>>,
-        > = BTreeMap::new();
+        let mut partial_withdrawals_inputs: TxInputToProjectedNft = BTreeMap::new();
         // 1) Check for projected NFT inputs
         let inputs = tx_body.inputs();
         let mut parsed_inputs: Vec<(&MultiEraTransactionInput, MultiEraTransactionOutput)> = inputs
@@ -202,7 +201,7 @@ async fn handle_projected_nft(
                 })
                 .unwrap_or_else(BTreeMap::new);
 
-            let used_projected_nfts = ONCE_USED_PROJECTED_NFTS
+            let used_projected_nfts = once_used_projected_nfts
                 .get_or_init(async_get_projected_nft_inputs)
                 .await
                 .as_ref()
@@ -307,10 +306,7 @@ async fn handle_projected_nft(
 
 fn find_lock_outputs_for_corresponding_partial_withdrawals(
     projected_nft_outputs: &mut [ProjectedNftData],
-    partial_withdrawals_inputs: &mut BTreeMap<
-        Vec<u8>,
-        BTreeMap<i64, Vec<ProjectedNftInputsQueryOutputResult>>,
-    >,
+    partial_withdrawals_inputs: &mut TxInputToProjectedNft,
 ) -> Result<(), DbErr> {
     for output_data in projected_nft_outputs.iter_mut() {
         if output_data.partial_withdrawn_from_input.is_some() {
@@ -373,10 +369,7 @@ fn find_lock_outputs_for_corresponding_partial_withdrawals(
 
 fn handle_partial_withdraw(
     output_projected_nft_data: &ProjectedNftData,
-    partial_withdrawals_inputs: &mut BTreeMap<
-        Vec<u8>,
-        BTreeMap<i64, Vec<ProjectedNftInputsQueryOutputResult>>,
-    >,
+    partial_withdrawals_inputs: &mut TxInputToProjectedNft,
 ) -> Result<(), DbErr> {
     let (withdrawn_from_input_hash, withdrawn_from_input_index) =
         if let Some((hash, index)) = &output_projected_nft_data.partial_withdrawn_from_input {
@@ -441,7 +434,7 @@ fn decode_script_hash(script_hash: String) -> Result<cml_chain::crypto::ScriptHa
 async fn get_projected_nft_inputs(
     db_tx: &DatabaseTransaction,
     multiera_used_inputs_to_outputs_map: &BTreeMap<Vec<u8>, BTreeMap<i64, OutputWithTxData>>,
-) -> Result<BTreeMap<Vec<u8>, BTreeMap<i64, Vec<ProjectedNftInputsQueryOutputResult>>>, DbErr> {
+) -> Result<TxInputToProjectedNft, DbErr> {
     let inputs_condition = multiera_used_inputs_to_outputs_map
         .iter()
         .flat_map(|(_input_tx_id, map)| {
@@ -479,8 +472,7 @@ async fn get_projected_nft_inputs(
         .all(db_tx)
         .await?;
 
-    let mut result: BTreeMap<Vec<u8>, BTreeMap<i64, Vec<ProjectedNftInputsQueryOutputResult>>> =
-        BTreeMap::new();
+    let mut result: TxInputToProjectedNft = BTreeMap::new();
     for nft in projected_nfts {
         result
             .entry(nft.tx_hash.clone())
@@ -496,12 +488,9 @@ fn handle_claims_and_partial_withdraws(
     sorted_inputs: &[&cml_multi_era::utils::MultiEraTransactionInput],
     cardano_transaction: &TransactionModel,
     redeemers: &BTreeMap<u64, Redeem>,
-    used_projected_nfts: &BTreeMap<
-        Vec<u8>,
-        BTreeMap<i64, Vec<ProjectedNftInputsQueryOutputResult>>,
-    >,
+    used_projected_nfts: &TxInputToProjectedNft,
     queued_projected_nft_records: &mut Vec<ProjectedNftActiveModel>,
-) -> BTreeMap<Vec<u8>, BTreeMap<i64, Vec<ProjectedNftInputsQueryOutputResult>>> {
+) -> TxInputToProjectedNft {
     let mut partially_withdrawn = BTreeMap::new();
 
     for (sorted_index, input) in sorted_inputs.iter().enumerate() {
@@ -639,10 +628,7 @@ struct ProjectedNftData {
 fn extract_operation_and_datum(
     output: &MultiEraTransactionOutput,
     output_model: entity::transaction_output::Model,
-    partial_withdrawals: &BTreeMap<
-        Vec<u8>,
-        BTreeMap<i64, Vec<ProjectedNftInputsQueryOutputResult>>,
-    >,
+    partial_withdrawals: &TxInputToProjectedNft,
 ) -> Result<ProjectedNftData, DbErr> {
     let output = match output {
         MultiEraTransactionOutput::Byron(_) => {
