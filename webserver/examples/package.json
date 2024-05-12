@@ -1,6 +1,6 @@
 {
   "name": "@dcspark/carp-examples",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "description": "Examples that leverage the Carp client",
   "scripts": {
     "eslint": "eslint tests",
