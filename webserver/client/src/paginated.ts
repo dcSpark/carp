@@ -11,6 +11,7 @@ import chunk from "lodash/chunk";
 import { ASSET_LIMIT } from "../../shared/constants";
 import merge from "lodash/merge";
 import type cml from "@dcspark/cardano-multiplatform-lib-nodejs";
+import type { ProjectedNftRangeResponse } from "../../shared/models/ProjectedNftRange";
 
 /**
  * If you don't mind using axios,
@@ -33,7 +34,8 @@ export async function paginateQuery<T extends Pagination, Response>(
       ...nextRequest,
       after: pageFromResponse(currentPage[currentPage.length - 1]),
     };
-  } while (currentPage.length === 0);
+  // TODO: This could be more efficient if we know the max page size for each query
+  } while (currentPage.length !== 0);
 
   return result;
 }
@@ -63,6 +65,33 @@ export async function paginatedTransactionHistory(
         : undefined
   );
   return { transactions: result };
+}
+
+export async function paginatedProjectedNft(
+  urlBase: string,
+  initialRequest: Omit<
+    EndpointTypes[Routes.projectedNftEventsRange]["input"],
+    "after"
+  >
+): Promise<EndpointTypes[Routes.projectedNftEventsRange]["response"]> {
+  const result = await paginateQuery<
+    EndpointTypes[Routes.projectedNftEventsRange]["input"],
+    ProjectedNftRangeResponse[number]
+  >(
+    initialRequest,
+    async (request) =>
+      (
+        await query(urlBase, Routes.projectedNftEventsRange, request)
+      ),
+    (resp) =>
+      resp != null
+        ? {
+            block: resp.block,
+            tx: resp.txId,
+          }
+        : undefined
+  );
+  return result;
 }
 
 function pairsToAssetMap(pairs: NativeAsset[]): PolicyIdAssetMapType {
