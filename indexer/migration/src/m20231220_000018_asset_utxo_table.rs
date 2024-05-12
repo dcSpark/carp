@@ -5,6 +5,9 @@ pub struct Migration;
 
 impl MigrationName for Migration {
     fn name(&self) -> &str {
+        // NOTE: this is wrong - it shouldn't end with `.rs`
+        //       but fixing this would break existing DBs since the migration name would no longer match
+        //       so since it doesn't harm anything, we just leave it as-is
         "m20231220_000018_asset_utxos.rs"
     }
 }

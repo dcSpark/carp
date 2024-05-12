@@ -117,7 +117,7 @@ pub async fn insert_addresses(
     Ok(result_map)
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct OutputWithTxData {
     pub model: TransactionOutputModel,
     pub tx_hash: Vec<u8>,

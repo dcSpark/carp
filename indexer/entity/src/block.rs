@@ -28,7 +28,7 @@ pub enum Relation {
 
 impl ActiveModelBehavior for ActiveModel {}
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub enum EraValue {
     Byron,
     Shelley,
