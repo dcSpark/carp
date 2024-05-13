@@ -1,15 +1,16 @@
 FROM rust:1.73 AS x-builder
 
-WORKDIR /indexer
+WORKDIR /app
 
-COPY ./indexer ./
+COPY ./Cargo.* ./
+COPY ./indexer ./indexer
 
 RUN cargo build --release -p carp -p migration
 
 WORKDIR /ops
 
-RUN cp /indexer/target/release/carp .
-RUN cp /indexer/target/release/migration .
+RUN cp /app/target/release/carp .
+RUN cp /app/target/release/migration .
 
 COPY ./indexer/genesis ./genesis
 COPY ./indexer/execution_plans ./execution_plans
