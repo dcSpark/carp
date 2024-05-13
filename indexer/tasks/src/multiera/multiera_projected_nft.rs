@@ -342,7 +342,7 @@ fn find_lock_outputs_for_corresponding_partial_withdrawals(
 
                 if withdrawal_assets == nft_data_assets {
                     withdrawal_input_to_remove = Some((input_hash.clone(), *input_index));
-                    output_data.previous_utxo_tx_hash = input_hash.clone();
+                    output_data.previous_utxo_tx_hash.clone_from(input_hash);
                     output_data.previous_utxo_tx_output_index = Some(*input_index);
                     break;
                 }
