@@ -1,8 +1,8 @@
 import { expect } from "chai";
-import { Errors } from "@dcspark/carp-client/shared/errors";
-import { Routes } from "@dcspark/carp-client/shared/routes";
+import { Errors } from "@dcspark/carp-client";
+import { Routes } from "@dcspark/carp-client";
 import { StatusCodes } from "http-status-codes";
-import { query, getErrorResponse } from "@dcspark/carp-client/client/src/index";
+import { query, getErrorResponse } from "@dcspark/carp-client";
 
 const urlBase = "http://localhost:3000";
 

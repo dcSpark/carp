@@ -1,6 +1,6 @@
 import { expect } from "chai";
-import { Routes } from "@dcspark/carp-client/shared/routes";
-import { query } from "@dcspark/carp-client/client/src/index";
+import { Routes } from "@dcspark/carp-client";
+import { query } from "@dcspark/carp-client";
 import cml from "@dcspark/cardano-multiplatform-lib-nodejs";
 import merge from "lodash/merge";
 

@@ -1,12 +1,12 @@
-import { Routes } from "@dcspark/carp-client/shared/routes";
+import { Routes } from "@dcspark/carp-client";
 import {
   nftCborToJson,
   paginatedMetadataNft,
   paginatedTransactionHistory,
-} from "@dcspark/carp-client/client/src/paginated";
-import { query } from "@dcspark/carp-client/client/src/index";
+} from "@dcspark/carp-client";
+import { query } from "@dcspark/carp-client";
 import cml from "@dcspark/cardano-multiplatform-lib-nodejs";
-import type { TransactionHistoryResponse } from "@dcspark/carp-client/shared/models/TransactionHistory";
+import type { TransactionHistoryResponse } from "@dcspark/carp-client";
 
 const urlBase = "http://localhost:3000";
 
