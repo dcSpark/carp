@@ -9,9 +9,9 @@ strip = true
 
 [dependencies]
 # [core]
-dcspark-core = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "05ab02e00dec7c204b26ed4b774c3ecd9944d2e7" }
-dcspark-blockchain-source = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "05ab02e00dec7c204b26ed4b774c3ecd9944d2e7" }
-multiverse = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "05ab02e00dec7c204b26ed4b774c3ecd9944d2e7" }
+dcspark-core = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "b891d8757b598db2fc8013ba76414739e8ab1678" }
+dcspark-blockchain-source = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "b891d8757b598db2fc8013ba76414739e8ab1678" }
+multiverse = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "b891d8757b598db2fc8013ba76414739e8ab1678" }
 
 # [local]
 entity = { path = "entity" }
