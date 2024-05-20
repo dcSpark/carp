@@ -1088,7 +1088,7 @@ checksum = "7e962a19be5cfc3f3bf6dd8f61eb50107f356ad6270fbb3ed41476571db78be5"
 [[package]]
 name = "dcspark-blockchain-source"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/dcspark-core.git?rev=05ab02e00dec7c204b26ed4b774c3ecd9944d2e7#05ab02e00dec7c204b26ed4b774c3ecd9944d2e7"
+source = "git+https://github.com/dcSpark/dcspark-core.git?rev=b891d8757b598db2fc8013ba76414739e8ab1678#b891d8757b598db2fc8013ba76414739e8ab1678"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1113,7 +1113,7 @@ dependencies = [
 [[package]]
 name = "dcspark-core"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/dcspark-core.git?rev=05ab02e00dec7c204b26ed4b774c3ecd9944d2e7#05ab02e00dec7c204b26ed4b774c3ecd9944d2e7"
+source = "git+https://github.com/dcSpark/dcspark-core.git?rev=b891d8757b598db2fc8013ba76414739e8ab1678#b891d8757b598db2fc8013ba76414739e8ab1678"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1130,7 +1130,7 @@ dependencies = [
 [[package]]
 name = "deps"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/dcspark-core.git?rev=05ab02e00dec7c204b26ed4b774c3ecd9944d2e7#05ab02e00dec7c204b26ed4b774c3ecd9944d2e7"
+source = "git+https://github.com/dcSpark/dcspark-core.git?rev=b891d8757b598db2fc8013ba76414739e8ab1678#b891d8757b598db2fc8013ba76414739e8ab1678"
 dependencies = [
  "bigdecimal",
  "serde_json",
@@ -2056,7 +2056,7 @@ checksum = "a785740271256c230f57462d3b83e52f998433a7062fc18f96d5999474a9f915"
 [[package]]
 name = "multiverse"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/dcspark-core.git?rev=05ab02e00dec7c204b26ed4b774c3ecd9944d2e7#05ab02e00dec7c204b26ed4b774c3ecd9944d2e7"
+source = "git+https://github.com/dcSpark/dcspark-core.git?rev=b891d8757b598db2fc8013ba76414739e8ab1678#b891d8757b598db2fc8013ba76414739e8ab1678"
 dependencies = [
  "dcspark-core",
  "deps",
