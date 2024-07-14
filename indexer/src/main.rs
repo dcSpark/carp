@@ -47,7 +47,7 @@ pub struct Cli {
 pub enum DbConfig {
     Postgres {
         #[serde(default = "get_env_db_url")]
-        database_url: String
+        database_url: String,
     },
 }
 
@@ -89,8 +89,7 @@ fn get_env_db_url() -> String {
 }
 
 fn get_env_network() -> String {
-    std::env::var("NETWORK")
-        .expect("env NETWORK not found and config did not specify sink.network")
+    std::env::var("NETWORK").expect("env NETWORK not found and config did not specify sink.network")
 }
 
 #[allow(unreachable_patterns)]
