@@ -45,14 +45,21 @@ pub struct Cli {
 #[serde(tag = "type", rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
 pub enum DbConfig {
-    Postgres { database_url: String },
+    Postgres {
+        #[serde(default = "get_env_db_url")]
+        database_url: String
+    },
 }
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
 pub enum SinkConfig {
-    Cardano { db: DbConfig, network: String },
+    Cardano {
+        db: DbConfig,
+        #[serde(default = "get_env_network")]
+        network: String,
+    },
 }
 
 pub enum Network {}
@@ -74,6 +81,16 @@ pub struct Config {
     /// Starting block hash. This will NOT rollback the database (use the rollback util for that)
     /// This is instead meant to make it easier to write database migrations
     start_block: Option<String>,
+}
+
+fn get_env_db_url() -> String {
+    std::env::var("DATABASE_URL")
+        .expect("env DATABASE_URL not found and config did not specify sink.db.database_url")
+}
+
+fn get_env_network() -> String {
+    std::env::var("NETWORK")
+        .expect("env NETWORK not found and config did not specify sink.network")
 }
 
 #[allow(unreachable_patterns)]
