@@ -28,7 +28,7 @@ WITH
             "Block".era as "era!",
             "Block".height as "height!",
             NULL :: bytea as metadata,
-            NULL :: json as input_addresses
+            NULL :: bytea[] as input_utxo
     FROM tx_relations
     INNER JOIN "Transaction" ON tx_relations.tx_id = "Transaction".id
     INNER JOIN "Block" ON "Transaction".block_id = "Block".id
@@ -45,11 +45,11 @@ WITH
                 "Block".era as "era!",
                 "Block".height as "height!",
                 "TransactionMetadata".payload AS metadata,
-                json_agg(DISTINCT "Address".PAYLOAD) input_addresses
+                array_agg("TransactionOutput".PAYLOAD) input_utxo
         FROM tx_relations
         INNER JOIN "Transaction" ON tx_relations.tx_id = "Transaction".id
         INNER JOIN "TransactionInput" ON "TransactionInput".tx_id = "Transaction".id
-        INNER JOIN "Address" ON "Address".id = "TransactionInput".address_id
+        INNER JOIN "TransactionOutput" ON "TransactionOutput".id = "TransactionInput".utxo_id
         LEFT JOIN "TransactionMetadata" ON "Transaction".id = "TransactionMetadata".tx_id
         INNER JOIN "Block" ON "Transaction".block_id = "Block".id
         GROUP BY "Transaction".id, "Block".id, "TransactionMetadata".id
