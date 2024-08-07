@@ -1,6 +1,6 @@
 {
   "name": "@dcspark/carp-client",
-  "version": "3.1.1",
+  "version": "3.2.1",
   "description": "Web client for the Carp server",
   "main": "client/src/index.js",
   "scripts": {
@@ -27,7 +27,7 @@
     "axios": "^0.27.2"
   },
   "devDependencies": {
-    "@dcspark/cardano-multiplatform-lib-nodejs": "5.2.0",
+    "@dcspark/cardano-multiplatform-lib-nodejs": "5.3.1",
     "@types/eslint": "8.4.6",
     "@types/eslint-plugin-prettier": "3.1.0",
     "@types/lodash": "^4.14.185",

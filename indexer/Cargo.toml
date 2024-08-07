@@ -1,6 +1,6 @@
 [package]
 name = "carp"
-version = "3.1.1"
+version = "3.2.1"
 edition = "2021"
 license = "MIT"
 
@@ -15,6 +15,7 @@ dcspark-blockchain-source = { git = "https://github.com/dcSpark/dcspark-core.git
 #dcspark-blockchain-source = { path = "../../dcspark-core/blockchain-source" }
 #multiverse = { path = "../../dcspark-core/multiverse" }
 multiverse = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "98c21b8d6c4f72a1c1813eaec3b9ccf1ff67106e" }
+
 # [local]
 entity = { path = "entity" }
 migration = { path = "migration" }
@@ -23,10 +24,10 @@ tasks = { path = "tasks" }
 # [indexer]
 anyhow = { version = "1.0.69" }
 async-trait = { version = "0.1.64" }
-cml-chain = { version = "5.2.0" }
-cml-core = { version = "5.2.0" }
-cml-crypto = { version = "5.2.0" }
-cml-multi-era = { version = "5.2.0" }
+cml-chain = { workspace = true }
+cml-core = { workspace = true }
+cml-crypto = { workspace = true }
+cml-multi-era = { workspace = true }
 clap = { version = "3.1", features = ["derive"] }
 ctrlc = { version = "3.2.4", features = ["termination"] }
 dotenv = { version = "0.15.0" }

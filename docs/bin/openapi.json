@@ -840,6 +840,132 @@
                     }
                 ]
             },
+            "DrepDelegationForAddressResponse": {
+                "properties": {
+                    "txId": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "drep": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "txId",
+                    "drep"
+                ],
+                "type": "object"
+            },
+            "GovernanceCredentialDidVoteResponse": {
+                "items": {
+                    "properties": {
+                        "payload": {
+                            "type": "string"
+                        },
+                        "txId": {
+                            "type": "string"
+                        },
+                        "actionId": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "payload",
+                        "txId",
+                        "actionId"
+                    ],
+                    "type": "object"
+                },
+                "type": "array"
+            },
+            "GovernanceCredentialDidVoteRequest": {
+                "allOf": [
+                    {
+                        "properties": {
+                            "actionIds": {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            "credential": {
+                                "$ref": "#/components/schemas/CredentialHex"
+                            }
+                        },
+                        "required": [
+                            "actionIds",
+                            "credential"
+                        ],
+                        "type": "object"
+                    },
+                    {
+                        "$ref": "#/components/schemas/UntilBlockPagination"
+                    }
+                ]
+            },
+            "GovernanceVotesForCredentialResponse": {
+                "items": {
+                    "properties": {
+                        "block": {
+                            "type": "string"
+                        },
+                        "txId": {
+                            "type": "string"
+                        },
+                        "votes": {
+                            "items": {
+                                "properties": {
+                                    "vote": {
+                                        "type": "string"
+                                    },
+                                    "govActionId": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "vote",
+                                    "govActionId"
+                                ],
+                                "type": "object"
+                            },
+                            "type": "array"
+                        }
+                    },
+                    "required": [
+                        "block",
+                        "txId",
+                        "votes"
+                    ],
+                    "type": "object"
+                },
+                "type": "array"
+            },
+            "GovernanceVotesForCredentialRequest": {
+                "allOf": [
+                    {
+                        "properties": {
+                            "limit": {
+                                "type": "number",
+                                "format": "double"
+                            },
+                            "credential": {
+                                "$ref": "#/components/schemas/CredentialHex"
+                            }
+                        },
+                        "required": [
+                            "credential"
+                        ],
+                        "type": "object"
+                    },
+                    {
+                        "$ref": "#/components/schemas/UntilBlockPagination"
+                    },
+                    {
+                        "$ref": "#/components/schemas/AfterBlockPagination"
+                    }
+                ]
+            },
             "Cip25Metadata": {
                 "type": "string",
                 "example": "a365636f6c6f72672330303030383065696d616765783a697066733a2f2f697066732f516d534b593167317a5375506b3536635869324b38524e766961526b44485633505a756a7474663755676b343379646e616d656a4265727279204e617679",
@@ -1405,7 +1531,7 @@
     },
     "info": {
         "title": "carp",
-        "version": "3.0.0",
+        "version": "3.2.1",
         "description": "API for the Postgres database generated by Carp",
         "license": {
             "name": "MIT"
@@ -1930,6 +2056,186 @@
                         "application/json": {
                             "schema": {
                                 "$ref": "#/components/schemas/DexSwapRequest"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/delegation/drep/address": {
+            "post": {
+                "operationId": "DrepDelegationForAddress",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DrepDelegationForAddressResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Returns the drep of the last delegation for this address.",
+                "security": [],
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DelegationForAddressRequest"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/governance/credential/votesByGovId": {
+            "post": {
+                "operationId": "GovernanceCredentialDidVote",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GovernanceCredentialDidVoteResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Gets votes cast for a set of governance action ids.",
+                "security": [],
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/GovernanceCredentialDidVoteRequest"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/governance/credential/votes": {
+            "post": {
+                "operationId": "GovernanceVotesForAddress",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GovernanceVotesForCredentialResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorShape"
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Returns votes cast by a credential. Sorted in descending order (newer first).",
+                "security": [],
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/GovernanceVotesForCredentialRequest"
                             }
                         }
                     }

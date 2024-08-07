@@ -1,5 +1,6 @@
 use cml_chain::certs::Credential;
 use cml_chain::transaction::DatumOption;
+use cml_chain::NonemptySetPlutusData;
 use cml_core::serialization::{Deserialize, Serialize, ToBytes};
 use cml_crypto::RawBytesEncoding;
 use cml_multi_era::utils::{MultiEraTransactionInput, MultiEraTransactionOutput};
@@ -57,7 +58,7 @@ pub fn get_asset_amount(
 
 pub fn get_plutus_datum_for_output(
     output: &cml_multi_era::utils::MultiEraTransactionOutput,
-    plutus_data: &[cml_chain::plutus::PlutusData],
+    plutus_data: &Option<NonemptySetPlutusData>,
 ) -> Option<cml_chain::plutus::PlutusData> {
     let output = match output {
         MultiEraTransactionOutput::Byron(_) => {
@@ -75,10 +76,12 @@ pub fn get_plutus_datum_for_output(
 
     match datum_option {
         DatumOption::Datum { datum, .. } => Some(datum),
-        DatumOption::Hash { datum_hash, .. } => plutus_data
-            .iter()
-            .find(|datum| datum.hash() == datum_hash)
-            .cloned(),
+        DatumOption::Hash { datum_hash, .. } => plutus_data.as_ref().and_then(|non_empty_set| {
+            non_empty_set
+                .iter()
+                .find(|datum| datum.hash() == datum_hash)
+                .cloned()
+        }),
     }
 }
 

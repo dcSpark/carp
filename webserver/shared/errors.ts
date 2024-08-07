@@ -107,6 +107,12 @@ export const Errors = {
     detailsGen: (details: { limit: number; found: number }) =>
       `Limit of ${details.limit}, found ${details.found}`,
   },
+  GovActionIdsLimitExceeded: {
+    code: ErrorCodes.AssetLimitExceeded,
+    prefix: "Exceeded request governance action ids limit.",
+    detailsGen: (details: { limit: number; found: number }) =>
+      `Limit of ${details.limit}, found ${details.found}`,
+  },
 } as const;
 
 export function genErrorMessage<T extends typeof Errors[keyof typeof Errors]>(

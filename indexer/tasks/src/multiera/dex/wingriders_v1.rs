@@ -1,4 +1,5 @@
 use cml_chain::byron::ByronTxOut;
+use cml_chain::plutus::LegacyRedeemer;
 use cml_core::serialization::{FromBytes, Serialize};
 use cml_crypto::RawBytesEncoding;
 use cml_multi_era::utils::MultiEraTransactionOutput;
@@ -36,7 +37,7 @@ impl Dex for WingRidersV1 {
         if let Some((output, datum)) = filter_outputs_and_datums_by_hash(
             &tx.outputs(),
             &[POOL_SCRIPT_HASH],
-            &tx_witness.plutus_datums.clone().unwrap_or_default(),
+            &tx_witness.plutus_datums,
         )
         .first()
         {
@@ -91,11 +92,32 @@ impl Dex for WingRidersV1 {
         if let Some((pool_output, _)) = filter_outputs_and_datums_by_hash(
             &tx.outputs(),
             &[POOL_SCRIPT_HASH],
-            &tx_witness.plutus_datums.clone().unwrap_or_default(),
+            &tx_witness.plutus_datums,
         )
         .first()
         {
             let redeemers = tx_witness.redeemers.clone().ok_or("No redeemers")?;
+
+            let redeemers = match redeemers {
+                cml_chain::plutus::Redeemers::ArrLegacyRedeemer {
+                    arr_legacy_redeemer,
+                    arr_legacy_redeemer_encoding: _,
+                } => arr_legacy_redeemer,
+                cml_chain::plutus::Redeemers::MapRedeemerKeyToRedeemerVal {
+                    map_redeemer_key_to_redeemer_val,
+                    map_redeemer_key_to_redeemer_val_encoding: _,
+                } => map_redeemer_key_to_redeemer_val
+                    .take()
+                    .into_iter()
+                    .map(|(key, val)| LegacyRedeemer {
+                        tag: key.tag,
+                        index: key.index,
+                        data: val.data,
+                        ex_units: val.ex_units,
+                        encodings: None,
+                    })
+                    .collect(),
+            };
 
             // Get pool input from redemeers
             let pool_input_redeemer = redeemers.first().ok_or("No redeemers")?;
@@ -138,11 +160,9 @@ impl Dex for WingRidersV1 {
                 let input = inputs.get(redeemer).ok_or("Failed to pair output")?.clone();
 
                 // get information about swap from pool plutus data
-                let parent_datum = get_plutus_datum_for_output(
-                    &inputs[parent],
-                    &tx_witness.plutus_datums.clone().unwrap_or_default(),
-                )
-                .unwrap();
+                let parent_datum =
+                    get_plutus_datum_for_output(&inputs[parent], &tx_witness.plutus_datums)
+                        .unwrap();
 
                 let parent_datum = datum_to_json(&parent_datum)?;
 
@@ -158,11 +178,8 @@ impl Dex for WingRidersV1 {
                 let asset2 = build_asset(parse_asset_item(1, 0)?, parse_asset_item(1, 1)?);
 
                 // get actual plutus datum
-                let input_datum = get_plutus_datum_for_output(
-                    &input,
-                    &tx_witness.plutus_datums.clone().unwrap_or_default(),
-                )
-                .unwrap();
+                let input_datum =
+                    get_plutus_datum_for_output(&input, &tx_witness.plutus_datums).unwrap();
                 let input_datum = datum_to_json(&input_datum)?;
                 // identify operation: 0 = swap
                 let operation = input_datum["fields"][1]["constructor"]

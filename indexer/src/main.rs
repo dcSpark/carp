@@ -45,7 +45,10 @@ pub struct Cli {
 #[serde(tag = "type", rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
 pub enum DbConfig {
-    Postgres { database_url: String },
+    Postgres {
+        #[serde(default = "get_env_db_url")]
+        database_url: String,
+    },
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -54,6 +57,7 @@ pub enum DbConfig {
 pub enum SinkConfig {
     Cardano {
         db: DbConfig,
+        #[serde(default = "get_env_network")]
         network: String,
         /// Custom configuration. If not present it will be inferred from the network name
         custom_config: Option<dcspark_blockchain_source::cardano::NetworkConfiguration>,
@@ -82,6 +86,15 @@ pub struct Config {
     start_block: Option<String>,
 }
 
+fn get_env_db_url() -> String {
+    std::env::var("DATABASE_URL")
+        .expect("env DATABASE_URL not found and config did not specify sink.db.database_url")
+}
+
+fn get_env_network() -> String {
+    std::env::var("NETWORK").expect("env NETWORK not found and config did not specify sink.network")
+}
+
 #[allow(unreachable_patterns)]
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -108,7 +121,6 @@ async fn main() -> anyhow::Result<()> {
         .with_target("carp", default_trace)
         .with_target("cardano-net", tracing::Level::INFO)
         .with_target("cardano-sdk", tracing::Level::INFO)
-        .with_target("dcspark-blockchain-source", tracing::Level::INFO)
         .with_default(tracing::Level::INFO);
 
     tracing_subscriber::registry()

@@ -1,6 +1,6 @@
 {
   "name": "@dcspark/carp-examples",
-  "version": "3.0.0",
+  "version": "3.2.1",
   "description": "Examples that leverage the Carp client",
   "scripts": {
     "eslint": "eslint tests",
@@ -22,7 +22,7 @@
     "@dcspark/carp-client": "../client/dist"
   },
   "devDependencies": {
-    "@dcspark/cardano-multiplatform-lib-nodejs": "5.2.0",
+    "@dcspark/cardano-multiplatform-lib-nodejs": "5.3.1",
     "@dcspark/cip5-js": "1.0.0",
     "@types/body-parser": "1.19.2",
     "@types/chai": "4.3.3",

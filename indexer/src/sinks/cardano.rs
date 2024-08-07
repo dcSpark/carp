@@ -293,7 +293,7 @@ fn to_era_value(x: &MultiEraBlock) -> EraValue {
         MultiEraBlock::Mary(_) => EraValue::Mary,
         MultiEraBlock::Alonzo(_) => EraValue::Alonzo,
         MultiEraBlock::Babbage(_) => EraValue::Babbage,
-        _ => unreachable!("all known eras are handled"),
+        MultiEraBlock::Conway(_) => EraValue::Conway,
     }
 }
 

@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use cml_chain::certs::Credential;
+use cml_chain::address::StakeCredentialEncoding;
+use cml_chain::certs::{Credential, StakeCredential};
 use cml_chain::{
     address::{BaseAddress, EnterpriseAddress, PointerAddress, RewardAddress},
     byron::ByronAddress,
@@ -163,6 +164,15 @@ fn queue_certificate(
                 TxCredentialRelationValue::StakeRegistration,
             );
         }
+        MultiEraCertificate::RegCert(registration) => {
+            let credential = registration.stake_credential.to_cbor_bytes();
+
+            vkey_relation_map.add_relation(
+                tx_id,
+                &credential,
+                TxCredentialRelationValue::StakeRegistration,
+            );
+        }
         MultiEraCertificate::StakeDeregistration(deregistration) => {
             let credential = deregistration.stake_credential.to_cbor_bytes();
 
@@ -172,8 +182,18 @@ fn queue_certificate(
                 TxCredentialRelationValue::StakeDeregistration,
             );
         }
+        MultiEraCertificate::UnregCert(deregistration) => {
+            let credential = deregistration.stake_credential.to_cbor_bytes();
+
+            vkey_relation_map.add_relation(
+                tx_id,
+                &credential,
+                TxCredentialRelationValue::StakeDeregistration,
+            );
+        }
         MultiEraCertificate::PoolRegistration(registration) => {
-            let operator_credential = registration.pool_params.operator.to_raw_bytes().to_vec();
+            let operator_credential =
+                StakeCredential::new_pub_key(registration.pool_params.operator).to_cbor_bytes();
 
             vkey_relation_map.add_relation(
                 tx_id,
@@ -195,7 +215,7 @@ fn queue_certificate(
             );
 
             for &owner in registration.pool_params.pool_owners.iter() {
-                let owner_credential = owner.to_raw_bytes().to_vec();
+                let owner_credential = StakeCredential::new_pub_key(owner).to_cbor_bytes();
 
                 vkey_relation_map.add_relation(
                     tx_id,
@@ -205,7 +225,7 @@ fn queue_certificate(
             }
         }
         MultiEraCertificate::PoolRetirement(retirement) => {
-            let operator_credential = retirement.pool.to_raw_bytes().to_vec();
+            let operator_credential = StakeCredential::new_pub_key(retirement.pool).to_cbor_bytes();
             vkey_relation_map.add_relation(
                 tx_id,
                 &operator_credential,
@@ -232,18 +252,90 @@ fn queue_certificate(
                 }
             }
         }
-        MultiEraCertificate::RegCert(_) => {}
-        MultiEraCertificate::UnregCert(_) => {}
-        MultiEraCertificate::VoteDelegCert(_) => {}
-        MultiEraCertificate::StakeVoteDelegCert(_) => {}
-        MultiEraCertificate::StakeRegDelegCert(_) => {}
-        MultiEraCertificate::VoteRegDelegCert(_) => {}
-        MultiEraCertificate::StakeVoteRegDelegCert(_) => {}
+        MultiEraCertificate::VoteDelegCert(cert) => {
+            let voter_credential = cert.stake_credential.to_cbor_bytes();
+
+            vkey_relation_map.add_relation(
+                tx_id,
+                &voter_credential,
+                TxCredentialRelationValue::DrepStakeDelegation,
+            );
+
+            let drep_cred = drep_to_credential(&cert.d_rep);
+
+            if let Some(drep_cred) = drep_cred {
+                vkey_relation_map.add_relation(
+                    tx_id,
+                    &drep_cred.to_cbor_bytes(),
+                    TxCredentialRelationValue::DrepStakeDelegationTarget,
+                );
+            }
+        }
+        MultiEraCertificate::StakeVoteDelegCert(cert) => {
+            let credential = cert.stake_credential.to_cbor_bytes();
+
+            delegate_to_pool(vkey_relation_map, tx_id, &credential, cert.pool);
+            delegate_to_drep(vkey_relation_map, tx_id, &credential, &cert.d_rep);
+        }
+        MultiEraCertificate::StakeRegDelegCert(cert) => {
+            let credential = cert.stake_credential.to_cbor_bytes();
+
+            vkey_relation_map.add_relation(
+                tx_id,
+                &credential,
+                TxCredentialRelationValue::StakeRegistration,
+            );
+
+            delegate_to_pool(vkey_relation_map, tx_id, &credential, cert.pool);
+        }
+        MultiEraCertificate::VoteRegDelegCert(cert) => {
+            let credential = cert.stake_credential.to_cbor_bytes();
+
+            vkey_relation_map.add_relation(
+                tx_id,
+                &credential,
+                TxCredentialRelationValue::StakeRegistration,
+            );
+
+            delegate_to_drep(vkey_relation_map, tx_id, &credential, &cert.d_rep);
+        }
+        MultiEraCertificate::StakeVoteRegDelegCert(cert) => {
+            let credential = cert.stake_credential.to_cbor_bytes();
+            vkey_relation_map.add_relation(
+                tx_id,
+                &credential,
+                TxCredentialRelationValue::StakeRegistration,
+            );
+
+            delegate_to_pool(vkey_relation_map, tx_id, &credential, cert.pool);
+            delegate_to_drep(vkey_relation_map, tx_id, &credential, &cert.d_rep);
+        }
         MultiEraCertificate::AuthCommitteeHotCert(_) => {}
         MultiEraCertificate::ResignCommitteeColdCert(_) => {}
-        MultiEraCertificate::RegDrepCert(_) => {}
-        MultiEraCertificate::UnregDrepCert(_) => {}
-        MultiEraCertificate::UpdateDrepCert(_) => {}
+        MultiEraCertificate::RegDrepCert(cert) => {
+            let operator_credential = cert.drep_credential.to_cbor_bytes();
+            vkey_relation_map.add_relation(
+                tx_id,
+                &operator_credential,
+                TxCredentialRelationValue::DrepOperation,
+            );
+        }
+        MultiEraCertificate::UnregDrepCert(cert) => {
+            let operator_credential = cert.drep_credential.to_cbor_bytes();
+            vkey_relation_map.add_relation(
+                tx_id,
+                &operator_credential,
+                TxCredentialRelationValue::DrepOperation,
+            );
+        }
+        MultiEraCertificate::UpdateDrepCert(cert) => {
+            let operator_credential = cert.drep_credential.to_cbor_bytes();
+            vkey_relation_map.add_relation(
+                tx_id,
+                &operator_credential,
+                TxCredentialRelationValue::DrepOperation,
+            );
+        }
     };
 }
 
@@ -367,4 +459,59 @@ fn queue_address_credential(
         stake_credential: credential.to_raw_bytes().to_vec(),
         address_relation,
     });
+}
+
+// AlwaysAbstain and AlwaysNoConfidence are ignored here because we only can add
+// relations to actual credentials
+pub fn drep_to_credential(d_rep: &cml_chain::certs::DRep) -> Option<Credential> {
+    match d_rep {
+        cml_chain::certs::DRep::Key { pool, .. } => Some(StakeCredential::new_pub_key(*pool)),
+        cml_chain::certs::DRep::Script { script_hash, .. } => {
+            Some(StakeCredential::new_script(*script_hash))
+        }
+        cml_chain::certs::DRep::AlwaysAbstain { .. } => None,
+        cml_chain::certs::DRep::AlwaysNoConfidence { .. } => None,
+    }
+}
+
+fn delegate_to_drep(
+    vkey_relation_map: &mut RelationMap,
+    tx_id: i64,
+    credential: &[u8],
+    d_rep: &cml_chain::certs::DRep,
+) {
+    vkey_relation_map.add_relation(
+        tx_id,
+        credential,
+        TxCredentialRelationValue::DrepStakeDelegation,
+    );
+
+    let drep_cred = drep_to_credential(d_rep);
+
+    if let Some(drep_cred) = drep_cred {
+        vkey_relation_map.add_relation(
+            tx_id,
+            &drep_cred.to_cbor_bytes(),
+            TxCredentialRelationValue::DrepStakeDelegationTarget,
+        );
+    }
+}
+
+fn delegate_to_pool(
+    vkey_relation_map: &mut RelationMap,
+    tx_id: i64,
+    credential: &[u8],
+    pool: cml_crypto::Ed25519KeyHash,
+) {
+    vkey_relation_map.add_relation(
+        tx_id,
+        credential,
+        TxCredentialRelationValue::StakeDelegation,
+    );
+
+    vkey_relation_map.add_relation(
+        tx_id,
+        &StakeCredential::new_pub_key(pool).to_cbor_bytes(),
+        TxCredentialRelationValue::DelegationTarget,
+    );
 }

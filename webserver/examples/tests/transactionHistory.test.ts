@@ -1,13 +1,13 @@
 import { expect } from "chai";
-import { Errors } from "@dcspark/carp-client/shared/errors";
-import { Routes } from "@dcspark/carp-client/shared/routes";
+import { Errors } from "@dcspark/carp-client";
+import { Routes } from "@dcspark/carp-client";
 import { StatusCodes } from "http-status-codes";
 import sortBy from "lodash/sortBy";
 import { bech32 } from "bech32";
 import Cip5 from "@dcspark/cip5-js";
-import { RelationFilterType } from "@dcspark/carp-client/shared/models/common";
-import { query, getErrorResponse } from "@dcspark/carp-client/client/src/index";
-import { ADDRESS_LIMIT } from "@dcspark/carp-client/shared/constants";
+import { RelationFilterType } from "@dcspark/carp-client";
+import { query, getErrorResponse } from "@dcspark/carp-client";
+import { ADDRESS_LIMIT } from "@dcspark/carp-client";
 
 const urlBase = "http://localhost:3000";
 

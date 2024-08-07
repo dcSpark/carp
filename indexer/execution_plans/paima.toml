@@ -69,4 +69,4 @@ readonly = false
 [MultieraAssetUtxos]
 
 [MultiEraProjectedNftTask]
-address = "703ec99926211daafe291951b778d4da7736a8b0da2aeb92305b511a72" # preprod address
+script_hash = "3ec99926211daafe291951b778d4da7736a8b0da2aeb92305b511a72"

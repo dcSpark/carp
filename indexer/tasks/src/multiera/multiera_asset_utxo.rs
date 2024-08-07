@@ -72,11 +72,14 @@ async fn handle(
     for (tx_body, cardano_transaction) in block.1.transaction_bodies().iter().zip(multiera_txs) {
         let collateral_inputs = tx_body
             .collateral_inputs()
-            .cloned()
-            .unwrap_or_default()
-            .into_iter()
-            .map(MultiEraTransactionInput::Shelley)
-            .collect::<Vec<_>>();
+            .map(|collateral_inputs| {
+                collateral_inputs
+                    .iter()
+                    .cloned()
+                    .map(MultiEraTransactionInput::Shelley)
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_else(std::vec::Vec::new);
 
         for input in tx_body.inputs().iter().chain(collateral_inputs.iter()) {
             let utxo = multiera_used_inputs_to_outputs_map

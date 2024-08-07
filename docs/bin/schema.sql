@@ -209,6 +209,38 @@ ALTER SEQUENCE public."Dex_id_seq" OWNED BY public."Dex".id;
 
 
 --
+-- Name: GovernanceVote; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public."GovernanceVote" (
+    id bigint NOT NULL,
+    tx_id bigint NOT NULL,
+    voter bytea,
+    gov_action_id bytea,
+    vote bytea
+);
+
+
+--
+-- Name: GovernanceVote_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public."GovernanceVote_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: GovernanceVote_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public."GovernanceVote_id_seq" OWNED BY public."GovernanceVote".id;
+
+
+--
 -- Name: NativeAsset; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -398,6 +430,38 @@ CREATE SEQUENCE public."StakeDelegationCredentialRelation_id_seq"
 --
 
 ALTER SEQUENCE public."StakeDelegationCredentialRelation_id_seq" OWNED BY public."StakeDelegationCredentialRelation".id;
+
+
+--
+-- Name: StakeDelegationDrepCredentialRelation; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public."StakeDelegationDrepCredentialRelation" (
+    id bigint NOT NULL,
+    stake_credential bigint NOT NULL,
+    tx_id bigint NOT NULL,
+    drep_credential bytea,
+    previous_drep_credential bytea
+);
+
+
+--
+-- Name: StakeDelegationDrepCredentialRelation_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public."StakeDelegationDrepCredentialRelation_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: StakeDelegationDrepCredentialRelation_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public."StakeDelegationDrepCredentialRelation_id_seq" OWNED BY public."StakeDelegationDrepCredentialRelation".id;
 
 
 --
@@ -617,6 +681,13 @@ ALTER TABLE ONLY public."Dex" ALTER COLUMN id SET DEFAULT nextval('public."Dex_i
 
 
 --
+-- Name: GovernanceVote id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."GovernanceVote" ALTER COLUMN id SET DEFAULT nextval('public."GovernanceVote_id_seq"'::regclass);
+
+
+--
 -- Name: NativeAsset id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -656,6 +727,13 @@ ALTER TABLE ONLY public."StakeCredential" ALTER COLUMN id SET DEFAULT nextval('p
 --
 
 ALTER TABLE ONLY public."StakeDelegationCredentialRelation" ALTER COLUMN id SET DEFAULT nextval('public."StakeDelegationCredentialRelation_id_seq"'::regclass);
+
+
+--
+-- Name: StakeDelegationDrepCredentialRelation id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."StakeDelegationDrepCredentialRelation" ALTER COLUMN id SET DEFAULT nextval('public."StakeDelegationDrepCredentialRelation_id_seq"'::regclass);
 
 
 --
@@ -854,6 +932,14 @@ ALTER TABLE ONLY public."AssetUtxo"
 
 
 --
+-- Name: GovernanceVote governance_vote-pk; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."GovernanceVote"
+    ADD CONSTRAINT "governance_vote-pk" PRIMARY KEY (id);
+
+
+--
 -- Name: ProjectedNFT projected_nft-pk; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -875,6 +961,14 @@ ALTER TABLE ONLY public.seaql_migrations
 
 ALTER TABLE ONLY public."StakeDelegationCredentialRelation"
     ADD CONSTRAINT "stake_delegation_credential-pk" PRIMARY KEY (id);
+
+
+--
+-- Name: StakeDelegationDrepCredentialRelation stake_delegation_drep_credential-pk; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."StakeDelegationDrepCredentialRelation"
+    ADD CONSTRAINT "stake_delegation_drep_credential-pk" PRIMARY KEY (id);
 
 
 --
@@ -939,6 +1033,13 @@ CREATE INDEX "index-dex-address-native_asset1-native_asset2-transaction" ON publ
 --
 
 CREATE INDEX "index-dex-operation" ON public."Dex" USING btree (operation);
+
+
+--
+-- Name: index-governance_vote-voter; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "index-governance_vote-voter" ON public."GovernanceVote" USING btree (voter);
 
 
 --
@@ -1009,6 +1110,13 @@ CREATE INDEX "index-stake_credential-transaction" ON public."StakeCredential" US
 --
 
 CREATE INDEX "index-stake_delegation_credential-stake_credential" ON public."StakeDelegationCredentialRelation" USING btree (stake_credential);
+
+
+--
+-- Name: index-stake_delegation_credential_drep-stake_credential; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "index-stake_delegation_credential_drep-stake_credential" ON public."StakeDelegationDrepCredentialRelation" USING btree (stake_credential);
 
 
 --
@@ -1194,6 +1302,14 @@ ALTER TABLE ONLY public."Dex"
 
 
 --
+-- Name: GovernanceVote fk-governance_vote-tx_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."GovernanceVote"
+    ADD CONSTRAINT "fk-governance_vote-tx_id" FOREIGN KEY (tx_id) REFERENCES public."Transaction"(id) ON DELETE CASCADE;
+
+
+--
 -- Name: TransactionMetadata fk-metadata-tx_id; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1263,6 +1379,22 @@ ALTER TABLE ONLY public."StakeDelegationCredentialRelation"
 
 ALTER TABLE ONLY public."StakeDelegationCredentialRelation"
     ADD CONSTRAINT "fk-stake_delegation-tx_id" FOREIGN KEY (tx_id) REFERENCES public."Transaction"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: StakeDelegationDrepCredentialRelation fk-stake_delegation_drep-credential_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."StakeDelegationDrepCredentialRelation"
+    ADD CONSTRAINT "fk-stake_delegation_drep-credential_id" FOREIGN KEY (stake_credential) REFERENCES public."StakeCredential"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: StakeDelegationDrepCredentialRelation fk-stake_delegation_drep-tx_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."StakeDelegationDrepCredentialRelation"
+    ADD CONSTRAINT "fk-stake_delegation_drep-tx_id" FOREIGN KEY (tx_id) REFERENCES public."Transaction"(id) ON DELETE CASCADE;
 
 
 --
@@ -1351,6 +1483,13 @@ ALTER TABLE ONLY public."TxCredentialRelation"
 
 ALTER TABLE ONLY public."TxCredentialRelation"
     ADD CONSTRAINT "fk-tx_credential-tx_id" FOREIGN KEY (tx_id) REFERENCES public."Transaction"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: SCHEMA public; Type: ACL; Schema: -; Owner: -
+--
+
+GRANT ALL ON SCHEMA public TO carp;
 
 
 --

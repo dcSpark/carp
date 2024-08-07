@@ -34,7 +34,7 @@ carp_task! {
   execute |previous_data, task| handle_txs(
       task.db_tx,
       task.block,
-      &previous_data.genesis_block.as_ref().unwrap(),
+      previous_data.genesis_block.as_ref().unwrap(),
       task.config.include_payload
   );
   merge_result |previous_data, result| {

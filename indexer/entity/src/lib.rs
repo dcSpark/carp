@@ -13,9 +13,12 @@ pub mod asset_mint;
 pub mod asset_utxos;
 pub mod cip25_entry;
 pub mod dex_swap;
+pub mod governance_votes;
 pub mod native_asset;
 pub mod plutus_data;
 pub mod plutus_data_hash;
 pub mod projected_nft;
+// todo: rename to pool?
 pub mod stake_delegation;
+pub mod stake_delegation_drep;
 pub mod transaction_metadata;

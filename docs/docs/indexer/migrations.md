@@ -19,7 +19,7 @@ Note: this is a destructive action as it will drop all blocks until a given poin
 - `cargo rollback epoch 200`
 - `cargo rollback height 1000`
 
-Note: these ranges are inclusive. Ex: `epoch 200` means you rollback TO era 200, discarding any epoch afterwards.
+Note: these ranges are keep everything up to and including the value specified. Ex: `epoch 200` means you rollback TO era 200 (discarding epoch 201 and above).
 
 # Non-destructive migrations
 

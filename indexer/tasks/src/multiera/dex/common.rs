@@ -9,6 +9,7 @@ use cml_chain::json::plutus_datums::{
     decode_plutus_datum_to_json_str, decode_plutus_datum_to_json_value,
     CardanoNodePlutusDatumSchema,
 };
+use cml_chain::NonemptySetPlutusData;
 use entity::dex_swap::Operation;
 use entity::sea_orm::{DatabaseTransaction, Set};
 use std::collections::{BTreeMap, BTreeSet};
@@ -18,7 +19,7 @@ use std::collections::{BTreeMap, BTreeSet};
 pub fn filter_outputs_and_datums_by_hash(
     outputs: &[cml_multi_era::utils::MultiEraTransactionOutput],
     payment_hashes: &[&str],
-    plutus_data: &[cml_chain::plutus::PlutusData],
+    plutus_data: &Option<NonemptySetPlutusData>,
 ) -> Vec<(
     cml_multi_era::utils::MultiEraTransactionOutput,
     cml_chain::plutus::PlutusData,
@@ -41,7 +42,7 @@ pub fn filter_outputs_and_datums_by_hash(
 pub fn filter_outputs_and_datums_by_address(
     outputs: &[cml_multi_era::utils::MultiEraTransactionOutput],
     addresses: &[&str],
-    plutus_data: &[cml_chain::plutus::PlutusData],
+    plutus_data: &Option<NonemptySetPlutusData>,
 ) -> Vec<(
     cml_multi_era::utils::MultiEraTransactionOutput,
     cml_chain::plutus::PlutusData,

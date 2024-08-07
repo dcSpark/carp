@@ -27,6 +27,11 @@ pub use super::dex_swap::{
     ActiveModel as DexSwapActiveModel, Column as DexSwapColumn, Entity as DexSwap,
     Model as DexSwapModel, PrimaryKey as DexSwapPrimaryKey, Relation as DexSwapRelation,
 };
+pub use super::governance_votes::{
+    ActiveModel as GovernanceVoteActiveModel, Column as GovernanceVoteColumn,
+    Entity as GovernanceVote, Model as GovernanceVoteModel, PrimaryKey as GovernanceVotePrimaryKey,
+    Relation as GovernanceVoteRelation,
+};
 pub use super::native_asset::{
     ActiveModel as NativeAssetActiveModel, Column as NativeAssetColumn, Entity as NativeAsset,
     Model as NativeAssetModel, PrimaryKey as NativeAssetPrimaryKey,

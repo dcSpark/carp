@@ -33,7 +33,7 @@ impl Dex for SundaeSwapV1 {
         if let Some((output, datum)) = filter_outputs_and_datums_by_hash(
             &tx.outputs(),
             &[POOL_SCRIPT_HASH],
-            &tx_witness.plutus_datums.clone().unwrap_or_default(),
+            &tx_witness.plutus_datums,
         )
         .first()
         {
@@ -77,7 +77,7 @@ impl Dex for SundaeSwapV1 {
         if let Some((main_output, main_datum)) = filter_outputs_and_datums_by_hash(
             &tx.outputs(),
             &[POOL_SCRIPT_HASH],
-            &tx_witness.plutus_datums.clone().unwrap_or_default(),
+            &tx_witness.plutus_datums,
         )
         .first()
         {
@@ -109,7 +109,7 @@ impl Dex for SundaeSwapV1 {
             for (input, input_datum) in filter_outputs_and_datums_by_hash(
                 &inputs,
                 &[REQUEST_SCRIPT_HASH],
-                &tx_witness.plutus_datums.clone().unwrap_or_default(),
+                &tx_witness.plutus_datums.clone(),
             ) {
                 let input_datum = datum_to_json(&input_datum)?;
 

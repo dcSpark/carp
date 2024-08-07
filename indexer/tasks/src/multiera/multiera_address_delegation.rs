@@ -62,9 +62,19 @@ async fn handle(
                     MultiEraCertificate::StakeDelegation(delegation) => {
                         (delegation.stake_credential.clone(), Some(delegation.pool))
                     }
+                    MultiEraCertificate::StakeVoteDelegCert(cert) => {
+                        (cert.stake_credential.clone(), Some(cert.pool))
+                    }
+                    MultiEraCertificate::StakeRegDelegCert(cert) => {
+                        (cert.stake_credential.clone(), Some(cert.pool))
+                    }
+                    MultiEraCertificate::StakeVoteRegDelegCert(cert) => {
+                        (cert.stake_credential.clone(), Some(cert.pool))
+                    }
                     MultiEraCertificate::StakeDeregistration(deregistration) => {
                         (deregistration.stake_credential.clone(), None)
                     }
+                    MultiEraCertificate::UnregCert(unreg) => (unreg.stake_credential.clone(), None),
                     _ => continue,
                 };
 

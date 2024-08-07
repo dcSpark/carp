@@ -384,10 +384,12 @@ checksum = "d86b93f97252c47b41663388e6d155714a9d0c398b99f1005cbc5f978b29f445"
 
 [[package]]
 name = "bigdecimal"
-version = "0.3.1"
+version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a6773ddc0eafc0e509fb60e48dff7f450f8e674a0686ae8605e8d9901bd5eefa"
+checksum = "9324c8014cd04590682b34f1e9448d38f0674d0f7b2dc553331016ef0e4e9ebc"
 dependencies = [
+ "autocfg",
+ "libm",
  "num-bigint 0.4.4",
  "num-integer",
  "num-traits",
@@ -579,14 +581,14 @@ dependencies = [
 
 [[package]]
 name = "carp"
-version = "3.1.1"
+version = "3.2.1"
 dependencies = [
  "anyhow",
  "async-trait",
  "clap 3.2.25",
- "cml-chain 5.2.0",
- "cml-core 5.2.0",
- "cml-crypto 5.2.0",
+ "cml-chain 5.3.1",
+ "cml-core 5.3.1",
+ "cml-crypto 5.3.1",
  "cml-multi-era",
  "ctrlc",
  "dcspark-blockchain-source",
@@ -765,15 +767,15 @@ dependencies = [
 
 [[package]]
 name = "cml-chain"
-version = "5.2.0"
+version = "5.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec309ed37a653542db58bf506bf31f59f942a5cf269c1709d9555b699a1b302a"
+checksum = "41fccc8aaca423e0a663b2499d69bf84960792772d7fbc7ddcf7c172f7812a71"
 dependencies = [
  "base64 0.21.7",
  "bech32 0.7.3",
  "cbor_event",
- "cml-core 5.2.0",
- "cml-crypto 5.2.0",
+ "cml-core 5.3.1",
+ "cml-crypto 5.3.1",
  "derivative",
  "fraction",
  "getrandom",
@@ -820,9 +822,9 @@ dependencies = [
 
 [[package]]
 name = "cml-core"
-version = "5.2.0"
+version = "5.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "38c826dd7e8939826e1090ebbef48dce630bbceb2a4a4aadbdccd6b583bb7d02"
+checksum = "31e9b27d8da87768bea2ee6828d598f56ed4d3d1c43c81b5c8bf9e4a38083e42"
 dependencies = [
  "base64 0.13.1",
  "bech32 0.7.3",
@@ -870,15 +872,15 @@ dependencies = [
 
 [[package]]
 name = "cml-crypto"
-version = "5.2.0"
+version = "5.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e79a9a6614c1fce917db76eda4ba44fc9a3d8ee5d43becf66299e89e04a8a0f"
+checksum = "9144a5db46242d7fa1f2385c2518363026454b35e2bee2713d4a087718fb8ec0"
 dependencies = [
  "base64 0.21.7",
  "bech32 0.7.3",
  "cbor_event",
  "cfg-if 1.0.0",
- "cml-core 5.2.0",
+ "cml-core 5.3.1",
  "cryptoxide",
  "derivative",
  "digest 0.9.0",
@@ -894,15 +896,15 @@ dependencies = [
 
 [[package]]
 name = "cml-multi-era"
-version = "5.2.0"
+version = "5.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e71d10d6eb5afaa9c2befec03827defea3929b455166154ab8bc25d6dc717767"
+checksum = "75cc5d28fb86d39504d36437f8a6607c94294ad4a27a57a47d7d2c2176df778e"
 dependencies = [
  "bech32 0.7.3",
  "cbor_event",
- "cml-chain 5.2.0",
- "cml-core 5.2.0",
- "cml-crypto 5.2.0",
+ "cml-chain 5.3.1",
+ "cml-core 5.3.1",
+ "cml-crypto 5.3.1",
  "derivative",
  "hex",
  "linked-hash-map",
@@ -1086,7 +1088,7 @@ checksum = "7e962a19be5cfc3f3bf6dd8f61eb50107f356ad6270fbb3ed41476571db78be5"
 [[package]]
 name = "dcspark-blockchain-source"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/dcspark-core.git?rev=572af17e3e22101dee64e0999049a571aea26e0f#572af17e3e22101dee64e0999049a571aea26e0f"
+source = "git+https://github.com/dcSpark/dcspark-core.git?rev=b891d8757b598db2fc8013ba76414739e8ab1678#b891d8757b598db2fc8013ba76414739e8ab1678"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1094,6 +1096,9 @@ dependencies = [
  "cardano-sdk",
  "cbored",
  "cbored-derive",
+ "cml-chain 5.3.1",
+ "cml-core 5.3.1",
+ "cml-multi-era",
  "cryptoxide",
  "dcspark-core",
  "deps",
@@ -1108,7 +1113,7 @@ dependencies = [
 [[package]]
 name = "dcspark-core"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/dcspark-core.git?rev=572af17e3e22101dee64e0999049a571aea26e0f#572af17e3e22101dee64e0999049a571aea26e0f"
+source = "git+https://github.com/dcSpark/dcspark-core.git?rev=b891d8757b598db2fc8013ba76414739e8ab1678#b891d8757b598db2fc8013ba76414739e8ab1678"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1125,7 +1130,7 @@ dependencies = [
 [[package]]
 name = "deps"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/dcspark-core.git?rev=572af17e3e22101dee64e0999049a571aea26e0f#572af17e3e22101dee64e0999049a571aea26e0f"
+source = "git+https://github.com/dcSpark/dcspark-core.git?rev=b891d8757b598db2fc8013ba76414739e8ab1678#b891d8757b598db2fc8013ba76414739e8ab1678"
 dependencies = [
  "bigdecimal",
  "serde_json",
@@ -1860,6 +1865,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13e3bf6590cbc649f4d1a3eefc9d5d6eb746f5200ffb04e5e142700b8faa56e7"
 
 [[package]]
+name = "libm"
+version = "0.2.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4ec2a862134d2a7d32d7983ddcdd1c4923530833c9f2ea1a44fc5fa473989058"
+
+[[package]]
 name = "libredox"
 version = "0.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2045,7 +2056,7 @@ checksum = "a785740271256c230f57462d3b83e52f998433a7062fc18f96d5999474a9f915"
 [[package]]
 name = "multiverse"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/dcspark-core.git?rev=572af17e3e22101dee64e0999049a571aea26e0f#572af17e3e22101dee64e0999049a571aea26e0f"
+source = "git+https://github.com/dcSpark/dcspark-core.git?rev=b891d8757b598db2fc8013ba76414739e8ab1678#b891d8757b598db2fc8013ba76414739e8ab1678"
 dependencies = [
  "dcspark-core",
  "deps",
@@ -2852,9 +2863,9 @@ name = "reparse"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "cml-chain 5.2.0",
- "cml-core 5.2.0",
- "cml-crypto 5.2.0",
+ "cml-chain 5.3.1",
+ "cml-core 5.3.1",
+ "cml-crypto 5.3.1",
  "cml-multi-era",
  "dotenv",
  "entity",
@@ -3741,9 +3752,9 @@ dependencies = [
  "anyhow",
  "cardano-projected-nft",
  "cfg-if 1.0.0",
- "cml-chain 5.2.0",
- "cml-core 5.2.0",
- "cml-crypto 5.2.0",
+ "cml-chain 5.3.1",
+ "cml-core 5.3.1",
+ "cml-crypto 5.3.1",
  "cml-multi-era",
  "cryptoxide",
  "entity",

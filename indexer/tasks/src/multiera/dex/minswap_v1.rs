@@ -33,7 +33,7 @@ impl Dex for MinSwapV1 {
         if let Some((output, datum)) = filter_outputs_and_datums_by_hash(
             &tx.outputs(),
             &[POOL_SCRIPT_HASH1, POOL_SCRIPT_HASH2],
-            &tx_witness.plutus_datums.clone().unwrap_or_default(),
+            &tx_witness.plutus_datums,
         )
         .first()
         {
@@ -77,7 +77,7 @@ impl Dex for MinSwapV1 {
         if let Some((main_output, main_datum)) = filter_outputs_and_datums_by_hash(
             &tx.outputs(),
             &[POOL_SCRIPT_HASH1, POOL_SCRIPT_HASH2],
-            &tx_witness.plutus_datums.clone().unwrap_or_default(),
+            &tx_witness.plutus_datums,
         )
         .first()
         {
@@ -109,7 +109,7 @@ impl Dex for MinSwapV1 {
             for (input, input_datum) in filter_outputs_and_datums_by_address(
                 &inputs,
                 &[BATCH_ORDER_ADDRESS1, BATCH_ORDER_ADDRESS2],
-                &tx_witness.plutus_datums.clone().unwrap_or_default(),
+                &tx_witness.plutus_datums,
             ) {
                 let input_datum = datum_to_json(&input_datum)?;
 
