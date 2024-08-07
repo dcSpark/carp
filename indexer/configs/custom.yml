@@ -1,0 +1,38 @@
+source:
+  type: cardano_net
+  relay:
+    - localhost
+    - 3001
+
+sink:
+  type: cardano
+  db:
+    type: postgres
+    database_url: postgresql://carp:1234@localhost:5432/carp_custom5
+  network: custom # preview / preprod / testnet / custom
+  genesis_folder: /home/user/Cardano/carp/indexer/genesis/
+  custom_config:
+    chain_info:
+      network_id: 1
+      protocol_magic: 42
+    relay:
+      - "localhost"
+      - 3001
+    from:
+      BlockHeader:
+        slot_nb: 1
+        hash: "ba8066f73eb9cf4ad9adf38051c54d3a51d92cb98561cffc1f202b1b97739cd5"
+    genesis_parent: "0ded594a3411f6d3236228abc1e2ef8c2a21e09d859ea23bfc2182f92853cba8"
+    genesis:
+      BlockHeader:
+        slot_nb: 0
+        hash: "7a32184d9e0068b0fa75fd0ecaad798f9bc573d4921c519b12968e26ff0747a3"
+    shelley_era_config:
+      first_slot: 0
+      start_epoch: 0
+      known_time: 1722355346
+      slot_length: 1
+      epoch_length_seconds: 500
+
+start_block:
+

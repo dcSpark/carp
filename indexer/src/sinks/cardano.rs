@@ -44,6 +44,7 @@ impl CardanoSink {
             SinkConfig::Cardano {
                 db,
                 network,
+                custom_config: _,
                 genesis_folder,
             } => (db, network, genesis_folder),
             _ => todo!("Invalid sink config provided"),
