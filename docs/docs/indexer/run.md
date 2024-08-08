@@ -22,7 +22,7 @@ sink:
   db:
     type: postgres
     database_url: postgresql://carp:1234@localhost:5432/carp_mainnet
-  network: mainnet # preview / preprod / testnet
+  network: mainnet # preview / preprod / testnet / custom
 
 start_block:
 ```

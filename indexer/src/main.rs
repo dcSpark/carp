@@ -59,6 +59,9 @@ pub enum SinkConfig {
         db: DbConfig,
         #[serde(default = "get_env_network")]
         network: String,
+        /// Custom configuration. If not present it will be inferred from the network name
+        custom_config: Option<dcspark_blockchain_source::cardano::NetworkConfiguration>,
+        genesis_folder: Option<String>,
     },
 }
 
@@ -169,10 +172,36 @@ async fn main() -> anyhow::Result<()> {
         config
     };
 
-    let (network, mut sink) = match config.sink {
-        SinkConfig::Cardano { ref network, .. } => (
+    let (network, base_config, mut sink) = match &config.sink {
+        SinkConfig::Cardano {
+            network,
+            custom_config,
+            ..
+        } => (
             network.clone(),
-            CardanoSink::new(config.sink, exec_plan)
+            match custom_config {
+                Some(custom_config) => custom_config.clone(),
+                None => match network.as_ref() {
+                    "mainnet" => {
+                        dcspark_blockchain_source::cardano::NetworkConfiguration::mainnet()
+                    }
+                    "preprod" => {
+                        dcspark_blockchain_source::cardano::NetworkConfiguration::preprod()
+                    }
+                    "preview" => {
+                        dcspark_blockchain_source::cardano::NetworkConfiguration::preview()
+                    }
+                    "custom" => {
+                        panic!("sink.custom_config is mandatory when setting network to custom")
+                    }
+                    unknown_network => {
+                        return Err(anyhow::anyhow!(
+                            "network {unknown_network} not supported by source"
+                        ))
+                    }
+                },
+            },
+            CardanoSink::new(config.sink.clone(), exec_plan)
                 .await
                 .context("Can't create cardano sink")?,
         ),
@@ -195,14 +224,6 @@ async fn main() -> anyhow::Result<()> {
             main_loop(source, sink, start_from, running, processing_finished).await
         }
         SourceConfig::CardanoNet { relay } => {
-            let base_config = match network.as_ref() {
-                "mainnet" => dcspark_blockchain_source::cardano::NetworkConfiguration::mainnet(),
-                "preprod" => dcspark_blockchain_source::cardano::NetworkConfiguration::preprod(),
-                "preview" => dcspark_blockchain_source::cardano::NetworkConfiguration::preview(),
-                "sanchonet" => dcspark_blockchain_source::cardano::NetworkConfiguration::sancho(),
-                _ => return Err(anyhow::anyhow!("network not supported by source")),
-            };
-
             // try to find a confirmed point.
             //
             // this way the multiverse can be temporary, which saves setting up the extra db
