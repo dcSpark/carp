@@ -173,17 +173,33 @@ async fn main() -> anyhow::Result<()> {
     };
 
     let (network, base_config, mut sink) = match &config.sink {
-        SinkConfig::Cardano { network, custom_config, .. } => (
+        SinkConfig::Cardano {
+            network,
+            custom_config,
+            ..
+        } => (
             network.clone(),
             match custom_config {
                 Some(custom_config) => custom_config.clone(),
                 None => match network.as_ref() {
-                    "mainnet" => dcspark_blockchain_source::cardano::NetworkConfiguration::mainnet(),
-                    "preprod" => dcspark_blockchain_source::cardano::NetworkConfiguration::preprod(),
-                    "preview" => dcspark_blockchain_source::cardano::NetworkConfiguration::preview(),
-                    "custom" => panic!("sink.custom_config is mandatory when setting network to custom"),
-                    unknown_network => return Err(anyhow::anyhow!("network {unknown_network} not supported by source")),
-                }
+                    "mainnet" => {
+                        dcspark_blockchain_source::cardano::NetworkConfiguration::mainnet()
+                    }
+                    "preprod" => {
+                        dcspark_blockchain_source::cardano::NetworkConfiguration::preprod()
+                    }
+                    "preview" => {
+                        dcspark_blockchain_source::cardano::NetworkConfiguration::preview()
+                    }
+                    "custom" => {
+                        panic!("sink.custom_config is mandatory when setting network to custom")
+                    }
+                    unknown_network => {
+                        return Err(anyhow::anyhow!(
+                            "network {unknown_network} not supported by source"
+                        ))
+                    }
+                },
             },
             CardanoSink::new(config.sink.clone(), exec_plan)
                 .await
