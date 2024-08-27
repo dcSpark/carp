@@ -49,7 +49,7 @@ pub fn get_asset_amount(
                     .map(|(asset_name, value)| (*policy_id, asset_name, value))
             })
             .filter(|(policy_id, asset_name, _value)| {
-                policy_id.to_raw_bytes() == pair_policy_id && asset_name.get() == pair_asset_name
+                policy_id.to_raw_bytes() == pair_policy_id && asset_name.to_raw_bytes() == pair_asset_name
             })
             .map(|(_policy_id, _asset_name, value)| value)
             .sum(),

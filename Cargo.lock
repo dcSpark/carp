@@ -586,10 +586,10 @@ dependencies = [
  "anyhow",
  "async-trait",
  "clap 3.2.25",
- "cml-chain 5.3.1",
- "cml-core 5.3.1",
- "cml-crypto 5.3.1",
- "cml-multi-era",
+ "cml-chain 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cml-core 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cml-crypto 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cml-multi-era 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ctrlc",
  "dcspark-blockchain-source",
  "dcspark-core",
@@ -663,9 +663,9 @@ checksum = "fd16c4719339c4530435d38e511904438d07cce7950afa3718a84ac36c10e89e"
 
 [[package]]
 name = "chrono"
-version = "0.4.33"
+version = "0.4.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f13690e35a5e4ace198e7beea2895d29f3a9cc55015fcebe6336bd2010af9eb"
+checksum = "a21f936df1771bf62b77f047b726c4625ff2e8aa607c01ec06e5a05bd8463401"
 dependencies = [
  "android-tzdata",
  "iana-time-zone",
@@ -767,31 +767,63 @@ dependencies = [
 
 [[package]]
 name = "cml-chain"
-version = "5.3.1"
+version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41fccc8aaca423e0a663b2499d69bf84960792772d7fbc7ddcf7c172f7812a71"
+checksum = "605a5a1575d671db789ab33c164f736839b9fa5de9d0f648836d1bb34092fe5f"
 dependencies = [
  "base64 0.21.7",
  "bech32 0.7.3",
  "cbor_event",
- "cml-core 5.3.1",
- "cml-crypto 5.3.1",
+ "chrono",
+ "cml-core 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cml-crypto 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "derivative",
  "fraction",
  "getrandom",
  "hex",
  "itertools",
  "linked-hash-map",
+ "noop_proc_macro",
  "num 0.4.1",
  "num-bigint 0.4.4",
  "num-integer",
  "rand",
  "schemars",
  "serde",
+ "serde-aux",
  "serde_json",
  "thiserror",
  "unicode-segmentation",
- "wasm-bindgen",
+]
+
+[[package]]
+name = "cml-chain"
+version = "6.0.0"
+source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=25ff92b4f6cf0f5dc98f0df3ab812a23af467e98#25ff92b4f6cf0f5dc98f0df3ab812a23af467e98"
+dependencies = [
+ "base64 0.21.7",
+ "bech32 0.7.3",
+ "cbor_event",
+ "chrono",
+ "cml-core 6.0.0 (git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=25ff92b4f6cf0f5dc98f0df3ab812a23af467e98)",
+ "cml-crypto 6.0.0 (git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=25ff92b4f6cf0f5dc98f0df3ab812a23af467e98)",
+ "derivative",
+ "fraction",
+ "getrandom",
+ "hex",
+ "itertools",
+ "linked-hash-map",
+ "noop_proc_macro",
+ "num 0.4.1",
+ "num-bigint 0.4.4",
+ "num-integer",
+ "rand",
+ "schemars",
+ "serde",
+ "serde-aux",
+ "serde_json",
+ "thiserror",
+ "unicode-segmentation",
 ]
 
 [[package]]
@@ -822,9 +854,9 @@ dependencies = [
 
 [[package]]
 name = "cml-core"
-version = "5.3.1"
+version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "31e9b27d8da87768bea2ee6828d598f56ed4d3d1c43c81b5c8bf9e4a38083e42"
+checksum = "f1cf45a88631c16cd21860eca5f1088f90a55d94b2258a0b1019eb70194a0823"
 dependencies = [
  "base64 0.13.1",
  "bech32 0.7.3",
@@ -843,7 +875,30 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
- "wasm-bindgen",
+]
+
+[[package]]
+name = "cml-core"
+version = "6.0.0"
+source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=25ff92b4f6cf0f5dc98f0df3ab812a23af467e98#25ff92b4f6cf0f5dc98f0df3ab812a23af467e98"
+dependencies = [
+ "base64 0.13.1",
+ "bech32 0.7.3",
+ "cbor_event",
+ "cfg-if 1.0.0",
+ "derivative",
+ "fraction",
+ "getrandom",
+ "hex",
+ "itertools",
+ "linked-hash-map",
+ "num-bigint 0.4.4",
+ "num-integer",
+ "rand",
+ "schemars",
+ "serde",
+ "serde_json",
+ "thiserror",
 ]
 
 [[package]]
@@ -872,15 +927,38 @@ dependencies = [
 
 [[package]]
 name = "cml-crypto"
-version = "5.3.1"
+version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9144a5db46242d7fa1f2385c2518363026454b35e2bee2713d4a087718fb8ec0"
+checksum = "aa094ec958ee4cbce64abb85566e21dece2de05b1b32339d9914a9daf7f6e50a"
 dependencies = [
  "base64 0.21.7",
  "bech32 0.7.3",
  "cbor_event",
  "cfg-if 1.0.0",
- "cml-core 5.3.1",
+ "cml-core 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cryptoxide",
+ "derivative",
+ "digest 0.9.0",
+ "ed25519-bip32",
+ "hex",
+ "rand",
+ "schemars",
+ "serde",
+ "serde_json",
+ "sha2 0.9.9",
+ "thiserror",
+]
+
+[[package]]
+name = "cml-crypto"
+version = "6.0.0"
+source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=25ff92b4f6cf0f5dc98f0df3ab812a23af467e98#25ff92b4f6cf0f5dc98f0df3ab812a23af467e98"
+dependencies = [
+ "base64 0.21.7",
+ "bech32 0.7.3",
+ "cbor_event",
+ "cfg-if 1.0.0",
+ "cml-core 6.0.0 (git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=25ff92b4f6cf0f5dc98f0df3ab812a23af467e98)",
  "cryptoxide",
  "derivative",
  "digest 0.9.0",
@@ -896,22 +974,41 @@ dependencies = [
 
 [[package]]
 name = "cml-multi-era"
-version = "5.3.1"
+version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75cc5d28fb86d39504d36437f8a6607c94294ad4a27a57a47d7d2c2176df778e"
+checksum = "45ef3a16939a4f7d93eadd0f50feaa452f5da5dc94364517ec7216262b47d4fc"
 dependencies = [
  "bech32 0.7.3",
  "cbor_event",
- "cml-chain 5.3.1",
- "cml-core 5.3.1",
- "cml-crypto 5.3.1",
+ "cml-chain 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cml-core 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cml-crypto 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "derivative",
  "hex",
  "linked-hash-map",
+ "noop_proc_macro",
  "schemars",
  "serde",
  "serde_json",
- "wasm-bindgen",
+]
+
+[[package]]
+name = "cml-multi-era"
+version = "6.0.0"
+source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=25ff92b4f6cf0f5dc98f0df3ab812a23af467e98#25ff92b4f6cf0f5dc98f0df3ab812a23af467e98"
+dependencies = [
+ "bech32 0.7.3",
+ "cbor_event",
+ "cml-chain 6.0.0 (git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=25ff92b4f6cf0f5dc98f0df3ab812a23af467e98)",
+ "cml-core 6.0.0 (git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=25ff92b4f6cf0f5dc98f0df3ab812a23af467e98)",
+ "cml-crypto 6.0.0 (git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=25ff92b4f6cf0f5dc98f0df3ab812a23af467e98)",
+ "derivative",
+ "hex",
+ "linked-hash-map",
+ "noop_proc_macro",
+ "schemars",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -1088,7 +1185,7 @@ checksum = "7e962a19be5cfc3f3bf6dd8f61eb50107f356ad6270fbb3ed41476571db78be5"
 [[package]]
 name = "dcspark-blockchain-source"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/dcspark-core.git?rev=b891d8757b598db2fc8013ba76414739e8ab1678#b891d8757b598db2fc8013ba76414739e8ab1678"
+source = "git+https://github.com/dcSpark/dcspark-core.git?rev=63105adc46478eea57340bcbfc5425ced0ba139f#63105adc46478eea57340bcbfc5425ced0ba139f"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1096,9 +1193,9 @@ dependencies = [
  "cardano-sdk",
  "cbored",
  "cbored-derive",
- "cml-chain 5.3.1",
- "cml-core 5.3.1",
- "cml-multi-era",
+ "cml-chain 6.0.0 (git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=25ff92b4f6cf0f5dc98f0df3ab812a23af467e98)",
+ "cml-core 6.0.0 (git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=25ff92b4f6cf0f5dc98f0df3ab812a23af467e98)",
+ "cml-multi-era 6.0.0 (git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=25ff92b4f6cf0f5dc98f0df3ab812a23af467e98)",
  "cryptoxide",
  "dcspark-core",
  "deps",
@@ -1113,7 +1210,7 @@ dependencies = [
 [[package]]
 name = "dcspark-core"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/dcspark-core.git?rev=b891d8757b598db2fc8013ba76414739e8ab1678#b891d8757b598db2fc8013ba76414739e8ab1678"
+source = "git+https://github.com/dcSpark/dcspark-core.git?rev=63105adc46478eea57340bcbfc5425ced0ba139f#63105adc46478eea57340bcbfc5425ced0ba139f"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1130,7 +1227,7 @@ dependencies = [
 [[package]]
 name = "deps"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/dcspark-core.git?rev=b891d8757b598db2fc8013ba76414739e8ab1678#b891d8757b598db2fc8013ba76414739e8ab1678"
+source = "git+https://github.com/dcSpark/dcspark-core.git?rev=63105adc46478eea57340bcbfc5425ced0ba139f#63105adc46478eea57340bcbfc5425ced0ba139f"
 dependencies = [
  "bigdecimal",
  "serde_json",
@@ -2056,7 +2153,7 @@ checksum = "a785740271256c230f57462d3b83e52f998433a7062fc18f96d5999474a9f915"
 [[package]]
 name = "multiverse"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/dcspark-core.git?rev=b891d8757b598db2fc8013ba76414739e8ab1678#b891d8757b598db2fc8013ba76414739e8ab1678"
+source = "git+https://github.com/dcSpark/dcspark-core.git?rev=63105adc46478eea57340bcbfc5425ced0ba139f#63105adc46478eea57340bcbfc5425ced0ba139f"
 dependencies = [
  "dcspark-core",
  "deps",
@@ -2103,6 +2200,12 @@ dependencies = [
  "memchr",
  "minimal-lexical",
 ]
+
+[[package]]
+name = "noop_proc_macro"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0676bb32a98c1a483ce53e500a81ad9c3d5b3f7c920c28c24e9cb0980d0b5bc8"
 
 [[package]]
 name = "nu-ansi-term"
@@ -2863,10 +2966,10 @@ name = "reparse"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "cml-chain 5.3.1",
- "cml-core 5.3.1",
- "cml-crypto 5.3.1",
- "cml-multi-era",
+ "cml-chain 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cml-core 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cml-crypto 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cml-multi-era 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv",
  "entity",
  "futures",
@@ -3222,6 +3325,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "870026e60fa08c69f064aa766c10f10b1d62db9ccd4d0abb206472bee0ce3b32"
 dependencies = [
  "serde_derive",
+]
+
+[[package]]
+name = "serde-aux"
+version = "4.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0d2e8bfba469d06512e11e3311d4d051a4a387a5b42d010404fecf3200321c95"
+dependencies = [
+ "chrono",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -3752,10 +3866,10 @@ dependencies = [
  "anyhow",
  "cardano-projected-nft",
  "cfg-if 1.0.0",
- "cml-chain 5.3.1",
- "cml-core 5.3.1",
- "cml-crypto 5.3.1",
- "cml-multi-era",
+ "cml-chain 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cml-core 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cml-crypto 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cml-multi-era 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cryptoxide",
  "entity",
  "hex",
