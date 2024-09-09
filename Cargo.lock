@@ -586,10 +586,10 @@ dependencies = [
  "anyhow",
  "async-trait",
  "clap 3.2.25",
- "cml-chain 5.3.1",
- "cml-core 5.3.1",
- "cml-crypto 5.3.1",
- "cml-multi-era",
+ "cml-chain 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cml-core 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cml-crypto 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cml-multi-era 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ctrlc",
  "dcspark-blockchain-source",
  "dcspark-core",
@@ -663,9 +663,9 @@ checksum = "fd16c4719339c4530435d38e511904438d07cce7950afa3718a84ac36c10e89e"
 
 [[package]]
 name = "chrono"
-version = "0.4.33"
+version = "0.4.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f13690e35a5e4ace198e7beea2895d29f3a9cc55015fcebe6336bd2010af9eb"
+checksum = "a21f936df1771bf62b77f047b726c4625ff2e8aa607c01ec06e5a05bd8463401"
 dependencies = [
  "android-tzdata",
  "iana-time-zone",
@@ -751,7 +751,7 @@ dependencies = [
  "fraction",
  "getrandom",
  "hex",
- "itertools",
+ "itertools 0.10.5",
  "linked-hash-map",
  "num 0.4.1",
  "num-bigint 0.4.4",
@@ -767,31 +767,63 @@ dependencies = [
 
 [[package]]
 name = "cml-chain"
-version = "5.3.1"
+version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41fccc8aaca423e0a663b2499d69bf84960792772d7fbc7ddcf7c172f7812a71"
+checksum = "605a5a1575d671db789ab33c164f736839b9fa5de9d0f648836d1bb34092fe5f"
 dependencies = [
  "base64 0.21.7",
  "bech32 0.7.3",
  "cbor_event",
- "cml-core 5.3.1",
- "cml-crypto 5.3.1",
+ "chrono",
+ "cml-core 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cml-crypto 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "derivative",
  "fraction",
  "getrandom",
  "hex",
- "itertools",
+ "itertools 0.10.5",
  "linked-hash-map",
+ "noop_proc_macro",
  "num 0.4.1",
  "num-bigint 0.4.4",
  "num-integer",
  "rand",
  "schemars",
  "serde",
+ "serde-aux",
  "serde_json",
  "thiserror",
  "unicode-segmentation",
- "wasm-bindgen",
+]
+
+[[package]]
+name = "cml-chain"
+version = "6.0.0"
+source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=25ff92b4f6cf0f5dc98f0df3ab812a23af467e98#25ff92b4f6cf0f5dc98f0df3ab812a23af467e98"
+dependencies = [
+ "base64 0.21.7",
+ "bech32 0.7.3",
+ "cbor_event",
+ "chrono",
+ "cml-core 6.0.0 (git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=25ff92b4f6cf0f5dc98f0df3ab812a23af467e98)",
+ "cml-crypto 6.0.0 (git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=25ff92b4f6cf0f5dc98f0df3ab812a23af467e98)",
+ "derivative",
+ "fraction",
+ "getrandom",
+ "hex",
+ "itertools 0.10.5",
+ "linked-hash-map",
+ "noop_proc_macro",
+ "num 0.4.1",
+ "num-bigint 0.4.4",
+ "num-integer",
+ "rand",
+ "schemars",
+ "serde",
+ "serde-aux",
+ "serde_json",
+ "thiserror",
+ "unicode-segmentation",
 ]
 
 [[package]]
@@ -808,7 +840,7 @@ dependencies = [
  "fraction",
  "getrandom",
  "hex",
- "itertools",
+ "itertools 0.10.5",
  "linked-hash-map",
  "num-bigint 0.4.4",
  "num-integer",
@@ -822,9 +854,9 @@ dependencies = [
 
 [[package]]
 name = "cml-core"
-version = "5.3.1"
+version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "31e9b27d8da87768bea2ee6828d598f56ed4d3d1c43c81b5c8bf9e4a38083e42"
+checksum = "f1cf45a88631c16cd21860eca5f1088f90a55d94b2258a0b1019eb70194a0823"
 dependencies = [
  "base64 0.13.1",
  "bech32 0.7.3",
@@ -834,7 +866,7 @@ dependencies = [
  "fraction",
  "getrandom",
  "hex",
- "itertools",
+ "itertools 0.10.5",
  "linked-hash-map",
  "num-bigint 0.4.4",
  "num-integer",
@@ -843,7 +875,30 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
- "wasm-bindgen",
+]
+
+[[package]]
+name = "cml-core"
+version = "6.0.0"
+source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=25ff92b4f6cf0f5dc98f0df3ab812a23af467e98#25ff92b4f6cf0f5dc98f0df3ab812a23af467e98"
+dependencies = [
+ "base64 0.13.1",
+ "bech32 0.7.3",
+ "cbor_event",
+ "cfg-if 1.0.0",
+ "derivative",
+ "fraction",
+ "getrandom",
+ "hex",
+ "itertools 0.10.5",
+ "linked-hash-map",
+ "num-bigint 0.4.4",
+ "num-integer",
+ "rand",
+ "schemars",
+ "serde",
+ "serde_json",
+ "thiserror",
 ]
 
 [[package]]
@@ -872,15 +927,38 @@ dependencies = [
 
 [[package]]
 name = "cml-crypto"
-version = "5.3.1"
+version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9144a5db46242d7fa1f2385c2518363026454b35e2bee2713d4a087718fb8ec0"
+checksum = "aa094ec958ee4cbce64abb85566e21dece2de05b1b32339d9914a9daf7f6e50a"
 dependencies = [
  "base64 0.21.7",
  "bech32 0.7.3",
  "cbor_event",
  "cfg-if 1.0.0",
- "cml-core 5.3.1",
+ "cml-core 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cryptoxide",
+ "derivative",
+ "digest 0.9.0",
+ "ed25519-bip32",
+ "hex",
+ "rand",
+ "schemars",
+ "serde",
+ "serde_json",
+ "sha2 0.9.9",
+ "thiserror",
+]
+
+[[package]]
+name = "cml-crypto"
+version = "6.0.0"
+source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=25ff92b4f6cf0f5dc98f0df3ab812a23af467e98#25ff92b4f6cf0f5dc98f0df3ab812a23af467e98"
+dependencies = [
+ "base64 0.21.7",
+ "bech32 0.7.3",
+ "cbor_event",
+ "cfg-if 1.0.0",
+ "cml-core 6.0.0 (git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=25ff92b4f6cf0f5dc98f0df3ab812a23af467e98)",
  "cryptoxide",
  "derivative",
  "digest 0.9.0",
@@ -896,22 +974,41 @@ dependencies = [
 
 [[package]]
 name = "cml-multi-era"
-version = "5.3.1"
+version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75cc5d28fb86d39504d36437f8a6607c94294ad4a27a57a47d7d2c2176df778e"
+checksum = "45ef3a16939a4f7d93eadd0f50feaa452f5da5dc94364517ec7216262b47d4fc"
 dependencies = [
  "bech32 0.7.3",
  "cbor_event",
- "cml-chain 5.3.1",
- "cml-core 5.3.1",
- "cml-crypto 5.3.1",
+ "cml-chain 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cml-core 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cml-crypto 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "derivative",
  "hex",
  "linked-hash-map",
+ "noop_proc_macro",
  "schemars",
  "serde",
  "serde_json",
- "wasm-bindgen",
+]
+
+[[package]]
+name = "cml-multi-era"
+version = "6.0.0"
+source = "git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=25ff92b4f6cf0f5dc98f0df3ab812a23af467e98#25ff92b4f6cf0f5dc98f0df3ab812a23af467e98"
+dependencies = [
+ "bech32 0.7.3",
+ "cbor_event",
+ "cml-chain 6.0.0 (git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=25ff92b4f6cf0f5dc98f0df3ab812a23af467e98)",
+ "cml-core 6.0.0 (git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=25ff92b4f6cf0f5dc98f0df3ab812a23af467e98)",
+ "cml-crypto 6.0.0 (git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=25ff92b4f6cf0f5dc98f0df3ab812a23af467e98)",
+ "derivative",
+ "hex",
+ "linked-hash-map",
+ "noop_proc_macro",
+ "schemars",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -966,7 +1063,16 @@ version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49fc9a695bca7f35f5f4c15cddc84415f66a74ea78eef08e90c5024f2b540e23"
 dependencies = [
- "crc-catalog",
+ "crc-catalog 1.1.1",
+]
+
+[[package]]
+name = "crc"
+version = "3.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "69e6e4d7b33a94f0991c26729976b10ebde1d34c3ee82408fb536164fa10d636"
+dependencies = [
+ "crc-catalog 2.4.0",
 ]
 
 [[package]]
@@ -974,6 +1080,12 @@ name = "crc-catalog"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ccaeedb56da03b09f598226e25e80088cb4cd25f316e6e4df7d695f0feeb1403"
+
+[[package]]
+name = "crc-catalog"
+version = "2.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "19d374276b40fb8bbdee95aef7c7fa6b5316ec764510eb64b8dd0e2ed0d7e7f5"
 
 [[package]]
 name = "crc32fast"
@@ -1088,7 +1200,7 @@ checksum = "7e962a19be5cfc3f3bf6dd8f61eb50107f356ad6270fbb3ed41476571db78be5"
 [[package]]
 name = "dcspark-blockchain-source"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/dcspark-core.git?rev=b891d8757b598db2fc8013ba76414739e8ab1678#b891d8757b598db2fc8013ba76414739e8ab1678"
+source = "git+https://github.com/dcSpark/dcspark-core.git?rev=63105adc46478eea57340bcbfc5425ced0ba139f#63105adc46478eea57340bcbfc5425ced0ba139f"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1096,9 +1208,9 @@ dependencies = [
  "cardano-sdk",
  "cbored",
  "cbored-derive",
- "cml-chain 5.3.1",
- "cml-core 5.3.1",
- "cml-multi-era",
+ "cml-chain 6.0.0 (git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=25ff92b4f6cf0f5dc98f0df3ab812a23af467e98)",
+ "cml-core 6.0.0 (git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=25ff92b4f6cf0f5dc98f0df3ab812a23af467e98)",
+ "cml-multi-era 6.0.0 (git+https://github.com/dcSpark/cardano-multiplatform-lib?rev=25ff92b4f6cf0f5dc98f0df3ab812a23af467e98)",
  "cryptoxide",
  "dcspark-core",
  "deps",
@@ -1113,7 +1225,7 @@ dependencies = [
 [[package]]
 name = "dcspark-core"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/dcspark-core.git?rev=b891d8757b598db2fc8013ba76414739e8ab1678#b891d8757b598db2fc8013ba76414739e8ab1678"
+source = "git+https://github.com/dcSpark/dcspark-core.git?rev=63105adc46478eea57340bcbfc5425ced0ba139f#63105adc46478eea57340bcbfc5425ced0ba139f"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1130,7 +1242,7 @@ dependencies = [
 [[package]]
 name = "deps"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/dcspark-core.git?rev=b891d8757b598db2fc8013ba76414739e8ab1678#b891d8757b598db2fc8013ba76414739e8ab1678"
+source = "git+https://github.com/dcSpark/dcspark-core.git?rev=63105adc46478eea57340bcbfc5425ced0ba139f#63105adc46478eea57340bcbfc5425ced0ba139f"
 dependencies = [
  "bigdecimal",
  "serde_json",
@@ -1829,6 +1941,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "itertools"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2010,6 +2131,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "minicbor"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9d15f4203d71fdf90903c2696e55426ac97a363c67b218488a73b534ce7aca10"
+dependencies = [
+ "half",
+ "minicbor-derive",
+]
+
+[[package]]
 name = "minicbor-derive"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2056,7 +2187,7 @@ checksum = "a785740271256c230f57462d3b83e52f998433a7062fc18f96d5999474a9f915"
 [[package]]
 name = "multiverse"
 version = "0.1.0"
-source = "git+https://github.com/dcSpark/dcspark-core.git?rev=b891d8757b598db2fc8013ba76414739e8ab1678#b891d8757b598db2fc8013ba76414739e8ab1678"
+source = "git+https://github.com/dcSpark/dcspark-core.git?rev=63105adc46478eea57340bcbfc5425ced0ba139f#63105adc46478eea57340bcbfc5425ced0ba139f"
 dependencies = [
  "dcspark-core",
  "deps",
@@ -2103,6 +2234,12 @@ dependencies = [
  "memchr",
  "minimal-lexical",
 ]
+
+[[package]]
+name = "noop_proc_macro"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0676bb32a98c1a483ce53e500a81ad9c3d5b3f7c920c28c24e9cb0980d0b5bc8"
 
 [[package]]
 name = "nu-ansi-term"
@@ -2193,6 +2330,12 @@ checksum = "1ba157ca0885411de85d6ca030ba7e2a83a28636056c7c699b07c8b6f7383214"
 dependencies = [
  "num-traits",
 ]
+
+[[package]]
+name = "num-conv"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "51d515d32fb182ee37cda2ccdcb92950d6a3c2893aa280e540671c2cd0f3b1d9"
 
 [[package]]
 name = "num-integer"
@@ -2287,8 +2430,8 @@ checksum = "e2355d85b9a3786f481747ced0e0ff2ba35213a1f9bd406ed906554d7af805a1"
 
 [[package]]
 name = "oura"
-version = "1.8.3"
-source = "git+https://github.com/txpipe/oura.git?rev=27fb7e876471b713841d96e292ede40101b151d7#27fb7e876471b713841d96e292ede40101b151d7"
+version = "1.9.1"
+source = "git+https://github.com/txpipe/oura.git?rev=e1b971394a394bde13fb601ad3f6d4ad343b02f0#e1b971394a394bde13fb601ad3f6d4ad343b02f0"
 dependencies = [
  "bech32 0.9.1",
  "clap 3.2.25",
@@ -2299,12 +2442,19 @@ dependencies = [
  "log",
  "merge",
  "net2",
- "pallas",
+ "pallas-addresses",
+ "pallas-codec 0.30.1",
+ "pallas-crypto",
+ "pallas-miniprotocols",
+ "pallas-multiplexer",
+ "pallas-primitives",
+ "pallas-traverse",
  "prometheus_exporter",
  "serde",
  "serde_json",
  "strum 0.24.1",
  "strum_macros 0.24.3",
+ "time 0.3.36",
  "unicode-truncate",
 ]
 
@@ -2338,30 +2488,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b15813163c1d831bf4a13c3610c05c0d03b39feb07f7e09fa234dac9b15aaf39"
 
 [[package]]
-name = "pallas"
-version = "0.18.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94ef55b690eac7ddf43a3e7ce10d4594866c34279c424aa2ce26d757789246da"
-dependencies = [
- "pallas-addresses",
- "pallas-codec",
- "pallas-crypto",
- "pallas-miniprotocols",
- "pallas-multiplexer",
- "pallas-primitives",
- "pallas-traverse",
-]
-
-[[package]]
 name = "pallas-addresses"
-version = "0.18.2"
+version = "0.30.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8db28c4050dea032d497555bc68c269ae8e691486d8ec83f02b090487da0d0be"
+checksum = "c38fac39e0da3b0fc4c859635c72e97584f01f3a0f4f1508b0851c02d6d52f15"
 dependencies = [
  "base58",
  "bech32 0.9.1",
+ "crc 3.2.1",
+ "cryptoxide",
  "hex",
- "pallas-codec",
+ "pallas-codec 0.30.1",
  "pallas-crypto",
  "thiserror",
 ]
@@ -2373,19 +2510,31 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b6e03d05d42a663526d78c8b1d4f2554f09bbf4cc846e1a9e839c558bf6103c"
 dependencies = [
  "hex",
- "minicbor",
+ "minicbor 0.19.1",
  "serde",
 ]
 
 [[package]]
-name = "pallas-crypto"
-version = "0.18.2"
+name = "pallas-codec"
+version = "0.30.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a35fc93b3613c0a628d0820f8d5d9a52709d795b59a1754a337aee0fca289dd"
+checksum = "ea8a4b87dbc8bcb8aeb865f7cca5e1eb29744330e23b307169fc30537648b264"
+dependencies = [
+ "hex",
+ "minicbor 0.20.0",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "pallas-crypto"
+version = "0.30.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b98c3f204299d47d9b581ab425043789caff1f491c078ee3d3f109d6556f725"
 dependencies = [
  "cryptoxide",
  "hex",
- "pallas-codec",
+ "pallas-codec 0.30.1",
  "rand_core",
  "serde",
  "thiserror",
@@ -2398,8 +2547,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8a4754676d92ae351ad524d98bc32d70835856ee0623a45288bb50a5ee4b161"
 dependencies = [
  "hex",
- "itertools",
- "pallas-codec",
+ "itertools 0.10.5",
+ "pallas-codec 0.18.2",
  "pallas-multiplexer",
  "thiserror",
  "tracing",
@@ -2414,7 +2563,7 @@ dependencies = [
  "byteorder",
  "hex",
  "log",
- "pallas-codec",
+ "pallas-codec 0.18.2",
  "rand",
  "thiserror",
  "tracing",
@@ -2422,15 +2571,15 @@ dependencies = [
 
 [[package]]
 name = "pallas-primitives"
-version = "0.18.2"
+version = "0.30.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc5fdf328f41971e0b1457e2377abeb09143fa50ab79f1a6a6ab5740bc94dc4b"
+checksum = "9f64835dd9cbdd75a38961a190b983f02746c872340daf1a921eada8c525a4b6"
 dependencies = [
  "base58",
  "bech32 0.9.1",
  "hex",
  "log",
- "pallas-codec",
+ "pallas-codec 0.30.1",
  "pallas-crypto",
  "serde",
  "serde_json",
@@ -2438,15 +2587,18 @@ dependencies = [
 
 [[package]]
 name = "pallas-traverse"
-version = "0.18.2"
+version = "0.30.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c58c353ecb175a63422386c80301493db9fc448407bc63322534522579e22879"
+checksum = "ad516b05ba7d838ee84f9998d7b2b4ff7acc178cb052bcfd5fea9edc2ef6023f"
 dependencies = [
  "hex",
+ "itertools 0.13.0",
  "pallas-addresses",
- "pallas-codec",
+ "pallas-codec 0.30.1",
  "pallas-crypto",
  "pallas-primitives",
+ "paste",
+ "serde",
  "thiserror",
 ]
 
@@ -2652,9 +2804,9 @@ dependencies = [
 
 [[package]]
 name = "prometheus"
-version = "0.13.3"
+version = "0.13.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "449811d15fbdf5ceb5c1144416066429cf82316e2ec8ce0c1f6f8a02e7bbcf8c"
+checksum = "3d33c28a30771f7f96db69893f78b857f7450d7e0237e9c8fc6427a81bae7ed1"
 dependencies = [
  "cfg-if 1.0.0",
  "fnv",
@@ -2863,10 +3015,10 @@ name = "reparse"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "cml-chain 5.3.1",
- "cml-core 5.3.1",
- "cml-crypto 5.3.1",
- "cml-multi-era",
+ "cml-chain 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cml-core 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cml-crypto 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cml-multi-era 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv",
  "entity",
  "futures",
@@ -3225,6 +3377,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde-aux"
+version = "4.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0d2e8bfba469d06512e11e3311d4d051a4a387a5b42d010404fecf3200321c95"
+dependencies = [
+ "chrono",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "serde_derive"
 version = "1.0.196"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3461,7 +3624,7 @@ version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4b7922be017ee70900be125523f38bdd644f4f06a1b16e8fa5a8ee8c34bffd4"
 dependencies = [
- "itertools",
+ "itertools 0.10.5",
  "nom",
  "unicode_categories",
 ]
@@ -3489,7 +3652,7 @@ dependencies = [
  "byteorder",
  "bytes",
  "chrono",
- "crc",
+ "crc 2.1.0",
  "crossbeam-queue",
  "dirs",
  "either",
@@ -3752,10 +3915,10 @@ dependencies = [
  "anyhow",
  "cardano-projected-nft",
  "cfg-if 1.0.0",
- "cml-chain 5.3.1",
- "cml-core 5.3.1",
- "cml-crypto 5.3.1",
- "cml-multi-era",
+ "cml-chain 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cml-core 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cml-crypto 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cml-multi-era 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cryptoxide",
  "entity",
  "hex",
@@ -3846,16 +4009,17 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.3.31"
+version = "0.3.36"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f657ba42c3f86e7680e53c8cd3af8abbe56b5491790b46e22e19c0d57463583e"
+checksum = "5dfd88e563464686c916c7e46e623e520ddc6d79fa6641390f2e3fa86e83e885"
 dependencies = [
  "deranged",
  "itoa",
+ "num-conv",
  "powerfmt",
  "serde",
  "time-core",
- "time-macros 0.2.16",
+ "time-macros 0.2.18",
 ]
 
 [[package]]
@@ -3876,10 +4040,11 @@ dependencies = [
 
 [[package]]
 name = "time-macros"
-version = "0.2.16"
+version = "0.2.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "26197e33420244aeb70c3e8c78376ca46571bc4e701e4791c2cd9f57dcb3a43f"
+checksum = "3f252a68540fde3a3877aeea552b832b40ab9a69e318efd078774a01ddee1ccf"
 dependencies = [
+ "num-conv",
  "time-core",
 ]
 
@@ -3905,7 +4070,7 @@ dependencies = [
  "ascii",
  "chunked_transfer",
  "log",
- "time 0.3.31",
+ "time 0.3.36",
  "url",
 ]
 

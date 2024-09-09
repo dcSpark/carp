@@ -689,7 +689,7 @@ fn extract_operation_and_datum(
         .flat_map(|(policy_id, assets)| {
             assets.iter().map(|(asset_name, value)| AssetData {
                 policy_id: policy_id.to_hex(),
-                asset_name: hex::encode(asset_name.get()),
+                asset_name: hex::encode(asset_name.to_raw_bytes()),
                 amount: *value as i64,
             })
         })
