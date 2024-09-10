@@ -55,7 +55,7 @@ async fn handle_mints(
             for (asset_name, amount) in assets.iter() {
                 queued_mints.push((
                     cardano_transaction.id,
-                    (policy_id.to_raw_bytes().to_vec(), asset_name.get().clone()),
+                    (policy_id.to_raw_bytes().to_vec(), asset_name.to_raw_bytes().to_vec()),
                     *amount,
                 ));
             }

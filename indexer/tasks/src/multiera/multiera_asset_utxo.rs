@@ -144,14 +144,14 @@ async fn handle(
                             entity::native_asset::Column::PolicyId
                                 .eq(policy_id.to_raw_bytes().to_vec()),
                         )
-                        .add(entity::native_asset::Column::AssetName.eq(asset_name.get().clone())),
+                        .add(entity::native_asset::Column::AssetName.eq(asset_name.to_raw_bytes().to_vec())),
                 );
 
                 queued_inserts.push(PartialEntry {
                     utxo_id: utxo.model.id,
                     amount: None,
                     tx_id: cardano_transaction.id,
-                    asset: (policy_id.to_raw_bytes().to_vec(), asset_name.get().clone()),
+                    asset: (policy_id.to_raw_bytes().to_vec(), asset_name.to_raw_bytes().to_vec()),
                 });
             }
         }
@@ -207,14 +207,14 @@ async fn handle(
                             entity::native_asset::Column::PolicyId
                                 .eq(policy_id.to_raw_bytes().to_vec()),
                         )
-                        .add(entity::native_asset::Column::AssetName.eq(asset_name.get().clone())),
+                        .add(entity::native_asset::Column::AssetName.eq(asset_name.to_raw_bytes().to_vec())),
                 );
 
                 queued_inserts.push(PartialEntry {
                     utxo_id: output_model.id,
                     amount: Some(*value as i64),
                     tx_id: cardano_transaction.id,
-                    asset: (policy_id.to_raw_bytes().to_vec(), asset_name.get().clone()),
+                    asset: (policy_id.to_raw_bytes().to_vec(), asset_name.to_raw_bytes().to_vec()),
                 });
             }
         }
