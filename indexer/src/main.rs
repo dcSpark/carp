@@ -191,6 +191,9 @@ async fn main() -> anyhow::Result<()> {
                     "preview" => {
                         dcspark_blockchain_source::cardano::NetworkConfiguration::preview()
                     }
+                    "sanchonet" => {
+                        dcspark_blockchain_source::cardano::NetworkConfiguration::sancho()
+                    }
                     "custom" => {
                         panic!("sink.custom_config is mandatory when setting network to custom")
                     }
