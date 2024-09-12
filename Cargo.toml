@@ -16,3 +16,6 @@ cml-chain = { version = "6.0.0" }
 cml-core = { version = "6.0.0" }
 cml-crypto = { version = "6.0.0" }
 cml-multi-era = { version = "6.0.0" }
+
+[patch.crates-io]
+idna = { path="./patch/idna-0.2.3" }
