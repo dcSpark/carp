@@ -42,6 +42,11 @@ export enum RelationFilterType {
   NO_FILTER = 0xff,
 }
 
+/**
+* @pattern [0-9a-fA-F]*
+*/
+export type UnboundHex = string;
+
 export type BlockTxPair = {
   /**
    * block hash

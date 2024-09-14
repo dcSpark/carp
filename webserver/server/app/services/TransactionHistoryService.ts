@@ -46,8 +46,8 @@ export async function historyForCredentials(
         },
         ...(request.withInputContext && {
           metadata: entry.metadata && entry.metadata.toString('hex'),
-          inputCredentials: entry.input_addresses
-            ? (entry.input_addresses as string[]).map(getPaymentCred)
+          inputs: entry.input_utxo
+            ? entry.input_utxo.map(buf => buf.toString('hex'))
             : [],
         }),
       },
@@ -93,20 +93,11 @@ export async function historyForAddresses(
         },
         ...(request.withInputContext && {
           metadata: entry.metadata && entry.metadata.toString('hex'),
-          inputCredentials: entry.input_addresses
-            ? (entry.input_addresses as string[]).map(getPaymentCred)
+          inputs: entry.input_utxo
+            ? entry.input_utxo.map(buf => buf.toString('hex'))
             : [],
         }),
       },
     })),
   };
-}
-
-function getPaymentCred(addressRaw: string): string {
-  const address = Address.from_raw_bytes(Buffer.from(addressRaw.slice(2), 'hex'));
-
-  const paymentCred = address.payment_cred();
-  const addressBytes = paymentCred?.to_cbor_bytes();
-
-  return Buffer.from(addressBytes as Uint8Array).toString('hex');
 }
