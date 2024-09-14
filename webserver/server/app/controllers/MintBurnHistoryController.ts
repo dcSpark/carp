@@ -159,7 +159,7 @@ export class MintRangeController extends Controller {
 
               for (let j = 0; j < assetNames.len(); j++) {
                 const assetName = assetNames.get(j);
-                const hexAssetName = Buffer.from(assetName.get()).toString('hex');
+                const hexAssetName = assetName.to_hex();
 
                 if (assets[hexPolicyId] && assets[hexPolicyId][hexAssetName]) {
                   if (!inputAddresses[inputAddress]) {
@@ -169,7 +169,8 @@ export class MintRangeController extends Controller {
                   inputAddresses[inputAddress].push({
                     policyId: hexPolicyId,
                     assetName: hexAssetName,
-                    amount: assetsInOutput?.get(assetName)?.toString()!,
+                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                    amount: assetsInOutput!.get(assetName)!.toString(),
                   });
                 }
               }

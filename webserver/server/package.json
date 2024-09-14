@@ -25,7 +25,7 @@
   },
   "homepage": "https://github.com/dcSpark/carp#readme",
   "dependencies": {
-    "@dcspark/cardano-multiplatform-lib-nodejs": "5.3.1",
+    "@dcspark/cardano-multiplatform-lib-nodejs": "6.0.1",
     "@dcspark/cip5-js": "^1.0.0",
     "@pgtyped/cli": "2.3.0",
     "@pgtyped/runtime": "2.3.0",

@@ -22,7 +22,7 @@
     "@dcspark/carp-client": "../client/dist"
   },
   "devDependencies": {
-    "@dcspark/cardano-multiplatform-lib-nodejs": "5.3.1",
+    "@dcspark/cardano-multiplatform-lib-nodejs": "6.0.1",
     "@dcspark/cip5-js": "1.0.0",
     "@types/body-parser": "1.19.2",
     "@types/chai": "4.3.3",
