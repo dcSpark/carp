@@ -3,6 +3,7 @@ use crate::sink::Sink;
 use crate::types::StoppableService;
 use async_trait::async_trait;
 use dcspark_blockchain_source::{GetNextFrom, PullFrom, Source};
+use entity::block::EraValue;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering::SeqCst;
 use std::sync::Arc;
@@ -44,6 +45,9 @@ impl<
 
         let mut perf_aggregator = PerfAggregator::new();
 
+        // TODO: fetch from DB
+        let mut latest_era: Option<EraValue> = None;
+
         while self.running.load(SeqCst) {
             let event_fetch_start = std::time::Instant::now();
             let event = self.source.pull(&pull_from).await?;
@@ -55,7 +59,9 @@ impl<
             };
             perf_aggregator.block_fetch += event_fetch_start.elapsed();
             let new_from = event.next_from().unwrap_or(pull_from);
-            self.sink.process(event, &mut perf_aggregator).await?;
+            self.sink
+                .process(event, &mut perf_aggregator, &mut latest_era)
+                .await?;
             pull_from = new_from;
         }
 

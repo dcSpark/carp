@@ -141,26 +141,9 @@ impl Sink for CardanoSink {
 
         if start.is_empty() {
             // https://github.com/txpipe/oura/blob/67b01e8739ed2927ced270e08daea74b03bcc7f7/src/sources/common.rs#L91
-            let genesis_folder: &str = match dbg!(&self.network[..]) {
-                "mainnet" | "testnet" | "preview" | "preprod" => KNOWN_GENESIS_FOLDER,
-                "custom" => &self
-                    .genesis_folder
-                    .as_ref()
-                    .expect("genesis_folder should be specified for custom networks")[..],
-                rest => {
-                    return Err(anyhow!(
-                        "{} is invalid. NETWORK must be either mainnet/preview/preprod/testnet or a 'custom' network",
-                        rest
-                    ))
-                }
-            };
-            genesis::process_genesis(
-                &self.db,
-                &self.network,
-                genesis_folder,
-                self.exec_plan.clone(),
-            )
-            .await?;
+            let genesis_file: String =
+                get_genesis_file(&self.network, &self.genesis_folder, "byron")?;
+            genesis::process_byron_genesis(&self.db, &genesis_file, self.exec_plan.clone()).await?;
             return self.get_latest_point().await;
         }
 
@@ -171,6 +154,7 @@ impl Sink for CardanoSink {
         &mut self,
         event: Self::Event,
         perf_aggregator: &mut PerfAggregator,
+        latest_era: &mut Option<EraValue>,
     ) -> anyhow::Result<()> {
         match event {
             CardanoEventType::Block {
@@ -222,18 +206,23 @@ impl Sink for CardanoSink {
                     }
                     _ => (),
                 };
-                self.db
-                    .transaction::<_, (), DbErr>(|txn| {
-                        Box::pin(insert_block(
-                            cbor_hex,
-                            epoch,
-                            epoch_slot,
-                            txn,
-                            self.exec_plan.clone(),
-                            self.task_perf_aggregator.clone(),
-                        ))
-                    })
-                    .await?;
+                *latest_era = Some(
+                    self.db
+                        .transaction::<_, EraValue, DbErr>(|txn| {
+                            Box::pin(insert_block(
+                                cbor_hex,
+                                epoch,
+                                epoch_slot,
+                                txn,
+                                self.exec_plan.clone(),
+                                self.task_perf_aggregator.clone(),
+                                *latest_era,
+                                self.genesis_folder.clone(),
+                                self.network.clone(),
+                            ))
+                        })
+                        .await?,
+                );
             }
             CardanoEventType::RollBack {
                 block_slot,
@@ -262,12 +251,20 @@ impl Sink for CardanoSink {
                                 "Rollback destination did not exist. Maybe you're stuck on a fork?"
                             );
                         }
+                        *latest_era = None;
                     }
                     Some(point) => {
                         Block::delete_many()
                             .filter(BlockColumn::Id.gt(point.id))
                             .exec(&self.db)
                             .await?;
+                        let latest_block = Block::find()
+                            .order_by_desc(BlockColumn::Id)
+                            .one(&self.db)
+                            .await?
+                            .unwrap();
+                        *latest_era =
+                            Some(EraValue::try_from(latest_block.era).expect("Unknown era"));
                     }
                 }
 
@@ -304,7 +301,10 @@ async fn insert_block(
     txn: &DatabaseTransaction,
     exec_plan: Arc<ExecutionPlan>,
     task_perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-) -> Result<(), DbErr> {
+    previous_era: Option<EraValue>,
+    custom_genesis_folder: Option<String>,
+    network: String,
+) -> Result<EraValue, DbErr> {
     let mut perf_aggregator = PerfAggregator::new();
 
     let block_parse_counter = std::time::Instant::now();
@@ -312,10 +312,39 @@ async fn insert_block(
     let block_payload = hex::decode(cbor_hex.clone()).unwrap();
     let multi_block = MultiEraBlock::from_explicit_network_cbor_bytes(&block_payload).unwrap();
 
+    let era = to_era_value(&multi_block);
     let block_global_info = BlockGlobalInfo {
-        era: to_era_value(&multi_block),
+        era,
         epoch,
         epoch_slot,
+    };
+
+    match previous_era {
+        None => {
+            let genesis_file = get_genesis_file(&network, &custom_genesis_folder, "byron");
+            tasks::genesis::genesis_executor::process_genesis_block(
+                txn,
+                ("", &genesis_file, &block_global_info),
+                &exec_plan,
+                task_perf_aggregator.clone(),
+            )
+            .await?
+        }
+        Some(prev_era) if era > prev_era => {
+            let genesis_file = get_genesis_file(
+                &network,
+                &custom_genesis_folder,
+                &format!("{:?}", era).to_lowercase(),
+            );
+            process_genesis_block(
+                txn,
+                ("", &genesis_file, &block_global_info),
+                &exec_plan,
+                task_perf_aggregator.clone(),
+            )
+            .await?
+        }
+        _ => {}
     };
 
     perf_aggregator.block_parse += block_parse_counter.elapsed();
@@ -341,5 +370,35 @@ async fn insert_block(
         }
     }
 
-    Ok(())
+    Ok(era)
+}
+
+fn get_genesis_folder<'a>(
+    network: &str,
+    custom_genesis_folder: &'a Option<String>,
+) -> anyhow::Result<&'a str> {
+    match &network[..] {
+        "mainnet" | "preview" | "preprod" | "sanchonet" => Ok(KNOWN_GENESIS_FOLDER),
+        "custom" => Ok(custom_genesis_folder
+            .as_ref()
+            .expect("genesis_folder should be specified for custom networks")),
+        rest => {
+            return Err(anyhow!(
+            "{} is invalid. NETWORK must be either mainnet/preview/preprod or a 'custom' network",
+            rest
+        ))
+        }
+    }
+}
+
+fn get_genesis_file<'a>(
+    network: &str,
+    custom_genesis_folder: &'a Option<String>,
+    era: &str,
+) -> anyhow::Result<String> {
+    let genesis_folder = get_genesis_folder(network, custom_genesis_folder)?;
+    Ok(format!(
+        "{}/{}-{}-genesis.json",
+        genesis_folder, network, era
+    ))
 }
