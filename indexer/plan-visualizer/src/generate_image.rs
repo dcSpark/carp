@@ -51,6 +51,14 @@ pub fn generate(exec_plan: &ExecutionPlan, plan_name: &str) -> Graph {
                             entry.builder.get_dependencies(),
                         );
                     }
+                    TaskRegistryEntry::ShelleyGenesis(entry) => {
+                        add_node(
+                            SubgraphNames::Genesis,
+                            task_name,
+                            entry.builder.get_name(),
+                            entry.builder.get_dependencies(),
+                        );
+                    }
                     TaskRegistryEntry::Byron(entry) => {
                         add_node(
                             SubgraphNames::Byron,
