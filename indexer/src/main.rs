@@ -8,7 +8,6 @@ use dcspark_blockchain_source::{GetNextFrom, Source};
 use migration::async_std::path::PathBuf;
 use oura::sources::BearerKind;
 use serde::Deserialize;
-use std::borrow::Cow;
 use std::fs::File;
 use std::process::exit;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -65,14 +64,12 @@ pub enum SinkConfig {
     },
 }
 
-pub enum Network {}
-
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
 pub enum SourceConfig {
     Oura { socket: String, bearer: BearerKind },
-    CardanoNet { relay: (Cow<'static, str>, u16) },
+    CardanoNet { relay: (String, u16) },
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -239,8 +236,11 @@ async fn main() -> anyhow::Result<()> {
                 .ok_or_else(|| anyhow!("Starting points list is empty"))?;
 
             let network_config = dcspark_blockchain_source::cardano::NetworkConfiguration {
-                relay: relay.clone(),
-                from: start_from.clone(),
+                relay: dcspark_blockchain_source::cardano::Relay::UrlPort(
+                    relay.clone().0,
+                    relay.clone().1,
+                ),
+                from: None,
                 ..base_config
             };
 

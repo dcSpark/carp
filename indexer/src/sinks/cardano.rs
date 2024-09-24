@@ -3,9 +3,9 @@ use crate::perf_aggregator::PerfAggregator;
 use crate::sink::Sink;
 use crate::types::{MultiEraBlock, StoppableService};
 use crate::{genesis, DbConfig, SinkConfig};
-use anyhow::anyhow;
+use anyhow::{anyhow, Context as _};
 use async_trait::async_trait;
-
+use dcspark_blockchain_source::cardano::time::Era;
 use dcspark_blockchain_source::cardano::Point;
 use dcspark_core::{BlockId, SlotNumber};
 use entity::sea_orm::Database;
@@ -18,6 +18,8 @@ use entity::{
     prelude::{Block, BlockColumn},
     sea_orm::{DatabaseConnection, EntityTrait, QueryOrder, QuerySelect},
 };
+use std::io::Cursor;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::Mutex;
 use tasks::byron::byron_executor::process_byron_block;
@@ -25,16 +27,53 @@ use tasks::dsl::database_task::BlockGlobalInfo;
 use tasks::execution_plan::ExecutionPlan;
 use tasks::multiera::multiera_executor::process_multiera_block;
 use tasks::utils::TaskPerfAggregator;
+use tokio::io::AsyncReadExt;
+
+#[derive(Clone)]
+pub enum Network {
+    Mainnet,
+    Preview,
+    Preprod,
+    Sanchonet,
+    Custom { genesis_files: PathBuf },
+}
+
+impl Network {
+    pub fn genesis_filename(&self, era: EraValue) -> String {
+        match self {
+            Network::Mainnet | Network::Preview | Network::Preprod | Network::Sanchonet => {
+                format!("{}-{}-genesis.json", self.to_str(), era.to_str())
+            }
+            Network::Custom { genesis_files: _ } => format!("{}-genesis.json", era.to_str()),
+        }
+    }
+
+    pub fn to_str(&self) -> &'static str {
+        match self {
+            Network::Mainnet => "mainnet",
+            Network::Preview => "preview",
+            Network::Preprod => "preprod",
+            Network::Sanchonet => "sanchonet",
+            Network::Custom { genesis_files: _ } => "custom",
+        }
+    }
+}
+
+impl std::fmt::Display for Network {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_str())
+    }
+}
 
 pub struct CardanoSink {
     db: DatabaseConnection,
-    network: String,
-    genesis_folder: Option<String>,
+    network: Network,
     exec_plan: Arc<ExecutionPlan>,
 
     last_epoch: i128,
     epoch_start_time: std::time::Instant,
     task_perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
+    shelley_era: Option<Era>,
 }
 
 impl CardanoSink {
@@ -49,18 +88,43 @@ impl CardanoSink {
             } => (db, network, genesis_folder),
             _ => todo!("Invalid sink config provided"),
         };
+
+        let network = if network == "custom" {
+            Network::Custom {
+                genesis_files: genesis_folder
+                    .ok_or(anyhow!(
+                        "genesis_folder should be specified for custom networks"
+                    ))?
+                    .into(),
+            }
+        } else {
+            match network.as_ref() {
+                "mainnet" => Network::Mainnet,
+                "preview" => Network::Preview,
+                "preprod" => Network::Preprod,
+                "sanchonet" => Network::Sanchonet,
+                unknown => {
+                    anyhow::bail!(
+                            "{unknown} is invalid. NETWORK must be either mainnet/preview/preprod or a 'custom' network",
+                )
+                }
+            }
+        };
+
         match db_config {
             DbConfig::Postgres { database_url } => {
                 let conn = Database::connect(&database_url).await?;
 
+                let shelley_era = get_shelley_era_data_from_db(&conn).await?;
+
                 Ok(Self {
                     db: conn,
                     network,
-                    genesis_folder,
                     exec_plan,
                     last_epoch: -1,
                     epoch_start_time: std::time::Instant::now(),
                     task_perf_aggregator: Arc::new(Mutex::new(TaskPerfAggregator::default())),
+                    shelley_era,
                 })
             }
             _ => todo!("Only postgres is supported atm"),
@@ -141,9 +205,13 @@ impl Sink for CardanoSink {
 
         if start.is_empty() {
             // https://github.com/txpipe/oura/blob/67b01e8739ed2927ced270e08daea74b03bcc7f7/src/sources/common.rs#L91
-            let genesis_file: String =
-                get_genesis_file(&self.network, &self.genesis_folder, "byron")?;
-            genesis::process_byron_genesis(&self.db, &genesis_file, self.exec_plan.clone()).await?;
+            let genesis_file: PathBuf = get_genesis_file(&self.network, EraValue::Byron)?;
+            genesis::process_byron_genesis(
+                &self.db,
+                &genesis_file.to_string_lossy(),
+                self.exec_plan.clone(),
+            )
+            .await?;
             return self.get_latest_point().await;
         }
 
@@ -154,17 +222,24 @@ impl Sink for CardanoSink {
         &mut self,
         event: Self::Event,
         perf_aggregator: &mut PerfAggregator,
-        latest_era: &mut Option<EraValue>,
     ) -> anyhow::Result<()> {
         match event {
             CardanoEventType::Block {
                 cbor_hex,
-                epoch,
+                mut epoch,
                 epoch_slot,
                 block_number,
                 block_hash,
                 block_slot: _block_slot,
             } => {
+                // this won't work for the first block in the shelley era, since
+                // the shelley genesis is processed after this however, this
+                // probably doesn't matter that much for the perf aggregator
+                // since it's only one block and it only happens once.
+                if let Some(shelley_era) = &self.shelley_era {
+                    epoch = shelley_era.absolute_slot_to_epoch(epoch_slot.unwrap());
+                }
+
                 match epoch {
                     Some(epoch) if epoch as i128 > self.last_epoch => {
                         let epoch_duration = self.epoch_start_time.elapsed();
@@ -206,23 +281,21 @@ impl Sink for CardanoSink {
                     }
                     _ => (),
                 };
-                *latest_era = Some(
-                    self.db
-                        .transaction::<_, EraValue, DbErr>(|txn| {
-                            Box::pin(insert_block(
-                                cbor_hex,
-                                epoch,
-                                epoch_slot,
-                                txn,
-                                self.exec_plan.clone(),
-                                self.task_perf_aggregator.clone(),
-                                *latest_era,
-                                self.genesis_folder.clone(),
-                                self.network.clone(),
-                            ))
-                        })
-                        .await?,
-                );
+                self.shelley_era = self
+                    .db
+                    .transaction::<_, Option<Era>, DbErr>(|txn| {
+                        Box::pin(insert_block(
+                            cbor_hex,
+                            epoch,
+                            epoch_slot,
+                            txn,
+                            self.exec_plan.clone(),
+                            self.task_perf_aggregator.clone(),
+                            self.network.clone(),
+                            self.shelley_era.clone(),
+                        ))
+                    })
+                    .await?;
             }
             CardanoEventType::RollBack {
                 block_slot,
@@ -251,20 +324,19 @@ impl Sink for CardanoSink {
                                 "Rollback destination did not exist. Maybe you're stuck on a fork?"
                             );
                         }
-                        *latest_era = None;
                     }
                     Some(point) => {
                         Block::delete_many()
                             .filter(BlockColumn::Id.gt(point.id))
                             .exec(&self.db)
                             .await?;
-                        let latest_block = Block::find()
-                            .order_by_desc(BlockColumn::Id)
-                            .one(&self.db)
-                            .await?
-                            .unwrap();
-                        *latest_era =
-                            Some(EraValue::try_from(latest_block.era).expect("Unknown era"));
+
+                        // the table that keeps track of the shelley genesis
+                        // has a foreign key to the block in which we triggered
+                        // that update, this means the entry will get deleted if
+                        // we rollback to a point before that, in which case we
+                        // re-fetch it just to be sure.
+                        self.shelley_era = get_shelley_era_data_from_db(&self.db).await?;
                     }
                 }
 
@@ -294,6 +366,7 @@ fn to_era_value(x: &MultiEraBlock) -> EraValue {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn insert_block(
     cbor_hex: String,
     epoch: Option<u64>,
@@ -301,10 +374,9 @@ async fn insert_block(
     txn: &DatabaseTransaction,
     exec_plan: Arc<ExecutionPlan>,
     task_perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-    previous_era: Option<EraValue>,
-    custom_genesis_folder: Option<String>,
-    network: String,
-) -> Result<EraValue, DbErr> {
+    network: Network,
+    mut shelley_era: Option<Era>,
+) -> Result<Option<Era>, DbErr> {
     let mut perf_aggregator = PerfAggregator::new();
 
     let block_parse_counter = std::time::Instant::now();
@@ -313,39 +385,59 @@ async fn insert_block(
     let multi_block = MultiEraBlock::from_explicit_network_cbor_bytes(&block_payload).unwrap();
 
     let era = to_era_value(&multi_block);
-    let block_global_info = BlockGlobalInfo {
+    let mut block_global_info = BlockGlobalInfo {
         era,
         epoch,
         epoch_slot,
     };
 
-    match previous_era {
-        None => {
-            let genesis_file = get_genesis_file(&network, &custom_genesis_folder, "byron");
-            tasks::genesis::genesis_executor::process_genesis_block(
-                txn,
-                ("", &genesis_file, &block_global_info),
-                &exec_plan,
-                task_perf_aggregator.clone(),
-            )
+    if era > EraValue::Byron && shelley_era.is_none() {
+        // we don't have the code to parse the other genesis blocks (alonzo, conway).
+        let genesis_file_path = get_genesis_file(&network, EraValue::Shelley)
+            .context("Couldn't get the shelley genesis file from the filesystem")
+            .unwrap();
+
+        let mut buffer = Vec::new();
+
+        tokio::fs::File::open(genesis_file_path)
+            .await
+            .unwrap()
+            .read_to_end(&mut buffer)
+            .await
+            .unwrap();
+
+        let genesis = cml_chain::genesis::shelley::parse::parse_genesis_data(Cursor::new(buffer))
+            .expect("Failed to parse genesis");
+
+        tasks::genesis::genesis_executor::process_shelley_genesis_block(
+            txn,
+            ("", &genesis, &block_global_info),
+            &exec_plan,
+            task_perf_aggregator.clone(),
+        )
+        .await?;
+
+        shelley_era = entity::genesis::Entity::find()
+            .filter(entity::genesis::Column::Era.eq(i32::from(EraValue::Shelley)))
+            .limit(1)
+            .one(txn)
             .await?
-        }
-        Some(prev_era) if era > prev_era => {
-            let genesis_file = get_genesis_file(
-                &network,
-                &custom_genesis_folder,
-                &format!("{:?}", era).to_lowercase(),
-            );
-            process_genesis_block(
-                txn,
-                ("", &genesis_file, &block_global_info),
-                &exec_plan,
-                task_perf_aggregator.clone(),
-            )
-            .await?
-        }
-        _ => {}
-    };
+            .map(|model| Era {
+                first_slot: model.first_slot.try_into().unwrap(),
+                start_epoch: model.start_epoch.try_into().unwrap(),
+                epoch_length_seconds: model.epoch_length_seconds.try_into().unwrap(),
+                // we don't need to know these since we don't compute timestamps
+                known_time: 0,
+                slot_length: 0,
+            });
+    }
+
+    // in the byron era the epoch it's in the header, so we only need to compute
+    // this if we already transitioned to shelley.
+    if let Some(shelley_era) = &shelley_era {
+        block_global_info.epoch =
+            shelley_era.absolute_slot_to_epoch(block_global_info.epoch_slot.unwrap());
+    }
 
     perf_aggregator.block_parse += block_parse_counter.elapsed();
 
@@ -370,35 +462,43 @@ async fn insert_block(
         }
     }
 
-    Ok(era)
+    Ok(shelley_era)
 }
 
-fn get_genesis_folder<'a>(
-    network: &str,
-    custom_genesis_folder: &'a Option<String>,
-) -> anyhow::Result<&'a str> {
-    match &network[..] {
-        "mainnet" | "preview" | "preprod" | "sanchonet" => Ok(KNOWN_GENESIS_FOLDER),
-        "custom" => Ok(custom_genesis_folder
-            .as_ref()
-            .expect("genesis_folder should be specified for custom networks")),
-        rest => {
-            return Err(anyhow!(
-            "{} is invalid. NETWORK must be either mainnet/preview/preprod or a 'custom' network",
-            rest
-        ))
+fn get_genesis_file(network: &Network, era: EraValue) -> anyhow::Result<PathBuf> {
+    let mut path = PathBuf::new();
+
+    let known_genesis_folder = PathBuf::from(KNOWN_GENESIS_FOLDER);
+    let genesis_folder = match network {
+        Network::Mainnet | Network::Preview | Network::Preprod | Network::Sanchonet => {
+            &known_genesis_folder
         }
-    }
+        Network::Custom { genesis_files } => genesis_files,
+    };
+
+    path.push(genesis_folder);
+    path.push(network.genesis_filename(era));
+
+    Ok(path)
 }
 
-fn get_genesis_file<'a>(
-    network: &str,
-    custom_genesis_folder: &'a Option<String>,
-    era: &str,
-) -> anyhow::Result<String> {
-    let genesis_folder = get_genesis_folder(network, custom_genesis_folder)?;
-    Ok(format!(
-        "{}/{}-{}-genesis.json",
-        genesis_folder, network, era
-    ))
+async fn get_shelley_era_data_from_db(
+    conn: &DatabaseConnection,
+) -> Result<Option<Era>, anyhow::Error> {
+    let shelley_era = entity::genesis::Entity::find()
+        .filter(entity::genesis::Column::Era.eq(i32::from(EraValue::Shelley)))
+        .limit(1)
+        .one(conn)
+        .await?
+        .map(|model| {
+            Era {
+                first_slot: model.first_slot.try_into().unwrap(),
+                start_epoch: model.start_epoch.try_into().unwrap(),
+                epoch_length_seconds: model.epoch_length_seconds.try_into().unwrap(),
+                // we don't need to know these since we don't compute timestamps
+                known_time: 0,
+                slot_length: 0,
+            }
+        });
+    Ok(shelley_era)
 }

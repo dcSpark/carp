@@ -69,3 +69,17 @@ impl TryFrom<i32> for EraValue {
         }
     }
 }
+
+impl EraValue {
+    pub fn to_str(&self) -> &'static str {
+        match self {
+            EraValue::Byron => "byron",
+            EraValue::Shelley => "shelley",
+            EraValue::Allegra => "allegra",
+            EraValue::Mary => "mary",
+            EraValue::Alonzo => "alonzo",
+            EraValue::Babbage => "babbage",
+            EraValue::Conway => "conway",
+        }
+    }
+}

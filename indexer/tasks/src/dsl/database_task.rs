@@ -1,5 +1,5 @@
 use crate::utils::TaskPerfAggregator;
-use cml_chain::genesis::byron::config::GenesisData;
+use cml_chain::genesis::{byron::config::GenesisData, shelley::config::ShelleyGenesisData};
 use entity::{block::EraValue, prelude::*, sea_orm::DatabaseTransaction};
 use shred::DispatcherBuilder;
 use std::sync::{Arc, Mutex};
@@ -55,6 +55,7 @@ pub trait TaskBuilder<'a, BlockType, BlockExtraType> {
 #[derive(Copy, Clone)]
 pub enum TaskRegistryEntry {
     Genesis(GenesisTaskRegistryEntry),
+    ShelleyGenesis(ShelleyGenesisTaskRegistryEntry),
     Byron(ByronTaskRegistryEntry),
     Multiera(MultieraTaskRegistryEntry),
 }
@@ -62,6 +63,11 @@ pub enum TaskRegistryEntry {
 #[derive(Copy, Clone)]
 pub struct GenesisTaskRegistryEntry {
     pub builder: &'static (dyn for<'a> TaskBuilder<'a, GenesisData, BlockGlobalInfo> + Sync),
+}
+
+#[derive(Copy, Clone)]
+pub struct ShelleyGenesisTaskRegistryEntry {
+    pub builder: &'static (dyn for<'a> TaskBuilder<'a, ShelleyGenesisData, BlockGlobalInfo> + Sync),
 }
 
 #[derive(Copy, Clone)]

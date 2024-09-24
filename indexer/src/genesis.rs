@@ -1,4 +1,4 @@
-use anyhow::anyhow;
+use anyhow::{anyhow, Context as _};
 use entity::block::EraValue;
 use std::fs;
 use std::sync::{Arc, Mutex};
@@ -23,7 +23,7 @@ pub async fn process_byron_genesis(
     tracing::info!("Parsing genesis file...");
     let mut time_counter = std::time::Instant::now();
 
-    let file = fs::File::open(genesis_file).expect("Failed to open genesis file");
+    let file = fs::File::open(genesis_file).context("Failed to open genesis file")?;
     let genesis_file: Box<GenesisData> = Box::new(
         parse_genesis_data(file).map_err(|err| anyhow!("can't parse genesis data: {:?}", err))?,
     );
@@ -71,79 +71,6 @@ pub async fn insert_byron_genesis(
 
     let block_global_info = BlockGlobalInfo {
         era: EraValue::Byron,
-        epoch: None,
-        epoch_slot: None,
-    };
-
-    process_genesis_block(
-        txn,
-        ("", &genesis_file, &block_global_info),
-        &exec_plan,
-        task_perf_aggregator.clone(),
-    )
-    .await?;
-
-    Ok(())
-}
-
-pub async fn process_shelley_genesis(
-    conn: &DatabaseConnection,
-    genesis_file: &str,
-    exec_plan: Arc<ExecutionPlan>,
-) -> anyhow::Result<()> {
-    let task_perf_aggregator = Arc::new(Mutex::new(TaskPerfAggregator::default()));
-
-    tracing::info!("Parsing genesis file...");
-    let mut time_counter = std::time::Instant::now();
-
-    let file = fs::File::open(genesis_file).expect("Failed to open genesis file");
-    let genesis_file: Box<GenesisData> = Box::new(
-        parse_genesis_data(file).map_err(|err| anyhow!("can't parse genesis data: {:?}", err))?,
-    );
-
-    tracing::info!(
-        "Finished parsing genesis file after {:?}",
-        time_counter.elapsed()
-    );
-    time_counter = std::time::Instant::now();
-
-    tracing::info!("Inserting Shelley genesis data into database...");
-    conn.transaction(|txn| {
-        Box::pin(insert_shelley_genesis(
-            txn,
-            genesis_file,
-            exec_plan.clone(),
-            task_perf_aggregator.clone(),
-        ))
-    })
-    .await?;
-
-    tracing::info!(
-        "Finished inserting genesis data after {:?}",
-        time_counter.elapsed()
-    );
-    tracing::trace!(
-        "Genesis task-wise time spent:\n{:#?}",
-        task_perf_aggregator.lock().unwrap()
-    );
-
-    Ok(())
-}
-
-pub async fn insert_shelley_genesis(
-    txn: &DatabaseTransaction,
-    genesis_file: Box<GenesisData>,
-    exec_plan: Arc<ExecutionPlan>,
-    task_perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
-) -> Result<(), DbErr> {
-    let genesis_hash = genesis_file.genesis_prev.to_raw_bytes();
-    tracing::info!(
-        "Starting sync based on genesis hash {}",
-        hex::encode(genesis_hash)
-    );
-
-    let block_global_info = BlockGlobalInfo {
-        era: EraValue::Shelley,
         epoch: None,
         epoch_slot: None,
     };

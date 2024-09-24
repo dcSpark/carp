@@ -1,7 +1,6 @@
 use crate::perf_aggregator::PerfAggregator;
 use async_trait::async_trait;
 use dcspark_blockchain_source::{EventObject, PullFrom};
-use entity::block::EraValue;
 
 #[async_trait]
 pub trait Sink {
@@ -13,6 +12,5 @@ pub trait Sink {
         &mut self,
         event: Self::Event,
         perf_aggregator: &mut PerfAggregator,
-        latest_era: &mut Option<EraValue>,
     ) -> anyhow::Result<()>;
 }

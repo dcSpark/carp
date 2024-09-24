@@ -27,6 +27,10 @@ pub use super::dex_swap::{
     ActiveModel as DexSwapActiveModel, Column as DexSwapColumn, Entity as DexSwap,
     Model as DexSwapModel, PrimaryKey as DexSwapPrimaryKey, Relation as DexSwapRelation,
 };
+pub use super::genesis::{
+    ActiveModel as GenesisActiveModel, Column as GenesisColumn, Entity as Genesis,
+    Model as GenesisModel, PrimaryKey as GenesisPrimaryKey, Relation as GenesisRelation,
+};
 pub use super::governance_votes::{
     ActiveModel as GovernanceVoteActiveModel, Column as GovernanceVoteColumn,
     Entity as GovernanceVote, Model as GovernanceVoteModel, PrimaryKey as GovernanceVotePrimaryKey,

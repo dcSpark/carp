@@ -3,7 +3,8 @@ pub use crate::utils::find_task_registry_entry;
 pub use crate::{
     dsl::database_task::{
         BlockGlobalInfo, BlockInfo, ByronTaskRegistryEntry, DatabaseTaskMeta,
-        GenesisTaskRegistryEntry, MultieraTaskRegistryEntry, TaskBuilder, TaskRegistryEntry,
+        GenesisTaskRegistryEntry, MultieraTaskRegistryEntry, ShelleyGenesisTaskRegistryEntry,
+        TaskBuilder, TaskRegistryEntry,
     },
     era_common::AddressInBlock,
     utils::TaskPerfAggregator,
@@ -17,6 +18,9 @@ macro_rules! era_to_block {
     (genesis) => {
         GenesisData
     };
+    (shelley_genesis) => {
+        ShelleyGenesisData
+    };
     (byron) => {
         cml_multi_era::MultiEraBlock
     };
@@ -27,6 +31,9 @@ macro_rules! era_to_block {
 
 macro_rules! era_to_block_info {
     (genesis) => {
+        BlockGlobalInfo
+    };
+    (shelley_genesis) => {
         BlockGlobalInfo
     };
     (byron) => {
@@ -41,6 +48,11 @@ cfg_if::cfg_if! {
     if #[cfg(feature = "build_markdown_task")] {
         macro_rules! era_to_registry {
             (genesis $task_builder:expr) => {
+                TaskMarkdownRegistryEntry::Genesis(GenesisTaskMarkdownRegistryEntry {
+                    builder: &$task_builder,
+                })
+            };
+            (shelley_genesis $task_builder:expr) => {
                 TaskMarkdownRegistryEntry::Genesis(GenesisTaskMarkdownRegistryEntry {
                     builder: &$task_builder,
                 })
@@ -201,6 +213,11 @@ cfg_if::cfg_if! {
         macro_rules! era_to_registry {
             (genesis $task_builder:expr) => {
                 TaskRegistryEntry::Genesis(GenesisTaskRegistryEntry {
+                    builder: &$task_builder,
+                })
+            };
+            (shelley_genesis $task_builder:expr) => {
+                TaskRegistryEntry::ShelleyGenesis(ShelleyGenesisTaskRegistryEntry {
                     builder: &$task_builder,
                 })
             };

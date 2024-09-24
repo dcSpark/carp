@@ -62,7 +62,7 @@ impl Source for CardanoSource {
                         tracing::debug!(id = %block_event.id, "block event received");
                         Ok(Some(CardanoEventType::Block {
                             cbor_hex: hex::encode(block_event.raw_block),
-                            epoch: Some(block_event.epoch),
+                            epoch: block_event.epoch,
                             epoch_slot: Some(block_event.slot_number.into()),
                             block_number: block_event.block_number.into(),
                             block_hash: block_event.id.to_string(),
@@ -88,7 +88,7 @@ impl Source for CardanoSource {
 
 impl CardanoSource {
     pub async fn new(configuration: NetworkConfiguration) -> anyhow::Result<Self> {
-        WrappedCardanoSource::connect(&configuration, Duration::from_millis(5000))
+        WrappedCardanoSource::connect(&configuration, Duration::from_millis(5000), true)
             .await
             .and_then(|cardano_source| {
                 Multiverse::temporary()
