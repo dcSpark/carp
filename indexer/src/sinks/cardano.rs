@@ -237,7 +237,8 @@ impl Sink for CardanoSink {
                 // probably doesn't matter that much for the perf aggregator
                 // since it's only one block and it only happens once.
                 if let Some(shelley_era) = &self.shelley_era {
-                    epoch = shelley_era.absolute_slot_to_epoch(epoch_slot.unwrap());
+                    epoch =
+                        epoch.or_else(|| shelley_era.absolute_slot_to_epoch(epoch_slot.unwrap()));
                 }
 
                 match epoch {
@@ -430,13 +431,14 @@ async fn insert_block(
                 known_time: 0,
                 slot_length: 0,
             });
-    }
 
-    // in the byron era the epoch it's in the header, so we only need to compute
-    // this if we already transitioned to shelley.
-    if let Some(shelley_era) = &shelley_era {
-        block_global_info.epoch =
-            shelley_era.absolute_slot_to_epoch(block_global_info.epoch_slot.unwrap());
+        // in the byron era the epoch it's in the header, so we only need to compute
+        // this if we already transitioned to shelley.
+        if let Some(shelley_era) = &shelley_era {
+            block_global_info.epoch = block_global_info.epoch.or_else(|| {
+                shelley_era.absolute_slot_to_epoch(block_global_info.epoch_slot.unwrap())
+            });
+        }
     }
 
     perf_aggregator.block_parse += block_parse_counter.elapsed();
