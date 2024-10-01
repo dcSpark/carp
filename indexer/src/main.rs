@@ -1,12 +1,11 @@
 use crate::sink::Sink;
 use crate::sinks::CardanoSink;
-use crate::sources::{CardanoSource, OuraSource};
+use crate::sources::{CardanoSource, N2CSource};
 use crate::types::StoppableService;
 use anyhow::{anyhow, Context};
 use clap::Parser;
 use dcspark_blockchain_source::{GetNextFrom, Source};
 use migration::async_std::path::PathBuf;
-use oura::sources::BearerKind;
 use serde::Deserialize;
 use std::fs::File;
 use std::process::exit;
@@ -68,7 +67,7 @@ pub enum SinkConfig {
 #[serde(tag = "type", rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
 pub enum SourceConfig {
-    Oura { socket: String, bearer: BearerKind },
+    N2c { socket: String },
     CardanoNet { relay: (String, u16) },
 }
 
@@ -169,7 +168,7 @@ async fn main() -> anyhow::Result<()> {
         config
     };
 
-    let (network, base_config, mut sink) = match &config.sink {
+    let (_network, base_config, mut sink) = match &config.sink {
         SinkConfig::Cardano {
             network,
             custom_config,
@@ -213,9 +212,21 @@ async fn main() -> anyhow::Result<()> {
         .context("Can't get starting point from sink")?;
 
     match &config.source {
-        SourceConfig::Oura { .. } => {
-            let source = OuraSource::new(config.source, network, start_from.clone())
-                .context("Can't create oura source")?;
+        SourceConfig::N2c { socket } => {
+            let network_config = dcspark_blockchain_source::cardano::NetworkConfiguration {
+                relay: dcspark_blockchain_source::cardano::Relay::UnixSocket(socket.clone()),
+                from: None,
+                ..base_config
+            };
+
+            let source = dcspark_blockchain_source::cardano::N2CSource::connect(
+                network_config,
+                start_from.clone(),
+            )
+            .await?;
+
+            let source = N2CSource(source);
+
             let start_from = start_from
                 .last()
                 .cloned()

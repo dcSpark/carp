@@ -1,5 +1,5 @@
 mod cardano;
-mod oura_source;
+mod n2c;
 
 pub use cardano::CardanoSource;
-pub use oura_source::OuraSource;
+pub use n2c::N2CSource;
