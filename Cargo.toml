@@ -12,7 +12,12 @@ members = [
 
 
 [workspace.dependencies]
-cml-chain = { version = "6.0.0" }
-cml-core = { version = "6.0.0" }
-cml-crypto = { version = "6.0.0" }
-cml-multi-era = { version = "6.0.0" }
+# cml-chain = { version = "6.0.0" }
+# cml-core = { version = "6.0.0" }
+# cml-crypto = { version = "6.0.0" }
+# cml-multi-era = { version = "6.0.0" }
+
+cml-chain = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "8ea3d50ab9a01d82ca72ab6d8258b4b36aad2ce7" }
+cml-core = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "8ea3d50ab9a01d82ca72ab6d8258b4b36aad2ce7"  }
+cml-crypto = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "8ea3d50ab9a01d82ca72ab6d8258b4b36aad2ce7"  }
+cml-multi-era = { git = "https://github.com/dcSpark/cardano-multiplatform-lib", rev = "8ea3d50ab9a01d82ca72ab6d8258b4b36aad2ce7" }

@@ -1,0 +1,23 @@
+source:
+  type: cardano_net
+  relay:
+    - localhost
+    - 3001
+
+sink:
+  type: cardano
+  db:
+    type: postgres
+    database_url: postgresql://carp:1234@localhost:5432/carp_custom5
+  network: custom # preview / preprod / testnet / custom
+  genesis_folder: /home/user/Cardano/carp/indexer/genesis/
+  custom_config:
+    chain_info:
+      network_id: 1
+      protocol_magic: 42
+    relay:
+      - "localhost"
+      - 3001
+
+start_block:
+

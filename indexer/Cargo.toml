@@ -9,9 +9,9 @@ strip = true
 
 [dependencies]
 # [core]
-dcspark-core = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "63105adc46478eea57340bcbfc5425ced0ba139f" }
-dcspark-blockchain-source = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "63105adc46478eea57340bcbfc5425ced0ba139f" }
-multiverse = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "63105adc46478eea57340bcbfc5425ced0ba139f" }
+dcspark-core = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "986ad8495c3894782774e2db0fc3fe65f44ca89d" }
+dcspark-blockchain-source = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "986ad8495c3894782774e2db0fc3fe65f44ca89d" }
+multiverse = { git = "https://github.com/dcSpark/dcspark-core.git", rev = "986ad8495c3894782774e2db0fc3fe65f44ca89d" }
 
 # [local]
 entity = { path = "entity" }
@@ -29,7 +29,6 @@ clap = { version = "3.1", features = ["derive"] }
 ctrlc = { version = "3.2.4", features = ["termination"] }
 dotenv = { version = "0.15.0" }
 hex = { version = "0.4.3" }
-oura = { git = "https://github.com/txpipe/oura.git", rev = "e1b971394a394bde13fb601ad3f6d4ad343b02f0" }
 serde = { version = "1.0.152", features = ["derive", "rc"] }
 serde_json = { version = "1.0.92" }
 serde_yaml = { version = "0.9.17" }

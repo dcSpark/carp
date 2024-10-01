@@ -23,6 +23,7 @@ mod m20231220_000018_asset_utxo_table;
 mod m20240229_000019_add_block_tx_count_column;
 mod m20240326_000020_create_drep_delegation_table;
 mod m20240326_000021_create_governance_voting_table;
+mod m20240920_000022_create_genesis_tracking_table;
 
 pub struct Migrator;
 
@@ -53,6 +54,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20240229_000019_add_block_tx_count_column::Migration),
             Box::new(m20240326_000020_create_drep_delegation_table::Migration),
             Box::new(m20240326_000021_create_governance_voting_table::Migration),
+            Box::new(m20240920_000022_create_genesis_tracking_table::Migration),
         ]
     }
 }

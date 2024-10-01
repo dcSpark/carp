@@ -58,6 +58,11 @@ pub fn find_task_registry_entry(task_name: &str) -> Option<TaskRegistryEntry> {
                     return Some(*registry_entry);
                 }
             }
+            TaskRegistryEntry::ShelleyGenesis(entry) => {
+                if entry.builder.get_name() == task_name {
+                    return Some(*registry_entry);
+                }
+            }
         }
     }
     None

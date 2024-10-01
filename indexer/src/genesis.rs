@@ -1,4 +1,4 @@
-use anyhow::anyhow;
+use anyhow::{anyhow, Context as _};
 use entity::block::EraValue;
 use std::fs;
 use std::sync::{Arc, Mutex};
@@ -13,38 +13,17 @@ use migration::DbErr;
 use tasks::utils::TaskPerfAggregator;
 use tasks::{execution_plan::ExecutionPlan, genesis::genesis_executor::process_genesis_block};
 
-const GENESIS_MAINNET: &str = "./genesis/mainnet-byron-genesis.json";
-const GENESIS_PREVIEW: &str = "./genesis/preview-byron-genesis.json";
-const GENESIS_PREPROD: &str = "./genesis/preprod-byron-genesis.json";
-const GENESIS_TESTNET: &str = "./genesis/testnet-byron-genesis.json";
-const GENESIS_SANCHONET: &str = "./genesis/sanchonet-byron-genesis.json";
-
-pub async fn process_genesis(
+pub async fn process_byron_genesis(
     conn: &DatabaseConnection,
-    network: &str,
+    genesis_file: &str,
     exec_plan: Arc<ExecutionPlan>,
 ) -> anyhow::Result<()> {
-    // https://github.com/txpipe/oura/blob/67b01e8739ed2927ced270e08daea74b03bcc7f7/src/sources/common.rs#L91
-    let genesis_path = match network {
-        "mainnet" => GENESIS_MAINNET,
-        "testnet" => GENESIS_TESTNET,
-        "preview" => GENESIS_PREVIEW,
-        "preprod" => GENESIS_PREPROD,
-        "sanchonet" => GENESIS_SANCHONET,
-        rest => {
-            return Err(anyhow!(
-                "{} is invalid. NETWORK must be either mainnet/preview/preprod/testnet",
-                rest
-            ))
-        }
-    };
-
     let task_perf_aggregator = Arc::new(Mutex::new(TaskPerfAggregator::default()));
 
     tracing::info!("Parsing genesis file...");
     let mut time_counter = std::time::Instant::now();
 
-    let file = fs::File::open(genesis_path).expect("Failed to open genesis file");
+    let file = fs::File::open(genesis_file).context("Failed to open genesis file")?;
     let genesis_file: Box<GenesisData> = Box::new(
         parse_genesis_data(file).map_err(|err| anyhow!("can't parse genesis data: {:?}", err))?,
     );
@@ -55,9 +34,9 @@ pub async fn process_genesis(
     );
     time_counter = std::time::Instant::now();
 
-    tracing::info!("Inserting genesis data into database...");
+    tracing::info!("Inserting Byron genesis data into database...");
     conn.transaction(|txn| {
-        Box::pin(insert_genesis(
+        Box::pin(insert_byron_genesis(
             txn,
             genesis_file,
             exec_plan.clone(),
@@ -78,7 +57,7 @@ pub async fn process_genesis(
     Ok(())
 }
 
-pub async fn insert_genesis(
+pub async fn insert_byron_genesis(
     txn: &DatabaseTransaction,
     genesis_file: Box<GenesisData>,
     exec_plan: Arc<ExecutionPlan>,

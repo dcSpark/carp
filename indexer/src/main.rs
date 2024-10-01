@@ -1,14 +1,12 @@
 use crate::sink::Sink;
 use crate::sinks::CardanoSink;
-use crate::sources::{CardanoSource, OuraSource};
+use crate::sources::{CardanoSource, N2CSource};
 use crate::types::StoppableService;
 use anyhow::{anyhow, Context};
 use clap::Parser;
 use dcspark_blockchain_source::{GetNextFrom, Source};
 use migration::async_std::path::PathBuf;
-use oura::sources::BearerKind;
 use serde::Deserialize;
-use std::borrow::Cow;
 use std::fs::File;
 use std::process::exit;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -59,17 +57,18 @@ pub enum SinkConfig {
         db: DbConfig,
         #[serde(default = "get_env_network")]
         network: String,
+        /// Custom configuration. If not present it will be inferred from the network name
+        custom_config: Option<dcspark_blockchain_source::cardano::NetworkConfiguration>,
+        genesis_folder: Option<String>,
     },
 }
-
-pub enum Network {}
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
 pub enum SourceConfig {
-    Oura { socket: String, bearer: BearerKind },
-    CardanoNet { relay: (Cow<'static, str>, u16) },
+    N2c { socket: String },
+    CardanoNet { relay: (String, u16) },
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -169,10 +168,39 @@ async fn main() -> anyhow::Result<()> {
         config
     };
 
-    let (network, mut sink) = match config.sink {
-        SinkConfig::Cardano { ref network, .. } => (
+    let (_network, base_config, mut sink) = match &config.sink {
+        SinkConfig::Cardano {
+            network,
+            custom_config,
+            ..
+        } => (
             network.clone(),
-            CardanoSink::new(config.sink, exec_plan)
+            match custom_config {
+                Some(custom_config) => custom_config.clone(),
+                None => match network.as_ref() {
+                    "mainnet" => {
+                        dcspark_blockchain_source::cardano::NetworkConfiguration::mainnet()
+                    }
+                    "preprod" => {
+                        dcspark_blockchain_source::cardano::NetworkConfiguration::preprod()
+                    }
+                    "preview" => {
+                        dcspark_blockchain_source::cardano::NetworkConfiguration::preview()
+                    }
+                    "sanchonet" => {
+                        dcspark_blockchain_source::cardano::NetworkConfiguration::sancho()
+                    }
+                    "custom" => {
+                        panic!("sink.custom_config is mandatory when setting network to custom")
+                    }
+                    unknown_network => {
+                        return Err(anyhow::anyhow!(
+                            "network {unknown_network} not supported by source"
+                        ))
+                    }
+                },
+            },
+            CardanoSink::new(config.sink.clone(), exec_plan)
                 .await
                 .context("Can't create cardano sink")?,
         ),
@@ -184,9 +212,21 @@ async fn main() -> anyhow::Result<()> {
         .context("Can't get starting point from sink")?;
 
     match &config.source {
-        SourceConfig::Oura { .. } => {
-            let source = OuraSource::new(config.source, network, start_from.clone())
-                .context("Can't create oura source")?;
+        SourceConfig::N2c { socket } => {
+            let network_config = dcspark_blockchain_source::cardano::NetworkConfiguration {
+                relay: dcspark_blockchain_source::cardano::Relay::UnixSocket(socket.clone()),
+                from: None,
+                ..base_config
+            };
+
+            let source = dcspark_blockchain_source::cardano::N2CSource::connect(
+                network_config,
+                start_from.clone(),
+            )
+            .await?;
+
+            let source = N2CSource(source);
+
             let start_from = start_from
                 .last()
                 .cloned()
@@ -195,14 +235,6 @@ async fn main() -> anyhow::Result<()> {
             main_loop(source, sink, start_from, running, processing_finished).await
         }
         SourceConfig::CardanoNet { relay } => {
-            let base_config = match network.as_ref() {
-                "mainnet" => dcspark_blockchain_source::cardano::NetworkConfiguration::mainnet(),
-                "preprod" => dcspark_blockchain_source::cardano::NetworkConfiguration::preprod(),
-                "preview" => dcspark_blockchain_source::cardano::NetworkConfiguration::preview(),
-                "sanchonet" => dcspark_blockchain_source::cardano::NetworkConfiguration::sancho(),
-                _ => return Err(anyhow::anyhow!("network not supported by source")),
-            };
-
             // try to find a confirmed point.
             //
             // this way the multiverse can be temporary, which saves setting up the extra db
@@ -215,8 +247,11 @@ async fn main() -> anyhow::Result<()> {
                 .ok_or_else(|| anyhow!("Starting points list is empty"))?;
 
             let network_config = dcspark_blockchain_source::cardano::NetworkConfiguration {
-                relay: relay.clone(),
-                from: start_from.clone(),
+                relay: dcspark_blockchain_source::cardano::Relay::UrlPort(
+                    relay.clone().0,
+                    relay.clone().1,
+                ),
+                from: None,
                 ..base_config
             };
 

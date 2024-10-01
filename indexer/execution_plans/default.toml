@@ -14,6 +14,8 @@ include_payload=false
 [GenesisTransactionTask]
 include_payload=true
 
+[ShelleyGenesisBlockTask]
+
 [ByronBlockTask]
 readonly=false
 include_payload=false
