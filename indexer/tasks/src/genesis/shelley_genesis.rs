@@ -1,3 +1,6 @@
+use std::io::Cursor;
+use std::path::PathBuf;
+
 use crate::config::EmptyConfig::EmptyConfig;
 use crate::dsl::task_macro::*;
 use cml_chain::genesis::shelley::config::ShelleyGenesisData;
@@ -13,6 +16,7 @@ use entity::{
 };
 use hex::ToHex;
 use sea_orm::{QueryOrder, QuerySelect as _};
+use tokio::io::AsyncReadExt as _;
 
 carp_task! {
   name ShelleyGenesisBlockTask;
@@ -35,7 +39,7 @@ carp_task! {
 
 async fn handle_block(
     db_tx: &DatabaseTransaction,
-    block: BlockInfo<'_, ShelleyGenesisData, BlockGlobalInfo>,
+    block: BlockInfo<'_, PathBuf, BlockGlobalInfo>,
 ) -> Result<(), DbErr> {
     if Genesis::find()
         .filter(GenesisColumn::Era.eq(i32::from(EraValue::Shelley)))
@@ -56,6 +60,18 @@ async fn handle_block(
         return Ok(());
     }
 
+    let mut buffer = Vec::new();
+
+    tokio::fs::File::open(block.1)
+        .await
+        .unwrap()
+        .read_to_end(&mut buffer)
+        .await
+        .unwrap();
+
+    let genesis = cml_chain::genesis::shelley::parse::parse_genesis_data(Cursor::new(buffer))
+        .expect("Failed to parse genesis");
+
     let (latest_block_height, latest_block_epoch) = Block::find()
         .order_by_desc(block::Column::Height)
         .limit(1)
@@ -73,7 +89,7 @@ async fn handle_block(
     // potentially we may want to add an entry in the era table with values for these though?
     // or we could read the genesis file here.
     let byron_slot_duration = 20;
-    let epoch_length_in_byron_slots = block.1.epoch_length / byron_slot_duration;
+    let epoch_length_in_byron_slots = genesis.epoch_length / byron_slot_duration;
 
     let first_slot = (block.2.epoch_slot.unwrap() / epoch_length_in_byron_slots
         * epoch_length_in_byron_slots) as i64;
@@ -83,7 +99,7 @@ async fn handle_block(
         height: Set(latest_block_height + 1),
         epoch: Set(start_epoch),
         payload: Set(None),
-        tx_count: Set(block.1.initial_funds.len().try_into().unwrap()),
+        tx_count: Set(genesis.initial_funds.len().try_into().unwrap()),
         // TODO: what should we hash?
         hash: Set(b"shelley-genesis".to_vec()),
         slot: Set(first_slot.try_into().unwrap()),
@@ -99,15 +115,15 @@ async fn handle_block(
         block_height: Set(latest_block_height + 1),
         first_slot: Set(first_slot),
         start_epoch: Set(start_epoch.into()),
-        epoch_length_seconds: Set(block.1.epoch_length as i64),
+        epoch_length_seconds: Set(genesis.epoch_length as i64),
     })
     .exec(db_tx)
     .await?;
 
-    let stake_credentials = handle_initial_funds(block, inserted_block, db_tx).await?;
+    let stake_credentials =
+        handle_initial_funds((block.0, &genesis, block.2), inserted_block, db_tx).await?;
 
-    if let Some(staking) = block
-        .1
+    if let Some(staking) = genesis
         .staking
         .as_ref()
         .filter(|staking| !staking.stake.is_empty())

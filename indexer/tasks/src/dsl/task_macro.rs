@@ -19,7 +19,7 @@ macro_rules! era_to_block {
         GenesisData
     };
     (shelley_genesis) => {
-        ShelleyGenesisData
+        PathBuf
     };
     (byron) => {
         cml_multi_era::MultiEraBlock

@@ -4,9 +4,9 @@ use crate::execution_plan::ExecutionPlan;
 use crate::utils::find_task_registry_entry;
 use crate::utils::TaskPerfAggregator;
 use cml_chain::genesis::byron::config::GenesisData;
-use cml_chain::genesis::shelley::config::ShelleyGenesisData;
 use entity::sea_orm::{prelude::*, DatabaseTransaction};
 use shred::{DispatcherBuilder, World};
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tokio::runtime::Handle;
 
@@ -63,7 +63,7 @@ pub async fn process_genesis_block(
 
 pub async fn process_shelley_genesis_block(
     txn: &DatabaseTransaction,
-    block: BlockInfo<'_, ShelleyGenesisData, BlockGlobalInfo>,
+    block: BlockInfo<'_, PathBuf, BlockGlobalInfo>,
     exec_plan: &ExecutionPlan,
     perf_aggregator: Arc<Mutex<TaskPerfAggregator>>,
 ) -> Result<(), DbErr> {

@@ -1,8 +1,11 @@
 use crate::utils::TaskPerfAggregator;
-use cml_chain::genesis::{byron::config::GenesisData, shelley::config::ShelleyGenesisData};
+use cml_chain::genesis::byron::config::GenesisData;
 use entity::{block::EraValue, prelude::*, sea_orm::DatabaseTransaction};
 use shred::DispatcherBuilder;
-use std::sync::{Arc, Mutex};
+use std::{
+    path::PathBuf,
+    sync::{Arc, Mutex},
+};
 
 /// Misc information about blocks that can't be computed from just the block data itself
 pub struct BlockGlobalInfo {
@@ -67,7 +70,7 @@ pub struct GenesisTaskRegistryEntry {
 
 #[derive(Copy, Clone)]
 pub struct ShelleyGenesisTaskRegistryEntry {
-    pub builder: &'static (dyn for<'a> TaskBuilder<'a, ShelleyGenesisData, BlockGlobalInfo> + Sync),
+    pub builder: &'static (dyn for<'a> TaskBuilder<'a, PathBuf, BlockGlobalInfo> + Sync),
 }
 
 #[derive(Copy, Clone)]

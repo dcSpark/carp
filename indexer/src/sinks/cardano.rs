@@ -18,7 +18,6 @@ use entity::{
     prelude::{Block, BlockColumn},
     sea_orm::{DatabaseConnection, EntityTrait, QueryOrder, QuerySelect},
 };
-use std::io::Cursor;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -27,7 +26,6 @@ use tasks::dsl::database_task::BlockGlobalInfo;
 use tasks::execution_plan::ExecutionPlan;
 use tasks::multiera::multiera_executor::process_multiera_block;
 use tasks::utils::TaskPerfAggregator;
-use tokio::io::AsyncReadExt;
 
 #[derive(Clone)]
 pub enum Network {
@@ -398,21 +396,9 @@ async fn insert_block(
             .context("Couldn't get the shelley genesis file from the filesystem")
             .unwrap();
 
-        let mut buffer = Vec::new();
-
-        tokio::fs::File::open(genesis_file_path)
-            .await
-            .unwrap()
-            .read_to_end(&mut buffer)
-            .await
-            .unwrap();
-
-        let genesis = cml_chain::genesis::shelley::parse::parse_genesis_data(Cursor::new(buffer))
-            .expect("Failed to parse genesis");
-
         tasks::genesis::genesis_executor::process_shelley_genesis_block(
             txn,
-            ("", &genesis, &block_global_info),
+            ("", &genesis_file_path, &block_global_info),
             &exec_plan,
             task_perf_aggregator.clone(),
         )
